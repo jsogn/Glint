@@ -402,6 +402,9 @@ private struct PluginsPage: View {
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                 GridRow {
                     Text("模式")
+                    Color.clear
+                        .frame(height: 1)
+                        .gridCellUnsizedAxes(.vertical)
                     Picker(
                         "模式",
                         selection: Binding(
@@ -418,12 +421,15 @@ private struct PluginsPage: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
-                    .frame(width: 340)
+                    .frame(width: 340, alignment: .trailing)
                     .gridCellAnchor(.trailing)
                 }
 
                 GridRow {
                     Text("主模型")
+                    Color.clear
+                        .frame(height: 1)
+                        .gridCellUnsizedAxes(.vertical)
                     Picker(
                         "主模型",
                         selection: Binding(
@@ -438,13 +444,16 @@ private struct PluginsPage: View {
                         }
                     }
                     .labelsHidden()
-                    .frame(width: 340)
+                    .frame(width: 340, alignment: .trailing)
                     .gridCellAnchor(.trailing)
                 }
 
                 if model.ocrRecognitionPreferences.strategy != .primaryOnly {
                     GridRow {
                         Text("备用模型")
+                        Color.clear
+                            .frame(height: 1)
+                            .gridCellUnsizedAxes(.vertical)
                         Picker(
                             "备用模型",
                             selection: Binding(
@@ -461,12 +470,12 @@ private struct PluginsPage: View {
                             }
                         }
                         .labelsHidden()
-                        .frame(width: 340)
+                        .frame(width: 340, alignment: .trailing)
                         .gridCellAnchor(.trailing)
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .frame(maxWidth: .infinity)
 
             Text(strategyDescription)
                 .font(.caption)
