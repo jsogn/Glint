@@ -1,0 +1,939 @@
+[
+  {
+    "text": "你好",
+    "category": "general",
+    "expected": [
+      "hello",
+      "hi"
+    ]
+  },
+  {
+    "text": "谢谢",
+    "category": "general",
+    "expected": [
+      "thank you",
+      "thanks"
+    ]
+  },
+  {
+    "text": "世界",
+    "category": "general",
+    "expected": [
+      "world"
+    ]
+  },
+  {
+    "text": "时间",
+    "category": "general",
+    "expected": [
+      "time"
+    ]
+  },
+  {
+    "text": "朋友",
+    "category": "general",
+    "expected": [
+      "friend"
+    ]
+  },
+  {
+    "text": "学习",
+    "category": "general",
+    "expected": [
+      "study",
+      "learn"
+    ]
+  },
+  {
+    "text": "工作",
+    "category": "general",
+    "expected": [
+      "work",
+      "job"
+    ]
+  },
+  {
+    "text": "今天",
+    "category": "general",
+    "expected": [
+      "today"
+    ]
+  },
+  {
+    "text": "喜欢",
+    "category": "general",
+    "expected": [
+      "like",
+      "enjoy"
+    ]
+  },
+  {
+    "text": "需要",
+    "category": "general",
+    "expected": [
+      "need",
+      "require"
+    ]
+  },
+  {
+    "text": "可以",
+    "category": "general",
+    "expected": [
+      "can",
+      "may"
+    ]
+  },
+  {
+    "text": "因为",
+    "category": "general",
+    "expected": [
+      "because"
+    ]
+  },
+  {
+    "text": "但是",
+    "category": "general",
+    "expected": [
+      "but",
+      "however"
+    ]
+  },
+  {
+    "text": "问题",
+    "category": "general",
+    "expected": [
+      "problem",
+      "issue",
+      "question"
+    ]
+  },
+  {
+    "text": "结果",
+    "category": "general",
+    "expected": [
+      "result",
+      "outcome"
+    ]
+  },
+  {
+    "text": "目标",
+    "category": "general",
+    "expected": [
+      "goal",
+      "objective",
+      "target"
+    ]
+  },
+  {
+    "text": "方法",
+    "category": "general",
+    "expected": [
+      "method",
+      "way"
+    ]
+  },
+  {
+    "text": "重要",
+    "category": "general",
+    "expected": [
+      "important"
+    ]
+  },
+  {
+    "text": "生活",
+    "category": "general",
+    "expected": [
+      "life"
+    ]
+  },
+  {
+    "text": "城市",
+    "category": "general",
+    "expected": [
+      "city"
+    ]
+  },
+  {
+    "text": "国家",
+    "category": "general",
+    "expected": [
+      "country"
+    ]
+  },
+  {
+    "text": "父母",
+    "category": "general",
+    "expected": [
+      "parents"
+    ]
+  },
+  {
+    "text": "孩子",
+    "category": "general",
+    "expected": [
+      "child",
+      "children"
+    ]
+  },
+  {
+    "text": "学校",
+    "category": "general",
+    "expected": [
+      "school"
+    ]
+  },
+  {
+    "text": "老师",
+    "category": "general",
+    "expected": [
+      "teacher"
+    ]
+  },
+  {
+    "text": "学生",
+    "category": "general",
+    "expected": [
+      "student"
+    ]
+  },
+  {
+    "text": "语言",
+    "category": "general",
+    "expected": [
+      "language"
+    ]
+  },
+  {
+    "text": "英语",
+    "category": "general",
+    "expected": [
+      "English"
+    ]
+  },
+  {
+    "text": "中文",
+    "category": "general",
+    "expected": [
+      "Chinese"
+    ]
+  },
+  {
+    "text": "帮助",
+    "category": "general",
+    "expected": [
+      "help",
+      "assist"
+    ]
+  },
+  {
+    "text": "设计",
+    "category": "ambiguous",
+    "expected": [
+      "design",
+      "plan"
+    ]
+  },
+  {
+    "text": "处理",
+    "category": "ambiguous",
+    "expected": [
+      "handle",
+      "process",
+      "deal with"
+    ]
+  },
+  {
+    "text": "运行",
+    "category": "ambiguous",
+    "expected": [
+      "run",
+      "operate",
+      "function"
+    ]
+  },
+  {
+    "text": "结构",
+    "category": "ambiguous",
+    "expected": [
+      "structure",
+      "composition"
+    ]
+  },
+  {
+    "text": "复杂",
+    "category": "ambiguous",
+    "expected": [
+      "complex",
+      "complicated"
+    ]
+  },
+  {
+    "text": "程序",
+    "category": "ambiguous",
+    "expected": [
+      "program",
+      "procedure",
+      "process"
+    ]
+  },
+  {
+    "text": "开发",
+    "category": "ambiguous",
+    "expected": [
+      "develop",
+      "development",
+      "exploit"
+    ]
+  },
+  {
+    "text": "对齐",
+    "category": "ambiguous",
+    "expected": [
+      "align",
+      "alignment"
+    ]
+  },
+  {
+    "text": "权衡",
+    "category": "ambiguous",
+    "expected": [
+      "trade-off",
+      "balance"
+    ]
+  },
+  {
+    "text": "复盘",
+    "category": "ambiguous",
+    "expected": [
+      "retrospective",
+      "review"
+    ]
+  },
+  {
+    "text": "打",
+    "category": "blocked",
+    "expected": []
+  },
+  {
+    "text": "尼",
+    "category": "blocked",
+    "expected": []
+  },
+  {
+    "text": "你号",
+    "category": "blocked",
+    "expected": []
+  },
+  {
+    "text": "你好吗",
+    "category": "technical",
+    "expected": [
+      "How are you?"
+    ]
+  },
+  {
+    "text": "数据",
+    "category": "technical",
+    "expected": [
+      "data"
+    ]
+  },
+  {
+    "text": "计算机",
+    "category": "technical",
+    "expected": [
+      "computer"
+    ]
+  },
+  {
+    "text": "项目",
+    "category": "technical",
+    "expected": [
+      "project"
+    ]
+  },
+  {
+    "text": "功能",
+    "category": "technical",
+    "expected": [
+      "feature"
+    ]
+  },
+  {
+    "text": "系统",
+    "category": "technical",
+    "expected": [
+      "system"
+    ]
+  },
+  {
+    "text": "用户",
+    "category": "technical",
+    "expected": [
+      "user"
+    ]
+  },
+  {
+    "text": "产品",
+    "category": "technical",
+    "expected": [
+      "product"
+    ]
+  },
+  {
+    "text": "业务",
+    "category": "technical",
+    "expected": [
+      "business"
+    ]
+  },
+  {
+    "text": "团队",
+    "category": "technical",
+    "expected": [
+      "team"
+    ]
+  },
+  {
+    "text": "公司",
+    "category": "technical",
+    "expected": [
+      "company"
+    ]
+  },
+  {
+    "text": "客户",
+    "category": "technical",
+    "expected": [
+      "customer"
+    ]
+  },
+  {
+    "text": "会议",
+    "category": "technical",
+    "expected": [
+      "meeting"
+    ]
+  },
+  {
+    "text": "计划",
+    "category": "technical",
+    "expected": [
+      "plan"
+    ]
+  },
+  {
+    "text": "方案",
+    "category": "technical",
+    "expected": [
+      "solution"
+    ]
+  },
+  {
+    "text": "流程",
+    "category": "technical",
+    "expected": [
+      "process"
+    ]
+  },
+  {
+    "text": "版本",
+    "category": "technical",
+    "expected": [
+      "version"
+    ]
+  },
+  {
+    "text": "代码",
+    "category": "technical",
+    "expected": [
+      "code"
+    ]
+  },
+  {
+    "text": "测试",
+    "category": "technical",
+    "expected": [
+      "test"
+    ]
+  },
+  {
+    "text": "上线",
+    "category": "technical",
+    "expected": [
+      "launch"
+    ]
+  },
+  {
+    "text": "发布",
+    "category": "technical",
+    "expected": [
+      "release"
+    ]
+  },
+  {
+    "text": "部署",
+    "category": "technical",
+    "expected": [
+      "deploy"
+    ]
+  },
+  {
+    "text": "配置",
+    "category": "technical",
+    "expected": [
+      "configuration"
+    ]
+  },
+  {
+    "text": "性能",
+    "category": "technical",
+    "expected": [
+      "performance"
+    ]
+  },
+  {
+    "text": "安全",
+    "category": "technical",
+    "expected": [
+      "security"
+    ]
+  },
+  {
+    "text": "隐私",
+    "category": "technical",
+    "expected": [
+      "privacy"
+    ]
+  },
+  {
+    "text": "模型",
+    "category": "technical",
+    "expected": [
+      "model"
+    ]
+  },
+  {
+    "text": "插件",
+    "category": "technical",
+    "expected": [
+      "plugin"
+    ]
+  },
+  {
+    "text": "输入",
+    "category": "technical",
+    "expected": [
+      "input"
+    ]
+  },
+  {
+    "text": "输出",
+    "category": "technical",
+    "expected": [
+      "output"
+    ]
+  },
+  {
+    "text": "翻译",
+    "category": "technical",
+    "expected": [
+      "translation"
+    ]
+  },
+  {
+    "text": "词典",
+    "category": "technical",
+    "expected": [
+      "dictionary"
+    ]
+  },
+  {
+    "text": "句子",
+    "category": "technical",
+    "expected": [
+      "sentence"
+    ]
+  },
+  {
+    "text": "单词",
+    "category": "technical",
+    "expected": [
+      "word"
+    ]
+  },
+  {
+    "text": "英文",
+    "category": "technical",
+    "expected": [
+      "English"
+    ]
+  },
+  {
+    "text": "苹果",
+    "category": "technical",
+    "expected": [
+      "apple"
+    ]
+  },
+  {
+    "text": "实现",
+    "category": "technical",
+    "expected": [
+      "implement"
+    ]
+  },
+  {
+    "text": "优化",
+    "category": "technical",
+    "expected": [
+      "optimize"
+    ]
+  },
+  {
+    "text": "重构",
+    "category": "technical",
+    "expected": [
+      "refactor"
+    ]
+  },
+  {
+    "text": "接口",
+    "category": "technical",
+    "expected": [
+      "API"
+    ]
+  },
+  {
+    "text": "字段",
+    "category": "technical",
+    "expected": [
+      "field"
+    ]
+  },
+  {
+    "text": "缓存",
+    "category": "technical",
+    "expected": [
+      "cache"
+    ]
+  },
+  {
+    "text": "并发",
+    "category": "technical",
+    "expected": [
+      "concurrency"
+    ]
+  },
+  {
+    "text": "延迟",
+    "category": "technical",
+    "expected": [
+      "latency"
+    ]
+  },
+  {
+    "text": "吞吐",
+    "category": "technical",
+    "expected": [
+      "throughput"
+    ]
+  },
+  {
+    "text": "依赖",
+    "category": "technical",
+    "expected": [
+      "dependency"
+    ]
+  },
+  {
+    "text": "模块",
+    "category": "technical",
+    "expected": [
+      "module"
+    ]
+  },
+  {
+    "text": "组件",
+    "category": "technical",
+    "expected": [
+      "component"
+    ]
+  },
+  {
+    "text": "文档",
+    "category": "technical",
+    "expected": [
+      "documentation"
+    ]
+  },
+  {
+    "text": "评审",
+    "category": "technical",
+    "expected": [
+      "review"
+    ]
+  },
+  {
+    "text": "验收",
+    "category": "technical",
+    "expected": [
+      "acceptance"
+    ]
+  },
+  {
+    "text": "埋点",
+    "category": "technical",
+    "expected": [
+      "event tracking"
+    ]
+  },
+  {
+    "text": "灰度",
+    "category": "technical",
+    "expected": [
+      "canary"
+    ]
+  },
+  {
+    "text": "回滚",
+    "category": "technical",
+    "expected": [
+      "rollback"
+    ]
+  },
+  {
+    "text": "队列",
+    "category": "technical",
+    "expected": [
+      "queue"
+    ]
+  },
+  {
+    "text": "架构",
+    "category": "technical",
+    "expected": [
+      "architecture"
+    ]
+  },
+  {
+    "text": "算法",
+    "category": "technical",
+    "expected": [
+      "algorithm"
+    ]
+  },
+  {
+    "text": "计算",
+    "category": "technical",
+    "expected": [
+      "calculate",
+      "calculation"
+    ]
+  },
+  {
+    "text": "输入法",
+    "category": "technical",
+    "expected": [
+      "input method"
+    ]
+  },
+  {
+    "text": "迭代",
+    "category": "technical",
+    "expected": [
+      "iterate"
+    ]
+  },
+  {
+    "text": "需求",
+    "category": "technical",
+    "expected": [
+      "requirement",
+      "demand"
+    ]
+  },
+  {
+    "text": "场景",
+    "category": "technical",
+    "expected": [
+      "scenario"
+    ]
+  },
+  {
+    "text": "指标",
+    "category": "technical",
+    "expected": [
+      "metric",
+      "indicator"
+    ]
+  },
+  {
+    "text": "落地",
+    "category": "technical",
+    "expected": [
+      "implement"
+    ]
+  },
+  {
+    "text": "拆分",
+    "category": "technical",
+    "expected": [
+      "break down"
+    ]
+  },
+  {
+    "text": "收敛",
+    "category": "technical",
+    "expected": [
+      "converge"
+    ]
+  },
+  {
+    "text": "兜底",
+    "category": "technical",
+    "expected": [
+      "fallback"
+    ]
+  },
+  {
+    "text": "里程碑",
+    "category": "technical",
+    "expected": [
+      "milestone"
+    ]
+  },
+  {
+    "text": "语义",
+    "category": "technical",
+    "expected": [
+      "semantics"
+    ]
+  },
+  {
+    "text": "推理",
+    "category": "technical",
+    "expected": [
+      "reasoning"
+    ]
+  },
+  {
+    "text": "上下文",
+    "category": "technical",
+    "expected": [
+      "context"
+    ]
+  },
+  {
+    "text": "颗粒度",
+    "category": "technical",
+    "expected": [
+      "granularity"
+    ]
+  },
+  {
+    "text": "先对齐一下",
+    "category": "phrase",
+    "expected": [
+      "let's align first"
+    ]
+  },
+  {
+    "text": "拉齐认知",
+    "category": "phrase",
+    "expected": [
+      "align understanding"
+    ]
+  },
+  {
+    "text": "小步快跑",
+    "category": "phrase",
+    "expected": [
+      "iterate quickly in small steps"
+    ]
+  },
+  {
+    "text": "形成闭环",
+    "category": "phrase",
+    "expected": [
+      "close the loop"
+    ]
+  },
+  {
+    "text": "拆解问题",
+    "category": "phrase",
+    "expected": [
+      "break down the problem"
+    ]
+  },
+  {
+    "text": "兜底方案",
+    "category": "phrase",
+    "expected": [
+      "fallback plan"
+    ]
+  },
+  {
+    "text": "关键路径",
+    "category": "phrase",
+    "expected": [
+      "critical path"
+    ]
+  },
+  {
+    "text": "技术债",
+    "category": "technical",
+    "expected": [
+      "technical debt"
+    ]
+  },
+  {
+    "text": "用户画像",
+    "category": "phrase",
+    "expected": [
+      "user persona"
+    ]
+  },
+  {
+    "text": "冷启动",
+    "category": "technical",
+    "expected": [
+      "cold start"
+    ]
+  },
+  {
+    "text": "灰度发布",
+    "category": "phrase",
+    "expected": [
+      "canary release"
+    ]
+  },
+  {
+    "text": "复盘总结",
+    "category": "phrase",
+    "expected": [
+      "retrospective summary"
+    ]
+  },
+  {
+    "text": "向上管理",
+    "category": "phrase",
+    "expected": [
+      "managing up"
+    ]
+  },
+  {
+    "text": "横向对比",
+    "category": "phrase",
+    "expected": [
+      "side-by-side comparison"
+    ]
+  },
+  {
+    "text": "需求评审",
+    "category": "phrase",
+    "expected": [
+      "requirement review"
+    ]
+  }
+]

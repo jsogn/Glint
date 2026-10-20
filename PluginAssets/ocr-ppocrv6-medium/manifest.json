@@ -1,0 +1,19 @@
+{
+  "id": "ocr-ppocrv6-medium",
+  "type": "ocr",
+  "name": "PP-OCRv6 Medium",
+  "version": "2026.10",
+  "runtime": "huggingface-onnx",
+  "capabilities": ["candidate"],
+  "languages": ["zh-Hans", "en"],
+  "sizeBytes": 76554979,
+  "sha256": "9c09abf0957f7968c7586464b7397b84ad2387a0497a351af40e9acc71b673ba",
+  "url": "https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_rec_onnx",
+  "license": "Apache-2.0",
+  "minRAMBytes": 2147483648,
+  "quality": "high",
+  "recommended": false,
+  "summary": "识别更稳，模型较大，适合高配置设备或复杂候选。",
+  "revision": "50c7eacafc52fa7bcf4194e8cd08e46f8558504b",
+  "artifactFile": "inference.onnx"
+}

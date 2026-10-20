@@ -1,0 +1,18 @@
+{
+  "id": "llm-qwen3-1.7b",
+  "type": "translation",
+  "name": "Qwen3 1.7B",
+  "version": "0.1.0",
+  "runtime": "mlx",
+  "capabilities": ["word", "phrase", "sentence"],
+  "languages": ["zh-Hans", "en"],
+  "sizeBytes": 984015687,
+  "sha256": "HUGGINGFACE_SNAPSHOT",
+  "url": "https://huggingface.co/mlx-community/Qwen3-1.7B-4bit",
+  "license": "APACHE-2.0",
+  "minRAMBytes": 6442450944,
+  "quality": "balanced",
+  "recommended": false,
+  "summary": "速度适中，支持中英及多种语言，适合通用多语言场景。",
+  "revision": "3b1b1768f8f8cf8351c712464f906e86c2b8269e"
+}

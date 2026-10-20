@@ -1,0 +1,9 @@
+transformers
+torch
+sentencepiece
+sacremoses
+ctranslate2
+mlx-lm
+psutil
+pandas
+huggingface-hub

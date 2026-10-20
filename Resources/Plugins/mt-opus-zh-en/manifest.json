@@ -1,0 +1,17 @@
+{
+  "id": "mt-opus-zh-en",
+  "type": "translation",
+  "name": "OPUS-MT Chinese-English",
+  "version": "0.1.0",
+  "runtime": "ctranslate2",
+  "capabilities": ["word", "phrase", "sentence"],
+  "languages": ["zh-Hans", "en"],
+  "sizeBytes": 150000000,
+  "sha256": "REPLACE_ME",
+  "url": "https://example.invalid/glint/mt-opus-zh-en.zip",
+  "license": "CC-BY-4.0",
+  "minRAMBytes": 1073741824,
+  "quality": "light",
+  "recommended": true,
+  "summary": "速度快、占用低，适合轻量日常翻译。"
+}

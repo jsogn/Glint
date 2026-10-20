@@ -1,0 +1,6077 @@
+[
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "real",
+    "id" : "real_original",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/real_original.png",
+    "raw" : "1",
+    "text" : "你好",
+    "timesMs" : [
+      16.212042,
+      17.443666,
+      17.707042
+    ],
+    "variant" : "original"
+  },
+  {
+    "cleaned" : "你好",
+    "confidence" : 0.3,
+    "group" : "real_augmented",
+    "id" : "real_upscale2x",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/real_upscale2x.png",
+    "raw" : "，你好",
+    "text" : "你好",
+    "timesMs" : [
+      20.447334,
+      18.076875,
+      17.818292
+    ],
+    "variant" : "upscale2x"
+  },
+  {
+    "cleaned" : "你好",
+    "confidence" : 1,
+    "group" : "real_augmented",
+    "id" : "real_downscale075",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/real_downscale075.png",
+    "raw" : "你好",
+    "text" : "你好",
+    "timesMs" : [
+      29.049667,
+      13.535625,
+      13.206583
+    ],
+    "variant" : "downscale075"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "real_augmented",
+    "id" : "real_blur",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/real_blur.png",
+    "raw" : "1",
+    "text" : "你好",
+    "timesMs" : [
+      15.135583,
+      14.795625,
+      16.774333
+    ],
+    "variant" : "blur"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "real_augmented",
+    "id" : "real_jpeg75",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/real_jpeg75.png",
+    "raw" : "1",
+    "text" : "你好",
+    "timesMs" : [
+      17.097333,
+      16.579083,
+      16.839208
+    ],
+    "variant" : "jpeg75"
+  },
+  {
+    "cleaned" : "你好",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_000_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_000_0.png",
+    "raw" : "你好",
+    "text" : "你好",
+    "timesMs" : [
+      17.083959,
+      16.334166,
+      16.528125
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "你好",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_000_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_000_1.png",
+    "raw" : "你好",
+    "text" : "你好",
+    "timesMs" : [
+      24.0065,
+      13.678958,
+      14.690792
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "你好",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_000_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_000_2.png",
+    "raw" : "1 你好",
+    "text" : "你好",
+    "timesMs" : [
+      14.670791,
+      15.365542,
+      16.263917
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "你好",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_000_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_000_3.png",
+    "raw" : "你好",
+    "text" : "你好",
+    "timesMs" : [
+      18.057167,
+      18.005292,
+      15.23375
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "中国",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_001_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_001_0.png",
+    "raw" : "中国",
+    "text" : "中国",
+    "timesMs" : [
+      15.344625,
+      19.882541,
+      16.453541
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "中国",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_001_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_001_1.png",
+    "raw" : "中国",
+    "text" : "中国",
+    "timesMs" : [
+      17.475542,
+      16.016,
+      16.528625
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "中国",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_001_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_001_2.png",
+    "raw" : "1 中国",
+    "text" : "中国",
+    "timesMs" : [
+      14.715,
+      18.143792,
+      16.518875
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "中国",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_001_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_001_3.png",
+    "raw" : "中国",
+    "text" : "中国",
+    "timesMs" : [
+      14.19175,
+      16.74475,
+      16.491375
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "我们",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_002_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_002_0.png",
+    "raw" : "我们",
+    "text" : "我们",
+    "timesMs" : [
+      15.689583,
+      17.762667,
+      17.022625
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "我们",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_002_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_002_1.png",
+    "raw" : "我们",
+    "text" : "我们",
+    "timesMs" : [
+      17.423083,
+      15.72525,
+      16.040084
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "我们",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_002_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_002_2.png",
+    "raw" : "1 我们",
+    "text" : "我们",
+    "timesMs" : [
+      20.944167,
+      16.102375,
+      15.056041
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "我们",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_002_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_002_3.png",
+    "raw" : "1我们",
+    "text" : "我们",
+    "timesMs" : [
+      16.166667,
+      16.905708,
+      14.581167
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "时间",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_003_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_003_0.png",
+    "raw" : "时间",
+    "text" : "时间",
+    "timesMs" : [
+      15.660292,
+      35.0695,
+      30.413042
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "时间",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_003_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_003_1.png",
+    "raw" : "时间",
+    "text" : "时间",
+    "timesMs" : [
+      17.629625,
+      16.650959,
+      16.4665
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "时间",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_003_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_003_2.png",
+    "raw" : "1时间",
+    "text" : "时间",
+    "timesMs" : [
+      17.242333,
+      18.524709,
+      14.595375
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "时间",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_003_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_003_3.png",
+    "raw" : "时间",
+    "text" : "时间",
+    "timesMs" : [
+      19.235083,
+      16.785958,
+      16.3635
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "工作",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_004_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_004_0.png",
+    "raw" : "1工作",
+    "text" : "工作",
+    "timesMs" : [
+      15.550625,
+      16.554792,
+      16.331833
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "工作",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_004_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_004_1.png",
+    "raw" : "工作",
+    "text" : "工作",
+    "timesMs" : [
+      15.652041,
+      15.023459,
+      14.533083
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "工作",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_004_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_004_2.png",
+    "raw" : "1 工作",
+    "text" : "工作",
+    "timesMs" : [
+      15.056834,
+      15.234792,
+      17.118083
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "工作",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_004_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_004_3.png",
+    "raw" : "1工作",
+    "text" : "工作",
+    "timesMs" : [
+      14.488458,
+      13.575875,
+      13.008708
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "学习",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_005_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_005_0.png",
+    "raw" : "1学习",
+    "text" : "学习",
+    "timesMs" : [
+      12.737042,
+      14.216917,
+      13.376125
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "学习",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_005_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_005_1.png",
+    "raw" : "学习",
+    "text" : "学习",
+    "timesMs" : [
+      13.562167,
+      13.485791,
+      12.899667
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "学习",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_005_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_005_2.png",
+    "raw" : "1 学习",
+    "text" : "学习",
+    "timesMs" : [
+      13.305167,
+      13.366084,
+      17.981083
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_005_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_005_3.png",
+    "raw" : "1",
+    "text" : "学习",
+    "timesMs" : [
+      14.75875,
+      13.567292,
+      13.119833
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "生活",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_006_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_006_0.png",
+    "raw" : "生活",
+    "text" : "生活",
+    "timesMs" : [
+      14.4065,
+      16.642791,
+      19.561083
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "生活",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_006_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_006_1.png",
+    "raw" : "生活",
+    "text" : "生活",
+    "timesMs" : [
+      13.394541,
+      17.736084,
+      16.595708
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "生活",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_006_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_006_2.png",
+    "raw" : "1 生活",
+    "text" : "生活",
+    "timesMs" : [
+      14.032792,
+      16.229583,
+      16.73
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "生活",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_006_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_006_3.png",
+    "raw" : "1生活",
+    "text" : "生活",
+    "timesMs" : [
+      19.59425,
+      16.81725,
+      16.594542
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "世界",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_007_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_007_0.png",
+    "raw" : "世界",
+    "text" : "世界",
+    "timesMs" : [
+      16.179917,
+      15.58775,
+      17.552333
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "世界",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_007_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_007_1.png",
+    "raw" : "世界",
+    "text" : "世界",
+    "timesMs" : [
+      16.367375,
+      16.006833,
+      17.089167
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "世界",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_007_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_007_2.png",
+    "raw" : "1 世界",
+    "text" : "世界",
+    "timesMs" : [
+      14.2185,
+      15.793958,
+      17.293708
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "世界",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_007_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_007_3.png",
+    "raw" : "1世界",
+    "text" : "世界",
+    "timesMs" : [
+      18.893792,
+      17.118375,
+      14.16075
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "朋友",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_008_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_008_0.png",
+    "raw" : "朋友",
+    "text" : "朋友",
+    "timesMs" : [
+      19.033125,
+      14.620334,
+      18.767709
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "朋友",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_008_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_008_1.png",
+    "raw" : "朋友",
+    "text" : "朋友",
+    "timesMs" : [
+      15.258625,
+      18.233125,
+      14.806334
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "朋友",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_008_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_008_2.png",
+    "raw" : "1 朋友",
+    "text" : "朋友",
+    "timesMs" : [
+      18.674292,
+      14.244833,
+      15.300875
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "朋友",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_008_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_008_3.png",
+    "raw" : "朋友",
+    "text" : "朋友",
+    "timesMs" : [
+      16.549125,
+      16.431167,
+      15.067084
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "今天",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_009_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_009_0.png",
+    "raw" : "今天",
+    "text" : "今天",
+    "timesMs" : [
+      15.839458,
+      16.952666,
+      17.050125
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "今天",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_009_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_009_1.png",
+    "raw" : "今天",
+    "text" : "今天",
+    "timesMs" : [
+      18.197875,
+      16.379,
+      18.493417
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "今天",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_009_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_009_2.png",
+    "raw" : "1 今天",
+    "text" : "今天",
+    "timesMs" : [
+      15.847417,
+      15.911958,
+      17.838041
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_009_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_009_3.png",
+    "raw" : "1",
+    "text" : "今天",
+    "timesMs" : [
+      17.2135,
+      16.211542,
+      14.739916
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "明天",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_010_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_010_0.png",
+    "raw" : "明天",
+    "text" : "明天",
+    "timesMs" : [
+      16.830417,
+      13.540125,
+      19.026041
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "明天",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_010_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_010_1.png",
+    "raw" : "明天",
+    "text" : "明天",
+    "timesMs" : [
+      14.912334,
+      16.632292,
+      16.394375
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "明天",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_010_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_010_2.png",
+    "raw" : "1明天",
+    "text" : "明天",
+    "timesMs" : [
+      15.607041,
+      13.618791,
+      14.565708
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "明天",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_010_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_010_3.png",
+    "raw" : "明天",
+    "text" : "明天",
+    "timesMs" : [
+      18.8465,
+      16.395708,
+      15.402458
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "昨天",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_011_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_011_0.png",
+    "raw" : "昨天",
+    "text" : "昨天",
+    "timesMs" : [
+      18.597083,
+      16.00675,
+      15.4295
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "昨天",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_011_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_011_1.png",
+    "raw" : "昨天",
+    "text" : "昨天",
+    "timesMs" : [
+      15.767833,
+      14.53375,
+      14.868208
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "昨天",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_011_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_011_2.png",
+    "raw" : "1 昨天",
+    "text" : "昨天",
+    "timesMs" : [
+      13.854542,
+      13.836,
+      14.930334
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "昨天",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_011_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_011_3.png",
+    "raw" : "昨天",
+    "text" : "昨天",
+    "timesMs" : [
+      17.17525,
+      17.143958,
+      16.206125
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "现在",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_012_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_012_0.png",
+    "raw" : "现在",
+    "text" : "现在",
+    "timesMs" : [
+      20.096292,
+      17.545375,
+      16.124417
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "现在",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_012_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_012_1.png",
+    "raw" : "现在",
+    "text" : "现在",
+    "timesMs" : [
+      14.5065,
+      16.313667,
+      14.066042
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "现在",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_012_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_012_2.png",
+    "raw" : "1现在",
+    "text" : "现在",
+    "timesMs" : [
+      16.118416,
+      16.070959,
+      14.034166
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "现在",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_012_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_012_3.png",
+    "raw" : "'现在",
+    "text" : "现在",
+    "timesMs" : [
+      15.865833,
+      18.524125,
+      17.423333
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "以后",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_013_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_013_0.png",
+    "raw" : "以后",
+    "text" : "以后",
+    "timesMs" : [
+      17.080167,
+      13.2575,
+      14.963125
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "以后",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_013_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_013_1.png",
+    "raw" : "以后",
+    "text" : "以后",
+    "timesMs" : [
+      13.513959,
+      16.338959,
+      13.391875
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "以后",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_013_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_013_2.png",
+    "raw" : "1 以后",
+    "text" : "以后",
+    "timesMs" : [
+      15.782125,
+      13.770875,
+      16.408291
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "以后",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_013_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_013_3.png",
+    "raw" : "以后",
+    "text" : "以后",
+    "timesMs" : [
+      16.571084,
+      16.039833,
+      16.435041
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "问题",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_014_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_014_0.png",
+    "raw" : "问题",
+    "text" : "问题",
+    "timesMs" : [
+      15.872584,
+      16.351708,
+      15.244125
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "问题",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_014_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_014_1.png",
+    "raw" : "问题",
+    "text" : "问题",
+    "timesMs" : [
+      13.539125,
+      13.111333,
+      14.377625
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "问题",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_014_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_014_2.png",
+    "raw" : "1 问题",
+    "text" : "问题",
+    "timesMs" : [
+      13.674208,
+      13.359834,
+      16.538834
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "问题",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_014_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_014_3.png",
+    "raw" : "问题",
+    "text" : "问题",
+    "timesMs" : [
+      19.728583,
+      14.071375,
+      17.348917
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "方法",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_015_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_015_0.png",
+    "raw" : "方法",
+    "text" : "方法",
+    "timesMs" : [
+      16.081375,
+      16.499917,
+      33.248208
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "方法",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_015_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_015_1.png",
+    "raw" : "方法",
+    "text" : "方法",
+    "timesMs" : [
+      15.117917,
+      12.4695,
+      13.72175
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "方法",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_015_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_015_2.png",
+    "raw" : "1 方法",
+    "text" : "方法",
+    "timesMs" : [
+      13.293083,
+      15.00425,
+      13.716292
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "方法",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_015_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_015_3.png",
+    "raw" : "1方法",
+    "text" : "方法",
+    "timesMs" : [
+      15.965791,
+      16.148917,
+      16.974708
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "结果",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_016_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_016_0.png",
+    "raw" : "结果",
+    "text" : "结果",
+    "timesMs" : [
+      16.952,
+      16.326041,
+      16.801917
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "结果",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_016_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_016_1.png",
+    "raw" : "结果",
+    "text" : "结果",
+    "timesMs" : [
+      16.095542,
+      16.83325,
+      17.149375
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "结果",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_016_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_016_2.png",
+    "raw" : "1 结果",
+    "text" : "结果",
+    "timesMs" : [
+      15.511958,
+      16.196541,
+      17.796375
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_016_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_016_3.png",
+    "raw" : "1",
+    "text" : "结果",
+    "timesMs" : [
+      16.566292,
+      16.027666,
+      16.947333
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "开始",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_017_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_017_0.png",
+    "raw" : "开始",
+    "text" : "开始",
+    "timesMs" : [
+      16.440625,
+      16.128083,
+      15.630125
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "开始",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_017_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_017_1.png",
+    "raw" : "开始",
+    "text" : "开始",
+    "timesMs" : [
+      16.987,
+      15.856959,
+      13.355209
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "开始",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_017_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_017_2.png",
+    "raw" : "1 开始",
+    "text" : "开始",
+    "timesMs" : [
+      17.279833,
+      15.875959,
+      16.904625
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "开始",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_017_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_017_3.png",
+    "raw" : "1开始",
+    "text" : "开始",
+    "timesMs" : [
+      21.259084,
+      16.9995,
+      19.398625
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "结束",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_018_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_018_0.png",
+    "raw" : "结束",
+    "text" : "结束",
+    "timesMs" : [
+      17.450917,
+      17.162834,
+      16.340541
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "结束",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_018_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_018_1.png",
+    "raw" : "结束",
+    "text" : "结束",
+    "timesMs" : [
+      15.092459,
+      13.566583,
+      18.9705
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "结束",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_018_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_018_2.png",
+    "raw" : "1 结束",
+    "text" : "结束",
+    "timesMs" : [
+      13.560667,
+      18.369792,
+      14.870791
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "结束",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_018_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_018_3.png",
+    "raw" : "结束",
+    "text" : "结束",
+    "timesMs" : [
+      17.238,
+      16.18575,
+      15.778208
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "继续",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_019_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_019_0.png",
+    "raw" : "继续",
+    "text" : "继续",
+    "timesMs" : [
+      15.738083,
+      14.107875,
+      16.170708
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "继续",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_019_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_019_1.png",
+    "raw" : "继续",
+    "text" : "继续",
+    "timesMs" : [
+      16.28925,
+      15.232917,
+      15.961583
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨继续",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_019_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_019_2.png",
+    "raw" : "丨继续",
+    "text" : "继续",
+    "timesMs" : [
+      14.370083,
+      14.051291,
+      15.951333
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "继续",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_019_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_019_3.png",
+    "raw" : "1继续",
+    "text" : "继续",
+    "timesMs" : [
+      15.63325,
+      13.854042,
+      16.114875
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "完成",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_020_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_020_0.png",
+    "raw" : "完成",
+    "text" : "完成",
+    "timesMs" : [
+      15.797875,
+      14.969542,
+      13.286291
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "完成",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_020_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_020_1.png",
+    "raw" : "完成",
+    "text" : "完成",
+    "timesMs" : [
+      15.641417,
+      12.657583,
+      12.922667
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "完成",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_020_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_020_2.png",
+    "raw" : "1完成",
+    "text" : "完成",
+    "timesMs" : [
+      14.16025,
+      16.28575,
+      14.157875
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "完成",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_020_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_020_3.png",
+    "raw" : "1完成",
+    "text" : "完成",
+    "timesMs" : [
+      13.699542,
+      13.926083,
+      14.703917
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "益車",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_021_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_021_0.png",
+    "raw" : "益車（",
+    "text" : "重要",
+    "timesMs" : [
+      17.069833,
+      15.006542,
+      14.621292
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "重要",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_021_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_021_1.png",
+    "raw" : "重要",
+    "text" : "重要",
+    "timesMs" : [
+      14.854,
+      13.860125,
+      15.157792
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "重要",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_021_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_021_2.png",
+    "raw" : "1 重要",
+    "text" : "重要",
+    "timesMs" : [
+      14.407667,
+      15.341792,
+      15.418708
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "重要",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_021_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_021_3.png",
+    "raw" : "1重要",
+    "text" : "重要",
+    "timesMs" : [
+      15.174375,
+      23.001917,
+      18.486083
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "简单",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_022_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_022_0.png",
+    "raw" : "简单",
+    "text" : "简单",
+    "timesMs" : [
+      15.292708,
+      14.12,
+      19.617834
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "简单",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_022_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_022_1.png",
+    "raw" : "简单",
+    "text" : "简单",
+    "timesMs" : [
+      16.647,
+      16.01875,
+      16.885834
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "简单",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_022_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_022_2.png",
+    "raw" : "1 简单",
+    "text" : "简单",
+    "timesMs" : [
+      16.000084,
+      16.419084,
+      16.452042
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "简单",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_022_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_022_3.png",
+    "raw" : "简单",
+    "text" : "简单",
+    "timesMs" : [
+      16.863625,
+      17.099541,
+      16.818375
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "复杂",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_023_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_023_0.png",
+    "raw" : "1复杂",
+    "text" : "复杂",
+    "timesMs" : [
+      16.528583,
+      15.866834,
+      16.609875
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "复杂",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_023_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_023_1.png",
+    "raw" : "复杂",
+    "text" : "复杂",
+    "timesMs" : [
+      16.170375,
+      17.1795,
+      16.16825
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "复杂",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_023_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_023_2.png",
+    "raw" : "1 复杂",
+    "text" : "复杂",
+    "timesMs" : [
+      18.318917,
+      15.094042,
+      17.78125
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "复杂",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_023_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_023_3.png",
+    "raw" : "复杂",
+    "text" : "复杂",
+    "timesMs" : [
+      16.090417,
+      16.125959,
+      19.727667
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "清楚",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_024_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_024_0.png",
+    "raw" : "清楚",
+    "text" : "清楚",
+    "timesMs" : [
+      15.536541,
+      13.877042,
+      18.209083
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "清楚",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_024_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_024_1.png",
+    "raw" : "清楚",
+    "text" : "清楚",
+    "timesMs" : [
+      13.925708,
+      16.303708,
+      16.036041
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "清楚",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_024_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_024_2.png",
+    "raw" : "1 清楚",
+    "text" : "清楚",
+    "timesMs" : [
+      13.424167,
+      14.386291,
+      13.945792
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "清楚",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_024_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_024_3.png",
+    "raw" : "清楚",
+    "text" : "清楚",
+    "timesMs" : [
+      14.220958,
+      13.532333,
+      16.071083
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "正确",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_025_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_025_0.png",
+    "raw" : "正确",
+    "text" : "正确",
+    "timesMs" : [
+      13.746667,
+      16.049167,
+      13.476667
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "正确",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_025_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_025_1.png",
+    "raw" : "正确",
+    "text" : "正确",
+    "timesMs" : [
+      15.931,
+      15.718,
+      18.900375
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "正确",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_025_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_025_2.png",
+    "raw" : "1 正确",
+    "text" : "正确",
+    "timesMs" : [
+      18.182167,
+      16.014667,
+      17.746917
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "正确",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_025_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_025_3.png",
+    "raw" : "1正确",
+    "text" : "正确",
+    "timesMs" : [
+      14.474458,
+      15.1545,
+      15.556417
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "错误",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_026_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_026_0.png",
+    "raw" : "错误",
+    "text" : "错误",
+    "timesMs" : [
+      13.599708,
+      13.465875,
+      16.031625
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "错误",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_026_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_026_1.png",
+    "raw" : "错误",
+    "text" : "错误",
+    "timesMs" : [
+      17.598584,
+      15.999042,
+      15.694458
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨错误",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_026_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_026_2.png",
+    "raw" : "丨错误",
+    "text" : "错误",
+    "timesMs" : [
+      13.29225,
+      14.833042,
+      12.981458
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "错误",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_026_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_026_3.png",
+    "raw" : "错误",
+    "text" : "错误",
+    "timesMs" : [
+      14.497958,
+      15.321709,
+      14.078208
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "快速",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_027_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_027_0.png",
+    "raw" : "快速",
+    "text" : "快速",
+    "timesMs" : [
+      14.536125,
+      16.47925,
+      19.628708
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "快速",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_027_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_027_1.png",
+    "raw" : "快速",
+    "text" : "快速",
+    "timesMs" : [
+      17.106917,
+      15.940417,
+      14.3985
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "快速",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_027_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_027_2.png",
+    "raw" : "•快速",
+    "text" : "快速",
+    "timesMs" : [
+      16.017125,
+      14.341667,
+      13.082417
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_027_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_027_3.png",
+    "raw" : "1",
+    "text" : "快速",
+    "timesMs" : [
+      16.535875,
+      18.089917,
+      15.110458
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "稳定",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_028_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_028_0.png",
+    "raw" : "1 稳定",
+    "text" : "稳定",
+    "timesMs" : [
+      17.081709,
+      15.212208,
+      14.189875
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "稳定",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_028_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_028_1.png",
+    "raw" : "稳定",
+    "text" : "稳定",
+    "timesMs" : [
+      14.098875,
+      13.269292,
+      12.983291
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "稳定",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_028_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_028_2.png",
+    "raw" : "1 稳定",
+    "text" : "稳定",
+    "timesMs" : [
+      13.629208,
+      14.588167,
+      12.626083
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "稳定",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_028_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_028_3.png",
+    "raw" : "稳定",
+    "text" : "稳定",
+    "timesMs" : [
+      18.718333,
+      21.267333,
+      18.357416
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "翻译",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_029_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_029_0.png",
+    "raw" : "翻译",
+    "text" : "翻译",
+    "timesMs" : [
+      13.777,
+      18.68425,
+      16.054375
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "翻译",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_029_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_029_1.png",
+    "raw" : "翻译",
+    "text" : "翻译",
+    "timesMs" : [
+      14.613834,
+      22.53075,
+      20.452958
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨翻译",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_029_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_029_2.png",
+    "raw" : "丨翻译",
+    "text" : "翻译",
+    "timesMs" : [
+      14.2415,
+      14.974792,
+      13.693709
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "翻译",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_029_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_029_3.png",
+    "raw" : "翻译",
+    "text" : "翻译",
+    "timesMs" : [
+      13.091916,
+      15.98975,
+      15.610125
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "词典",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_030_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_030_0.png",
+    "raw" : "词典",
+    "text" : "词典",
+    "timesMs" : [
+      17.335083,
+      17.965834,
+      15.694292
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "词典",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_030_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_030_1.png",
+    "raw" : "词典",
+    "text" : "词典",
+    "timesMs" : [
+      16.934167,
+      16.628042,
+      16.329208
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "词典",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_030_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_030_2.png",
+    "raw" : "1词典",
+    "text" : "词典",
+    "timesMs" : [
+      14.209292,
+      23.477416,
+      15.2215
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "词典",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_030_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_030_3.png",
+    "raw" : "1词典",
+    "text" : "词典",
+    "timesMs" : [
+      14.835417,
+      14.335833,
+      13.615833
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "模型",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_031_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_031_0.png",
+    "raw" : "模型",
+    "text" : "模型",
+    "timesMs" : [
+      15.981459,
+      14.291291,
+      15.15475
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "模型",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_031_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_031_1.png",
+    "raw" : "模型",
+    "text" : "模型",
+    "timesMs" : [
+      14.645625,
+      13.069792,
+      13.328125
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "模型",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_031_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_031_2.png",
+    "raw" : "1 模型",
+    "text" : "模型",
+    "timesMs" : [
+      13.912917,
+      15.274667,
+      16.205833
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "模型",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_031_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_031_3.png",
+    "raw" : "模型",
+    "text" : "模型",
+    "timesMs" : [
+      17.155959,
+      17.046666,
+      16.778417
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "输入",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_032_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_032_0.png",
+    "raw" : "1输入",
+    "text" : "输入",
+    "timesMs" : [
+      15.621,
+      16.063667,
+      16.333875
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "输入",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_032_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_032_1.png",
+    "raw" : "输入",
+    "text" : "输入",
+    "timesMs" : [
+      16.047167,
+      14.0225,
+      15.091833
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "输入",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_032_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_032_2.png",
+    "raw" : "1输入",
+    "text" : "输入",
+    "timesMs" : [
+      16.197583,
+      18.773042,
+      15.749417
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "输入",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_032_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_032_3.png",
+    "raw" : "1输入",
+    "text" : "输入",
+    "timesMs" : [
+      17.749208,
+      50.509625,
+      15.992042
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "文字",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_033_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_033_0.png",
+    "raw" : "文字",
+    "text" : "文字",
+    "timesMs" : [
+      14.671458,
+      16.080625,
+      12.698583
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "文字",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_033_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_033_1.png",
+    "raw" : "文字",
+    "text" : "文字",
+    "timesMs" : [
+      18.84375,
+      14.942875,
+      16.552958
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "文字",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_033_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_033_2.png",
+    "raw" : "1 文字",
+    "text" : "文字",
+    "timesMs" : [
+      14.383042,
+      13.69575,
+      13.196708
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "文字",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_033_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_033_3.png",
+    "raw" : "文字",
+    "text" : "文字",
+    "timesMs" : [
+      15.834667,
+      17.31125,
+      16.486875
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "语言",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_034_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_034_0.png",
+    "raw" : "1语言",
+    "text" : "语言",
+    "timesMs" : [
+      16.528,
+      16.2745,
+      16.445459
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "语言",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_034_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_034_1.png",
+    "raw" : "语言",
+    "text" : "语言",
+    "timesMs" : [
+      15.499791,
+      12.99725,
+      15.507125
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "语言",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_034_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_034_2.png",
+    "raw" : "语言",
+    "text" : "语言",
+    "timesMs" : [
+      13.3305,
+      13.811042,
+      13.177375
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "语言",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_034_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_034_3.png",
+    "raw" : "' 语言",
+    "text" : "语言",
+    "timesMs" : [
+      15.140625,
+      15.526958,
+      15.2645
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "英语",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_035_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_035_0.png",
+    "raw" : "英语",
+    "text" : "英语",
+    "timesMs" : [
+      13.2875,
+      12.725333,
+      13.483625
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "英语",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_035_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_035_1.png",
+    "raw" : "英语",
+    "text" : "英语",
+    "timesMs" : [
+      13.76675,
+      13.948041,
+      16.416791
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "英语",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_035_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_035_2.png",
+    "raw" : "1英语",
+    "text" : "英语",
+    "timesMs" : [
+      16.196166,
+      14.355709,
+      18.829875
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "英语",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_035_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_035_3.png",
+    "raw" : "英语",
+    "text" : "英语",
+    "timesMs" : [
+      16.537084,
+      15.943541,
+      14.322541
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "中文",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_036_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_036_0.png",
+    "raw" : "中文",
+    "text" : "中文",
+    "timesMs" : [
+      14.340875,
+      28.082875,
+      18.158292
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "中文",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_036_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_036_1.png",
+    "raw" : "中文",
+    "text" : "中文",
+    "timesMs" : [
+      13.415459,
+      15.066291,
+      14.230667
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "中文",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_036_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_036_2.png",
+    "raw" : "1 中文",
+    "text" : "中文",
+    "timesMs" : [
+      16.715042,
+      16.22725,
+      17.303
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "中文",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_036_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_036_3.png",
+    "raw" : "1中文",
+    "text" : "中文",
+    "timesMs" : [
+      16.361708,
+      17.095167,
+      15.524458
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "苹果",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_037_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_037_0.png",
+    "raw" : "1 苹果",
+    "text" : "苹果",
+    "timesMs" : [
+      15.554917,
+      16.572167,
+      16.558291
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "苹果",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_037_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_037_1.png",
+    "raw" : "苹果",
+    "text" : "苹果",
+    "timesMs" : [
+      14.666084,
+      16.816083,
+      13.64425
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "苹果",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_037_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_037_2.png",
+    "raw" : "！ 苹果",
+    "text" : "苹果",
+    "timesMs" : [
+      12.773584,
+      13.836292,
+      14.007459
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "苹果",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_037_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_037_3.png",
+    "raw" : "1 苹果",
+    "text" : "苹果",
+    "timesMs" : [
+      12.521167,
+      13.271333,
+      16.17925
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "电脑",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_038_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_038_0.png",
+    "raw" : "电脑",
+    "text" : "电脑",
+    "timesMs" : [
+      12.406958,
+      12.935625,
+      13.986834
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "电脑",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_038_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_038_1.png",
+    "raw" : "电脑",
+    "text" : "电脑",
+    "timesMs" : [
+      15.156167,
+      16.461875,
+      16.63
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "电脑",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_038_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_038_2.png",
+    "raw" : "1电脑",
+    "text" : "电脑",
+    "timesMs" : [
+      16.346875,
+      16.972791,
+      16.541625
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "电脑",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_038_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_038_3.png",
+    "raw" : "1电脑",
+    "text" : "电脑",
+    "timesMs" : [
+      15.900541,
+      17.004083,
+      16.755584
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "软件",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_039_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_039_0.png",
+    "raw" : "软件",
+    "text" : "软件",
+    "timesMs" : [
+      16.307125,
+      16.818667,
+      16.334542
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "软件",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_039_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_039_1.png",
+    "raw" : "软件",
+    "text" : "软件",
+    "timesMs" : [
+      16.907375,
+      16.424834,
+      17.2395
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨软件",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_039_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_039_2.png",
+    "raw" : "丨软件",
+    "text" : "软件",
+    "timesMs" : [
+      15.684375,
+      16.7315,
+      19.503042
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "软件",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_039_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_039_3.png",
+    "raw" : "1软件",
+    "text" : "软件",
+    "timesMs" : [
+      16.943875,
+      14.913833,
+      15.051583
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "系统",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_040_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_040_0.png",
+    "raw" : "系统",
+    "text" : "系统",
+    "timesMs" : [
+      16.98025,
+      16.345792,
+      16.798333
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "系统",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_040_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_040_1.png",
+    "raw" : "系统",
+    "text" : "系统",
+    "timesMs" : [
+      16.024791,
+      16.126791,
+      16.554709
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨系统",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_040_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_040_2.png",
+    "raw" : "丨系统",
+    "text" : "系统",
+    "timesMs" : [
+      15.50575,
+      13.285959,
+      15.598083
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_040_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_040_3.png",
+    "raw" : "1",
+    "text" : "系统",
+    "timesMs" : [
+      16.793708,
+      15.586708,
+      14.340542
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "网络",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_041_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_041_0.png",
+    "raw" : "网络",
+    "text" : "网络",
+    "timesMs" : [
+      12.877125,
+      14.122666,
+      13.898416
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "网络",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_041_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_041_1.png",
+    "raw" : "网络",
+    "text" : "网络",
+    "timesMs" : [
+      17.015167,
+      16.752833,
+      16.509792
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "网络",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_041_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_041_2.png",
+    "raw" : "1网络",
+    "text" : "网络",
+    "timesMs" : [
+      16.493125,
+      16.263916,
+      15.527333
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "网络",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_041_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_041_3.png",
+    "raw" : "网络",
+    "text" : "网络",
+    "timesMs" : [
+      15.557583,
+      14.236833,
+      14.654541
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "数据",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_042_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_042_0.png",
+    "raw" : "数据",
+    "text" : "数据",
+    "timesMs" : [
+      15.261041,
+      15.333125,
+      15.402917
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "数据",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_042_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_042_1.png",
+    "raw" : "数据",
+    "text" : "数据",
+    "timesMs" : [
+      14.398875,
+      14.646,
+      15.32425
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨数据",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_042_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_042_2.png",
+    "raw" : "丨数据",
+    "text" : "数据",
+    "timesMs" : [
+      17.384625,
+      14.372208,
+      16.275541
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "数据",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_042_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_042_3.png",
+    "raw" : "1数据",
+    "text" : "数据",
+    "timesMs" : [
+      15.577375,
+      16.810458,
+      15.068708
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "文件",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_043_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_043_0.png",
+    "raw" : "文件",
+    "text" : "文件",
+    "timesMs" : [
+      13.64925,
+      14.92475,
+      13.440167
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "文件",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_043_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_043_1.png",
+    "raw" : "文件",
+    "text" : "文件",
+    "timesMs" : [
+      14.594833,
+      14.87475,
+      14.303625
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "文件",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_043_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_043_2.png",
+    "raw" : "1 文件",
+    "text" : "文件",
+    "timesMs" : [
+      14.645958,
+      14.875583,
+      13.4605
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "文件",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_043_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_043_3.png",
+    "raw" : "1文件",
+    "text" : "文件",
+    "timesMs" : [
+      17.90075,
+      18.678167,
+      14.605916
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "项目",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_044_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_044_0.png",
+    "raw" : "1 项目",
+    "text" : "项目",
+    "timesMs" : [
+      15.062375,
+      13.16325,
+      13.423375
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "项目",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_044_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_044_1.png",
+    "raw" : "项目",
+    "text" : "项目",
+    "timesMs" : [
+      14.948958,
+      13.562792,
+      14.409792
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "项目",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_044_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_044_2.png",
+    "raw" : "1 项目",
+    "text" : "项目",
+    "timesMs" : [
+      13.130333,
+      12.786834,
+      13.414833
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "项目",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_044_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_044_3.png",
+    "raw" : "项目",
+    "text" : "项目",
+    "timesMs" : [
+      14.338041,
+      14.559958,
+      15.094291
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "产品",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_045_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_045_0.png",
+    "raw" : "•产品",
+    "text" : "产品",
+    "timesMs" : [
+      15.398792,
+      18.212125,
+      16.074292
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "产品",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_045_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_045_1.png",
+    "raw" : "产品",
+    "text" : "产品",
+    "timesMs" : [
+      18.397333,
+      14.807583,
+      18.107208
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "产品",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_045_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_045_2.png",
+    "raw" : "1 产品",
+    "text" : "产品",
+    "timesMs" : [
+      16.233208,
+      24.284292,
+      15.354125
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "产",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_045_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_045_3.png",
+    "raw" : "产",
+    "text" : "产品",
+    "timesMs" : [
+      17.210667,
+      22.160708,
+      18.647542
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "设计",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_046_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_046_0.png",
+    "raw" : "设计",
+    "text" : "设计",
+    "timesMs" : [
+      13.743208,
+      16.845292,
+      15.08275
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "设计",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_046_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_046_1.png",
+    "raw" : "设计",
+    "text" : "设计",
+    "timesMs" : [
+      14.050084,
+      13.727708,
+      13.636917
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "设计",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_046_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_046_2.png",
+    "raw" : "1设计",
+    "text" : "设计",
+    "timesMs" : [
+      14.027792,
+      14.525959,
+      14.818208
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "设计",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_046_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_046_3.png",
+    "raw" : "1设计",
+    "text" : "设计",
+    "timesMs" : [
+      12.978083,
+      13.685625,
+      13.7305
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "开发",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_047_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_047_0.png",
+    "raw" : "开发",
+    "text" : "开发",
+    "timesMs" : [
+      14.564209,
+      12.878208,
+      15.745
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "开发",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_047_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_047_1.png",
+    "raw" : "开发",
+    "text" : "开发",
+    "timesMs" : [
+      16.631167,
+      15.674791,
+      13.708292
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "开发",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_047_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_047_2.png",
+    "raw" : "1 开发",
+    "text" : "开发",
+    "timesMs" : [
+      15.611416,
+      13.81975,
+      14.114708
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "开发",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_047_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_047_3.png",
+    "raw" : "开发",
+    "text" : "开发",
+    "timesMs" : [
+      13.647917,
+      17.513667,
+      14.017375
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "测试",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_048_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_048_0.png",
+    "raw" : "测试",
+    "text" : "测试",
+    "timesMs" : [
+      16.823708,
+      16.555458,
+      18.100791
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "测试",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_048_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_048_1.png",
+    "raw" : "测试",
+    "text" : "测试",
+    "timesMs" : [
+      15.869958,
+      14.056,
+      15.726042
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "测试",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_048_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_048_2.png",
+    "raw" : "！测试",
+    "text" : "测试",
+    "timesMs" : [
+      16.767209,
+      18.591791,
+      17.37325
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "测试",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_048_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_048_3.png",
+    "raw" : "测试",
+    "text" : "测试",
+    "timesMs" : [
+      26.009708,
+      16.092917,
+      15.841208
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "用户",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_049_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_049_0.png",
+    "raw" : "用户",
+    "text" : "用户",
+    "timesMs" : [
+      21.180875,
+      17.297792,
+      15.192
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "用户",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_049_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_049_1.png",
+    "raw" : "用户",
+    "text" : "用户",
+    "timesMs" : [
+      16.311459,
+      14.433416,
+      18.338125
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "用户",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_049_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_049_2.png",
+    "raw" : "1 用户",
+    "text" : "用户",
+    "timesMs" : [
+      13.85975,
+      19.119792,
+      15.1595
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_049_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_049_3.png",
+    "raw" : "1",
+    "text" : "用户",
+    "timesMs" : [
+      16.192709,
+      19.703166,
+      16.049209
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "功能",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_050_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_050_0.png",
+    "raw" : "功能",
+    "text" : "功能",
+    "timesMs" : [
+      13.821541,
+      13.490209,
+      18.758542
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "功能",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_050_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_050_1.png",
+    "raw" : "功能",
+    "text" : "功能",
+    "timesMs" : [
+      30.035625,
+      15.977584,
+      16.169333
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "功能",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_050_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_050_2.png",
+    "raw" : "1 功能",
+    "text" : "功能",
+    "timesMs" : [
+      15.457292,
+      19.589292,
+      18.59875
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "功能",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_050_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_050_3.png",
+    "raw" : "1功能",
+    "text" : "功能",
+    "timesMs" : [
+      14.339167,
+      19.825833,
+      14.250042
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "设置",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_051_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_051_0.png",
+    "raw" : "设置",
+    "text" : "设置",
+    "timesMs" : [
+      26.60925,
+      16.617916,
+      16.912541
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "设置",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_051_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_051_1.png",
+    "raw" : "设置",
+    "text" : "设置",
+    "timesMs" : [
+      16.423792,
+      17.661792,
+      20.230792
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "设置",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_051_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_051_2.png",
+    "raw" : "1 设置",
+    "text" : "设置",
+    "timesMs" : [
+      15.344667,
+      13.606958,
+      13.40725
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "设置",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_051_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_051_3.png",
+    "raw" : "1设置",
+    "text" : "设置",
+    "timesMs" : [
+      15.167834,
+      14.438834,
+      15.853542
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "显示",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_052_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_052_0.png",
+    "raw" : "显示",
+    "text" : "显示",
+    "timesMs" : [
+      14.696834,
+      13.582958,
+      14.0405
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "显示",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_052_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_052_1.png",
+    "raw" : "显示",
+    "text" : "显示",
+    "timesMs" : [
+      23.645708,
+      21.60575,
+      16.350167
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "显示",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_052_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_052_2.png",
+    "raw" : "1 显示",
+    "text" : "显示",
+    "timesMs" : [
+      16.178542,
+      16.473,
+      17.201875
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "显示",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_052_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_052_3.png",
+    "raw" : "显示",
+    "text" : "显示",
+    "timesMs" : [
+      20.812625,
+      20.143458,
+      17.454334
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "位置",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_053_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_053_0.png",
+    "raw" : "位置",
+    "text" : "位置",
+    "timesMs" : [
+      22.723458,
+      15.843166,
+      14.653083
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "位置",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_053_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_053_1.png",
+    "raw" : "位置",
+    "text" : "位置",
+    "timesMs" : [
+      14.407041,
+      13.373792,
+      13.621917
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "位置",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_053_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_053_2.png",
+    "raw" : "1 位置",
+    "text" : "位置",
+    "timesMs" : [
+      15.688625,
+      15.238958,
+      12.971041
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "位置",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_053_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_053_3.png",
+    "raw" : "1位置",
+    "text" : "位置",
+    "timesMs" : [
+      15.485083,
+      14.970416,
+      15.856792
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "延迟",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_054_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_054_0.png",
+    "raw" : "延迟",
+    "text" : "延迟",
+    "timesMs" : [
+      14.583667,
+      13.080792,
+      13.964208
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "延迟",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_054_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_054_1.png",
+    "raw" : "延迟",
+    "text" : "延迟",
+    "timesMs" : [
+      15.237292,
+      13.939958,
+      16.188625
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "延迟",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_054_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_054_2.png",
+    "raw" : "1 延迟",
+    "text" : "延迟",
+    "timesMs" : [
+      16.633,
+      16.123167,
+      16.542875
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "延迟",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_054_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_054_3.png",
+    "raw" : "延迟",
+    "text" : "延迟",
+    "timesMs" : [
+      17.196417,
+      16.032208,
+      17.723542
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "背景",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_055_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_055_0.png",
+    "raw" : "背景",
+    "text" : "背景",
+    "timesMs" : [
+      15.736041,
+      17.340959,
+      15.948459
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "背景",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_055_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_055_1.png",
+    "raw" : "背景",
+    "text" : "背景",
+    "timesMs" : [
+      16.121375,
+      16.402334,
+      17.339292
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "背景",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_055_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_055_2.png",
+    "raw" : "1 背景",
+    "text" : "背景",
+    "timesMs" : [
+      21.687916,
+      17.516334,
+      16.590083
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "背景",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_055_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_055_3.png",
+    "raw" : "1 背景",
+    "text" : "背景",
+    "timesMs" : [
+      16.02675,
+      17.552333,
+      16.178834
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "透明",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_056_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_056_0.png",
+    "raw" : "透明",
+    "text" : "透明",
+    "timesMs" : [
+      15.647666,
+      16.9465,
+      16.631125
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "透明",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_056_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_056_1.png",
+    "raw" : "透明",
+    "text" : "透明",
+    "timesMs" : [
+      14.167167,
+      18.96075,
+      14.575708
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "透明",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_056_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_056_2.png",
+    "raw" : "1透明",
+    "text" : "透明",
+    "timesMs" : [
+      18.652,
+      16.180541,
+      17.006458
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "透明",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_056_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_056_3.png",
+    "raw" : "1透明",
+    "text" : "透明",
+    "timesMs" : [
+      16.994875,
+      17.229416,
+      16.47
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "候选",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_057_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_057_0.png",
+    "raw" : "候选",
+    "text" : "候选",
+    "timesMs" : [
+      15.669875,
+      17.003,
+      16.759833
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "候选",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_057_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_057_1.png",
+    "raw" : "候选",
+    "text" : "候选",
+    "timesMs" : [
+      15.746333,
+      17.1275,
+      16.489959
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "候选",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_057_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_057_2.png",
+    "raw" : "！候选",
+    "text" : "候选",
+    "timesMs" : [
+      14.99475,
+      16.872166,
+      17.221458
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_057_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_057_3.png",
+    "raw" : "1",
+    "text" : "候选",
+    "timesMs" : [
+      15.939583,
+      17.683416,
+      26.731167
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "单词",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_058_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_058_0.png",
+    "raw" : "单词",
+    "text" : "单词",
+    "timesMs" : [
+      14.443916,
+      13.9265,
+      13.989542
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "单词",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_058_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_058_1.png",
+    "raw" : "单词",
+    "text" : "单词",
+    "timesMs" : [
+      15.786792,
+      13.585625,
+      13.369916
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "单词",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_058_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_058_2.png",
+    "raw" : "1 单词",
+    "text" : "单词",
+    "timesMs" : [
+      14.566875,
+      13.546583,
+      15.269
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "单词",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_058_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_058_3.png",
+    "raw" : "1单词",
+    "text" : "单词",
+    "timesMs" : [
+      15.4925,
+      13.841458,
+      13.942791
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "旬子",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_059_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_059_0.png",
+    "raw" : "旬子",
+    "text" : "句子",
+    "timesMs" : [
+      13.900542,
+      13.997042,
+      18.604917
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "句子",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_059_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_059_1.png",
+    "raw" : "句子",
+    "text" : "句子",
+    "timesMs" : [
+      17.2975,
+      16.79375,
+      16.716791
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "句子",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_059_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_059_2.png",
+    "raw" : "1 句子",
+    "text" : "句子",
+    "timesMs" : [
+      13.858791,
+      18.776208,
+      18.156083
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "句子",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_059_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_059_3.png",
+    "raw" : "1句子",
+    "text" : "句子",
+    "timesMs" : [
+      16.557,
+      16.346208,
+      15.532584
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "记忆",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_060_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_060_0.png",
+    "raw" : "记忆",
+    "text" : "记忆",
+    "timesMs" : [
+      15.689417,
+      16.715334,
+      15.197084
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "记忆",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_060_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_060_1.png",
+    "raw" : "记忆",
+    "text" : "记忆",
+    "timesMs" : [
+      47.826416,
+      16.001791,
+      13.759
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "记忆",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_060_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_060_2.png",
+    "raw" : "1记忆",
+    "text" : "记忆",
+    "timesMs" : [
+      14.053625,
+      14.008791,
+      14.031542
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "记忆",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_060_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_060_3.png",
+    "raw" : "'记忆",
+    "text" : "记忆",
+    "timesMs" : [
+      14.139,
+      13.962083,
+      16.13875
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "目标",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_061_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_061_0.png",
+    "raw" : "目标",
+    "text" : "目标",
+    "timesMs" : [
+      15.583542,
+      13.348375,
+      17.571916
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "目标",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_061_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_061_1.png",
+    "raw" : "目标",
+    "text" : "目标",
+    "timesMs" : [
+      14.241917,
+      16.871708,
+      18.0905
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "目标",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_061_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_061_2.png",
+    "raw" : "1 目标",
+    "text" : "目标",
+    "timesMs" : [
+      20.253542,
+      19.36225,
+      13.853167
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_061_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_061_3.png",
+    "raw" : "1",
+    "text" : "目标",
+    "timesMs" : [
+      22.263625,
+      16.083958,
+      14.66025
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "计划",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_062_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_062_0.png",
+    "raw" : "计划",
+    "text" : "计划",
+    "timesMs" : [
+      15.638667,
+      16.667417,
+      16.852416
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "计划",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_062_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_062_1.png",
+    "raw" : "计划",
+    "text" : "计划",
+    "timesMs" : [
+      14.16825,
+      15.225416,
+      16.634291
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "计划",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_062_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_062_2.png",
+    "raw" : "1 计划",
+    "text" : "计划",
+    "timesMs" : [
+      13.634167,
+      20.167708,
+      14.618208
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "计划",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_062_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_062_3.png",
+    "raw" : "计划",
+    "text" : "计划",
+    "timesMs" : [
+      15.420042,
+      19.426875,
+      16.434791
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "过程",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_063_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_063_0.png",
+    "raw" : "过程",
+    "text" : "过程",
+    "timesMs" : [
+      15.63325,
+      15.346625,
+      16.161208
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "过程",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_063_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_063_1.png",
+    "raw" : "过程",
+    "text" : "过程",
+    "timesMs" : [
+      13.580875,
+      16.75875,
+      19.066458
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "过程",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_063_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_063_2.png",
+    "raw" : "1 过程",
+    "text" : "过程",
+    "timesMs" : [
+      15.098958,
+      27.95075,
+      17.112916
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "过程",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_063_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_063_3.png",
+    "raw" : "'过程",
+    "text" : "过程",
+    "timesMs" : [
+      19.912166,
+      18.352,
+      17.31075
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "方式",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_064_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_064_0.png",
+    "raw" : "方式",
+    "text" : "方式",
+    "timesMs" : [
+      15.256125,
+      18.648583,
+      14.773167
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "方式",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_064_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_064_1.png",
+    "raw" : "方式",
+    "text" : "方式",
+    "timesMs" : [
+      16.092875,
+      16.571541,
+      16.850584
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "方式",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_064_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_064_2.png",
+    "raw" : "1 方式",
+    "text" : "方式",
+    "timesMs" : [
+      15.726167,
+      17.793584,
+      15.218
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "方式",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_064_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_064_3.png",
+    "raw" : "1方式",
+    "text" : "方式",
+    "timesMs" : [
+      15.785458,
+      19.307875,
+      14.260542
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "内容",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_065_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_065_0.png",
+    "raw" : "内容",
+    "text" : "内容",
+    "timesMs" : [
+      17.885791,
+      14.824667,
+      18.4155
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "内容",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_065_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_065_1.png",
+    "raw" : "内容",
+    "text" : "内容",
+    "timesMs" : [
+      14.75375,
+      18.485666,
+      14.384958
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "内容",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_065_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_065_2.png",
+    "raw" : "1 内容",
+    "text" : "内容",
+    "timesMs" : [
+      18.981875,
+      13.5575,
+      18.905833
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "内容",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_065_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_065_3.png",
+    "raw" : "内容",
+    "text" : "内容",
+    "timesMs" : [
+      14.786208,
+      18.686375,
+      14.390375
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "信息",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_066_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_066_0.png",
+    "raw" : "信息",
+    "text" : "信息",
+    "timesMs" : [
+      19.219167,
+      13.346333,
+      16.634584
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "信息",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_066_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_066_1.png",
+    "raw" : "信息",
+    "text" : "信息",
+    "timesMs" : [
+      17.031666,
+      16.650791,
+      18.441458
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "信息",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_066_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_066_2.png",
+    "raw" : "1 信息",
+    "text" : "信息",
+    "timesMs" : [
+      16.999459,
+      16.127375,
+      16.616
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "信息",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_066_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_066_3.png",
+    "raw" : "信息",
+    "text" : "信息",
+    "timesMs" : [
+      14.512959,
+      18.268042,
+      15.523833
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "技术",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_067_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_067_0.png",
+    "raw" : "技术",
+    "text" : "技术",
+    "timesMs" : [
+      16.559709,
+      17.80325,
+      16.454917
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "技术",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_067_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_067_1.png",
+    "raw" : "技术",
+    "text" : "技术",
+    "timesMs" : [
+      16.26225,
+      17.084541,
+      15.685583
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "技术",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_067_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_067_2.png",
+    "raw" : "1 技术",
+    "text" : "技术",
+    "timesMs" : [
+      14.6315,
+      18.577416,
+      14.864167
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "技术",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_067_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_067_3.png",
+    "raw" : "1技术",
+    "text" : "技术",
+    "timesMs" : [
+      18.75,
+      16.773542,
+      16.055041
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "应用",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_068_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_068_0.png",
+    "raw" : "应用",
+    "text" : "应用",
+    "timesMs" : [
+      13.900458,
+      18.907875,
+      16.00775
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "应用",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_068_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_068_1.png",
+    "raw" : "应用",
+    "text" : "应用",
+    "timesMs" : [
+      15.740959,
+      17.7615,
+      16.746541
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "应用",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_068_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_068_2.png",
+    "raw" : "1 应用",
+    "text" : "应用",
+    "timesMs" : [
+      16.126125,
+      15.228125,
+      18.080458
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "应用",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_068_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_068_3.png",
+    "raw" : "应用",
+    "text" : "应用",
+    "timesMs" : [
+      14.693834,
+      22.325083,
+      14.052709
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "平台",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_069_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_069_0.png",
+    "raw" : "平台",
+    "text" : "平台",
+    "timesMs" : [
+      14.074334,
+      17.356334,
+      16.670875
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "平台",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_069_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_069_1.png",
+    "raw" : "平台",
+    "text" : "平台",
+    "timesMs" : [
+      17.803334,
+      15.135166,
+      16.683208
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "平台",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_069_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_069_2.png",
+    "raw" : "1 平台",
+    "text" : "平台",
+    "timesMs" : [
+      16.603334,
+      14.0835,
+      18.871292
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "平台",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_069_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_069_3.png",
+    "raw" : "1平台",
+    "text" : "平台",
+    "timesMs" : [
+      14.882584,
+      18.309458,
+      17.121166
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "本地",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_070_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_070_0.png",
+    "raw" : "本地",
+    "text" : "本地",
+    "timesMs" : [
+      13.713625,
+      16.428458,
+      33.429875
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "本地",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_070_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_070_1.png",
+    "raw" : "本地",
+    "text" : "本地",
+    "timesMs" : [
+      14.697041,
+      18.89025,
+      18.040292
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "本地",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_070_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_070_2.png",
+    "raw" : "1 本地",
+    "text" : "本地",
+    "timesMs" : [
+      14.510167,
+      18.897667,
+      16.426083
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "本地",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_070_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_070_3.png",
+    "raw" : "1本地",
+    "text" : "本地",
+    "timesMs" : [
+      13.80975,
+      19.677208,
+      13.936291
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "离线",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_071_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_071_0.png",
+    "raw" : "离线",
+    "text" : "离线",
+    "timesMs" : [
+      17.816208,
+      13.246667,
+      17.460375
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "离线",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_071_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_071_1.png",
+    "raw" : "离线",
+    "text" : "离线",
+    "timesMs" : [
+      18.921167,
+      16.820334,
+      16.4215
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "离线",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_071_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_071_2.png",
+    "raw" : "1 离线",
+    "text" : "离线",
+    "timesMs" : [
+      14.271791,
+      18.179709,
+      16.776042
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "离线",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_071_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_071_3.png",
+    "raw" : "离线",
+    "text" : "离线",
+    "timesMs" : [
+      16.275916,
+      15.292167,
+      18.006625
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "在线",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_072_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_072_0.png",
+    "raw" : "在线",
+    "text" : "在线",
+    "timesMs" : [
+      13.79575,
+      20.040667,
+      15.5225
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "在线",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_072_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_072_1.png",
+    "raw" : "在线",
+    "text" : "在线",
+    "timesMs" : [
+      17.175292,
+      16.4355,
+      22.124208
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "在线",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_072_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_072_2.png",
+    "raw" : "1 在线",
+    "text" : "在线",
+    "timesMs" : [
+      13.407083,
+      14.47225,
+      13.680917
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "在线",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_072_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_072_3.png",
+    "raw" : "在线",
+    "text" : "在线",
+    "timesMs" : [
+      18.867875,
+      16.56025,
+      14.459083
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "接口",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_073_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_073_0.png",
+    "raw" : "接口",
+    "text" : "接口",
+    "timesMs" : [
+      17.958959,
+      17.165292,
+      16.896209
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "接口",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_073_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_073_1.png",
+    "raw" : "接口",
+    "text" : "接口",
+    "timesMs" : [
+      15.313083,
+      16.746542,
+      16.513625
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "接口",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_073_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_073_2.png",
+    "raw" : "1 接口",
+    "text" : "接口",
+    "timesMs" : [
+      14.356125,
+      18.831916,
+      16.952167
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "接口",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_073_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_073_3.png",
+    "raw" : "'接口",
+    "text" : "接口",
+    "timesMs" : [
+      14.07275,
+      18.756208,
+      17.283208
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "下载",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_074_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_074_0.png",
+    "raw" : "下载",
+    "text" : "下载",
+    "timesMs" : [
+      15.899458,
+      16.73875,
+      15.522417
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "下载",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_074_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_074_1.png",
+    "raw" : "下载",
+    "text" : "下载",
+    "timesMs" : [
+      39.701333,
+      14.268334,
+      13.22475
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "下载",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_074_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_074_2.png",
+    "raw" : "1 下载",
+    "text" : "下载",
+    "timesMs" : [
+      12.473,
+      15.796333,
+      12.603208
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "下载",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_074_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_074_3.png",
+    "raw" : "下载",
+    "text" : "下载",
+    "timesMs" : [
+      13.24,
+      13.395375,
+      14.523042
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "安装",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_075_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_075_0.png",
+    "raw" : "安装",
+    "text" : "安装",
+    "timesMs" : [
+      13.35375,
+      15.401208,
+      13.929875
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "安装",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_075_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_075_1.png",
+    "raw" : "安装",
+    "text" : "安装",
+    "timesMs" : [
+      14.305208,
+      13.043166,
+      13.60825
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "安装",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_075_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_075_2.png",
+    "raw" : "1 安装",
+    "text" : "安装",
+    "timesMs" : [
+      13.758833,
+      15.473625,
+      16.25175
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "安装",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_075_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_075_3.png",
+    "raw" : "安装",
+    "text" : "安装",
+    "timesMs" : [
+      18.923458,
+      14.553,
+      15.779583
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "更新",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_076_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_076_0.png",
+    "raw" : "更新",
+    "text" : "更新",
+    "timesMs" : [
+      19.095209,
+      14.544791,
+      15.308959
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "更新",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_076_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_076_1.png",
+    "raw" : "更新",
+    "text" : "更新",
+    "timesMs" : [
+      14.672084,
+      29.250291,
+      17.718833
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "更新",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_076_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_076_2.png",
+    "raw" : "1 更新",
+    "text" : "更新",
+    "timesMs" : [
+      13.919,
+      15.231792,
+      14.383125
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "更新",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_076_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_076_3.png",
+    "raw" : "'更新",
+    "text" : "更新",
+    "timesMs" : [
+      14.28525,
+      13.414666,
+      16.270584
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "版本",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_077_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_077_0.png",
+    "raw" : "版本",
+    "text" : "版本",
+    "timesMs" : [
+      15.687333,
+      17.906166,
+      16.734
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "版本",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_077_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_077_1.png",
+    "raw" : "版本",
+    "text" : "版本",
+    "timesMs" : [
+      18.886209,
+      15.397083,
+      17.312834
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "版本",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_077_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_077_2.png",
+    "raw" : "！版本",
+    "text" : "版本",
+    "timesMs" : [
+      14.869292,
+      15.619375,
+      16.443209
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "版本",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_077_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_077_3.png",
+    "raw" : "版本",
+    "text" : "版本",
+    "timesMs" : [
+      18.383166,
+      17.677375,
+      16.63325
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "权限",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_078_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_078_0.png",
+    "raw" : "权限",
+    "text" : "权限",
+    "timesMs" : [
+      15.705833,
+      18.764666,
+      16.849833
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "权限",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_078_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_078_1.png",
+    "raw" : "权限",
+    "text" : "权限",
+    "timesMs" : [
+      14.257917,
+      14.240167,
+      15.862375
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "权限",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_078_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_078_2.png",
+    "raw" : "1 权限",
+    "text" : "权限",
+    "timesMs" : [
+      18.52775,
+      13.914334,
+      19.305208
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "权限",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_078_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_078_3.png",
+    "raw" : "权限",
+    "text" : "权限",
+    "timesMs" : [
+      14.358792,
+      15.981333,
+      14.455833
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "隐私",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_079_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_079_0.png",
+    "raw" : "隐私",
+    "text" : "隐私",
+    "timesMs" : [
+      13.610459,
+      13.766458,
+      14.130208
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "隐私",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_079_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_079_1.png",
+    "raw" : "隐私",
+    "text" : "隐私",
+    "timesMs" : [
+      13.564791,
+      13.725083,
+      31.7585
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "隐私",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_079_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_079_2.png",
+    "raw" : "1 隐私",
+    "text" : "隐私",
+    "timesMs" : [
+      14.753083,
+      14.624417,
+      16.710625
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "隐私",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_079_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_079_3.png",
+    "raw" : "隐私",
+    "text" : "隐私",
+    "timesMs" : [
+      15.041041,
+      16.52175,
+      13.612084
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "安全",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_080_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_080_0.png",
+    "raw" : "安全",
+    "text" : "安全",
+    "timesMs" : [
+      14.34925,
+      13.492542,
+      13.823584
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "安全",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_080_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_080_1.png",
+    "raw" : "安全",
+    "text" : "安全",
+    "timesMs" : [
+      15.810667,
+      16.445541,
+      16.730291
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "安全",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_080_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_080_2.png",
+    "raw" : "1 安全",
+    "text" : "安全",
+    "timesMs" : [
+      15.426333,
+      14.464917,
+      21.727625
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "安全",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_080_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_080_3.png",
+    "raw" : "安全",
+    "text" : "安全",
+    "timesMs" : [
+      16.555709,
+      19.675958,
+      14.72175
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "速度",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_081_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_081_0.png",
+    "raw" : "速度",
+    "text" : "速度",
+    "timesMs" : [
+      14.500791,
+      16.852417,
+      17.33175
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "速度",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_081_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_081_1.png",
+    "raw" : "速度",
+    "text" : "速度",
+    "timesMs" : [
+      14.680333,
+      17.745625,
+      16.921209
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "速度",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_081_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_081_2.png",
+    "raw" : "1 速度",
+    "text" : "速度",
+    "timesMs" : [
+      17.436125,
+      14.757208,
+      18.0035
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "速度",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_081_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_081_3.png",
+    "raw" : "1速度",
+    "text" : "速度",
+    "timesMs" : [
+      15.464459,
+      13.249334,
+      21.544792
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "质量",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_082_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_082_0.png",
+    "raw" : "质量",
+    "text" : "质量",
+    "timesMs" : [
+      13.262416,
+      15.582042,
+      19.795167
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "质量",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_082_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_082_1.png",
+    "raw" : "质量",
+    "text" : "质量",
+    "timesMs" : [
+      15.578666,
+      15.970458,
+      16.008833
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "质量",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_082_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_082_2.png",
+    "raw" : "1 质量",
+    "text" : "质量",
+    "timesMs" : [
+      18.021333,
+      16.358583,
+      17.253833
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "质量",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_082_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_082_3.png",
+    "raw" : "质量",
+    "text" : "质量",
+    "timesMs" : [
+      26.710584,
+      15.007667,
+      14.896292
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "自然",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_083_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_083_0.png",
+    "raw" : "自然",
+    "text" : "自然",
+    "timesMs" : [
+      16.675583,
+      16.380458,
+      18.774041
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "自然",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_083_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_083_1.png",
+    "raw" : "自然",
+    "text" : "自然",
+    "timesMs" : [
+      16.503417,
+      16.712458,
+      16.314584
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "自然",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_083_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_083_2.png",
+    "raw" : "1 自然",
+    "text" : "自然",
+    "timesMs" : [
+      16.8175,
+      16.430375,
+      16.830541
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "自然",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_083_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_083_3.png",
+    "raw" : "1自然",
+    "text" : "自然",
+    "timesMs" : [
+      15.929459,
+      17.343375,
+      16.190833
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "准确",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_084_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_084_0.png",
+    "raw" : "准确",
+    "text" : "准确",
+    "timesMs" : [
+      16.54525,
+      16.118625,
+      15.772375
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "准确",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_084_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_084_1.png",
+    "raw" : "准确",
+    "text" : "准确",
+    "timesMs" : [
+      15.215083,
+      19.401792,
+      16.208875
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "准确",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_084_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_084_2.png",
+    "raw" : "1 准确",
+    "text" : "准确",
+    "timesMs" : [
+      17.080417,
+      20.684084,
+      19.732166
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "准确",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_084_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_084_3.png",
+    "raw" : "1准确",
+    "text" : "准确",
+    "timesMs" : [
+      14.623667,
+      16.629208,
+      16.503375
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "风格",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_085_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_085_0.png",
+    "raw" : "风格",
+    "text" : "风格",
+    "timesMs" : [
+      16.306375,
+      16.916708,
+      16.458667
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "风格",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_085_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_085_1.png",
+    "raw" : "风格",
+    "text" : "风格",
+    "timesMs" : [
+      15.787459,
+      17.34475,
+      16.807584
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "风格",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_085_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_085_2.png",
+    "raw" : "1 风格",
+    "text" : "风格",
+    "timesMs" : [
+      15.760417,
+      16.662125,
+      16.512708
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "凤格",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_085_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_085_3.png",
+    "raw" : "凤格",
+    "text" : "风格",
+    "timesMs" : [
+      16.72025,
+      17.261042,
+      15.909417
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "状态",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_086_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_086_0.png",
+    "raw" : "状态",
+    "text" : "状态",
+    "timesMs" : [
+      16.732458,
+      18.200792,
+      31.309084
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "状态",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_086_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_086_1.png",
+    "raw" : "状态",
+    "text" : "状态",
+    "timesMs" : [
+      16.025875,
+      15.809,
+      15.853333
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "状态",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_086_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_086_2.png",
+    "raw" : "！状态",
+    "text" : "状态",
+    "timesMs" : [
+      14.794625,
+      16.76675,
+      16.34275
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "状态",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_086_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_086_3.png",
+    "raw" : "1状态",
+    "text" : "状态",
+    "timesMs" : [
+      15.831458,
+      17.245916,
+      16.721458
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "能力",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_087_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_087_0.png",
+    "raw" : "能力",
+    "text" : "能力",
+    "timesMs" : [
+      15.905,
+      15.6155,
+      14.281209
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "能力",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_087_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_087_1.png",
+    "raw" : "能力",
+    "text" : "能力",
+    "timesMs" : [
+      16.802583,
+      16.731917,
+      16.355875
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "能力",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_087_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_087_2.png",
+    "raw" : "1能力",
+    "text" : "能力",
+    "timesMs" : [
+      15.124333,
+      15.679292,
+      14.291791
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "能力",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_087_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_087_3.png",
+    "raw" : "1能力",
+    "text" : "能力",
+    "timesMs" : [
+      14.71675,
+      14.196208,
+      14.893584
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "经验",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_088_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_088_0.png",
+    "raw" : "经验",
+    "text" : "经验",
+    "timesMs" : [
+      15.036333,
+      14.894916,
+      21.063666
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "经验",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_088_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_088_1.png",
+    "raw" : "经验",
+    "text" : "经验",
+    "timesMs" : [
+      15.906875,
+      16.330625,
+      17.215167
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨经验",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_088_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_088_2.png",
+    "raw" : "丨经验",
+    "text" : "经验",
+    "timesMs" : [
+      16.870875,
+      16.056833,
+      42.958
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "经验",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_088_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_088_3.png",
+    "raw" : "经验",
+    "text" : "经验",
+    "timesMs" : [
+      15.82275,
+      16.361209,
+      16.032917
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "建议",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_089_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_089_0.png",
+    "raw" : "建议",
+    "text" : "建议",
+    "timesMs" : [
+      15.37925,
+      13.6955,
+      13.512167
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "建议",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_089_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_089_1.png",
+    "raw" : "建议",
+    "text" : "建议",
+    "timesMs" : [
+      13.321958,
+      17.814958,
+      14.976
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨建议",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_089_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_089_2.png",
+    "raw" : "丨建议",
+    "text" : "建议",
+    "timesMs" : [
+      16.104042,
+      18.320292,
+      14.629125
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "建议",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_089_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_089_3.png",
+    "raw" : "建议",
+    "text" : "建议",
+    "timesMs" : [
+      19.7225,
+      16.129291,
+      17.356584
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "分析",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_090_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_090_0.png",
+    "raw" : "分析",
+    "text" : "分析",
+    "timesMs" : [
+      15.680333,
+      25.56125,
+      15.55175
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "分析",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_090_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_090_1.png",
+    "raw" : "分析",
+    "text" : "分析",
+    "timesMs" : [
+      16.085458,
+      15.2515,
+      13.71725
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "分析",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_090_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_090_2.png",
+    "raw" : "1分析",
+    "text" : "分析",
+    "timesMs" : [
+      13.143083,
+      15.181333,
+      15.917416
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "分析",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_090_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_090_3.png",
+    "raw" : "1分析",
+    "text" : "分析",
+    "timesMs" : [
+      14.876875,
+      14.519833,
+      17.68225
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "选择",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_091_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_091_0.png",
+    "raw" : "选择",
+    "text" : "选择",
+    "timesMs" : [
+      16.34825,
+      14.948666,
+      16.029958
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "选择",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_091_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_091_1.png",
+    "raw" : "选择",
+    "text" : "选择",
+    "timesMs" : [
+      16.487542,
+      16.561917,
+      14.869917
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "丨选择",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_091_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_091_2.png",
+    "raw" : "丨选择",
+    "text" : "选择",
+    "timesMs" : [
+      16.557625,
+      13.401917,
+      15.8565
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "选择",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_091_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_091_3.png",
+    "raw" : "1选择",
+    "text" : "选择",
+    "timesMs" : [
+      15.945417,
+      17.887584,
+      15.908208
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "支持",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_092_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_092_0.png",
+    "raw" : "支持",
+    "text" : "支持",
+    "timesMs" : [
+      15.749541,
+      13.83025,
+      14.930916
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "支持",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_092_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_092_1.png",
+    "raw" : "支持",
+    "text" : "支持",
+    "timesMs" : [
+      13.593833,
+      13.879584,
+      13.9625
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "支持",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_092_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_092_2.png",
+    "raw" : "1 支持",
+    "text" : "支持",
+    "timesMs" : [
+      13.896583,
+      15.051917,
+      13.445333
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "支持",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_092_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_092_3.png",
+    "raw" : "1支持",
+    "text" : "支持",
+    "timesMs" : [
+      14.168,
+      17.240583,
+      15.944333
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "导入",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_093_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_093_0.png",
+    "raw" : "导入",
+    "text" : "导入",
+    "timesMs" : [
+      15.096125,
+      29.492,
+      16.764667
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "导入",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_093_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_093_1.png",
+    "raw" : "导入",
+    "text" : "导入",
+    "timesMs" : [
+      22.99425,
+      14.15875,
+      16.275625
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "导入",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_093_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_093_2.png",
+    "raw" : "1导入",
+    "text" : "导入",
+    "timesMs" : [
+      19.529458,
+      14.224791,
+      16.581125
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "导入",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_093_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_093_3.png",
+    "raw" : "导入",
+    "text" : "导入",
+    "timesMs" : [
+      14.675916,
+      14.096208,
+      15.885709
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "导出",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_094_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_094_0.png",
+    "raw" : "导出",
+    "text" : "导出",
+    "timesMs" : [
+      15.855875,
+      17.270167,
+      15.909
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "导出",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_094_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_094_1.png",
+    "raw" : "导出",
+    "text" : "导出",
+    "timesMs" : [
+      16.518708,
+      15.661583,
+      17.312667
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "一泉出",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_094_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_094_2.png",
+    "raw" : "一泉出",
+    "text" : "导出",
+    "timesMs" : [
+      16.900125,
+      21.832875,
+      17.360166
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "导出",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_094_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_094_3.png",
+    "raw" : "导出",
+    "text" : "导出",
+    "timesMs" : [
+      22.131625,
+      17.361167,
+      21.595541
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "成功",
+    "confidence" : 0.5,
+    "group" : "synthetic",
+    "id" : "synthetic_095_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_095_0.png",
+    "raw" : "成功",
+    "text" : "成功",
+    "timesMs" : [
+      15.895084,
+      17.881792,
+      15.492458
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "成功",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_095_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_095_1.png",
+    "raw" : "成功",
+    "text" : "成功",
+    "timesMs" : [
+      16.418208,
+      16.607958,
+      17.110667
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "成功",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_095_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_095_2.png",
+    "raw" : "1 成功",
+    "text" : "成功",
+    "timesMs" : [
+      15.109375,
+      15.750417,
+      13.698833
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "成功",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_095_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_095_3.png",
+    "raw" : "'成功",
+    "text" : "成功",
+    "timesMs" : [
+      14.897917,
+      14.135834,
+      14.618666
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "失败",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_096_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_096_0.png",
+    "raw" : "失败",
+    "text" : "失败",
+    "timesMs" : [
+      12.749416,
+      13.393083,
+      15.043625
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "失败",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_096_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_096_1.png",
+    "raw" : "失败",
+    "text" : "失败",
+    "timesMs" : [
+      20.291333,
+      27.018666,
+      22.855417
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "失败",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_096_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_096_2.png",
+    "raw" : "1 失败",
+    "text" : "失败",
+    "timesMs" : [
+      16.6165,
+      16.3505,
+      16.248792
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_096_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_096_3.png",
+    "raw" : "1",
+    "text" : "失败",
+    "timesMs" : [
+      16.380041,
+      15.918083,
+      16.337375
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "欢迎",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_097_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_097_0.png",
+    "raw" : "欢迎",
+    "text" : "欢迎",
+    "timesMs" : [
+      15.528583,
+      22.168375,
+      19.545792
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "欢迎",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_097_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_097_1.png",
+    "raw" : "欢迎",
+    "text" : "欢迎",
+    "timesMs" : [
+      20.280625,
+      18.367167,
+      24.453042
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "欢迎",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_097_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_097_2.png",
+    "raw" : "！ 欢迎",
+    "text" : "欢迎",
+    "timesMs" : [
+      18.955959,
+      18.943333,
+      16.635875
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "欢迎",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_097_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_097_3.png",
+    "raw" : "欢迎",
+    "text" : "欢迎",
+    "timesMs" : [
+      17.363958,
+      15.753958,
+      13.295375
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "谢谢",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_098_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_098_0.png",
+    "raw" : "谢谢",
+    "text" : "谢谢",
+    "timesMs" : [
+      13.666958,
+      15.326917,
+      13.316
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "谢谢",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_098_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_098_1.png",
+    "raw" : "谢谢",
+    "text" : "谢谢",
+    "timesMs" : [
+      14.610459,
+      16.127417,
+      14.172792
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "谢谢",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_098_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_098_2.png",
+    "raw" : "1谢谢",
+    "text" : "谢谢",
+    "timesMs" : [
+      19.352417,
+      16.480042,
+      16.9335
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "谢谢",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_098_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_098_3.png",
+    "raw" : "谢谢",
+    "text" : "谢谢",
+    "timesMs" : [
+      17.768959,
+      15.868833,
+      16.703208
+    ],
+    "variant" : "v3"
+  },
+  {
+    "cleaned" : "再见",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_099_0",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_099_0.png",
+    "raw" : "再见",
+    "text" : "再见",
+    "timesMs" : [
+      15.712125,
+      17.7435,
+      14.94825
+    ],
+    "variant" : "v0"
+  },
+  {
+    "cleaned" : "再见",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_099_1",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_099_1.png",
+    "raw" : "再见",
+    "text" : "再见",
+    "timesMs" : [
+      17.001291,
+      16.021666,
+      17.4985
+    ],
+    "variant" : "v1"
+  },
+  {
+    "cleaned" : "再见",
+    "confidence" : 0.3,
+    "group" : "synthetic",
+    "id" : "synthetic_099_2",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_099_2.png",
+    "raw" : "1 再见",
+    "text" : "再见",
+    "timesMs" : [
+      16.167542,
+      17.026584,
+      16.526708
+    ],
+    "variant" : "v2"
+  },
+  {
+    "cleaned" : "再见",
+    "confidence" : 1,
+    "group" : "synthetic",
+    "id" : "synthetic_099_3",
+    "path" : "\/Users\/alone\/code\/Glint\/Tools\/OCRLab\/data\/images\/synthetic_099_3.png",
+    "raw" : "再见",
+    "text" : "再见",
+    "timesMs" : [
+      18.403792,
+      13.284459,
+      14.940791
+    ],
+    "variant" : "v3"
+  }
+]

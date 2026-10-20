@@ -1,0 +1,40 @@
+import XCTest
+@testable import GlintInference
+
+final class MLXTranslationEngineTests: XCTestCase {
+    func testCleanRemovesLabelsAndQuotes() {
+        XCTAssertEqual(
+            MLXTranslationEngine.clean("Translation: \"Hello.\"\nignored"),
+            "Hello."
+        )
+    }
+
+    func testCleanKeepsTextAfterThinkingBlock() {
+        XCTAssertEqual(
+            MLXTranslationEngine.clean("<think>internal reasoning</think>\nHello there."),
+            "Hello there."
+        )
+    }
+
+    func testUnfinishedThinkingBlockIsRejected() {
+        XCTAssertNil(MLXTranslationEngine.clean("<think>unfinished"))
+    }
+
+    func testChineseEchoIsRejected() {
+        XCTAssertNil(MLXTranslationEngine.clean("这是一个测试"))
+    }
+
+    func testSpecializedModelsUseTheirOwnPrompts() {
+        let hy = MLXPromptProfile(modelID: "mt-hy-mt2-1.8b")
+        XCTAssertNil(hy.instructions)
+        XCTAssertTrue(hy.prompt(for: "这个方案需要再讨论").contains("不要额外解释"))
+
+        let index = MLXPromptProfile(modelID: "mt-index-translate-2b")
+        XCTAssertNil(index.instructions)
+        XCTAssertTrue(index.prompt(for: "这个方案需要再讨论").contains("直接输出翻译结果"))
+
+        let qwen = MLXPromptProfile(modelID: "llm-qwen3-1.7b")
+        XCTAssertNotNil(qwen.instructions)
+        XCTAssertEqual(qwen.prompt(for: "你好"), "你好")
+    }
+}

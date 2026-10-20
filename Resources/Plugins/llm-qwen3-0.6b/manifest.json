@@ -1,0 +1,18 @@
+{
+  "id": "llm-qwen3-0.6b",
+  "type": "translation",
+  "name": "Qwen3 0.6B",
+  "version": "0.1.0",
+  "runtime": "mlx",
+  "capabilities": ["word", "phrase", "sentence"],
+  "languages": ["zh-Hans", "en"],
+  "sizeBytes": 351386061,
+  "sha256": "HUGGINGFACE_SNAPSHOT",
+  "url": "https://huggingface.co/mlx-community/Qwen3-0.6B-4bit",
+  "license": "APACHE-2.0",
+  "minRAMBytes": 4294967296,
+  "quality": "fast",
+  "recommended": false,
+  "summary": "速度快、占用低，适合内存较小的设备。",
+  "revision": "73e3e38d981303bc594367cd910ea6eb48349da8"
+}

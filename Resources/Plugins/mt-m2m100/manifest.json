@@ -1,0 +1,17 @@
+{
+  "id": "mt-m2m100-418m",
+  "type": "translation",
+  "name": "M2M100 418M",
+  "version": "0.1.0",
+  "runtime": "ctranslate2",
+  "capabilities": ["word", "phrase", "sentence"],
+  "languages": ["zh-Hans", "en"],
+  "sizeBytes": 450000000,
+  "sha256": "REPLACE_ME",
+  "url": "https://example.invalid/glint/mt-m2m100-418m.zip",
+  "license": "MIT",
+  "minRAMBytes": 2147483648,
+  "quality": "balanced",
+  "recommended": false,
+  "summary": "多语言平衡型翻译模型，覆盖范围更广。"
+}

@@ -1,0 +1,420 @@
+{
+  "model": "opus",
+  "model_id": "Helsinki-NLP/opus-mt-zh-en",
+  "timestamp": "2026-10-19T13:27:45.280768+00:00",
+  "case_count": 45,
+  "load_seconds": 5.24,
+  "warmup_seconds": 0.04,
+  "loaded_rss_mb": 663.5,
+  "peak_rss_mb": 682.2,
+  "mean_latency_ms": 48.18,
+  "p50_latency_ms": 41.51,
+  "p95_latency_ms": 79.86,
+  "rows": [
+    {
+      "id": "w01",
+      "input": "你好",
+      "kind": "word",
+      "reference": "hello",
+      "output": "Hello.",
+      "latency_ms": 27.96,
+      "error": null
+    },
+    {
+      "id": "w02",
+      "input": "算法",
+      "kind": "word",
+      "reference": "algorithm",
+      "output": "Algorithms",
+      "latency_ms": 57.51,
+      "error": null
+    },
+    {
+      "id": "w03",
+      "input": "计算",
+      "kind": "word",
+      "reference": "calculate",
+      "output": "Calculate",
+      "latency_ms": 34.28,
+      "error": null
+    },
+    {
+      "id": "w04",
+      "input": "复盘",
+      "kind": "word",
+      "reference": "retrospective",
+      "output": "Duplicate",
+      "latency_ms": 35.13,
+      "error": null
+    },
+    {
+      "id": "w05",
+      "input": "对齐",
+      "kind": "word",
+      "reference": "align",
+      "output": "Alignment",
+      "latency_ms": 34.61,
+      "error": null
+    },
+    {
+      "id": "w06",
+      "input": "输入法",
+      "kind": "word",
+      "reference": "input method",
+      "output": "Input Method",
+      "latency_ms": 27.39,
+      "error": null
+    },
+    {
+      "id": "w07",
+      "input": "迭代",
+      "kind": "word",
+      "reference": "iterate",
+      "output": "It's an alternator.",
+      "latency_ms": 71.31,
+      "error": null
+    },
+    {
+      "id": "w08",
+      "input": "需求",
+      "kind": "word",
+      "reference": "requirement",
+      "output": "Needs",
+      "latency_ms": 19.43,
+      "error": null
+    },
+    {
+      "id": "w09",
+      "input": "场景",
+      "kind": "word",
+      "reference": "scenario",
+      "output": "Scene",
+      "latency_ms": 34.65,
+      "error": null
+    },
+    {
+      "id": "w10",
+      "input": "指标",
+      "kind": "word",
+      "reference": "metric",
+      "output": "Indicators",
+      "latency_ms": 27.47,
+      "error": null
+    },
+    {
+      "id": "w11",
+      "input": "落地",
+      "kind": "word",
+      "reference": "implement",
+      "output": "Land.",
+      "latency_ms": 35.05,
+      "error": null
+    },
+    {
+      "id": "w12",
+      "input": "拆分",
+      "kind": "word",
+      "reference": "break down",
+      "output": "Split",
+      "latency_ms": 27.04,
+      "error": null
+    },
+    {
+      "id": "w13",
+      "input": "收敛",
+      "kind": "word",
+      "reference": "converge",
+      "output": "Reconciling",
+      "latency_ms": 42.19,
+      "error": null
+    },
+    {
+      "id": "w14",
+      "input": "兜底",
+      "kind": "word",
+      "reference": "fallback",
+      "output": "I'll take care of it.",
+      "latency_ms": 71.76,
+      "error": null
+    },
+    {
+      "id": "w15",
+      "input": "权衡",
+      "kind": "word",
+      "reference": "trade-off",
+      "output": "Trade-offs",
+      "latency_ms": 48.46,
+      "error": null
+    },
+    {
+      "id": "w16",
+      "input": "里程碑",
+      "kind": "word",
+      "reference": "milestone",
+      "output": "Milestones",
+      "latency_ms": 41.51,
+      "error": null
+    },
+    {
+      "id": "w17",
+      "input": "语义",
+      "kind": "word",
+      "reference": "semantics",
+      "output": "Semantic",
+      "latency_ms": 33.67,
+      "error": null
+    },
+    {
+      "id": "w18",
+      "input": "推理",
+      "kind": "word",
+      "reference": "reasoning",
+      "output": "Rationale.",
+      "latency_ms": 41.43,
+      "error": null
+    },
+    {
+      "id": "w19",
+      "input": "上下文",
+      "kind": "word",
+      "reference": "context",
+      "output": "Context",
+      "latency_ms": 27.82,
+      "error": null
+    },
+    {
+      "id": "w20",
+      "input": "颗粒度",
+      "kind": "word",
+      "reference": "granularity",
+      "output": "particle size",
+      "latency_ms": 34.12,
+      "error": null
+    },
+    {
+      "id": "p01",
+      "input": "先对齐一下",
+      "kind": "phrase",
+      "reference": "let's align first",
+      "output": "Let's get this straight.",
+      "latency_ms": 70.73,
+      "error": null
+    },
+    {
+      "id": "p02",
+      "input": "拉齐认知",
+      "kind": "phrase",
+      "reference": "align understanding",
+      "output": "Ratsy knows it.",
+      "latency_ms": 56.44,
+      "error": null
+    },
+    {
+      "id": "p03",
+      "input": "小步快跑",
+      "kind": "phrase",
+      "reference": "iterate quickly in small steps",
+      "output": "Run! Run!",
+      "latency_ms": 56.83,
+      "error": null
+    },
+    {
+      "id": "p04",
+      "input": "形成闭环",
+      "kind": "phrase",
+      "reference": "close the loop",
+      "output": "Form a closed ring.",
+      "latency_ms": 48.91,
+      "error": null
+    },
+    {
+      "id": "p05",
+      "input": "拆解问题",
+      "kind": "phrase",
+      "reference": "break down the problem",
+      "output": "Dismantling issues",
+      "latency_ms": 48.46,
+      "error": null
+    },
+    {
+      "id": "p06",
+      "input": "兜底方案",
+      "kind": "phrase",
+      "reference": "fallback plan",
+      "output": "- The plan. - The plan.",
+      "latency_ms": 70.28,
+      "error": null
+    },
+    {
+      "id": "p07",
+      "input": "关键路径",
+      "kind": "phrase",
+      "reference": "critical path",
+      "output": "Key Paths",
+      "latency_ms": 33.74,
+      "error": null
+    },
+    {
+      "id": "p08",
+      "input": "技术债",
+      "kind": "phrase",
+      "reference": "technical debt",
+      "output": "Technical debt",
+      "latency_ms": 27.23,
+      "error": null
+    },
+    {
+      "id": "p09",
+      "input": "用户画像",
+      "kind": "phrase",
+      "reference": "user persona",
+      "output": "User Images",
+      "latency_ms": 34.13,
+      "error": null
+    },
+    {
+      "id": "p10",
+      "input": "冷启动",
+      "kind": "phrase",
+      "reference": "cold start",
+      "output": "Cold Start",
+      "latency_ms": 34.28,
+      "error": null
+    },
+    {
+      "id": "p11",
+      "input": "灰度发布",
+      "kind": "phrase",
+      "reference": "canary release",
+      "output": "Grayscale Release",
+      "latency_ms": 33.51,
+      "error": null
+    },
+    {
+      "id": "p12",
+      "input": "复盘总结",
+      "kind": "phrase",
+      "reference": "retrospective summary",
+      "output": "Remix Summary",
+      "latency_ms": 48.79,
+      "error": null
+    },
+    {
+      "id": "p13",
+      "input": "向上管理",
+      "kind": "phrase",
+      "reference": "managing up",
+      "output": "Upward Management",
+      "latency_ms": 34.04,
+      "error": null
+    },
+    {
+      "id": "p14",
+      "input": "横向对比",
+      "kind": "phrase",
+      "reference": "side-by-side comparison",
+      "output": "Horizontal Contrast",
+      "latency_ms": 34.7,
+      "error": null
+    },
+    {
+      "id": "p15",
+      "input": "需求评审",
+      "kind": "phrase",
+      "reference": "requirement review",
+      "output": "Review of needs",
+      "latency_ms": 34.11,
+      "error": null
+    },
+    {
+      "id": "s01",
+      "input": "你好吗",
+      "kind": "sentence",
+      "reference": "How are you?",
+      "output": "How are you?",
+      "latency_ms": 49.37,
+      "error": null
+    },
+    {
+      "id": "s02",
+      "input": "今天天气不错",
+      "kind": "sentence",
+      "reference": "The weather is nice today.",
+      "output": "It's a nice day.",
+      "latency_ms": 70.76,
+      "error": null
+    },
+    {
+      "id": "s03",
+      "input": "我先看一下",
+      "kind": "sentence",
+      "reference": "Let me take a look first.",
+      "output": "Let me take a look.",
+      "latency_ms": 70.05,
+      "error": null
+    },
+    {
+      "id": "s04",
+      "input": "这个方案需要再讨论",
+      "kind": "sentence",
+      "reference": "This plan needs further discussion.",
+      "output": "This program needs to be revisited.",
+      "latency_ms": 63.03,
+      "error": null
+    },
+    {
+      "id": "s05",
+      "input": "我们明天下午开会",
+      "kind": "sentence",
+      "reference": "We have a meeting tomorrow afternoon.",
+      "output": "We'll meet tomorrow afternoon.",
+      "latency_ms": 77.55,
+      "error": null
+    },
+    {
+      "id": "s06",
+      "input": "这个功能什么时候上线",
+      "kind": "sentence",
+      "reference": "When will this feature launch?",
+      "output": "When does this function go online?",
+      "latency_ms": 70.61,
+      "error": null
+    },
+    {
+      "id": "s07",
+      "input": "麻烦帮我确认一下",
+      "kind": "sentence",
+      "reference": "Please help me confirm.",
+      "output": "Could you check it out for me, please?",
+      "latency_ms": 86.84,
+      "error": null
+    },
+    {
+      "id": "s08",
+      "input": "我晚点回复你",
+      "kind": "sentence",
+      "reference": "I'll get back to you later.",
+      "output": "I'll get back to you later.",
+      "latency_ms": 79.86,
+      "error": null
+    },
+    {
+      "id": "s09",
+      "input": "这个问题不大",
+      "kind": "sentence",
+      "reference": "This issue is not a big deal.",
+      "output": "It's not a big question.",
+      "latency_ms": 70.32,
+      "error": null
+    },
+    {
+      "id": "s10",
+      "input": "先按这个版本做",
+      "kind": "sentence",
+      "reference": "Let's go with this version for now.",
+      "output": "Let's start with this version.",
+      "latency_ms": 90.78,
+      "error": null
+    }
+  ]
+}

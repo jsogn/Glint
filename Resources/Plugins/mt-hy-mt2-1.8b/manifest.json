@@ -1,0 +1,18 @@
+{
+  "id": "mt-hy-mt2-1.8b",
+  "type": "translation",
+  "name": "Hy-MT2 1.8B",
+  "version": "2026.10",
+  "runtime": "mlx",
+  "capabilities": ["word", "phrase", "sentence"],
+  "languages": ["zh-Hans", "en"],
+  "sizeBytes": 1017375718,
+  "sha256": "HUGGINGFACE_SNAPSHOT",
+  "url": "https://huggingface.co/mlx-community/Hy-MT2-1.8B-4bit",
+  "license": "APACHE-2.0",
+  "minRAMBytes": 6442450944,
+  "quality": "specialized-fast",
+  "recommended": true,
+  "summary": "速度快、表达自然，适合日常中英输入。",
+  "revision": "e5c6fe56c7b3bc77fae5ae92db31f2178f1e6912"
+}

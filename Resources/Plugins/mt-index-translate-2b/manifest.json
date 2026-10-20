@@ -1,0 +1,18 @@
+{
+  "id": "mt-index-translate-2b",
+  "type": "translation",
+  "name": "Index-Translate 2B",
+  "version": "2026.10",
+  "runtime": "mlx",
+  "capabilities": ["word", "phrase", "sentence"],
+  "languages": ["zh-Hans", "en"],
+  "sizeBytes": 1082308869,
+  "sha256": "HUGGINGFACE_SNAPSHOT",
+  "url": "https://huggingface.co/zerodegress/Index-Translate-2B-MLX-4bit",
+  "license": "APACHE-2.0",
+  "minRAMBytes": 6442450944,
+  "quality": "specialized-quality",
+  "recommended": false,
+  "summary": "速度较快、表达自然，适合更看重翻译质量的场景。",
+  "revision": "b69878e8e8de7a0010e4bd00bca9ad4e8e6280da"
+}

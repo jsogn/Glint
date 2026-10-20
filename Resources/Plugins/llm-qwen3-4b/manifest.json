@@ -1,0 +1,18 @@
+{
+  "id": "llm-qwen3-4b",
+  "type": "translation",
+  "name": "Qwen3 4B",
+  "version": "0.1.0",
+  "runtime": "mlx",
+  "capabilities": ["word", "phrase", "sentence"],
+  "languages": ["zh-Hans", "en"],
+  "sizeBytes": 2278972236,
+  "sha256": "HUGGINGFACE_SNAPSHOT",
+  "url": "https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "license": "APACHE-2.0",
+  "minRAMBytes": 12884901888,
+  "quality": "high",
+  "recommended": false,
+  "summary": "速度较慢，更适合复杂表达和高配置设备。",
+  "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b"
+}
