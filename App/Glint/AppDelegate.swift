@@ -124,17 +124,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusItem(isMonitoring: Bool) {
         guard let button = statusItem.button else { return }
-        button.image = nil
+        button.image = brandMarkImage()
+        button.imagePosition = .imageLeading
+        button.imageScaling = .scaleProportionallyDown
+        button.title = ""
         if isMonitoring {
             let title = NSMutableAttributedString(
-                string: "✦",
-                attributes: [
-                    .font: NSFont.systemFont(ofSize: 14, weight: .medium),
-                    .foregroundColor: NSColor.labelColor,
-                ]
-            )
-            title.append(NSAttributedString(
-                string: " ●",
+                string: "  ●",
                 attributes: [
                     .font: NSFont.systemFont(ofSize: 5.5, weight: .bold),
                     .foregroundColor: NSColor(
@@ -145,17 +141,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     ),
                     .baselineOffset: 1.2,
                 ]
-            ))
+            )
             button.title = ""
             button.attributedTitle = title
         } else {
             button.attributedTitle = NSAttributedString(string: "")
-            button.title = "✦"
         }
         button.toolTip = isMonitoring ? "Glint · 翻译显示已开启" : "Glint · 翻译显示已关闭"
         button.setAccessibilityLabel(
             isMonitoring ? "Glint，翻译显示已开启" : "Glint，翻译显示已关闭"
         )
+    }
+
+    private func brandMarkImage() -> NSImage? {
+        guard let image = NSImage(named: "BrandMark")?.copy() as? NSImage else {
+            return nil
+        }
+        image.size = NSSize(width: 16, height: 16)
+        image.isTemplate = true
+        return image
     }
 
     private func updateMonitoringMenuItem() {

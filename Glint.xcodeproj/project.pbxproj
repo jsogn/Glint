@@ -22,6 +22,7 @@
 		D418B3179EEE536BCCF50C9D /* GlintUI in Frameworks */ = {isa = PBXBuildFile; productRef = FBD93326229A8A62F071CD36 /* GlintUI */; };
 		D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */; };
 		E6E1424A2809676493A0B484 /* OCRPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BB60E100470D1D016785CFB /* OCRPluginLoader.swift */; };
+		F66206E2AF6A12351EC83B1C /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */; };
 		FA3C47D17A7C09E8852FB155 /* GlintDictionary in Frameworks */ = {isa = PBXBuildFile; productRef = 0B46DF0B3D2714D2CEC06F6E /* GlintDictionary */; };
 /* End PBXBuildFile section */
 
@@ -41,6 +42,7 @@
 		A89662015EFDEBDACF1DAB11 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources; sourceTree = SOURCE_ROOT; };
 		D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryPluginLoader.swift; sourceTree = "<group>"; };
 		D58946C3A8621B011A33D664 /* GlintMac */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintMac; path = Packages/GlintMac; sourceTree = SOURCE_ROOT; };
+		D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		E94AB23640CA1E6007F8B2B4 /* GlintTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlintTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSmokeTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -105,6 +107,7 @@
 			children = (
 				88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */,
 				65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */,
+				D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */,
 				53183767502EEFE5D0989DD0 /* Assets.xcassets */,
 				D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */,
 				A6CE2C298747A802E1589A8C /* main.swift */,
@@ -230,6 +233,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F66206E2AF6A12351EC83B1C /* AppIcon.icon in Resources */,
 				5DC357A49028867449604E46 /* Assets.xcassets in Resources */,
 				7D4092F37EBF48450057228E /* Resources in Resources */,
 			);
@@ -282,6 +286,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -383,6 +388,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;

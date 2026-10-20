@@ -975,14 +975,12 @@ private struct AboutPage: View {
         PageContainer(subtitle: "macOS 14+ · Apple Silicon · \(version)") {
             SettingsCard("Glint") {
                 HStack(alignment: .top, spacing: 14) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 11)
-                            .fill(Color.accentColor.opacity(0.16))
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(.tint)
-                    }
-                    .frame(width: 42, height: 42)
+                    Image(nsImage: NSApplication.shared.applicationIconImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .frame(width: 48, height: 48)
+                        .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 5) {
                         Text("在你的输入旁，看到英文。")
