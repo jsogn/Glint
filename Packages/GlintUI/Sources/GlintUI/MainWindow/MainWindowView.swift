@@ -421,7 +421,8 @@ private struct PluginsPage: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
-                    .frame(width: 340, alignment: .trailing)
+                    .controlSize(.small)
+                    .frame(width: 300, alignment: .trailing)
                     .gridCellAnchor(.trailing)
                 }
 
