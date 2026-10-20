@@ -2,6 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+./scripts/install_dev_plugins.sh
+./scripts/build.sh
+
 if pgrep -x Glint >/dev/null; then
   osascript -e 'tell application id "com.local.glint" to quit' >/dev/null 2>&1 || true
   for _ in {1..20}; do
@@ -14,6 +17,4 @@ if pgrep -x Glint >/dev/null; then
   killall Glint
 fi
 
-./scripts/install_dev_plugins.sh
-./scripts/build.sh
 open "build/Build/Products/Debug/Glint.app"
