@@ -370,25 +370,28 @@ private struct PluginsPage: View {
                 OpenAICompatibleProvidersView(model: model)
             }
         case .ocr:
-            SettingsPanel(minHeight: 420) {
-                VStack(alignment: .leading, spacing: 0) {
+            VStack(spacing: 16) {
+                SettingsCard("识别策略") {
                     recognitionStrategySection
-                    Divider()
-                        .padding(.vertical, 8)
-                    builtInVisionRow
-                    Divider()
-                        .padding(.vertical, 8)
-                    pluginRows(installed: installed, available: available)
-                    if let status = model.ocrEngineStatusText {
-                        Text(status)
-                            .font(.caption)
-                            .foregroundStyle(
-                                model.ocrEngineStatusIsError
-                                    ? Color.red
-                                    : Color.secondary
-                            )
-                            .padding(.top, 8)
+                }
+                SettingsPanel(minHeight: 420) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        builtInVisionRow
+                        Divider()
+                            .padding(.vertical, 8)
+                        pluginRows(installed: installed, available: available)
+                        if let status = model.ocrEngineStatusText {
+                            Text(status)
+                                .font(.caption)
+                                .foregroundStyle(
+                                    model.ocrEngineStatusIsError
+                                        ? Color.red
+                                        : Color.secondary
+                                )
+                                .padding(.top, 8)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -396,93 +399,80 @@ private struct PluginsPage: View {
 
     private var recognitionStrategySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 16) {
-                Text("识别策略")
-                Spacer()
-                Picker(
-                    "识别策略",
-                    selection: Binding(
-                        get: { model.ocrRecognitionPreferences.strategy },
-                        set: { model.setOCRRecognitionStrategy($0) }
-                    )
-                ) {
-                    ForEach(OCRRecognitionStrategy.allCases, id: \.self) {
-                        strategy in
-                        Text(strategy.title).tag(strategy)
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                GridRow {
+                    Text("模式")
+                    Picker(
+                        "模式",
+                        selection: Binding(
+                            get: {
+                                model.ocrRecognitionPreferences.strategy
+                            },
+                            set: { model.setOCRRecognitionStrategy($0) }
+                        )
+                    ) {
+                        ForEach(OCRRecognitionStrategy.allCases, id: \.self) {
+                            strategy in
+                            Text(strategy.title).tag(strategy)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: 340)
+                    .gridCellAnchor(.trailing)
+                }
+
+                GridRow {
+                    Text("主模型")
+                    Picker(
+                        "主模型",
+                        selection: Binding(
+                            get: {
+                                model.ocrRecognitionPreferences.primaryModelID
+                            },
+                            set: { model.setPrimaryOCRModel(id: $0) }
+                        )
+                    ) {
+                        ForEach(ocrModelChoices) { choice in
+                            Text(choice.name).tag(choice.id)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 340)
+                    .gridCellAnchor(.trailing)
+                }
+
+                if model.ocrRecognitionPreferences.strategy != .primaryOnly {
+                    GridRow {
+                        Text("备用模型")
+                        Picker(
+                            "备用模型",
+                            selection: Binding(
+                                get: {
+                                    model.ocrRecognitionPreferences
+                                        .backupModelID
+                                },
+                                set: { model.setBackupOCRModel(id: $0) }
+                            )
+                        ) {
+                            Text("未选择").tag(String?.none)
+                            ForEach(backupModelChoices) { choice in
+                                Text(choice.name).tag(Optional(choice.id))
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 340)
+                        .gridCellAnchor(.trailing)
                     }
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 340)
             }
-
-            modelPickerRow(
-                title: "主模型",
-                selection: Binding(
-                    get: { model.ocrRecognitionPreferences.primaryModelID },
-                    set: { model.setPrimaryOCRModel(id: $0) }
-                )
-            ) {
-                ForEach(ocrModelChoices) { choice in
-                    Text(choice.name).tag(choice.id)
-                }
-            }
-
-            modelPickerRow(
-                title: "备用模型",
-                selection: Binding(
-                    get: { model.ocrRecognitionPreferences.backupModelID },
-                    set: { model.setBackupOCRModel(id: $0) }
-                )
-            ) {
-                Text("未选择").tag(String?.none)
-                ForEach(backupModelChoices) { choice in
-                    Text(choice.name).tag(Optional(choice.id))
-                }
-            }
-            .disabled(
-                model.ocrRecognitionPreferences.strategy == .primaryOnly
-            )
+            .frame(maxWidth: .infinity, alignment: .trailing)
 
             Text(strategyDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 8)
-    }
-
-    private func modelPickerRow<Content: View>(
-        title: String,
-        selection: Binding<String?>,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        HStack(spacing: 16) {
-            Text(title)
-                .frame(width: 72, alignment: .leading)
-            Picker(title, selection: selection) {
-                content()
-            }
-            .labelsHidden()
-            .frame(width: 340)
-            Spacer()
-        }
-    }
-
-    private func modelPickerRow<Content: View>(
-        title: String,
-        selection: Binding<String>,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        HStack(spacing: 16) {
-            Text(title)
-                .frame(width: 72, alignment: .leading)
-            Picker(title, selection: selection) {
-                content()
-            }
-            .labelsHidden()
-            .frame(width: 340)
-            Spacer()
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var strategyDescription: String {
