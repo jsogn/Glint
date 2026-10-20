@@ -170,21 +170,44 @@ private struct TranslationSettingsPage: View {
     var body: some View {
         PageContainer(subtitle: "控制词典和翻译模型的优先顺序。") {
             SettingsCard("翻译策略") {
-                Picker(
-                    "优先来源",
-                    selection: Binding(
-                        get: { model.translationMode },
-                        set: { model.setTranslationMode($0) }
-                    )
-                ) {
-                    ForEach(TranslationMode.allCases, id: \.self) { mode in
-                        Text(mode.title).tag(mode)
+                VStack(alignment: .leading, spacing: 12) {
+                    Grid(
+                        alignment: .leading,
+                        horizontalSpacing: 24,
+                        verticalSpacing: 10
+                    ) {
+                        GridRow {
+                            Text("优先来源")
+                            Color.clear
+                                .frame(height: 1)
+                                .gridCellUnsizedAxes(.vertical)
+                            Picker(
+                                "优先来源",
+                                selection: Binding(
+                                    get: { model.translationMode },
+                                    set: { model.setTranslationMode($0) }
+                                )
+                            ) {
+                                ForEach(TranslationMode.allCases, id: \.self) {
+                                    mode in
+                                    Text(mode.title).tag(mode)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(width: 240, alignment: .trailing)
+                            .gridCellAnchor(.trailing)
+                        }
+
+                        Divider()
+                            .gridCellColumns(3)
                     }
+                    .frame(maxWidth: .infinity)
+
+                    Text(model.translationMode.explanation)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .pickerStyle(.segmented)
-                Text(model.translationMode.explanation)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -201,52 +224,108 @@ private struct DisplayPage: View {
 
     var body: some View {
         PageContainer(subtitle: "控制翻译显示何时出现、出现在哪里。") {
-            SettingsCard("位置") {
-                Picker("显示位置", selection: $preferences.position) {
-                    ForEach(HUDPosition.allCases, id: \.self) { position in
-                        Text(position.title).tag(position)
+            SettingsCard("位置与延迟") {
+                VStack(spacing: 0) {
+                    Grid(
+                        alignment: .leading,
+                        horizontalSpacing: 24,
+                        verticalSpacing: 0
+                    ) {
+                        GridRow {
+                            Text("显示位置")
+                            Color.clear
+                                .frame(height: 1)
+                                .gridCellUnsizedAxes(.vertical)
+                            Picker(
+                                "显示位置",
+                                selection: $preferences.position
+                            ) {
+                                ForEach(HUDPosition.allCases, id: \.self) {
+                                    position in
+                                    Text(position.title).tag(position)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(width: 340, alignment: .trailing)
+                            .gridCellAnchor(.trailing)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+
+                    Divider()
+
+                    sliderSetting(
+                        title: "显示延迟",
+                        value: String(
+                            format: "%.0f ms",
+                            preferences.stabilityDelay * 1000
+                        ),
+                        binding: $preferences.stabilityDelay,
+                        range: 0.1...0.8,
+                        step: 0.05,
+                        caption: "连续输入时自动隐藏，候选稳定后显示。"
+                    )
                 }
-                .pickerStyle(.segmented)
-                LabeledContent(
-                    "显示延迟",
-                    value: String(format: "%.0f ms", preferences.stabilityDelay * 1000)
-                )
-                Slider(
-                    value: $preferences.stabilityDelay,
-                    in: 0.1...0.8,
-                    step: 0.05
-                )
-                Text("连续输入时自动隐藏，候选稳定后显示。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             SettingsCard("外观") {
-                LabeledContent(
-                    "与候选栏间距",
-                    value: String(format: "%.0f pt", preferences.candidateSpacing)
-                )
-                Slider(
-                    value: $preferences.candidateSpacing,
-                    in: 0...24,
-                    step: 1
-                )
-                LabeledContent(
-                    "背景透明度",
-                    value: String(format: "%.0f%%", preferences.hudOpacity * 100)
-                )
-                Slider(
-                    value: $preferences.hudOpacity,
-                    in: 0.4...1.0,
-                    step: 0.02
-                )
-                Text("透明度只影响显示背景，文字保持清晰。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(spacing: 0) {
+                    sliderSetting(
+                        title: "与候选栏间距",
+                        value: String(
+                            format: "%.0f pt",
+                            preferences.candidateSpacing
+                        ),
+                        binding: $preferences.candidateSpacing,
+                        range: 0...24,
+                        step: 1
+                    )
+                    sliderSetting(
+                        title: "背景透明度",
+                        value: String(
+                            format: "%.0f%%",
+                            preferences.hudOpacity * 100
+                        ),
+                        binding: $preferences.hudOpacity,
+                        range: 0.4...1.0,
+                        step: 0.02,
+                        caption: "透明度只影响显示背景，文字保持清晰。"
+                    )
+                }
             }
             SettingsCard("预览") {
                 HUDPreview(preferences: preferences)
             }
+        }
+    }
+
+    private func sliderSetting(
+        title: String,
+        value: String,
+        binding: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double,
+        caption: String? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                Spacer()
+                Text(value)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: binding, in: range, step: step)
+            if let caption {
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 10)
+        .overlay(alignment: .bottom) {
+            Divider()
         }
     }
 }
@@ -421,10 +500,12 @@ private struct PluginsPage: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
-                    .controlSize(.small)
-                    .frame(width: 300, alignment: .trailing)
+                    .frame(width: 340, alignment: .trailing)
                     .gridCellAnchor(.trailing)
                 }
+
+                Divider()
+                    .gridCellColumns(3)
 
                 GridRow {
                     Text("主模型")
@@ -445,9 +526,15 @@ private struct PluginsPage: View {
                         }
                     }
                     .labelsHidden()
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.visible)
+                    .buttonStyle(.plain)
                     .frame(width: 340, alignment: .trailing)
                     .gridCellAnchor(.trailing)
                 }
+
+                Divider()
+                    .gridCellColumns(3)
 
                 if model.ocrRecognitionPreferences.strategy != .primaryOnly {
                     GridRow {
@@ -471,9 +558,15 @@ private struct PluginsPage: View {
                             }
                         }
                         .labelsHidden()
+                        .menuStyle(.borderlessButton)
+                        .menuIndicator(.visible)
+                        .buttonStyle(.plain)
                         .frame(width: 340, alignment: .trailing)
                         .gridCellAnchor(.trailing)
                     }
+
+                    Divider()
+                        .gridCellColumns(3)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -808,9 +901,35 @@ private struct PermissionsPage: View {
                     value: model.accessibilityGranted ? "已授权" : "待授权"
                 )
                 HStack {
-                    Button("打开屏幕录制设置") { openPrivacyPane("Privacy_ScreenCapture") }
-                    Button("打开辅助功能设置") { openPrivacyPane("Privacy_Accessibility") }
+                    if hasMissingPermissions {
+                        Button {
+                            model.requestPermissions()
+                        } label: {
+                            Label(permissionRequestTitle, systemImage: "lock.open")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Spacer()
                     Button("重新检查") { model.refreshPermissions() }
+                }
+                if hasMissingPermissions {
+                    Text("点击后会请求系统加入权限列表。屏幕录制授权完成后，如提示未消失，请重新启动 Glint。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Divider()
+                    HStack {
+                        Text("系统未自动显示 Glint 时")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("屏幕录制设置") {
+                            openPrivacyPane("Privacy_ScreenCapture")
+                        }
+                        Button("辅助功能设置") {
+                            openPrivacyPane("Privacy_Accessibility")
+                        }
+                    }
+                    .controlSize(.small)
                 }
             }
             SettingsCard("隐私") {
@@ -829,6 +948,17 @@ private struct PermissionsPage: View {
             return
         }
         NSWorkspace.shared.open(url)
+    }
+
+    private var hasMissingPermissions: Bool {
+        !model.screenRecordingGranted || !model.accessibilityGranted
+    }
+
+    private var permissionRequestTitle: String {
+        if !model.screenRecordingGranted {
+            return "授权屏幕录制"
+        }
+        return "授权辅助功能"
     }
 }
 
@@ -879,38 +1009,6 @@ private struct AboutPage: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
-            SettingsCard("第三方组件") {
-                AboutComponentRow(
-                    title: "词典",
-                    detail: "CC-CEDICT · ECDICT · Wiktionary"
-                )
-                AboutComponentRow(
-                    title: "文字识别",
-                    detail: "Apple Vision · PaddleOCR PP-OCRv6"
-                )
-                AboutComponentRow(
-                    title: "本地推理",
-                    detail: "ONNX Runtime · MLX"
-                )
-                Text("各组件与模型的许可证随插件目录一并提供。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-}
-
-private struct AboutComponentRow: View {
-    let title: String
-    let detail: String
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(title)
-                .foregroundStyle(.secondary)
-                .frame(width: 68, alignment: .leading)
-            Text(detail)
-            Spacer()
         }
     }
 }

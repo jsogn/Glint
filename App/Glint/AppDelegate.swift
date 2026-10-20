@@ -5,6 +5,10 @@ import GlintUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private static let initialPermissionRequestKey =
+        "glint.permissions.initialRequestAttempted"
+
+    private let readinessToken: String?
     private var statusItem: NSStatusItem!
     private var monitoringMenuItem: NSMenuItem!
     private var mainWindowController: MainWindowController!
@@ -15,6 +19,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var pendingHUDTask: Task<Void, Never>?
     private var pendingCandidateText: String?
     private var hudGeneration = 0
+    private var pendingPermissionStep: PermissionRequestStep?
+    private var permissionRequestWasIssued = false
+    private var screenCaptureWasRequested = false
+    private var startupPreparationTask: Task<Void, Never>?
+    private var shouldStartMonitoringAfterPreparation = false
+
+    private enum PermissionRequestStep {
+        case screenRecording
+        case accessibility
+    }
 
     override init() {
         let environment = AppEnvironment()
@@ -22,6 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.windowModel = MainWindowModel(
             pluginManager: environment.pluginManager,
             openAICompatibleStore: environment.openAICompatibleStore
+        )
+        self.readinessToken = Self.readinessToken(
+            from: CommandLine.arguments
         )
         super.init()
     }
@@ -32,21 +49,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mainWindowController = MainWindowController(model: windowModel)
         mainWindowController.show()
         refreshPermissionState()
-        Task {
+        startupPreparationTask = Task { [weak self] in
+            guard let self else { return }
             _ = await environment.configureOCR(
                 preferences: windowModel.ocrRecognitionPreferences
             )
-        }
-        Task {
             await environment.translationRuntime.prepareSelectedModel()
+            startupPreparationTask = nil
+            if shouldStartMonitoringAfterPreparation {
+                shouldStartMonitoringAfterPreparation = false
+                startMonitoring()
+            }
         }
-        if CGPreflightScreenCaptureAccess() && FocusMonitor.isAccessibilityTrusted() {
+        let permissionsGranted =
+            CGPreflightScreenCaptureAccess()
+            && FocusMonitor.isAccessibilityTrusted()
+        let alreadyRequested = UserDefaults.standard.bool(
+            forKey: Self.initialPermissionRequestKey
+        )
+        if !alreadyRequested {
+            UserDefaults.standard.set(
+                true,
+                forKey: Self.initialPermissionRequestKey
+            )
+        }
+        if permissionsGranted {
             startMonitoring()
+        } else if !alreadyRequested {
+            Task { @MainActor [weak self] in
+                NSApp.activate(ignoringOtherApps: true)
+                self?.beginPermissionRequest()
+            }
         }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
         refreshPermissionState()
+        if pendingPermissionStep != nil {
+            continuePermissionRequest()
+        }
         Task {
             await windowModel.refreshPlugins()
         }
@@ -131,6 +172,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowModel.refreshPermissionsAction = { [weak self] in
             self?.refreshPermissionState()
         }
+        windowModel.requestPermissionsAction = { [weak self] in
+            self?.beginPermissionRequest()
+        }
         windowModel.activateTranslationModelAction = { [weak self] in
             guard let self else { return "翻译运行时不可用" }
             await self.environment.translationRuntime.prepareSelectedModel()
@@ -182,31 +226,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func startMonitoring() {
         guard monitoringTask == nil else { return }
-        refreshPermissionState()
-        guard windowModel.screenRecordingGranted else {
-            let granted = CGRequestScreenCaptureAccess()
-            refreshPermissionState()
-            guard !granted else {
-                startMonitoring()
-                return
-            }
-            windowModel.statusText = "需要屏幕录制权限"
-            showPermissionAlert(
-                title: "需要屏幕录制权限",
-                message: "请允许 Glint 录制屏幕，授权后重新启动 Glint。Glint 只截取输入法候选栏区域。",
-                settingsAnchor: "Privacy_ScreenCapture"
-            )
+        guard startupPreparationTask == nil else {
+            shouldStartMonitoringAfterPreparation = true
             return
         }
-        guard windowModel.accessibilityGranted else {
-            FocusMonitor.requestAccessibility()
-            refreshPermissionState()
-            windowModel.statusText = "需要辅助功能权限"
-            showPermissionAlert(
-                title: "需要辅助功能权限",
-                message: "请允许 Glint 使用辅助功能来定位当前输入光标和候选栏。授权后重新启动 Glint。",
-                settingsAnchor: "Privacy_Accessibility"
-            )
+        refreshPermissionState()
+        guard windowModel.screenRecordingGranted,
+              windowModel.accessibilityGranted else {
+            beginPermissionRequest()
             return
         }
         monitoringTask = Task { [weak self] in
@@ -219,9 +246,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         let mode = windowModel.translationMode
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
             await environment.monitoring.setMode(mode)
             await environment.monitoring.start()
+            markRuntimeReady()
         }
         windowModel.isMonitoring = true
         windowModel.statusText = ""
@@ -230,6 +259,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func stopMonitoring() {
+        shouldStartMonitoringAfterPreparation = false
         monitoringTask?.cancel()
         monitoringTask = nil
         cancelPendingHUD()
@@ -313,22 +343,108 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowModel.accessibilityGranted = FocusMonitor.isAccessibilityTrusted()
     }
 
-    private func showPermissionAlert(
-        title: String,
-        message: String,
-        settingsAnchor: String
-    ) {
-        NSApp.activate(ignoringOtherApps: true)
-        let alert = NSAlert()
-        alert.messageText = title
-        alert.informativeText = message
-        alert.addButton(withTitle: "打开系统设置")
-        alert.addButton(withTitle: "稍后")
-        if alert.runModal() == .alertFirstButtonReturn,
-           let url = URL(
-               string: "x-apple.systempreferences:com.apple.preference.security?\(settingsAnchor)"
-           ) {
-            NSWorkspace.shared.open(url)
+    private func markRuntimeReady() {
+        guard let readinessToken else { return }
+        let url = Self.runtimeReadyURL
+        do {
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try readinessToken.write(
+                to: url,
+                atomically: true,
+                encoding: .utf8
+            )
+        } catch {
+            NSLog("Glint: failed to write runtime readiness: %@", String(describing: error))
+        }
+    }
+
+    private static func readinessToken(
+        from arguments: [String]
+    ) -> String? {
+        guard let flagIndex = arguments.firstIndex(of: "--readiness-token"),
+              arguments.indices.contains(flagIndex + 1) else {
+            return nil
+        }
+        let token = arguments[flagIndex + 1]
+        return token.isEmpty ? nil : token
+    }
+
+    private static var runtimeReadyURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/Glint")
+            .appendingPathComponent("runtime-ready")
+    }
+
+    private func beginPermissionRequest() {
+        refreshPermissionState()
+        if windowModel.screenRecordingGranted,
+           windowModel.accessibilityGranted {
+            pendingPermissionStep = nil
+            permissionRequestWasIssued = false
+            startMonitoring()
+            return
+        }
+
+        pendingPermissionStep = windowModel.screenRecordingGranted
+            ? .accessibility
+            : .screenRecording
+        permissionRequestWasIssued = false
+        screenCaptureWasRequested = false
+        continuePermissionRequest()
+    }
+
+    private func continuePermissionRequest() {
+        refreshPermissionState()
+        guard let step = pendingPermissionStep else { return }
+
+        switch step {
+        case .screenRecording:
+            if windowModel.screenRecordingGranted {
+                pendingPermissionStep = .accessibility
+                permissionRequestWasIssued = false
+                continuePermissionRequest()
+                return
+            }
+            guard !permissionRequestWasIssued else {
+                windowModel.statusText = "请在“系统设置 › 隐私与安全性 › 录屏与系统录音”中开启 Glint。"
+                return
+            }
+            permissionRequestWasIssued = true
+            screenCaptureWasRequested = true
+            windowModel.statusText = "请在系统提示中允许 Glint 录制屏幕。"
+            _ = CGRequestScreenCaptureAccess()
+            refreshPermissionState()
+            if windowModel.screenRecordingGranted {
+                pendingPermissionStep = .accessibility
+                permissionRequestWasIssued = false
+                continuePermissionRequest()
+            }
+        case .accessibility:
+            if windowModel.accessibilityGranted {
+                pendingPermissionStep = nil
+                permissionRequestWasIssued = false
+                if screenCaptureWasRequested {
+                    windowModel.statusText = "屏幕录制已授权，请重新启动 Glint。"
+                } else {
+                    windowModel.statusText = ""
+                    startMonitoring()
+                }
+                return
+            }
+            guard !permissionRequestWasIssued else {
+                windowModel.statusText = "请在“系统设置 › 隐私与安全性 › 辅助功能”中开启 Glint。"
+                return
+            }
+            permissionRequestWasIssued = true
+            windowModel.statusText = "请在系统提示中允许 Glint 使用辅助功能。"
+            FocusMonitor.requestAccessibility()
+            refreshPermissionState()
+            if windowModel.accessibilityGranted {
+                continuePermissionRequest()
+            }
         }
     }
 

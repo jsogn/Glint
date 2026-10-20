@@ -161,6 +161,7 @@ private struct OverviewStatusCard: View {
                 Button(action: primaryAction) {
                     Label(actionTitle, systemImage: actionSymbol)
                 }
+                .tint(actionTint)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
             }
@@ -183,7 +184,7 @@ private struct OverviewStatusCard: View {
 
     private func primaryAction() {
         if missingPermissionText != nil {
-            selection = .permissions
+            model.requestPermissions()
         } else if model.isMonitoring {
             model.stopMonitoring()
         } else {
@@ -193,16 +194,23 @@ private struct OverviewStatusCard: View {
 
     private var actionTitle: String {
         if missingPermissionText != nil {
-            return "检查权限"
+            return "继续授权"
         }
         return model.isMonitoring ? "关闭翻译显示" : "开启翻译显示"
     }
 
     private var actionSymbol: String {
         if missingPermissionText != nil {
-            return "lock.shield"
+            return "lock.open"
         }
         return model.isMonitoring ? "stop.circle" : "play.circle"
+    }
+
+    private var actionTint: Color {
+        if missingPermissionText != nil {
+            return .accentColor
+        }
+        return model.isMonitoring ? .red : .accentColor
     }
 }
 

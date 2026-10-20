@@ -54,6 +54,8 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var refreshPermissionsAction: @MainActor () -> Void = {}
     @ObservationIgnored
+    public var requestPermissionsAction: @MainActor () -> Void = {}
+    @ObservationIgnored
     public var activateTranslationModelAction: @MainActor () async -> String? = { nil }
     @ObservationIgnored
     public var configureOCRRecognitionAction:
@@ -158,6 +160,10 @@ public final class MainWindowModel {
 
     public func refreshPermissions() {
         refreshPermissionsAction()
+    }
+
+    public func requestPermissions() {
+        requestPermissionsAction()
     }
 
     public func refreshPlugins() async {
