@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <linearGradient id="desktop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11131A"/>
+      <stop offset="0.55" stop-color="#0D0F14"/>
+      <stop offset="1" stop-color="#17131A"/>
+    </linearGradient>
+    <radialGradient id="glowBlue" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#4878FF" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#4878FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowWarm" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FFE600" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#FFE600" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="windowShadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#000000" flood-opacity="0.48"/>
+    </filter>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.32"/>
+    </filter>
+    <style>
+      text {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+      }
+      .window-title { fill: #A9ADB7; font-size: 16px; font-weight: 500; }
+      .eyebrow { fill: #6F7481; font-size: 15px; font-weight: 600; letter-spacing: 0.08em; }
+      .editor { fill: #F5F6F8; font-size: 31px; font-weight: 500; }
+      .secondary { fill: #626876; font-size: 21px; font-weight: 450; }
+      .candidate { fill: #E9EBF0; font-size: 19px; font-weight: 520; }
+      .candidate-selected { fill: #FFFFFF; font-size: 19px; font-weight: 650; }
+      .result { fill: #F4F5F7; font-size: 21px; font-weight: 520; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#desktop)"/>
+  <ellipse cx="260" cy="150" rx="560" ry="340" fill="url(#glowBlue)"/>
+  <ellipse cx="1360" cy="850" rx="500" ry="300" fill="url(#glowWarm)"/>
+
+  <g filter="url(#windowShadow)">
+    <rect x="180" y="90" width="1240" height="720" rx="26" fill="#1A1B20" stroke="#3A3C45" stroke-width="1.4"/>
+  </g>
+
+  <path d="M180 116a26 26 0 0 1 26-26h1188a26 26 0 0 1 26 26v50H180z" fill="#202127"/>
+  <line x1="180" y1="166" x2="1420" y2="166" stroke="#33353D" stroke-width="1"/>
+
+  <circle cx="218" cy="128" r="7" fill="#FF5F57"/>
+  <circle cx="242" cy="128" r="7" fill="#FEBC2E"/>
+  <circle cx="266" cy="128" r="7" fill="#28C840"/>
+  <text x="306" y="134" class="window-title">新文稿</text>
+
+  <text x="250" y="220" class="eyebrow">日常写作</text>
+
+  <text x="250" y="294" class="editor">今天天气不错，去公园走走吧。</text>
+  <rect x="748" y="266" width="2.5" height="34" rx="1.25" fill="#5D9BFF"/>
+
+  <g filter="url(#softShadow)">
+    <rect x="700" y="358" width="700" height="62" rx="18" fill="#2A2B31" stroke="#464851" stroke-width="1.2"/>
+  </g>
+  <rect x="710" y="368" width="208" height="42" rx="12" fill="#0A84FF"/>
+  <text x="732" y="395" class="candidate-selected">今天天气不错</text>
+  <text x="944" y="395" class="candidate">今天天气</text>
+  <text x="1078" y="395" class="candidate">今天</text>
+  <text x="1170" y="395" class="candidate">今日</text>
+
+  <g filter="url(#softShadow)">
+    <rect x="710" y="440" width="540" height="58" rx="15" fill="#292A30" stroke="#4A4C56" stroke-width="1.2"/>
+  </g>
+  <circle cx="740" cy="469" r="4.5" fill="#FFE600"/>
+  <text x="760" y="477" class="result">The weather is nice today.</text>
+</svg>
