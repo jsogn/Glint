@@ -2,7 +2,7 @@
 
 面向中文母语者的 macOS 英文学习工具：读取苹果拼音焦点候选，在候选栏旁显示单行英文。
 
-<!-- PRODUCT_SCREENSHOT -->
+![Glint 主界面](docs/assets/glint-overview.png)
 
 Glint 不替换苹果输入法，不抢焦点，也不打断输入。它跟随当前候选，在你打字时显示
 最相关的英文表达，让日常输入自然成为轻量的英语练习。
@@ -22,7 +22,7 @@ Glint 不替换苹果输入法，不抢焦点，也不打断输入。它跟随�
 - 不确定中文词对应的英文时，直接查看候选栏旁的提示
 - 写英文邮件或文案时，用整句翻译确认表达
 
-<!-- PREVIEW_SCREENSHOT -->
+![Glint 候选栏翻译显示预览](docs/assets/glint-preview.png)
 
 ## 运行
 
