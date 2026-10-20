@@ -33,6 +33,9 @@ public final class MainWindowController: NSWindowController {
 
     public func show() {
         guard let window else { return }
+        if window.isMiniaturized {
+            window.deminiaturize(nil)
+        }
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

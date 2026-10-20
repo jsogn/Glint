@@ -56,6 +56,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    func applicationShouldHandleReopen(
+        _ sender: NSApplication,
+        hasVisibleWindows flag: Bool
+    ) -> Bool {
+        showMainWindow()
+        return true
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         stopMonitoring()
     }
@@ -65,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateStatusItem(isMonitoring: false)
 
         let menu = NSMenu()
-        menu.addItem(item("打开 Glint", action: #selector(openMainWindow)))
+        menu.addItem(item("显示主界面", action: #selector(openMainWindow)))
         monitoringMenuItem = item("开启翻译显示", action: #selector(toggleMonitoring))
         menu.addItem(monitoringMenuItem)
         menu.addItem(NSMenuItem.separator())
@@ -156,6 +164,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openMainWindow() {
+        showMainWindow()
+    }
+
+    private func showMainWindow() {
+        NSApp.unhide(nil)
         mainWindowController.show()
     }
 
