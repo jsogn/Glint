@@ -100,22 +100,17 @@ final class AppEnvironment {
     }
 
     func configureOCR(
-        engineID: String,
-        enhancementMode: OCREnhancementMode
+        preferences: OCRRecognitionPreferences
     ) async -> String? {
         let resolution = await OCRPluginLoader.resolve(
-            engineID: engineID,
-            enhancementMode: enhancementMode,
+            preferences: preferences,
             manager: pluginManager
         )
         await monitoring.setOCRConfiguration(resolution.configuration)
         if let warning = resolution.warning {
             return warning
         }
-        guard resolution.configuration.preferredBackend == .ppocr else {
-            return nil
-        }
         return OCRService(configuration: resolution.configuration)
-            .validatePreferredBackend()
+            .validateConfiguration()
     }
 }

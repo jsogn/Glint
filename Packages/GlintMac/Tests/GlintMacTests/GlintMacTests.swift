@@ -25,29 +25,38 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(detection.text, "你好")
     }
 
-    func testAppleVisionFallbackWhenPPOCRIsUnavailable() throws {
+    func testAppleVisionRunsWhenPPOCRIsUnavailable() throws {
         let image = try loadCandidateSample()
-        let service = OCRService(
-            configuration: OCRRuntimeConfiguration(
-                preferredBackend: .ppocr,
-                ppocrPluginDirectory: nil
-            )
-        )
+        let service = OCRService(configuration: .appleVision)
         XCTAssertEqual(service.detect(in: image)?.text, "你好")
     }
 
-    func testAppleVisionAutomaticEnhancementUsesPPOCRForLowConfidence() throws {
+    func testAutomaticFallbackUsesPPOCRForLowConfidence() throws {
         let image = try loadImage(at: ocrDatasetURL("synthetic_021_0.png"))
         let service = OCRService(
             configuration: OCRRuntimeConfiguration(
-                preferredBackend: .vision,
-                ppocrPluginDirectory: pluginDirectoryURL(),
-                candidateCacheEnabled: false,
-                enhancementMode: .automatic
+                primaryModel: .appleVision,
+                backupModel: ppocrRuntime(),
+                recognitionStrategy: .automaticFallback,
+                candidateCacheEnabled: false
             )
         )
 
         XCTAssertEqual(service.detect(in: image)?.text, "重要")
+    }
+
+    func testDualVerificationRunsBackupModel() throws {
+        let image = try loadCandidateSample()
+        let service = OCRService(
+            configuration: OCRRuntimeConfiguration(
+                primaryModel: ppocrRuntime(id: "test.ppocr.primary"),
+                backupModel: ppocrRuntime(id: "test.ppocr.backup"),
+                recognitionStrategy: .dualVerification,
+                candidateCacheEnabled: false
+            )
+        )
+
+        XCTAssertEqual(service.detect(in: image)?.text, "你好")
     }
 
     func testCandidateCacheReusesStableCrop() throws {
@@ -233,10 +242,20 @@ final class GlintMacTests: XCTestCase {
     ) -> OCRService {
         OCRService(
             configuration: OCRRuntimeConfiguration(
-                preferredBackend: .ppocr,
-                ppocrPluginDirectory: pluginDirectoryURL(),
+                primaryModel: ppocrRuntime(),
+                recognitionStrategy: .primaryOnly,
                 candidateCacheEnabled: cacheEnabled
             )
+        )
+    }
+
+    private func ppocrRuntime(
+        id: String = "test.ppocr"
+    ) -> OCRModelRuntimeConfiguration {
+        OCRModelRuntimeConfiguration(
+            id: id,
+            backend: .ppocr,
+            ppocrPluginDirectory: pluginDirectoryURL()
         )
     }
 

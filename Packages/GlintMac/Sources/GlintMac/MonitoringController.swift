@@ -52,7 +52,7 @@ public actor MonitoringController {
         lastDetectedCandidate = nil
         let configuredOCR = ocr
         Task.detached(priority: .userInitiated) {
-            configuredOCR.warmUpPreferredBackend()
+            configuredOCR.warmUpConfiguredBackends()
         }
     }
 

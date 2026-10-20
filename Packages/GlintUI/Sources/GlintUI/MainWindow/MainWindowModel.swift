@@ -20,8 +20,7 @@ public final class MainWindowModel {
     public private(set) var catalogError: String?
     public private(set) var catalogMessage = "未配置插件目录"
     public private(set) var activeModelID: String
-    public private(set) var activeOCREngineID: String
-    public private(set) var ocrEnhancementMode: OCREnhancementMode
+    public private(set) var ocrRecognitionPreferences: OCRRecognitionPreferences
     public private(set) var ocrEngineStatusText: String?
     public private(set) var ocrEngineStatusIsError = false
     public private(set) var translationMode: TranslationMode
@@ -57,10 +56,8 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var activateTranslationModelAction: @MainActor () async -> String? = { nil }
     @ObservationIgnored
-    public var activateOCREngineAction:
-        @MainActor (String, OCREnhancementMode) async -> String? = {
-            _, _ in nil
-        }
+    public var configureOCRRecognitionAction:
+        @MainActor (OCRRecognitionPreferences) async -> String? = { _ in nil }
     @ObservationIgnored
     public var testOpenAICompatibleAction:
         @MainActor (OpenAICompatibleConfiguration) async throws -> Void = { _ in }
@@ -94,9 +91,8 @@ public final class MainWindowModel {
             TranslationModelSelection.select(activeModelID, in: defaults)
         }
         self.activeModelID = activeModelID
-        self.activeOCREngineID = OCREngineSelection.selected(in: defaults)
-        self.ocrEnhancementMode = OCREnhancementSelection.selected(
-            in: defaults
+        self.ocrRecognitionPreferences = OCRRecognitionPreferences.load(
+            from: defaults
         )
         self.translationMode = TranslationModeSelection.selected(in: defaults)
     }
@@ -130,15 +126,12 @@ public final class MainWindowModel {
     }
 
     public var ocrSummary: String {
-        if activeOCREngineID == OCREngineSelection.visionEngineID {
-            return "Apple Vision"
+        let primary = ocrModelName(ocrRecognitionPreferences.primaryModelID)
+        guard ocrRecognitionPreferences.strategy != .primaryOnly,
+              let backupID = ocrRecognitionPreferences.backupModelID else {
+            return primary
         }
-        return ocrPlugins.first { $0.id == activeOCREngineID }?.name
-            ?? "Apple Vision"
-    }
-
-    public var isVisionOCREngineActive: Bool {
-        activeOCREngineID == OCREngineSelection.visionEngineID
+        return "\(primary) → \(ocrModelName(backupID))"
     }
 
     public var isOpenAICompatibleActive: Bool {
@@ -171,9 +164,9 @@ public final class MainWindowModel {
         isLoadingPlugins = true
         installedPlugins = await pluginManager.installedPlugins()
         reconcileActiveTranslationModel()
-        reconcileActiveOCREngine()
+        reconcileOCRRecognitionPreferences()
         isLoadingPlugins = false
-        await configureActiveOCREngine()
+        await configureOCRRecognition()
         guard let catalogURL else {
             availablePlugins = []
             catalogMessage = "未配置插件目录"
@@ -278,8 +271,8 @@ public final class MainWindowModel {
 
     public func uninstallPlugin(_ plugin: PluginManifest) async {
         guard !isActiveTranslationModel(plugin),
-              !isActiveOCREngine(plugin) else {
-            catalogError = "使用中的模型不可卸载，请先切换模型。"
+              !isOCRModelInUse(plugin.id) else {
+            catalogError = "主模型或备用模型不可卸载，请先更换。"
             return
         }
         catalogError = nil
@@ -298,21 +291,48 @@ public final class MainWindowModel {
         prepareActiveTranslationModel()
     }
 
-    public func activateOCREngine(id: String) {
-        guard id == OCREngineSelection.visionEngineID
-            || ocrPlugins.contains(where: { $0.id == id }) else {
+    public func setPrimaryOCRModel(id: String) {
+        guard isAvailableOCRModel(id) else {
             return
         }
-        activeOCREngineID = id
-        OCREngineSelection.select(id, in: defaults)
-        prepareActiveOCREngine()
+        let backup = ocrRecognitionPreferences.backupModelID == id
+            ? nil
+            : ocrRecognitionPreferences.backupModelID
+        updateOCRRecognitionPreferences(
+            OCRRecognitionPreferences(
+                primaryModelID: id,
+                backupModelID: backup,
+                strategy: ocrRecognitionPreferences.strategy
+            )
+        )
     }
 
-    public func setOCREnhancementMode(_ mode: OCREnhancementMode) {
-        guard ocrEnhancementMode != mode else { return }
-        ocrEnhancementMode = mode
-        OCREnhancementSelection.select(mode, in: defaults)
-        prepareActiveOCREngine()
+    public func setBackupOCRModel(id: String?) {
+        if let id {
+            guard isAvailableOCRModel(id),
+                  id != ocrRecognitionPreferences.primaryModelID else {
+                return
+            }
+        }
+        updateOCRRecognitionPreferences(
+            OCRRecognitionPreferences(
+                primaryModelID: ocrRecognitionPreferences.primaryModelID,
+                backupModelID: id,
+                strategy: ocrRecognitionPreferences.strategy
+            )
+        )
+    }
+
+    public func setOCRRecognitionStrategy(
+        _ strategy: OCRRecognitionStrategy
+    ) {
+        updateOCRRecognitionPreferences(
+            OCRRecognitionPreferences(
+                primaryModelID: ocrRecognitionPreferences.primaryModelID,
+                backupModelID: ocrRecognitionPreferences.backupModelID,
+                strategy: strategy
+            )
+        )
     }
 
     public func activateOpenAICompatibleProvider(
@@ -405,8 +425,16 @@ public final class MainWindowModel {
         plugin.type == .translation && plugin.id == activeModelID
     }
 
-    public func isActiveOCREngine(_ plugin: PluginManifest) -> Bool {
-        plugin.type == .ocr && plugin.id == activeOCREngineID
+    public func isOCRModelInUse(_ modelID: String) -> Bool {
+        ocrRecognitionPreferences.primaryModelID == modelID
+            || ocrRecognitionPreferences.backupModelID == modelID
+    }
+
+    public func ocrModelName(_ modelID: String) -> String {
+        if modelID == OCRRecognitionPreferences.visionModelID {
+            return "Apple Vision"
+        }
+        return ocrPlugins.first { $0.id == modelID }?.name ?? modelID
     }
 
     public func installedVersion(for id: String) -> String? {
@@ -482,52 +510,65 @@ public final class MainWindowModel {
         }
     }
 
-    private func reconcileActiveOCREngine() {
-        guard activeOCREngineID != OCREngineSelection.visionEngineID else {
-            return
+    private func reconcileOCRRecognitionPreferences() {
+        let validModels = Set(
+            [OCRRecognitionPreferences.visionModelID]
+                + ocrPlugins.map(\.id)
+        )
+        let primary = validModels.contains(
+            ocrRecognitionPreferences.primaryModelID
+        ) ? ocrRecognitionPreferences.primaryModelID
+            : OCRRecognitionPreferences.visionModelID
+        let backup = ocrRecognitionPreferences.backupModelID.flatMap {
+            $0 != primary && validModels.contains($0) ? $0 : nil
         }
-        guard ocrPlugins.contains(where: { $0.id == activeOCREngineID }) else {
-            activeOCREngineID = OCREngineSelection.visionEngineID
-            OCREngineSelection.select(
-                OCREngineSelection.visionEngineID,
-                in: defaults
-            )
-            ocrEngineStatusText = nil
-            ocrEngineStatusIsError = false
-            return
-        }
+        let reconciled = OCRRecognitionPreferences(
+            primaryModelID: primary,
+            backupModelID: backup,
+            strategy: ocrRecognitionPreferences.strategy
+        )
+        guard reconciled != ocrRecognitionPreferences else { return }
+        ocrRecognitionPreferences = reconciled
+        reconciled.save(to: defaults)
+        ocrEngineStatusText = nil
+        ocrEngineStatusIsError = false
     }
 
-    private func configureActiveOCREngine() async {
-        let engineID = activeOCREngineID
-        let enhancementMode = ocrEnhancementMode
-        let warning = await activateOCREngineAction(
-            engineID,
-            enhancementMode
-        )
-        guard activeOCREngineID == engineID else { return }
+    private func configureOCRRecognition() async {
+        let preferences = ocrRecognitionPreferences
+        let warning = await configureOCRRecognitionAction(preferences)
+        guard ocrRecognitionPreferences == preferences else { return }
         ocrEngineStatusText = warning
         ocrEngineStatusIsError = warning != nil
     }
 
-    private func prepareActiveOCREngine() {
-        let engineID = activeOCREngineID
-        let enhancementMode = ocrEnhancementMode
+    private func updateOCRRecognitionPreferences(
+        _ preferences: OCRRecognitionPreferences
+    ) {
+        guard preferences != ocrRecognitionPreferences else { return }
+        ocrRecognitionPreferences = preferences
+        preferences.save(to: defaults)
+        prepareOCRRecognition()
+    }
+
+    private func prepareOCRRecognition() {
+        let preferences = ocrRecognitionPreferences
         ocrEngineStatusText = nil
         ocrEngineStatusIsError = false
         Task { [weak self] in
             guard let self else { return }
-            let warning = await activateOCREngineAction(
-                engineID,
-                enhancementMode
-            )
-            guard activeOCREngineID == engineID,
-                  ocrEnhancementMode == enhancementMode else {
+            let warning = await configureOCRRecognitionAction(preferences)
+            guard ocrRecognitionPreferences == preferences else {
                 return
             }
             ocrEngineStatusText = warning
             ocrEngineStatusIsError = warning != nil
         }
+    }
+
+    private func isAvailableOCRModel(_ modelID: String) -> Bool {
+        modelID == OCRRecognitionPreferences.visionModelID
+            || ocrPlugins.contains { $0.id == modelID }
     }
 
     private static func defaultCatalogURL() -> URL? {

@@ -9,63 +9,99 @@ struct OCRPluginResolution {
 }
 
 enum OCRPluginLoader {
-    static let ppocrPluginID = "ocr-ppocrv6-small"
-
     static func resolve(
-        engineID: String,
-        enhancementMode: OCREnhancementMode,
+        preferences: OCRRecognitionPreferences,
         manager: PluginManager
     ) async -> OCRPluginResolution {
-        let installed = await manager.installedPlugins()
-        let ocrPlugins = installed.filter {
-            $0.type == .ocr
-                && ["huggingface-onnx", "onnxruntime"].contains($0.runtime)
-        }
-        let selected = ocrPlugins.first { $0.id == engineID }
-            ?? ocrPlugins.first { $0.id == ppocrPluginID }
-            ?? ocrPlugins.first
-
-        let pluginDirectory: URL?
-        let pluginToken: String?
         if let override = ProcessInfo.processInfo.environment[
             "GLINT_OCR_PLUGIN_DIR"
         ], !override.isEmpty {
-            pluginDirectory = URL(fileURLWithPath: override, isDirectory: true)
-            pluginToken = nil
-        } else if let selected {
-            pluginDirectory = await manager.pluginDirectory(for: selected.id)
-            pluginToken = "\(selected.version):\(selected.sha256)"
-        } else {
-            pluginDirectory = nil
-            pluginToken = nil
-        }
-
-        if engineID == OCREngineSelection.visionEngineID {
             return OCRPluginResolution(
                 configuration: OCRRuntimeConfiguration(
-                    preferredBackend: .vision,
-                    ppocrPluginDirectory: pluginDirectory,
-                    ppocrPluginToken: pluginToken,
-                    enhancementMode: enhancementMode
+                    primaryModel: OCRModelRuntimeConfiguration(
+                        id: "ppocr.override",
+                        backend: .ppocr,
+                        ppocrPluginDirectory: URL(
+                            fileURLWithPath: override,
+                            isDirectory: true
+                        )
+                    ),
+                    recognitionStrategy: .primaryOnly
                 ),
                 warning: nil
             )
         }
 
-        guard selected != nil || pluginDirectory != nil else {
-            return OCRPluginResolution(
-                configuration: .appleVision,
-                warning: "未找到已安装的 PP-OCR 插件，已使用 Apple Vision"
-            )
+        let installed = await manager.installedPlugins()
+        let ocrPlugins = installed.filter {
+            $0.type == .ocr
+                && ["huggingface-onnx", "onnxruntime"].contains($0.runtime)
         }
+        let manifests = Dictionary(
+            uniqueKeysWithValues: ocrPlugins.map { ($0.id, $0) }
+        )
+
+        let primary: OCRModelRuntimeConfiguration
+        let warning: String?
+        if preferences.primaryModelID == OCRRecognitionPreferences.visionModelID {
+            primary = .appleVision
+            warning = nil
+        } else if let runtime = await runtime(
+            modelID: preferences.primaryModelID,
+            manifests: manifests,
+            manager: manager
+        ) {
+            primary = runtime
+            warning = nil
+        } else {
+            primary = .appleVision
+            warning = "主识别模型不可用，已使用 Apple Vision"
+        }
+
+        let backup: OCRModelRuntimeConfiguration?
+        if preferences.strategy != .primaryOnly,
+           let backupModelID = preferences.backupModelID,
+           backupModelID != primary.id,
+           backupModelID != preferences.primaryModelID {
+            if backupModelID == OCRRecognitionPreferences.visionModelID {
+                backup = primary.id == OCRRecognitionPreferences.visionModelID
+                    ? nil
+                    : .appleVision
+            } else {
+                backup = await runtime(
+                    modelID: backupModelID,
+                    manifests: manifests,
+                    manager: manager
+                )
+            }
+        } else {
+            backup = nil
+        }
+
         return OCRPluginResolution(
             configuration: OCRRuntimeConfiguration(
-                preferredBackend: .ppocr,
-                ppocrPluginDirectory: pluginDirectory,
-                ppocrPluginToken: pluginToken,
-                enhancementMode: enhancementMode
+                primaryModel: primary,
+                backupModel: backup,
+                recognitionStrategy: preferences.strategy
             ),
-            warning: nil
+            warning: warning
+        )
+    }
+
+    private static func runtime(
+        modelID: String,
+        manifests: [String: PluginManifest],
+        manager: PluginManager
+    ) async -> OCRModelRuntimeConfiguration? {
+        guard let manifest = manifests[modelID] else {
+            return nil
+        }
+        let directory = await manager.pluginDirectory(for: modelID)
+        return OCRModelRuntimeConfiguration(
+            id: modelID,
+            backend: .ppocr,
+            ppocrPluginDirectory: directory,
+            ppocrPluginToken: "\(manifest.version):\(manifest.sha256)"
         )
     }
 }

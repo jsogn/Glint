@@ -251,6 +251,11 @@ private struct DisplayPage: View {
     }
 }
 
+private struct OCRModelChoice: Identifiable {
+    let id: String
+    let name: String
+}
+
 private struct PluginsPage: View {
     let model: MainWindowModel
     @State private var pluginToRemove: PluginManifest?
@@ -367,7 +372,7 @@ private struct PluginsPage: View {
         case .ocr:
             SettingsPanel(minHeight: 420) {
                 VStack(alignment: .leading, spacing: 0) {
-                    enhancementRow
+                    recognitionStrategySection
                     Divider()
                         .padding(.vertical, 8)
                     builtInVisionRow
@@ -389,52 +394,137 @@ private struct PluginsPage: View {
         }
     }
 
-    private var enhancementRow: some View {
-        HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("识别增强")
-                Text(enhancementDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private var recognitionStrategySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                Text("识别策略")
+                Spacer()
+                Picker(
+                    "识别策略",
+                    selection: Binding(
+                        get: { model.ocrRecognitionPreferences.strategy },
+                        set: { model.setOCRRecognitionStrategy($0) }
+                    )
+                ) {
+                    ForEach(OCRRecognitionStrategy.allCases, id: \.self) {
+                        strategy in
+                        Text(strategy.title).tag(strategy)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 340)
             }
-            Spacer()
-            Picker(
-                "识别增强",
+
+            modelPickerRow(
+                title: "主模型",
                 selection: Binding(
-                    get: { model.ocrEnhancementMode },
-                    set: { model.setOCREnhancementMode($0) }
+                    get: { model.ocrRecognitionPreferences.primaryModelID },
+                    set: { model.setPrimaryOCRModel(id: $0) }
                 )
             ) {
-                ForEach(OCREnhancementMode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode)
+                ForEach(ocrModelChoices) { choice in
+                    Text(choice.name).tag(choice.id)
                 }
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .frame(width: 220)
+
+            modelPickerRow(
+                title: "备用模型",
+                selection: Binding(
+                    get: { model.ocrRecognitionPreferences.backupModelID },
+                    set: { model.setBackupOCRModel(id: $0) }
+                )
+            ) {
+                Text("未选择").tag(String?.none)
+                ForEach(backupModelChoices) { choice in
+                    Text(choice.name).tag(Optional(choice.id))
+                }
+            }
             .disabled(
-                !model.isVisionOCREngineActive
-                    || model.ocrPlugins.isEmpty
+                model.ocrRecognitionPreferences.strategy == .primaryOnly
             )
+
+            Text(strategyDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .padding(.vertical, 8)
     }
 
-    private var enhancementDescription: String {
-        guard model.isVisionOCREngineActive else {
-            return "识别增强仅在 Apple Vision 下生效。"
+    private func modelPickerRow<Content: View>(
+        title: String,
+        selection: Binding<String?>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 16) {
+            Text(title)
+                .frame(width: 72, alignment: .leading)
+            Picker(title, selection: selection) {
+                content()
+            }
+            .labelsHidden()
+            .frame(width: 340)
+            Spacer()
         }
-        guard !model.ocrPlugins.isEmpty else {
-            return "安装 PP-OCR 后可增强复杂候选。"
+    }
+
+    private func modelPickerRow<Content: View>(
+        title: String,
+        selection: Binding<String>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 16) {
+            Text(title)
+                .frame(width: 72, alignment: .leading)
+            Picker(title, selection: selection) {
+                content()
+            }
+            .labelsHidden()
+            .frame(width: 340)
+            Spacer()
         }
-        return model.ocrEnhancementMode.explanation
+    }
+
+    private var strategyDescription: String {
+        if model.ocrRecognitionPreferences.strategy == .primaryOnly {
+            return "只使用主模型，备用模型暂不参与识别。"
+        }
+        guard let backupID = model.ocrRecognitionPreferences.backupModelID else {
+            return "请选择备用模型后启用自动回退或双模型校验。"
+        }
+        let backup = model.ocrModelName(backupID)
+        switch model.ocrRecognitionPreferences.strategy {
+        case .automaticFallback:
+            return "主模型结果不可靠时，再使用 \(backup)。"
+        case .dualVerification:
+            return "每次同时运行主模型和 \(backup)，优先保证准确率。"
+        case .primaryOnly:
+            return ""
+        }
+    }
+
+    private var ocrModelChoices: [OCRModelChoice] {
+        [
+            OCRModelChoice(
+                id: OCRRecognitionPreferences.visionModelID,
+                name: "Apple Vision"
+            ),
+        ] + model.ocrPlugins.map {
+            OCRModelChoice(id: $0.id, name: $0.name)
+        }
+    }
+
+    private var backupModelChoices: [OCRModelChoice] {
+        ocrModelChoices.filter {
+            $0.id != model.ocrRecognitionPreferences.primaryModelID
+        }
     }
 
     private var builtInVisionRow: some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Apple Vision")
-                Text("系统内置，无需下载；识别失败时自动使用已安装的增强模型。")
+                Text("系统内置，无需下载。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text("系统内置 · macOS")
@@ -442,21 +532,9 @@ private struct PluginsPage: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if model.isVisionOCREngineActive {
-                Text("使用中")
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(.blue.opacity(0.16), in: Capsule())
-                    .foregroundStyle(.blue)
-            } else {
-                Button("使用") {
-                    model.activateOCREngine(
-                        id: OCREngineSelection.visionEngineID
-                    )
-                }
-                .disabled(model.isInstalling != nil)
-            }
+            ocrModelBadges(
+                modelID: OCRRecognitionPreferences.visionModelID
+            )
         }
         .padding(.vertical, 8)
     }
@@ -498,8 +576,8 @@ private struct PluginsPage: View {
     }
 
     private func installedRow(_ plugin: PluginManifest) -> some View {
-        let isActiveModel = model.isActiveTranslationModel(plugin)
-            || model.isActiveOCREngine(plugin)
+        let isInUse = model.isActiveTranslationModel(plugin)
+            || model.isOCRModelInUse(plugin.id)
         return HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text(plugin.name)
@@ -538,21 +616,9 @@ private struct PluginsPage: View {
                     )
                 }
             } else if plugin.type == .ocr {
-                if model.isActiveOCREngine(plugin) {
-                    Text("使用中")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(.blue.opacity(0.16), in: Capsule())
-                        .foregroundStyle(.blue)
-                } else {
-                    Button("使用") {
-                        model.activateOCREngine(id: plugin.id)
-                    }
-                    .disabled(model.isInstalling != nil)
-                }
+                ocrModelBadges(modelID: plugin.id)
             }
-            if !isActiveModel {
+            if !isInUse {
                 Button("卸载", role: .destructive) {
                     pluginToRemove = plugin
                 }
@@ -560,6 +626,25 @@ private struct PluginsPage: View {
                     model.isInstalling != nil || model.isImportingLocalModel
                 )
             }
+        }
+    }
+
+    @ViewBuilder
+    private func ocrModelBadges(modelID: String) -> some View {
+        if model.ocrRecognitionPreferences.primaryModelID == modelID {
+            Text("主模型")
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(.blue.opacity(0.16), in: Capsule())
+                .foregroundStyle(.blue)
+        } else if model.ocrRecognitionPreferences.backupModelID == modelID {
+            Text("备用模型")
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(.secondary.opacity(0.12), in: Capsule())
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -695,26 +780,15 @@ extension TranslationMode {
     }
 }
 
-extension OCREnhancementMode {
+extension OCRRecognitionStrategy {
     var title: String {
         switch self {
-        case .automatic:
-            return "自动"
-        case .always:
-            return "始终"
-        case .off:
-            return "关闭"
-        }
-    }
-
-    var explanation: String {
-        switch self {
-        case .automatic:
-            return "Apple Vision 置信度不足时再调用 PP-OCR。"
-        case .always:
-            return "每次同时调用两个引擎，准确率更高但更耗资源。"
-        case .off:
-            return "只使用 Apple Vision，不调用 PP-OCR。"
+        case .automaticFallback:
+            return "自动回退"
+        case .dualVerification:
+            return "双模型校验"
+        case .primaryOnly:
+            return "仅主模型"
         }
     }
 }

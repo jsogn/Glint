@@ -13,18 +13,20 @@ enum SelfCheck {
         Task {
             print("screenRecording=\(CGPreflightScreenCaptureAccess())")
             print("accessibility=\(FocusMonitor.isAccessibilityTrusted())")
+            let ocrPreferences = OCRRecognitionPreferences.load()
             let ocrResolution = await OCRPluginLoader.resolve(
-                engineID: OCREngineSelection.selected(),
-                enhancementMode: OCREnhancementSelection.selected(),
+                preferences: ocrPreferences,
                 manager: PluginManager()
             )
             let ocrService = OCRService(
                 configuration: ocrResolution.configuration
             )
             let ocrWarning = ocrResolution.warning
-                ?? ocrService.validatePreferredBackend()
+                ?? ocrService.validateConfiguration()
             print(
-                "ocr preferred=\(ocrResolution.configuration.preferredBackend.rawValue) "
+                "ocr strategy=\(ocrPreferences.strategy.rawValue) "
+                    + "primary=\(ocrResolution.configuration.primaryModel.id) "
+                    + "backup=\(ocrResolution.configuration.backupModel?.id ?? "<none>") "
                     + "ppocrAvailable=\(ocrService.isPPOCRAvailable) "
                     + "warning=\(ocrWarning ?? "<none>")"
             )
