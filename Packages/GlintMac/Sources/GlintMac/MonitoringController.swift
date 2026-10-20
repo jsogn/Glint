@@ -42,12 +42,14 @@ public actor MonitoringController {
 
     public func setMode(_ mode: TranslationMode) {
         self.mode = mode
+        lastDetectedCandidate = nil
     }
 
     public func setOCRConfiguration(_ configuration: OCRRuntimeConfiguration) {
         guard configuration != ocrConfiguration else { return }
         ocrConfiguration = configuration
         ocr = OCRService(configuration: configuration)
+        lastDetectedCandidate = nil
         let configuredOCR = ocr
         Task.detached(priority: .userInitiated) {
             configuredOCR.warmUpPreferredBackend()
@@ -71,42 +73,42 @@ public actor MonitoringController {
     private func run() async {
         monitoringLogger.info("monitor loop started")
         while !Task.isCancelled {
-            await tick()
-            try? await Task.sleep(nanoseconds: 160_000_000)
+            let interval = await tick()
+            try? await Task.sleep(nanoseconds: interval)
         }
     }
 
-    private func tick() async {
+    private func tick() async -> UInt64 {
         guard CGPreflightScreenCaptureAccess() else {
             lastDetectedCandidate = nil
             emitStatus("需要屏幕录制权限")
             emitHidden()
-            return
+            return 1_000_000_000
         }
         guard FocusMonitor.isAccessibilityTrusted() else {
             lastDetectedCandidate = nil
             emitStatus("需要辅助功能权限")
             emitHidden()
-            return
+            return 1_000_000_000
         }
         guard await inputSource.isApplePinyinActive() else {
             lastDetectedCandidate = nil
             emitStatus("等待苹果拼音")
             emitHidden()
-            return
+            return 250_000_000
         }
         guard !FocusMonitor.isSecureInputEnabled() else {
             lastDetectedCandidate = nil
             emitStatus("安全输入场景已跳过")
             emitHidden()
-            return
+            return 500_000_000
         }
         guard let snapshot = focus.snapshot(),
               let caret = snapshot.caretRect ?? snapshot.elementFrame else {
             lastDetectedCandidate = nil
             emitStatus("未找到文本光标")
             emitHidden()
-            return
+            return 150_000_000
         }
 
         let region = Self.captureRegion(
@@ -123,11 +125,13 @@ public actor MonitoringController {
                 lastDetectedCandidate = nil
                 emitStatus("未检测到高亮候选")
                 emitHidden()
-                return
+                return 100_000_000
             }
             if detection.text != lastDetectedCandidate {
                 lastDetectedCandidate = detection.text
                 emitHidden()
+            } else if !lastWasHidden {
+                return 60_000_000
             }
 
             let candidate = Candidate(
@@ -141,7 +145,7 @@ public actor MonitoringController {
             guard let result = try await router.route(candidate, mode: mode) else {
                 emitStatus("有候选，但未找到可靠翻译")
                 emitHidden()
-                return
+                return 100_000_000
             }
             monitoringLogger.debug(
                 "result source=\(result.source.rawValue, privacy: .public) length=\(result.text.count, privacy: .public)"
@@ -158,10 +162,12 @@ public actor MonitoringController {
             emitStatus("已生成翻译显示")
             lastWasHidden = false
             continuation.yield(.result(candidate, result, highlight))
+            return 60_000_000
         } catch {
             lastDetectedCandidate = nil
             emitStatus("截取失败：\(error.localizedDescription)")
             emitHidden()
+            return 150_000_000
         }
     }
 
@@ -183,9 +189,9 @@ public actor MonitoringController {
         elementFrame: CGRect?
     ) -> CaptureRegion {
         let display = displayBounds(containing: CGPoint(x: caret.midX, y: caret.midY))
-        let width = min(1400, max(300, display.width - 16))
-        let height: CGFloat = 180
-        let left = min(caret.minX, elementFrame?.minX ?? (caret.minX - 300)) - 24
+        let width = min(1_000, max(600, display.width - 16))
+        let height: CGFloat = 160
+        let left = caret.midX - width / 2
         let x = max(display.minX + 8, min(left, display.maxX - width - 8))
 
         // The IME candidate bar can sit above or below the caret depending on

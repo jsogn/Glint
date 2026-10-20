@@ -53,7 +53,7 @@ final class OCREngineModelTests: XCTestCase {
             defaults: defaults
         )
         var configured: [String] = []
-        model.activateOCREngineAction = { engineID in
+        model.activateOCREngineAction = { engineID, _ in
             configured.append(engineID)
             return nil
         }

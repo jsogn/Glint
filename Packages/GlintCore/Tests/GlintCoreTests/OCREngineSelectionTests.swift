@@ -24,4 +24,21 @@ final class OCREngineSelectionTests: XCTestCase {
             "ocr-ppocrv6-small"
         )
     }
+
+    func testEnhancementDefaultsToAutomaticAndPersists() throws {
+        let suiteName = "OCREnhancementSelectionTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        XCTAssertEqual(
+            OCREnhancementSelection.selected(in: defaults),
+            .automatic
+        )
+
+        OCREnhancementSelection.select(.off, in: defaults)
+        XCTAssertEqual(
+            OCREnhancementSelection.selected(in: defaults),
+            .off
+        )
+    }
 }

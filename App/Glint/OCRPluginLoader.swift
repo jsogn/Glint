@@ -13,6 +13,7 @@ enum OCRPluginLoader {
 
     static func resolve(
         engineID: String,
+        enhancementMode: OCREnhancementMode,
         manager: PluginManager
     ) async -> OCRPluginResolution {
         let installed = await manager.installedPlugins()
@@ -44,7 +45,8 @@ enum OCRPluginLoader {
                 configuration: OCRRuntimeConfiguration(
                     preferredBackend: .vision,
                     ppocrPluginDirectory: pluginDirectory,
-                    ppocrPluginToken: pluginToken
+                    ppocrPluginToken: pluginToken,
+                    enhancementMode: enhancementMode
                 ),
                 warning: nil
             )
@@ -60,7 +62,8 @@ enum OCRPluginLoader {
             configuration: OCRRuntimeConfiguration(
                 preferredBackend: .ppocr,
                 ppocrPluginDirectory: pluginDirectory,
-                ppocrPluginToken: pluginToken
+                ppocrPluginToken: pluginToken,
+                enhancementMode: enhancementMode
             ),
             warning: nil
         )

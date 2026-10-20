@@ -15,6 +15,7 @@ enum SelfCheck {
             print("accessibility=\(FocusMonitor.isAccessibilityTrusted())")
             let ocrResolution = await OCRPluginLoader.resolve(
                 engineID: OCREngineSelection.selected(),
+                enhancementMode: OCREnhancementSelection.selected(),
                 manager: PluginManager()
             )
             let ocrService = OCRService(

@@ -36,6 +36,43 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(service.detect(in: image)?.text, "你好")
     }
 
+    func testAppleVisionAutomaticEnhancementUsesPPOCRForLowConfidence() throws {
+        let image = try loadImage(at: ocrDatasetURL("synthetic_021_0.png"))
+        let service = OCRService(
+            configuration: OCRRuntimeConfiguration(
+                preferredBackend: .vision,
+                ppocrPluginDirectory: pluginDirectoryURL(),
+                candidateCacheEnabled: false,
+                enhancementMode: .automatic
+            )
+        )
+
+        XCTAssertEqual(service.detect(in: image)?.text, "重要")
+    }
+
+    func testCandidateCacheReusesStableCrop() throws {
+        let image = try loadCandidateSample()
+        let service = ppocrService(cacheEnabled: true)
+
+        XCTAssertEqual(service.detect(in: image)?.text, "你好")
+        XCTAssertFalse(service.lastUsedCandidateCache)
+        XCTAssertEqual(service.detect(in: image)?.text, "你好")
+        XCTAssertTrue(service.lastUsedCandidateCache)
+    }
+
+    func testCandidateCacheDoesNotReuseDifferentCandidate() throws {
+        let images = try [
+            ocrDatasetURL("real_original.png"),
+            ocrDatasetURL("synthetic_001_0.png"),
+        ].map(loadImage(at:))
+        let service = ppocrService(cacheEnabled: true)
+
+        XCTAssertEqual(service.detect(in: images[0])?.text, "你好")
+        XCTAssertFalse(service.lastUsedCandidateCache)
+        XCTAssertEqual(service.detect(in: images[1])?.text, "中国")
+        XCTAssertFalse(service.lastUsedCandidateCache)
+    }
+
     func testPPOCRDatasetQuality() throws {
         struct Record: Decodable {
             let path: String
@@ -163,6 +200,10 @@ final class GlintMacTests: XCTestCase {
 
     private func loadCandidateSample() throws -> CGImage {
         let imageURL = try candidateSampleURL()
+        return try loadImage(at: imageURL)
+    }
+
+    private func loadImage(at imageURL: URL) throws -> CGImage {
         let source = try XCTUnwrap(
             CGImageSourceCreateWithURL(imageURL as CFURL, nil)
         )
@@ -172,11 +213,29 @@ final class GlintMacTests: XCTestCase {
         return image
     }
 
-    private func ppocrService() -> OCRService {
+    private func ocrDatasetURL(_ filename: String) throws -> URL {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Tools/OCRLab/data/images")
+            .appendingPathComponent(filename)
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw XCTSkip("OCR benchmark dataset is not generated")
+        }
+        return url
+    }
+
+    private func ppocrService(
+        cacheEnabled: Bool = false
+    ) -> OCRService {
         OCRService(
             configuration: OCRRuntimeConfiguration(
                 preferredBackend: .ppocr,
-                ppocrPluginDirectory: pluginDirectoryURL()
+                ppocrPluginDirectory: pluginDirectoryURL(),
+                candidateCacheEnabled: cacheEnabled
             )
         )
     }

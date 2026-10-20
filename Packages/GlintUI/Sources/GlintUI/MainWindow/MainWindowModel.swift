@@ -21,6 +21,7 @@ public final class MainWindowModel {
     public private(set) var catalogMessage = "未配置插件目录"
     public private(set) var activeModelID: String
     public private(set) var activeOCREngineID: String
+    public private(set) var ocrEnhancementMode: OCREnhancementMode
     public private(set) var ocrEngineStatusText: String?
     public private(set) var ocrEngineStatusIsError = false
     public private(set) var translationMode: TranslationMode
@@ -57,7 +58,9 @@ public final class MainWindowModel {
     public var activateTranslationModelAction: @MainActor () async -> String? = { nil }
     @ObservationIgnored
     public var activateOCREngineAction:
-        @MainActor (String) async -> String? = { _ in nil }
+        @MainActor (String, OCREnhancementMode) async -> String? = {
+            _, _ in nil
+        }
     @ObservationIgnored
     public var testOpenAICompatibleAction:
         @MainActor (OpenAICompatibleConfiguration) async throws -> Void = { _ in }
@@ -92,6 +95,9 @@ public final class MainWindowModel {
         }
         self.activeModelID = activeModelID
         self.activeOCREngineID = OCREngineSelection.selected(in: defaults)
+        self.ocrEnhancementMode = OCREnhancementSelection.selected(
+            in: defaults
+        )
         self.translationMode = TranslationModeSelection.selected(in: defaults)
     }
 
@@ -302,6 +308,13 @@ public final class MainWindowModel {
         prepareActiveOCREngine()
     }
 
+    public func setOCREnhancementMode(_ mode: OCREnhancementMode) {
+        guard ocrEnhancementMode != mode else { return }
+        ocrEnhancementMode = mode
+        OCREnhancementSelection.select(mode, in: defaults)
+        prepareActiveOCREngine()
+    }
+
     public func activateOpenAICompatibleProvider(
         _ provider: OpenAICompatibleProvider
     ) {
@@ -487,7 +500,11 @@ public final class MainWindowModel {
 
     private func configureActiveOCREngine() async {
         let engineID = activeOCREngineID
-        let warning = await activateOCREngineAction(engineID)
+        let enhancementMode = ocrEnhancementMode
+        let warning = await activateOCREngineAction(
+            engineID,
+            enhancementMode
+        )
         guard activeOCREngineID == engineID else { return }
         ocrEngineStatusText = warning
         ocrEngineStatusIsError = warning != nil
@@ -495,12 +512,19 @@ public final class MainWindowModel {
 
     private func prepareActiveOCREngine() {
         let engineID = activeOCREngineID
+        let enhancementMode = ocrEnhancementMode
         ocrEngineStatusText = nil
         ocrEngineStatusIsError = false
         Task { [weak self] in
             guard let self else { return }
-            let warning = await activateOCREngineAction(engineID)
-            guard activeOCREngineID == engineID else { return }
+            let warning = await activateOCREngineAction(
+                engineID,
+                enhancementMode
+            )
+            guard activeOCREngineID == engineID,
+                  ocrEnhancementMode == enhancementMode else {
+                return
+            }
             ocrEngineStatusText = warning
             ocrEngineStatusIsError = warning != nil
         }

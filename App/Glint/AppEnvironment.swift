@@ -99,9 +99,13 @@ final class AppEnvironment {
         }
     }
 
-    func configureOCR(engineID: String) async -> String? {
+    func configureOCR(
+        engineID: String,
+        enhancementMode: OCREnhancementMode
+    ) async -> String? {
         let resolution = await OCRPluginLoader.resolve(
             engineID: engineID,
+            enhancementMode: enhancementMode,
             manager: pluginManager
         )
         await monitoring.setOCRConfiguration(resolution.configuration)

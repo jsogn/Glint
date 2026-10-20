@@ -367,6 +367,9 @@ private struct PluginsPage: View {
         case .ocr:
             SettingsPanel(minHeight: 420) {
                 VStack(alignment: .leading, spacing: 0) {
+                    enhancementRow
+                    Divider()
+                        .padding(.vertical, 8)
                     builtInVisionRow
                     Divider()
                         .padding(.vertical, 8)
@@ -384,6 +387,47 @@ private struct PluginsPage: View {
                 }
             }
         }
+    }
+
+    private var enhancementRow: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("识别增强")
+                Text(enhancementDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Picker(
+                "识别增强",
+                selection: Binding(
+                    get: { model.ocrEnhancementMode },
+                    set: { model.setOCREnhancementMode($0) }
+                )
+            ) {
+                ForEach(OCREnhancementMode.allCases, id: \.self) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 220)
+            .disabled(
+                !model.isVisionOCREngineActive
+                    || model.ocrPlugins.isEmpty
+            )
+        }
+        .padding(.vertical, 8)
+    }
+
+    private var enhancementDescription: String {
+        guard model.isVisionOCREngineActive else {
+            return "识别增强仅在 Apple Vision 下生效。"
+        }
+        guard !model.ocrPlugins.isEmpty else {
+            return "安装 PP-OCR 后可增强复杂候选。"
+        }
+        return model.ocrEnhancementMode.explanation
     }
 
     private var builtInVisionRow: some View {
@@ -647,6 +691,30 @@ extension TranslationMode {
             "先查词典，未命中或失败时自动使用当前翻译模型。"
         case .modelFirst:
             "先使用当前翻译模型，失败或无结果时自动查词典。"
+        }
+    }
+}
+
+extension OCREnhancementMode {
+    var title: String {
+        switch self {
+        case .automatic:
+            return "自动"
+        case .always:
+            return "始终"
+        case .off:
+            return "关闭"
+        }
+    }
+
+    var explanation: String {
+        switch self {
+        case .automatic:
+            return "Apple Vision 置信度不足时再调用 PP-OCR。"
+        case .always:
+            return "每次同时调用两个引擎，准确率更高但更耗资源。"
+        case .off:
+            return "只使用 Apple Vision，不调用 PP-OCR。"
         }
     }
 }

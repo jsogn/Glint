@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import GlintCore
 import Vision
 
 public struct OCRDetection: Sendable, Equatable {
@@ -23,15 +24,21 @@ public struct OCRRuntimeConfiguration: Sendable, Equatable {
     public let preferredBackend: OCRBackend
     public let ppocrPluginDirectory: URL?
     public let ppocrPluginToken: String?
+    public let candidateCacheEnabled: Bool
+    public let enhancementMode: OCREnhancementMode
 
     public init(
         preferredBackend: OCRBackend = .vision,
         ppocrPluginDirectory: URL? = nil,
-        ppocrPluginToken: String? = nil
+        ppocrPluginToken: String? = nil,
+        candidateCacheEnabled: Bool = true,
+        enhancementMode: OCREnhancementMode = .automatic
     ) {
         self.preferredBackend = preferredBackend
         self.ppocrPluginDirectory = ppocrPluginDirectory
         self.ppocrPluginToken = ppocrPluginToken
+        self.candidateCacheEnabled = candidateCacheEnabled
+        self.enhancementMode = enhancementMode
     }
 
     public static let appleVision = OCRRuntimeConfiguration()
@@ -40,6 +47,7 @@ public struct OCRRuntimeConfiguration: Sendable, Equatable {
 public struct OCRService: Sendable {
     private let configuration: OCRRuntimeConfiguration
     private let ppOCR: PPOCRRecognizer?
+    private let resultCache = OCRResultCache()
 
     public init(configuration: OCRRuntimeConfiguration = .appleVision) {
         self.configuration = configuration
@@ -60,8 +68,15 @@ public struct OCRService: Sendable {
         ppOCR?.lastTimings ?? (0, 0, 0)
     }
 
+    var lastUsedCandidateCache: Bool {
+        resultCache.lastHit
+    }
+
     func warmUpPreferredBackend() {
-        guard configuration.preferredBackend == .ppocr else { return }
+        guard configuration.preferredBackend == .ppocr
+                || configuration.enhancementMode != .off else {
+            return
+        }
         _ = ppOCR?.warmUp()
     }
 
@@ -89,6 +104,20 @@ public struct OCRService: Sendable {
         let traceOCR = ProcessInfo.processInfo.environment[
             "GLINT_OCR_TRACE"
         ] == "1"
+        let signature = configuration.candidateCacheEnabled
+            ? OCRCandidateSignature(image: cropped)
+            : nil
+        if let signature,
+           let cached = resultCache.lookup(signature) {
+            if traceOCR {
+                fputs("Glint OCR: cache=hit text=\(cached.text)\n", stderr)
+            }
+            return OCRDetection(
+                text: cached.text,
+                highlightRect: blueRect,
+                confidence: cached.confidence
+            )
+        }
         let requestedBackend = ProcessInfo.processInfo.environment[
             "GLINT_OCR_BACKEND"
         ]?.lowercased()
@@ -114,20 +143,64 @@ public struct OCRService: Sendable {
             }
         case .vision:
             recognition = recognizeWithVision(in: cropped, trace: traceOCR)
-            if recognition == nil {
-                recognition = recognizeWithPPOCR(in: cropped, trace: traceOCR)
+            if requestedBackend == nil {
+                recognition = applyEnhancement(
+                    to: recognition,
+                    image: cropped,
+                    trace: traceOCR
+                )
+            } else if recognition == nil {
+                recognition = recognizeWithPPOCR(
+                    in: cropped,
+                    trace: traceOCR
+                )
             }
         }
 
         guard let (text, confidence) = recognition else { return nil }
         let cleaned = Self.cleanCandidate(text)
         guard !cleaned.isEmpty else { return nil }
+        if let signature {
+            resultCache.store(
+                signature: signature,
+                text: cleaned,
+                confidence: confidence
+            )
+        }
 
         return OCRDetection(
             text: cleaned,
             highlightRect: blueRect,
             confidence: confidence
         )
+    }
+
+    private func applyEnhancement(
+        to visionResult: (String, Float)?,
+        image: CGImage,
+        trace: Bool
+    ) -> (String, Float)? {
+        guard configuration.enhancementMode != .off,
+              isPPOCRAvailable else {
+            return visionResult
+        }
+        let shouldEnhance = configuration.enhancementMode == .always
+            || visionResult == nil
+            || (visionResult?.1 ?? 0) < 0.65
+        guard shouldEnhance else { return visionResult }
+        if trace {
+            fputs(
+                "Glint OCR: enhancement=\(configuration.enhancementMode.rawValue) "
+                    + "visionConfidence=\(visionResult?.1 ?? 0)\n",
+                stderr
+            )
+        }
+        let enhanced = recognizeWithPPOCR(in: image, trace: trace)
+        guard let visionResult else { return enhanced }
+        guard let enhanced else { return visionResult }
+        return enhanced.1 > visionResult.1 + 0.02
+            ? enhanced
+            : visionResult
     }
 
     private func recognizeWithPPOCR(

@@ -14,6 +14,7 @@ final class PPOCRRecognizer: @unchecked Sendable {
     private var handle: OpaquePointer?
     private var characters: [String] = []
     private var initialized = false
+    private var preferredFlip: Bool?
     private(set) var initializationError: String?
     private(set) var lastTimings = (
         preprocessMs: 0.0,
@@ -86,9 +87,67 @@ final class PPOCRRecognizer: @unchecked Sendable {
             return nil
         }
 
+        if let preferredFlip {
+            let primary = recognizeOnce(
+                image,
+                flipVertically: preferredFlip
+            )
+            if let primary, primary.confidence >= 0.6 {
+                traceResults(
+                    primary: primary,
+                    alternate: nil,
+                    reusedOrientation: preferredFlip
+                )
+                return primary
+            }
+
+            let alternateFlip = !preferredFlip
+            let alternate = recognizeOnce(
+                image,
+                flipVertically: alternateFlip
+            )
+            traceResults(
+                primary: primary,
+                alternate: alternate,
+                reusedOrientation: preferredFlip
+            )
+            guard let selected = choose(
+                primary: primary,
+                primaryFlip: preferredFlip,
+                alternate: alternate,
+                alternateFlip: alternateFlip
+            ) else {
+                return nil
+            }
+            self.preferredFlip = selected.flip
+            return selected.recognition
+        }
+
         let primary = recognizeOnce(image, flipVertically: true)
         let alternate = recognizeOnce(image, flipVertically: false)
-        traceResults(primary: primary, alternate: alternate)
+        traceResults(
+            primary: primary,
+            alternate: alternate,
+            reusedOrientation: nil
+        )
+        guard let selected = choose(
+            primary: primary,
+            primaryFlip: true,
+            alternate: alternate,
+            alternateFlip: false
+        ) else {
+            return nil
+        }
+        preferredFlip = selected.flip
+        return selected.recognition
+    }
+
+    private func choose(
+        primary: Recognition?,
+        primaryFlip: Bool,
+        alternate: Recognition?,
+        alternateFlip: Bool
+    ) -> (recognition: Recognition, flip: Bool)? {
         if let primary, let alternate {
             if primary.text.count != alternate.text.count {
                 let longer = primary.text.count > alternate.text.count
@@ -97,16 +156,35 @@ final class PPOCRRecognizer: @unchecked Sendable {
                 let shorter = primary.text.count > alternate.text.count
                     ? alternate
                     : primary
-                return longer.confidence >= 0.75 ? longer : shorter
+                if longer.confidence >= 0.75 {
+                    return (
+                        longer,
+                        longer.text == primary.text ? primaryFlip : alternateFlip
+                    )
+                }
+                return (
+                    shorter,
+                    shorter.text == primary.text ? primaryFlip : alternateFlip
+                )
             }
-            return alternate.confidence > primary.confidence ? alternate : primary
+            if alternate.confidence > primary.confidence {
+                return (alternate, alternateFlip)
+            }
+            return (primary, primaryFlip)
         }
-        return primary ?? alternate
+        if let primary {
+            return (primary, primaryFlip)
+        }
+        if let alternate {
+            return (alternate, alternateFlip)
+        }
+        return nil
     }
 
     private func traceResults(
         primary: Recognition?,
-        alternate: Recognition?
+        alternate: Recognition?,
+        reusedOrientation: Bool?
     ) {
         guard ProcessInfo.processInfo.environment["GLINT_OCR_TRACE"] == "1" else {
             return
@@ -115,7 +193,8 @@ final class PPOCRRecognizer: @unchecked Sendable {
             "Glint PP-OCR orientation: primary=\(primary?.text ?? "<nil>")"
                 + "/\(primary?.confidence ?? 0) "
                 + "alternate=\(alternate?.text ?? "<nil>")"
-                + "/\(alternate?.confidence ?? 0)\n",
+                + "/\(alternate?.confidence ?? 0) "
+                + "reused=\(reusedOrientation.map(String.init) ?? "none")\n",
             stderr
         )
     }

@@ -34,7 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshPermissionState()
         Task {
             _ = await environment.configureOCR(
-                engineID: windowModel.activeOCREngineID
+                engineID: windowModel.activeOCREngineID,
+                enhancementMode: windowModel.ocrEnhancementMode
             )
         }
         Task {
@@ -128,9 +129,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await self.environment.translationRuntime.prepareSelectedModel()
             return await self.environment.translationRuntime.lastError
         }
-        windowModel.activateOCREngineAction = { [weak self] engineID in
+        windowModel.activateOCREngineAction = {
+            [weak self] engineID, enhancementMode in
             guard let self else { return "文字识别服务不可用" }
-            return await self.environment.configureOCR(engineID: engineID)
+            return await self.environment.configureOCR(
+                engineID: engineID,
+                enhancementMode: enhancementMode
+            )
         }
         windowModel.testOpenAICompatibleAction = { [weak self] configuration in
             guard let self else { return }
