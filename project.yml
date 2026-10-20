@@ -42,6 +42,9 @@ targets:
         type: folder
     info:
       path: App/Glint/Info.plist
+      properties:
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
     entitlements:
       path: App/Glint/Glint.entitlements
     settings:
