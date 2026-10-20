@@ -24,12 +24,11 @@
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
       }
       .window-title { fill: #A9ADB7; font-size: 16px; font-weight: 500; }
-      .eyebrow { fill: #6F7481; font-size: 15px; font-weight: 600; letter-spacing: 0.08em; }
       .editor { fill: #F5F6F8; font-size: 31px; font-weight: 500; }
-      .secondary { fill: #626876; font-size: 21px; font-weight: 450; }
-      .candidate { fill: #E9EBF0; font-size: 19px; font-weight: 520; }
-      .candidate-selected { fill: #FFFFFF; font-size: 19px; font-weight: 650; }
-      .result { fill: #F4F5F7; font-size: 21px; font-weight: 520; }
+      .candidate { fill: #E9EBF0; font-size: 17px; font-weight: 520; }
+      .candidate-index { fill: #FFFFFF; font-size: 12px; font-weight: 600; opacity: 0.72; }
+      .candidate-selected { fill: #FFFFFF; font-size: 17px; font-weight: 650; }
+      .result { fill: #F4F5F7; font-size: 17px; font-weight: 500; }
     </style>
   </defs>
 
@@ -41,31 +40,29 @@
     <rect x="180" y="90" width="1240" height="720" rx="26" fill="#1A1B20" stroke="#3A3C45" stroke-width="1.4"/>
   </g>
 
-  <path d="M180 116a26 26 0 0 1 26-26h1188a26 26 0 0 1 26 26v50H180z" fill="#202127"/>
-  <line x1="180" y1="166" x2="1420" y2="166" stroke="#33353D" stroke-width="1"/>
+  <path d="M180 116a26 26 0 0 1 26-26h1188a26 26 0 0 1 26 26v38H180z" fill="#202127"/>
+  <line x1="180" y1="154" x2="1420" y2="154" stroke="#33353D" stroke-width="1"/>
 
-  <circle cx="218" cy="128" r="7" fill="#FF5F57"/>
-  <circle cx="242" cy="128" r="7" fill="#FEBC2E"/>
-  <circle cx="266" cy="128" r="7" fill="#28C840"/>
-  <text x="306" y="134" class="window-title">新文稿</text>
+  <circle cx="218" cy="118" r="7" fill="#FF5F57"/>
+  <circle cx="242" cy="118" r="7" fill="#FEBC2E"/>
+  <circle cx="266" cy="118" r="7" fill="#28C840"/>
+  <text x="306" y="124" class="window-title">英语笔记</text>
 
-  <text x="250" y="220" class="eyebrow">日常写作</text>
-
-  <text x="250" y="294" class="editor">今天天气不错，去公园走走吧。</text>
-  <rect x="748" y="266" width="2.5" height="34" rx="1.25" fill="#5D9BFF"/>
+  <text x="250" y="260" class="editor">每天进步一点，持续学习</text>
+  <rect x="596" y="232" width="2.5" height="34" rx="1.25" fill="#5D9BFF"/>
 
   <g filter="url(#softShadow)">
-    <rect x="700" y="358" width="700" height="62" rx="18" fill="#2A2B31" stroke="#464851" stroke-width="1.2"/>
+    <rect x="560" y="326" width="460" height="50" rx="25" fill="#292A30" fill-opacity="0.96" stroke="#4C4E58" stroke-width="1.1"/>
   </g>
-  <rect x="710" y="368" width="208" height="42" rx="12" fill="#0A84FF"/>
-  <text x="732" y="395" class="candidate-selected">今天天气不错</text>
-  <text x="944" y="395" class="candidate">今天天气</text>
-  <text x="1078" y="395" class="candidate">今天</text>
-  <text x="1170" y="395" class="candidate">今日</text>
+  <rect x="570" y="334" width="110" height="34" rx="17" fill="#0A84FF"/>
+  <text x="584" y="357" class="candidate-index">1</text>
+  <text x="600" y="357" class="candidate-selected">学习</text>
+  <text x="700" y="357" class="candidate">学校</text>
+  <text x="770" y="357" class="candidate">学生</text>
+  <text x="840" y="357" class="candidate">学会</text>
 
   <g filter="url(#softShadow)">
-    <rect x="710" y="440" width="540" height="58" rx="15" fill="#292A30" stroke="#4A4C56" stroke-width="1.2"/>
+    <rect x="570" y="390" width="240" height="36" rx="18" fill="#303137" fill-opacity="0.94" stroke="#50525D" stroke-width="1"/>
   </g>
-  <circle cx="740" cy="469" r="4.5" fill="#FFE600"/>
-  <text x="760" y="477" class="result">The weather is nice today.</text>
+  <text x="588" y="414" class="result">learn · study</text>
 </svg>
