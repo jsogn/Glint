@@ -11,8 +11,9 @@
 
 Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构优先保证：
 
-1. 原生 macOS 集成：ScreenCaptureKit、Vision、Accessibility、TIS、AppKit。
-2. 全局默认生效，但只读取候选栏区域，不读文本正文。
+1. 原生 macOS 集成：Accessibility、TIS、AppKit；ScreenCaptureKit 与 Vision
+   保留给后续上下文能力。
+2. 全局默认生效，但只读取当前输入法候选，不读文本正文。
 3. 词典和翻译模型都是可下载插件，模型不进入安装包。
 4. 翻译运行时可以替换，但插件不执行任意第三方代码。
 5. App 逻辑与模型实验分离，先完成 M1 模型 spike，再把胜出的运行时接进 App。
@@ -27,8 +28,8 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 | 主窗口 | AppKit `NSWindow` + SwiftUI `NSHostingController` |
 | HUD | AppKit `NSPanel` + SwiftUI `NSHostingView` |
 | UI | 系统 AppKit/SwiftUI 控件，不引入第三方 UI 组件库 |
-| 截取 | ScreenCaptureKit |
-| OCR | Vision `VNRecognizeTextRequest` |
+| 候选读取 | Accessibility `InputMethodCandidateList` |
+| 截取 / OCR | ScreenCaptureKit + Vision，保留给后续上下文能力 |
 | 输入状态 | Carbon TIS + Accessibility API |
 | 词典 | SQLite + GRDB，CC-CEDICT，ECDICT 作为反查/词频辅助 |
 | 轻量翻译 | CTranslate2 int8（OPUS-MT） |
@@ -156,10 +157,9 @@ Glint/
 
 - TIS 输入源判断；
 - Accessibility 光标/控件 frame；
+- Accessibility 输入法候选读取；
 - 安全输入判断；
-- ScreenCaptureKit 候选栏截取；
-- Vision OCR；
-- 蓝色胶囊检测与候选文本清洗。
+- ScreenCaptureKit、Vision OCR 和蓝色胶囊检测保留给后续上下文能力。
 
 不包含 UI、插件下载或词典数据。
 
@@ -259,8 +259,7 @@ GlintCore
 ```text
 InputSourceMonitor (TIS)
   → FocusMonitor (AX)
-  → CandidateCapture (ScreenCaptureKit)
-  → CandidateDetector (Vision + blue pill)
+  → AXCandidateReader (selected candidate title + frame)
   → SmartRouter (GlintCore)
       ├─ DictionaryEngine (GlintDictionary)
       └─ TranslationEngine (GlintInference)
@@ -276,8 +275,8 @@ MonitoringController → @Observable AppState → MainWindowView
 ## 8. 并发与状态
 
 - `MonitoringController`：主线程上的轻量调度器；定时/事件触发，单飞（single-flight）。
-- `CandidateCapture`：actor，最多一个进行中的截取任务。
-- `OCRService`：actor，`VNRecognizeTextRequest` 在后台执行。
+- `AXCandidateReader`：候选识别主路径，缓存应用与候选列表节点。
+- `CandidateCapture` / `OCRService`：保留给后续上下文能力，当前不参与候选识别。
 - `TranslationPipeline`：actor，取消旧请求，避免旧结果覆盖新候选。
 - `PluginManager`/`ModelDownloader`：actor；下载状态通过 AsyncStream 发布。
 - UI：`@MainActor`；只接收不可变的展示状态。
@@ -355,7 +354,8 @@ MonitoringController → @Observable AppState → MainWindowView
 
 ## 13. ADR 列表
 
-- ADR-0001：不替换输入法，采用候选栏 OCR + HUD。
+- ADR-0001：不替换输入法，采用候选栏读取 + HUD；当前输入候选由 AX 读取，
+  原 OCR 路径保留给后续上下文能力。
 - ADR-0002：Swift 6 + AppKit/SwiftUI 混合。
 - ADR-0003：插件模型作为数据，固定 runtime adapter。
 - ADR-0004：AppKit 生命周期承载菜单栏 + 主窗口 + HUD。

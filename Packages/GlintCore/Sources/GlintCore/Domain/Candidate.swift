@@ -95,3 +95,8 @@ public enum TranslationMode: String, Sendable, Equatable, CaseIterable {
     case dictionaryFirst
     case modelFirst
 }
+
+public enum CandidateTranslationScope: String, Sendable, Equatable, CaseIterable {
+    case selected
+    case row
+}

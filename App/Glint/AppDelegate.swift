@@ -216,6 +216,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 )
             }
         }
+        windowModel.displayPreferences.translationScopeDidChange = {
+            [weak self] scope in
+            guard let self else { return }
+            Task {
+                await self.environment.monitoring.setTranslationScope(scope)
+            }
+        }
         windowModel.translationConfigurationChangedAction = { [weak self] in
             self?.syncTranslationConfiguration()
         }
@@ -268,12 +275,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let mode = windowModel.translationMode
         let candidateDwellDuration =
             windowModel.displayPreferences.candidateDwellDuration
+        let translationScope =
+            windowModel.displayPreferences.translationScope
         let configurationToken = translationConfigurationToken
         Task { [weak self] in
             guard let self else { return }
             await environment.monitoring.setMode(mode)
             await environment.monitoring.setCandidateDwellDuration(
                 candidateDwellDuration
+            )
+            await environment.monitoring.setTranslationScope(
+                translationScope
             )
             await environment.monitoring.setTranslationConfigurationToken(
                 configurationToken
@@ -309,14 +321,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("Glint: %@", status)
         case .candidateChanged:
             hud.beginUpdate()
+        case .selectionChanged(let index, let revision):
+            guard displayedCandidateRevision == revision else { return }
+            hud.updateSelection(itemID: index)
         case .candidateEnded(let immediate):
             clearHUDState()
             hud.hide(animated: !immediate)
-        case .result(_, let result, let highlight, let revision):
+        case .results(let translations, let highlight, let revision):
             windowModel.statusText = ""
+            let showsNumbers =
+                windowModel.displayPreferences.translationScope == .row
+            let items = translations.map {
+                HUDItem(
+                    id: $0.index,
+                    number: showsNumbers ? $0.index + 1 : nil,
+                    text: $0.translation ?? "…",
+                    isSelected: $0.isSelected
+                )
+            }
             showHUD(
                 revision: revision,
-                text: result.displayText,
+                items: items,
                 near: highlight.cgRect
             )
         }
@@ -330,7 +355,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showHUD(
         revision: UInt64,
-        text: String,
+        items: [HUDItem],
         near rect: CGRect
     ) {
         guard monitoringTask != nil,
@@ -339,7 +364,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         displayedCandidateRevision = revision
         hud.show(
-            text: text,
+            items: items,
             near: rect,
             position: windowModel.displayPreferences.position,
             spacing: windowModel.displayPreferences.candidateSpacing,

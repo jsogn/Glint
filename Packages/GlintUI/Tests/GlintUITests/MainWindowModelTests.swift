@@ -27,6 +27,7 @@ final class MainWindowModelTests: XCTestCase {
             catalogURL: nil,
             defaults: defaults
         )
+        XCTAssertEqual(model.candidateSummary, "系统候选词")
         var requestCount = 0
         model.requestPermissionsAction = {
             requestCount += 1

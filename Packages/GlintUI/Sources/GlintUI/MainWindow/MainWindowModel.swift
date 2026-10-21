@@ -180,6 +180,10 @@ public final class MainWindowModel {
         return "\(primary) → \(ocrModelName(backupID))"
     }
 
+    public var candidateSummary: String {
+        "系统候选词"
+    }
+
     public var isOpenAICompatibleActive: Bool {
         activeOpenAIProvider != nil
             || activeModelID == TranslationModelSelection.openAICompatibleModelID

@@ -58,10 +58,28 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换苹果输�
 统一从仓库根目录执行：
 
 ```bash
+./scripts/dev.sh
 ./scripts/build.sh
 ./scripts/test.sh
 ./scripts/run.sh
 ```
+
+日常迭代优先使用快速路径：
+
+```bash
+./scripts/dev.sh
+```
+
+`dev.sh` 只在工程输入变化时重新生成 Xcode 工程，只在插件资源变化时重新安装
+开发插件，然后执行增量 Debug 构建、稳定签名和单实例重启。仅构建不重启：
+
+```bash
+./scripts/dev.sh --build-only
+```
+
+SwiftUI 页面和 HUD 样式优先使用 Xcode Preview。业务逻辑优先运行受影响模块的
+定向测试；完整 `./scripts/test.sh` 用于功能完成、跨模块改动或合并前，不要求每次
+小改动都执行。
 
 完整回归：
 
@@ -90,6 +108,9 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 运行规则：
 
 - 使用 `./scripts/run.sh`，它会先构建，成功后再退出旧实例并启动唯一新实例。
+- 日常代码迭代使用 `./scripts/dev.sh`；`run.sh` 保留给需要完整安装开发插件并
+  重新构建的开发启动。
+- `launch.sh` 只负责单实例退出、稳定注册、readiness token 和启动。
 - `run.sh` 必须等待旧进程完全退出，并在启动后确认只有一个新进程；不能 `killall` 后立即 `open`。
 - `run.sh` 必须通过一次性 readiness token 确认 App 已完成模型准备并启动监控，不能只检查进程存在。
 - 禁止使用 `open -n`。它会创建重复 App 实例，导致窗口和监控循环分属不同进程。
@@ -113,6 +134,8 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 跨模块或发布前修改：运行完整 `./scripts/test.sh`。
 - OCR 性能结论必须使用 Release，不以 Debug 延迟作为产品结论。
 - UI 修改要启动真实 App 并检查浅色/深色、窗口缩放和空状态。
+- UI 样式可先用 Preview 快速迭代，但涉及 AppKit 生命周期、TCC、AX、输入法或
+  NSPanel 行为时必须启动真实 App 验证。
 
 ## OCR 规则
 
@@ -156,7 +179,7 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - HUD 与原生候选栏高度接近，保持单行；间距和透明度由用户调整。
 - HUD 必须复用单一 `NSPanel` 和持久 `NSHostingView`，不得在每个结果到来时重建内容根视图。
 - HUD 显隐使用 80ms 内淡入、60ms 内淡出和最多 2pt 位移；不得使用弹簧、缩放或循环动效。
-- 新结果在淡出期间到达时必须取消旧的隐藏完成回调，并原位淡化更新文字。
+- 新结果在淡出期间到达时必须取消旧的隐藏完成回调，并原位更新文字。
 - 动画必须遵循 macOS Reduce Motion；开启时取消位移和文字过渡。
 - “候选停留”使用 `display.candidateDwellDuration`，表示候选稳定多久后触发翻译，范围 80–300ms；不得重新解释为翻译后的额外延迟。
 - 不在运行时弹大卡片、Toast 或错误对话框；权限问题除外。

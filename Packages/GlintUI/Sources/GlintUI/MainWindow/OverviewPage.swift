@@ -53,7 +53,10 @@ struct OverviewPage: View {
                         title: "本地能力",
                         actionTitle: "管理",
                         rows: [
-                            OverviewInfoRow(label: "识别", value: model.ocrSummary),
+                            OverviewInfoRow(
+                                label: "识别",
+                                value: model.candidateSummary
+                            ),
                             OverviewInfoRow(
                                 label: "翻译",
                                 value: model.translationSummary
@@ -119,10 +122,6 @@ private struct OverviewStatusCard: View {
     private var attentionMessage: String? {
         if model.translationModelStatusIsError,
            let message = model.translationModelStatusText {
-            return message
-        }
-        if model.ocrEngineStatusIsError,
-           let message = model.ocrEngineStatusText {
             return message
         }
         return model.statusText.isEmpty ? nil : model.statusText
@@ -222,7 +221,11 @@ private struct OverviewPipeline: View {
         HStack(spacing: 8) {
             stage(symbol: "keyboard", label: "输入", value: "苹果拼音")
             arrow
-            stage(symbol: "viewfinder", label: "识别", value: model.ocrSummary)
+            stage(
+                symbol: "viewfinder",
+                label: "识别",
+                value: model.candidateSummary
+            )
             arrow
             stage(
                 symbol: "arrow.triangle.branch",

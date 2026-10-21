@@ -7,7 +7,7 @@ xcodebuild \
   -workspace Glint.xcworkspace \
   -scheme Glint \
   -configuration Debug \
-  -destination 'platform=macOS' \
+  -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath build \
   CODE_SIGNING_ALLOWED=NO \
   test

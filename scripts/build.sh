@@ -2,14 +2,25 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-xcodegen generate
+if [[ "${GLINT_SKIP_XCODEGEN:-0}" != "1" ]]; then
+  xcodegen generate
+fi
+
+quiet_args=()
+if [[ "${GLINT_BUILD_QUIET:-0}" == "1" ]]; then
+  quiet_args=(-quiet)
+fi
+
 xcodebuild \
   -workspace Glint.xcworkspace \
   -scheme Glint \
   -configuration Debug \
-  -destination 'platform=macOS' \
+  -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath build \
+  ARCHS=arm64 \
+  ONLY_ACTIVE_ARCH=YES \
   CODE_SIGNING_ALLOWED=NO \
+  "${quiet_args[@]}" \
   build
 
 app_bundle="$PWD/build/Build/Products/Debug/Glint.app"

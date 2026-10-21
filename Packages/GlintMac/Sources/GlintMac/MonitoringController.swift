@@ -31,6 +31,20 @@ struct CandidateMissDebouncer: Sendable {
     }
 }
 
+struct CompositionTransitionTracker: Sendable {
+    private var previousState: TextCompositionState = .unknown
+
+    mutating func observe(_ state: TextCompositionState) -> Bool {
+        let ended = previousState == .composing && state == .inactive
+        previousState = state
+        return ended
+    }
+
+    mutating func reset() {
+        previousState = .unknown
+    }
+}
+
 struct CandidateScanGate: Sendable {
     static func allowsScanning(
         compositionState: TextCompositionState,
@@ -49,19 +63,65 @@ struct CandidateScanGate: Sendable {
 public enum MonitoringEvent: Sendable {
     case status(String)
     case candidateChanged(revision: UInt64)
+    case selectionChanged(index: Int, revision: UInt64)
     case candidateEnded(immediate: Bool)
-    case result(
-        Candidate,
-        TranslationResult,
+    case results(
+        [CandidateTranslationPresentation],
         CaptureRegion,
         revision: UInt64
     )
+}
+
+struct CandidateTrackingIdentity: Sendable, Equatable {
+    let text: String
+    let frame: CGRect
+
+    static func make(
+        scope: CandidateTranslationScope,
+        selectedText: String,
+        selectedFrame: CGRect,
+        rowTexts: [String],
+        rowFrame: CGRect
+    ) -> CandidateTrackingIdentity {
+        switch scope {
+        case .selected:
+            return CandidateTrackingIdentity(
+                text: selectedText,
+                frame: selectedFrame
+            )
+        case .row:
+            return CandidateTrackingIdentity(
+                text: rowTexts.joined(separator: "\u{1F}"),
+                frame: rowFrame
+            )
+        }
+    }
+}
+
+public struct CandidateTranslationPresentation: Sendable, Equatable {
+    public let index: Int
+    public let candidateText: String
+    public let translation: String?
+    public let isSelected: Bool
+
+    public init(
+        index: Int,
+        candidateText: String,
+        translation: String?,
+        isSelected: Bool
+    ) {
+        self.index = index
+        self.candidateText = candidateText
+        self.translation = translation
+        self.isSelected = isSelected
+    }
 }
 
 public actor MonitoringController {
     private let inputSource = InputSourceMonitor()
     private let focus = FocusMonitor()
     private let capture = CandidateCapture()
+    private let axCandidates = AXCandidateReader()
     private var ocr = OCRService()
     private var ocrConfiguration = OCRRuntimeConfiguration.appleVision
     private let router: SmartRouter
@@ -71,6 +131,7 @@ public actor MonitoringController {
     private var task: Task<Void, Never>?
     private var translationTask: Task<Void, Never>?
     private var mode: TranslationMode = .dictionaryFirst
+    private var translationScope: CandidateTranslationScope = .selected
     private var candidateDwellNanoseconds: UInt64 = 120_000_000
     private var translationConfigurationToken =
         TranslationModelSelection.selected()
@@ -81,7 +142,9 @@ public actor MonitoringController {
     private var lastPermissionCheck: UInt64 = 0
     private var lastStatus = ""
     private var candidateSessionActive = false
+    private var selectedCandidateIndex: Int?
     private var candidateMissDebouncer = CandidateMissDebouncer()
+    private var compositionTransitions = CompositionTransitionTracker()
 
     public init(router: SmartRouter) {
         self.router = router
@@ -104,6 +167,14 @@ public actor MonitoringController {
         guard seconds.isFinite else { return }
         let clamped = min(max(seconds, 0.08), 0.3)
         candidateDwellNanoseconds = UInt64(clamped * 1_000_000_000)
+    }
+
+    public func setTranslationScope(
+        _ scope: CandidateTranslationScope
+    ) {
+        guard translationScope != scope else { return }
+        translationScope = scope
+        invalidateCandidate(immediate: true)
     }
 
     public func setTranslationConfigurationToken(_ token: String) async {
@@ -192,116 +263,158 @@ public actor MonitoringController {
             emitStatus("已跳过文字选区")
             return 100_000_000
         }
+        if compositionTransitions.observe(snapshot.compositionState) {
+            invalidateCandidate(immediate: true)
+            emitStatus("候选会话已结束")
+            return 40_000_000
+        }
         guard CandidateScanGate.allowsScanning(
             compositionState: snapshot.compositionState,
             isEditableTextInput: snapshot.isEditableTextInput,
             hasCaret: snapshot.caretRect != nil
         ) else {
-            invalidateCandidate()
+            invalidateCandidate(immediate: true)
             emitStatus("已跳过非文本控件")
             return 200_000_000
         }
-        guard
-              let caret = snapshot.caretRect ?? snapshot.elementFrame else {
+        guard snapshot.caretRect != nil || snapshot.elementFrame != nil else {
             return observeCandidateMiss(
                 status: "未找到文本光标",
                 pollInterval: 60_000_000
             )
         }
 
-        let region = Self.captureRegion(
-            caret: caret,
-            elementFrame: snapshot.elementFrame
-        )
         let observationStartedAt = ContinuousClock.now
-        do {
-            let image = try await capture.capture(region: region)
-            let anchor = CGPoint(
-                x: (caret.midX - region.x) * CGFloat(image.width) / CGFloat(region.width),
-                y: (caret.midY - region.y) * CGFloat(image.height) / CGFloat(region.height)
+        guard var axCandidate = axCandidates.snapshot(
+            includeVisibleCandidates: translationScope == .row
+        ) else {
+            return observeCandidateMiss(
+                status: "未检测到候选",
+                pollInterval: 60_000_000
             )
-            guard let detection = ocr.detect(in: image, anchor: anchor) else {
-                return observeCandidateMiss(
-                    status: "未检测到高亮候选",
-                    pollInterval: 60_000_000
-                )
-            }
-            candidateMissDebouncer.observeCandidate()
-
-            let candidate = Candidate(
-                text: detection.text,
-                kind: CandidateClassifier.classify(detection.text),
-                confidence: Double(detection.confidence)
-            )
-            let scaleX = region.width / Double(image.width)
-            let scaleY = region.height / Double(image.height)
-            let highlight = CaptureRegion(
-                x: region.x + Double(detection.highlightRect.minX) * scaleX,
-                y: region.y + Double(detection.highlightRect.minY) * scaleY,
-                width: Double(detection.highlightRect.width) * scaleX,
-                height: Double(detection.highlightRect.height) * scaleY
-            )
-            let displayAnchor = highlight
-            let activity = typingTracker.observe(
-                text: detection.text,
-                highlightRect: detection.highlightRect,
-                timestamp: DispatchTime.now().uptimeNanoseconds,
-                dwellDurationNanoseconds: candidateDwellNanoseconds
-            )
-            monitoringLogger.debug(
-                "candidate kind=\(candidate.kind.rawValue, privacy: .public) length=\(candidate.text.count, privacy: .public)"
-            )
-
-            switch activity {
-            case .changed(let revision):
-                handledRevision = nil
-                dwellDetectedAt = nil
-                translationStartedAt = nil
-                translationTask?.cancel()
-                translationTask = nil
-                emitCandidateChanged(revision: revision)
-                monitoringLogger.debug(
-                    "candidate revision=\(revision, privacy: .public) changed"
-                )
-            case .dwelling(let revision):
-                guard handledRevision != revision else {
-                    return 60_000_000
-                }
-                handledRevision = revision
-                dwellDetectedAt = .now
-                monitoringLogger.debug(
-                    "perf candidate_detect_ms=\(Self.elapsedMilliseconds(observationStartedAt.duration(to: .now)), privacy: .public)"
-                )
-                startTranslation(
-                    candidate: candidate,
-                    highlight: displayAnchor,
-                    revision: revision
-                )
-            case .observing:
-                break
-            }
-            return 40_000_000
-        } catch {
-            lastPermissionCheck = 0
-            invalidateCandidate(immediate: true)
-            emitStatus("截取失败：\(error.localizedDescription)")
-            return 150_000_000
         }
+        if axCandidate.frame == nil
+            || (translationScope == .row && axCandidate.visibleTexts.isEmpty) {
+            axCandidate = axCandidates.snapshot(
+                includeVisibleCandidates: true
+            ) ?? axCandidate
+        }
+        guard let candidateFrame = axCandidate.frame
+                ?? axCandidate.candidateWindowFrame
+                ?? axCandidate.candidateListFrame,
+              let displayFrame = Self.candidateDisplayFrame(
+                  scope: translationScope,
+                  selectedFrame: candidateFrame,
+                  options: axCandidate.options,
+                  windowFrame: axCandidate.candidateWindowFrame,
+                  listFrame: axCandidate.candidateListFrame
+              ),
+              let displayAnchor = Self.candidateRegion(
+                  for: displayFrame
+              ) else {
+            return observeCandidateMiss(
+                status: "未找到候选位置",
+                pollInterval: 60_000_000
+            )
+        }
+        candidateMissDebouncer.observeCandidate()
+
+        let candidateTexts = translationScope == .row
+            && !axCandidate.visibleTexts.isEmpty
+            ? axCandidate.visibleTexts
+            : [axCandidate.text]
+        let selectedIndex = min(
+            max(
+                axCandidate.selectedIndex
+                    ?? candidateTexts.firstIndex(of: axCandidate.text)
+                    ?? 0,
+                0
+            ),
+            candidateTexts.count - 1
+        )
+        let candidates = candidateTexts.map {
+            Candidate(
+                text: $0,
+                kind: CandidateClassifier.classify($0),
+                confidence: 1
+            )
+        }
+        let trackingIdentity = CandidateTrackingIdentity.make(
+            scope: translationScope,
+            selectedText: axCandidate.text,
+            selectedFrame: candidateFrame,
+            rowTexts: candidateTexts,
+            rowFrame: displayFrame
+        )
+        let previousSelectedIndex = selectedCandidateIndex
+        selectedCandidateIndex = selectedIndex
+        let activity = typingTracker.observe(
+            text: trackingIdentity.text,
+            highlightRect: trackingIdentity.frame,
+            timestamp: DispatchTime.now().uptimeNanoseconds,
+            dwellDurationNanoseconds: candidateDwellNanoseconds
+        )
+        let candidateChanged: Bool
+        switch activity {
+        case .changed:
+            candidateChanged = true
+        case .observing, .dwelling:
+            candidateChanged = false
+        }
+
+        switch activity {
+        case .changed(let revision):
+            handledRevision = nil
+            dwellDetectedAt = nil
+            translationStartedAt = nil
+            translationTask?.cancel()
+            translationTask = nil
+            emitCandidateChanged(revision: revision)
+            let selectedCandidate = candidates[selectedIndex]
+            monitoringLogger.debug(
+                "candidate source=accessibility kind=\(selectedCandidate.kind.rawValue, privacy: .public) length=\(selectedCandidate.text.count, privacy: .public) row_count=\(candidates.count, privacy: .public) revision=\(revision, privacy: .public) changed"
+            )
+        case .dwelling(let revision):
+            guard handledRevision != revision else {
+                return 60_000_000
+            }
+            handledRevision = revision
+            dwellDetectedAt = .now
+            monitoringLogger.debug(
+                "perf candidate_detect_ms=\(Self.elapsedMilliseconds(observationStartedAt.duration(to: .now)), privacy: .public)"
+            )
+            startTranslation(
+                candidates: candidates,
+                selectedIndex: selectedIndex,
+                highlight: displayAnchor,
+                revision: revision
+            )
+        case .observing:
+            break
+        }
+        if candidateSessionActive,
+           !candidateChanged,
+           previousSelectedIndex != selectedIndex {
+            continuation.yield(
+                .selectionChanged(
+                    index: selectedIndex,
+                    revision: typingTracker.revision
+                )
+            )
+        }
+        return 40_000_000
     }
 
     private func startTranslation(
-        candidate: Candidate,
+        candidates: [Candidate],
+        selectedIndex: Int,
         highlight: CaptureRegion,
         revision: UInt64
     ) {
-        let key = TranslationMemoKey(
-            text: candidate.text,
-            mode: mode,
-            configuration: translationConfigurationToken
-        )
         let mode = mode
         let router = router
         let memo = translationMemo
+        let configurationToken = translationConfigurationToken
         translationStartedAt = .now
         translationTask?.cancel()
         translationTask = Task.detached(priority: .userInitiated) {
@@ -309,43 +422,83 @@ public actor MonitoringController {
                 weak self,
                 router,
                 memo,
-                key,
-                candidate,
+                candidates,
+                selectedIndex,
+                configurationToken,
                 highlight,
                 revision,
                 mode,
             ] in
-            do {
-                let result = try await memo.resolve(for: key) {
-                    try await router.route(candidate, mode: mode)
+            let presentations = await Self.translateCandidates(
+                candidates,
+                selectedIndex: selectedIndex,
+                mode: mode,
+                configurationToken: configurationToken,
+                router: router,
+                memo: memo
+            )
+            guard !Task.isCancelled else { return }
+            await self?.completeTranslation(
+                presentations,
+                highlight: highlight,
+                revision: revision
+            )
+        }
+    }
+
+    private static func translateCandidates(
+        _ candidates: [Candidate],
+        selectedIndex: Int,
+        mode: TranslationMode,
+        configurationToken: String,
+        router: SmartRouter,
+        memo: TranslationMemo
+    ) async -> [CandidateTranslationPresentation] {
+        guard !candidates.isEmpty else { return [] }
+        var results = [TranslationResult?](
+            repeating: nil,
+            count: candidates.count
+        )
+        let indices = [selectedIndex] + candidates.indices.filter {
+            $0 != selectedIndex
+        }
+        await withTaskGroup(of: (Int, TranslationResult?).self) { group in
+            for index in indices {
+                let candidate = candidates[index]
+                let key = TranslationMemoKey(
+                    text: candidate.text,
+                    mode: mode,
+                    configuration: configurationToken
+                )
+                group.addTask {
+                    guard !Task.isCancelled else { return (index, nil) }
+                    let result = try? await memo.resolve(for: key) {
+                        try await router.route(candidate, mode: mode)
+                    }
+                    return (index, result)
                 }
-                await self?.completeTranslation(
-                    result,
-                    candidate: candidate,
-                    highlight: highlight,
-                    revision: revision,
-                    errorMessage: nil
-                )
-            } catch is CancellationError {
-                return
-            } catch {
-                await self?.completeTranslation(
-                    nil,
-                    candidate: candidate,
-                    highlight: highlight,
-                    revision: revision,
-                    errorMessage: error.localizedDescription
-                )
             }
+            for await (index, result) in group {
+                results[index] = result
+            }
+        }
+        return candidates.enumerated().map { index, candidate in
+            let translation = results[index].flatMap {
+                isDisplayable($0) ? $0.displayText : nil
+            }
+            return CandidateTranslationPresentation(
+                index: index,
+                candidateText: candidate.text,
+                translation: translation,
+                isSelected: index == selectedIndex
+            )
         }
     }
 
     private func completeTranslation(
-        _ result: TranslationResult?,
-        candidate: Candidate,
+        _ translations: [CandidateTranslationPresentation],
         highlight: CaptureRegion,
-        revision: UInt64,
-        errorMessage: String?
+        revision: UInt64
     ) {
         guard revision == typingTracker.revision,
               typingTracker.isDwelling else {
@@ -365,26 +518,27 @@ public actor MonitoringController {
         }
         self.translationStartedAt = nil
         self.dwellDetectedAt = nil
-        if let errorMessage {
-            monitoringLogger.debug(
-                "translation failed revision=\(revision, privacy: .public) error=\(errorMessage, privacy: .private)"
-            )
-            emitStatus("翻译暂时失败")
-            return
-        }
-        guard let result, Self.isDisplayable(result) else {
+        guard translations.contains(where: { $0.translation != nil }) else {
             emitStatus("有候选，但未找到可靠翻译")
             return
         }
+        let latestSelectedIndex = selectedCandidateIndex ?? 0
+        let presentations = translations.map { item in
+            CandidateTranslationPresentation(
+                index: item.index,
+                candidateText: item.candidateText,
+                translation: item.translation,
+                isSelected: item.index == latestSelectedIndex
+            )
+        }
 
         monitoringLogger.debug(
-            "result source=\(result.source.rawValue, privacy: .public) length=\(result.text.count, privacy: .public)"
+            "results count=\(presentations.count, privacy: .public) revision=\(revision, privacy: .public)"
         )
         emitStatus("已生成翻译显示")
         continuation.yield(
-            .result(
-                candidate,
-                result,
+            .results(
+                presentations,
                 highlight,
                 revision: revision
             )
@@ -394,6 +548,8 @@ public actor MonitoringController {
     private func invalidateCandidate(immediate: Bool = false) {
         typingTracker.reset()
         candidateMissDebouncer.reset()
+        compositionTransitions.reset()
+        selectedCandidateIndex = nil
         handledRevision = nil
         dwellDetectedAt = nil
         translationStartedAt = nil
@@ -407,8 +563,12 @@ public actor MonitoringController {
         pollInterval: UInt64
     ) -> UInt64 {
         emitStatus(status)
+        if candidateSessionActive {
+            invalidateCandidate(immediate: true)
+            return pollInterval
+        }
         if candidateMissDebouncer.observeMiss() {
-            invalidateCandidate()
+            invalidateCandidate(immediate: true)
         }
         return pollInterval
     }
@@ -469,6 +629,58 @@ public actor MonitoringController {
             y: Double(y),
             width: Double(width),
             height: Double(height)
+        )
+    }
+
+    static func candidateRegion(
+        for frame: CGRect
+    ) -> CaptureRegion? {
+        guard frame.width > 0, frame.height > 0 else {
+            return nil
+        }
+        return CaptureRegion(
+            x: Double(frame.minX),
+            y: Double(frame.minY),
+            width: Double(frame.width),
+            height: Double(frame.height)
+        )
+    }
+
+    static func candidateDisplayFrame(
+        scope: CandidateTranslationScope,
+        selectedFrame: CGRect,
+        options: [AXCandidateOption],
+        windowFrame: CGRect? = nil,
+        listFrame: CGRect?
+    ) -> CGRect? {
+        guard scope == .row else {
+            return selectedFrame.width > 0 && selectedFrame.height > 0
+                ? selectedFrame
+                : nil
+        }
+        let rowFrames = options.compactMap(\.frame).filter {
+            $0.width > 0 && $0.height > 0
+        }
+        guard let rowFrame = rowFrames.reduce(nil, { partial, frame in
+            partial?.union(frame) ?? frame
+        }) else {
+            return candidateDisplayFrame(
+                scope: .selected,
+                selectedFrame: selectedFrame,
+                options: [],
+                windowFrame: nil,
+                listFrame: listFrame
+            )
+        }
+        let widthFrame = [windowFrame, listFrame].compactMap { $0 }.first {
+            $0.width > 0
+        }
+        let width = max(rowFrame.width, widthFrame?.width ?? 0)
+        return CGRect(
+            x: widthFrame?.minX ?? rowFrame.minX,
+            y: rowFrame.minY,
+            width: width,
+            height: rowFrame.height
         )
     }
 

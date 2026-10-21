@@ -6,14 +6,13 @@ public final class HUDController {
     private enum Timing {
         static let enter = 0.08
         static let leave = 0.06
-        static let reposition = 0.09
         static let staleDimNanoseconds: UInt64 = 80_000_000
         static let staleOpacity = 0.3
     }
 
     private let panel: NSPanel
     private let contentModel: HUDPresentationModel
-    private let panelSize = NSSize(width: 440, height: 36)
+    private var panelSize = NSSize(width: 440, height: 36)
     private var transitionGeneration = 0
     private var stalePresentationTask: Task<Void, Never>?
     private var stalePresentationGeneration = 0
@@ -76,6 +75,19 @@ public final class HUDController {
         beginStalePresentation()
     }
 
+    public func updateSelection(itemID: Int) {
+        let updated = contentModel.items.map { item in
+            HUDItem(
+                id: item.id,
+                number: item.number,
+                text: item.text,
+                isSelected: item.id == itemID
+            )
+        }
+        guard updated != contentModel.items else { return }
+        contentModel.items = updated
+    }
+
     public func show(
         text: String,
         near screenRect: CGRect,
@@ -84,7 +96,23 @@ public final class HUDController {
         opacity: Double = 0.92
     ) {
         present(
-            text: text,
+            items: [HUDItem(id: 0, text: text)],
+            near: screenRect,
+            position: position,
+            spacing: spacing,
+            opacity: opacity
+        )
+    }
+
+    public func show(
+        items: [HUDItem],
+        near screenRect: CGRect,
+        position: HUDPosition = .automatic,
+        spacing: Double = 8,
+        opacity: Double = 0.92
+    ) {
+        present(
+            items: items,
             near: screenRect,
             position: position,
             spacing: spacing,
@@ -93,7 +121,7 @@ public final class HUDController {
     }
 
     private func present(
-        text: String,
+        items: [HUDItem],
         near screenRect: CGRect,
         position: HUDPosition,
         spacing: Double,
@@ -103,9 +131,6 @@ public final class HUDController {
         let reduceMotion =
             NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         contentModel.animatesTransitions = !reduceMotion
-        contentModel.text = text
-        contentModel.backgroundOpacity = opacity
-        contentModel.textOpacity = 1
         transitionGeneration &+= 1
         guard let mainScreen = NSScreen.screens.first(where: {
             $0.frame.origin == .zero
@@ -124,6 +149,25 @@ public final class HUDController {
         let targetScreen = NSScreen.screens.first {
             $0.frame.contains(NSPoint(x: appKitRect.midX, y: appKitRect.midY))
         } ?? mainScreen
+        let maximumWidth = targetScreen.visibleFrame.width - 16
+        let showsOnlySelectedItem = HUDItemRow.requiresSelectedOnly(
+            for: items,
+            maximumWidth: maximumWidth
+        )
+        contentModel.items = items
+        contentModel.backgroundOpacity = opacity
+        contentModel.textOpacity = 1
+        contentModel.showsOnlySelectedItem = showsOnlySelectedItem
+        let proposedPanelSize = Self.panelSize(
+            for: items,
+            maximumWidth: maximumWidth,
+            selectedOnly: showsOnlySelectedItem
+        )
+        panelSize = Self.resolvedPanelSize(
+            current: panelSize,
+            proposed: proposedPanelSize,
+            isVisible: panel.isVisible
+        )
         let layout = HUDLayout.placement(
             near: appKitRect,
             panelSize: panelSize,
@@ -153,25 +197,16 @@ public final class HUDController {
 
         if reduceMotion {
             panel.alphaValue = 1
-            panel.setFrame(targetFrame, display: true)
-            return
+        } else if panel.alphaValue < 0.999 {
+            animate(
+                duration: Timing.enter,
+                alpha: 1,
+                frame: nil
+            )
+        } else {
+            panel.alphaValue = 1
         }
-
-        let movement = hypot(
-            targetFrame.midX - panel.frame.midX,
-            targetFrame.midY - panel.frame.midY
-        )
-        let animatedFrame = movement > 0.5 && movement < 120
-            ? targetFrame
-            : nil
-        animate(
-            duration: animatedFrame == nil ? Timing.enter : Timing.reposition,
-            alpha: 1,
-            frame: animatedFrame
-        )
-        if animatedFrame == nil {
-            panel.setFrame(targetFrame, display: true)
-        }
+        panel.setFrame(targetFrame, display: true)
     }
 
     public func hide(animated: Bool = true) {
@@ -247,5 +282,51 @@ public final class HUDController {
         stalePresentationGeneration &+= 1
         stalePresentationTask?.cancel()
         stalePresentationTask = nil
+    }
+
+    static func panelSize(
+        for items: [HUDItem],
+        maximumWidth: CGFloat,
+        selectedOnly: Bool = false
+    ) -> NSSize {
+        let height: CGFloat = 36
+        let widthLimit = max(120, maximumWidth)
+        let width: CGFloat
+        if selectedOnly {
+            width = items.map {
+                HUDItemRow.naturalPanelWidth(for: [$0])
+            }.max() ?? 120
+        } else {
+            width = HUDItemRow.naturalPanelWidth(for: items)
+        }
+        let minimumWidth: CGFloat
+        if selectedOnly || items.count <= 1 {
+            minimumWidth = 120
+        } else {
+            minimumWidth = max(
+                220,
+                HUDItemRow.minimumPanelWidth(for: items.count)
+            )
+        }
+        return NSSize(
+            width: min(
+                widthLimit,
+                max(minimumWidth, width)
+            ),
+            height: height
+        )
+    }
+
+    static func resolvedPanelSize(
+        current: NSSize,
+        proposed: NSSize,
+        isVisible: Bool
+    ) -> NSSize {
+        NSSize(
+            width: isVisible
+                ? max(current.width, proposed.width)
+                : proposed.width,
+            height: proposed.height
+        )
     }
 }

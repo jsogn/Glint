@@ -1,4 +1,5 @@
 import Foundation
+import GlintCore
 import Observation
 
 public enum HUDPosition: String, CaseIterable, Sendable {
@@ -23,6 +24,7 @@ public final class DisplayPreferences {
         static let candidateDwellDuration = "display.candidateDwellDuration"
         static let candidateSpacing = "display.candidateSpacing"
         static let hudOpacity = "display.hudOpacity"
+        static let translationScope = "display.translationScope"
     }
 
     @ObservationIgnored
@@ -30,6 +32,8 @@ public final class DisplayPreferences {
 
     @ObservationIgnored
     public var candidateDwellDurationDidChange: (@MainActor (Double) -> Void)?
+    public var translationScopeDidChange:
+        (@MainActor (CandidateTranslationScope) -> Void)?
 
     public var position: HUDPosition {
         didSet {
@@ -71,6 +75,16 @@ public final class DisplayPreferences {
         }
     }
 
+    public var translationScope: CandidateTranslationScope {
+        didSet {
+            defaults.set(
+                translationScope.rawValue,
+                forKey: Key.translationScope
+            )
+            translationScopeDidChange?(translationScope)
+        }
+    }
+
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let storedPosition = defaults.string(forKey: Key.position)
@@ -89,5 +103,12 @@ public final class DisplayPreferences {
 
         let storedOpacity = defaults.object(forKey: Key.hudOpacity) as? Double
         self.hudOpacity = min(max(storedOpacity ?? 0.92, 0.4), 1.0)
+
+        let storedTranslationScope = defaults.string(
+            forKey: Key.translationScope
+        )
+        self.translationScope = CandidateTranslationScope(
+            rawValue: storedTranslationScope ?? ""
+        ) ?? .selected
     }
 }

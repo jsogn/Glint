@@ -228,45 +228,44 @@ private struct TranslationSettingsPage: View {
 }
 
 private struct DisplayPage: View {
-    let model: MainWindowModel
     @Bindable private var preferences: DisplayPreferences
 
     init(model: MainWindowModel) {
-        self.model = model
         self._preferences = Bindable(model.displayPreferences)
+    }
+
+    init(preferences: DisplayPreferences) {
+        self._preferences = Bindable(preferences)
     }
 
     var body: some View {
         PageContainer(subtitle: "控制翻译显示何时出现、出现在哪里。") {
             SettingsCard("位置与触发") {
                 VStack(spacing: 0) {
-                    Grid(
-                        alignment: .leading,
-                        horizontalSpacing: 24,
-                        verticalSpacing: 0
+                    segmentedSetting(
+                        title: "翻译",
+                        selection: $preferences.translationScope,
+                        caption: preferences.translationScope.explanation
                     ) {
-                        GridRow {
-                            Text("显示位置")
-                            Color.clear
-                                .frame(height: 1)
-                                .gridCellUnsizedAxes(.vertical)
-                            Picker(
-                                "显示位置",
-                                selection: $preferences.position
-                            ) {
-                                ForEach(HUDPosition.allCases, id: \.self) {
-                                    position in
-                                    Text(position.title).tag(position)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                            .frame(width: 340, alignment: .trailing)
-                            .gridCellAnchor(.trailing)
+                        ForEach(
+                            CandidateTranslationScope.allCases,
+                            id: \.self
+                        ) { scope in
+                            Text(scope.title).tag(scope)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
+
+                    Divider()
+
+                    segmentedSetting(
+                        title: "显示位置",
+                        selection: $preferences.position
+                    ) {
+                        ForEach(HUDPosition.allCases, id: \.self) {
+                            position in
+                            Text(position.title).tag(position)
+                        }
+                    }
 
                     Divider()
 
@@ -342,6 +341,60 @@ private struct DisplayPage: View {
             Divider()
         }
     }
+
+    private func segmentedSetting<Value, Options>(
+        title: String,
+        selection: Binding<Value>,
+        caption: String? = nil,
+        @ViewBuilder options: () -> Options
+    ) -> some View where Value: Hashable, Options: View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 24) {
+                Text(title)
+                Spacer(minLength: 24)
+                Picker(title, selection: selection) {
+                    options()
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 340, alignment: .trailing)
+            }
+            if let caption {
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 10)
+    }
+}
+
+private struct DisplayPagePreview: View {
+    @State private var preferences: DisplayPreferences
+
+    init(scope: CandidateTranslationScope) {
+        let suite = "Glint.DisplayPagePreview"
+        let defaults = UserDefaults(suiteName: suite) ?? .standard
+        defaults.removePersistentDomain(forName: suite)
+        let preferences = DisplayPreferences(defaults: defaults)
+        preferences.translationScope = scope
+        self._preferences = State(initialValue: preferences)
+    }
+
+    var body: some View {
+        DisplayPage(preferences: preferences)
+            .frame(width: 1_100, height: 760)
+    }
+}
+
+#Preview("显示与触发 · 选中") {
+    DisplayPagePreview(scope: .selected)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("显示与触发 · 一栏") {
+    DisplayPagePreview(scope: .row)
+        .preferredColorScheme(.light)
 }
 
 private struct OCRModelChoice: Identifiable {
@@ -927,6 +980,26 @@ extension TranslationMode {
     }
 }
 
+extension CandidateTranslationScope {
+    var title: String {
+        switch self {
+        case .selected:
+            "选中"
+        case .row:
+            "一栏"
+        }
+    }
+
+    var explanation: String {
+        switch self {
+        case .selected:
+            "只显示当前高亮候选的英文。"
+        case .row:
+            "仅在单行候选栏显示首栏英文；展开更多候选后隐藏。"
+        }
+    }
+}
+
 extension OCRRecognitionStrategy {
     var title: String {
         switch self {
@@ -1099,20 +1172,50 @@ private struct HUDPreview: View {
         preferences.position == .above ? .above : .below
     }
 
+    private var previewItems: [HUDItem] {
+        switch preferences.translationScope {
+        case .selected:
+            return [
+                HUDItem(id: 0, text: "hello"),
+            ]
+        case .row:
+            return [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "hello",
+                    isSelected: true
+                ),
+                HUDItem(id: 1, number: 2, text: "how are you?"),
+                HUDItem(id: 2, number: 3, text: "you"),
+            ]
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if effectivePosition == .above {
-                HUDView(text: "hello", backgroundOpacity: preferences.hudOpacity)
+                HUDView(
+                    items: previewItems,
+                    backgroundOpacity: preferences.hudOpacity
+                )
                     .padding(.bottom, preferences.candidateSpacing)
             }
 
             candidateBar
 
             if effectivePosition == .below {
-                HUDView(text: "hello", backgroundOpacity: preferences.hudOpacity)
+                HUDView(
+                    items: previewItems,
+                    backgroundOpacity: preferences.hudOpacity
+                )
                     .padding(.top, preferences.candidateSpacing)
             }
         }
+        .animation(
+            .easeInOut(duration: 0.18),
+            value: preferences.translationScope
+        )
         .animation(.easeInOut(duration: 0.18), value: preferences.position)
         .animation(.easeInOut(duration: 0.18), value: preferences.candidateSpacing)
         .animation(.easeInOut(duration: 0.18), value: preferences.hudOpacity)

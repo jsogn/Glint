@@ -301,6 +301,127 @@ final class GlintMacTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(region.y + region.height, caret.maxY + 60)
     }
 
+    func testAXCandidateFrameBecomesDisplayRegion() {
+        let frame = CGRect(x: 120, y: 240, width: 96, height: 28)
+
+        XCTAssertEqual(
+            MonitoringController.candidateRegion(for: frame),
+            CaptureRegion(x: 120, y: 240, width: 96, height: 28)
+        )
+    }
+
+    func testEmptyAXCandidateFrameIsRejected() {
+        XCTAssertNil(
+            MonitoringController.candidateRegion(
+                for: CGRect(x: 120, y: 240, width: 0, height: 28)
+            )
+        )
+    }
+
+    func testRowModeUsesStableCandidateBarFrame() throws {
+        let frame = try XCTUnwrap(
+            MonitoringController.candidateDisplayFrame(
+                scope: .row,
+                selectedFrame: CGRect(x: 180, y: 80, width: 50, height: 28),
+                options: [
+                    AXCandidateOption(
+                        text: "你好",
+                        frame: CGRect(x: 20, y: 80, width: 50, height: 28),
+                        isSelected: false
+                    ),
+                    AXCandidateOption(
+                        text: "你好吗",
+                        frame: CGRect(x: 80, y: 80, width: 70, height: 28),
+                        isSelected: true
+                    ),
+                ],
+                listFrame: CGRect(x: 10, y: 80, width: 360, height: 28)
+            )
+        )
+
+        XCTAssertEqual(
+            frame,
+            CGRect(x: 10, y: 80, width: 360, height: 28)
+        )
+    }
+
+    func testRowModeAnchorsToVisibleRowInsideCandidateWindow() throws {
+        let expandedWindow = CGRect(x: 10, y: 20, width: 540, height: 260)
+        let frame = try XCTUnwrap(
+            MonitoringController.candidateDisplayFrame(
+                scope: .row,
+                selectedFrame: CGRect(x: 40, y: 170, width: 50, height: 28),
+                options: [
+                    AXCandidateOption(
+                        text: "逆",
+                        frame: CGRect(x: 40, y: 170, width: 50, height: 28),
+                        isSelected: true
+                    ),
+                ],
+                windowFrame: expandedWindow,
+                listFrame: CGRect(x: 20, y: 30, width: 500, height: 220)
+            )
+        )
+
+        XCTAssertEqual(
+            frame,
+            CGRect(x: 10, y: 170, width: 540, height: 28)
+        )
+    }
+
+    func testSelectedModeKeepsSelectedCandidateFrame() {
+        let selected = CGRect(x: 180, y: 80, width: 50, height: 28)
+
+        XCTAssertEqual(
+            MonitoringController.candidateDisplayFrame(
+                scope: .selected,
+                selectedFrame: selected,
+                options: [],
+                listFrame: CGRect(x: 10, y: 80, width: 360, height: 28)
+            ),
+            selected
+        )
+    }
+
+    func testRowTrackingIgnoresSelectionMovementWithinSameRow() {
+        let rowFrame = CGRect(x: 10, y: 80, width: 360, height: 28)
+        let first = CandidateTrackingIdentity.make(
+            scope: .row,
+            selectedText: "翻译",
+            selectedFrame: CGRect(x: 20, y: 80, width: 50, height: 28),
+            rowTexts: ["翻译", "翻译了"],
+            rowFrame: rowFrame
+        )
+        let second = CandidateTrackingIdentity.make(
+            scope: .row,
+            selectedText: "翻译了",
+            selectedFrame: CGRect(x: 90, y: 80, width: 60, height: 28),
+            rowTexts: ["翻译", "翻译了"],
+            rowFrame: rowFrame
+        )
+
+        XCTAssertEqual(first, second)
+    }
+
+    func testSelectedTrackingChangesWhenCandidateChanges() {
+        let first = CandidateTrackingIdentity.make(
+            scope: .selected,
+            selectedText: "翻译",
+            selectedFrame: CGRect(x: 20, y: 80, width: 50, height: 28),
+            rowTexts: ["翻译"],
+            rowFrame: CGRect(x: 20, y: 80, width: 50, height: 28)
+        )
+        let second = CandidateTrackingIdentity.make(
+            scope: .selected,
+            selectedText: "翻译了",
+            selectedFrame: CGRect(x: 90, y: 80, width: 60, height: 28),
+            rowTexts: ["翻译了"],
+            rowFrame: CGRect(x: 90, y: 80, width: 60, height: 28)
+        )
+
+        XCTAssertNotEqual(first, second)
+    }
+
     func testTextSelectionExcludesMarkedCompositionRange() {
         XCTAssertFalse(
             FocusMonitor.isTextSelection(nil, markedRange: nil)
@@ -436,6 +557,194 @@ final class GlintMacTests: XCTestCase {
         )
     }
 
+    func testAXCandidateIdentityDeduplicatesEquivalentFrame() {
+        let frame = CGRect(x: 120, y: 80, width: 48, height: 28)
+        let first = AXCandidateItem(text: "吃", frame: frame)
+        let second = AXCandidateItem(text: "吃", frame: frame)
+
+        XCTAssertEqual(first.identity, second.identity)
+    }
+
+    func testAXVisibleRowUsesVisibleCandidatesAndSelectedIndex() throws {
+        let visible = (0..<6).reversed().map { index in
+            AXCandidateItem(
+                text: "candidate\(index)",
+                frame: CGRect(
+                    x: CGFloat(index * 60),
+                    y: 80,
+                    width: 50,
+                    height: 28
+                )
+            )
+        }
+        let selected = AXCandidateItem(
+            text: "candidate2",
+            frame: CGRect(x: 999, y: 999, width: 50, height: 28)
+        )
+
+        let row = try XCTUnwrap(
+            AXCandidateVisibleRowSelector.select(
+                selected: selected,
+                visible: visible
+            )
+        )
+
+        XCTAssertEqual(
+            row.items.map(\.text),
+            (0..<6).map { "candidate\($0)" }
+        )
+        XCTAssertEqual(row.selectedIndex, 2)
+    }
+
+    func testAXVisibleRowFallsBackToSelectedWhenAbsent() throws {
+        let selected = AXCandidateItem(
+            text: "selected",
+            frame: CGRect(x: 20, y: 80, width: 50, height: 28)
+        )
+        let visible = [
+            AXCandidateItem(
+                text: "other",
+                frame: CGRect(x: 80, y: 80, width: 50, height: 28)
+            ),
+        ]
+
+        XCTAssertEqual(
+            try XCTUnwrap(
+                AXCandidateVisibleRowSelector.select(
+                    selected: selected,
+                    visible: visible
+                )
+            ),
+            AXCandidateVisibleRow(
+                items: [selected],
+                selectedIndex: 0
+            )
+        )
+    }
+
+    func testAXVisibleRowRejectsExpandedVisibleRows() {
+        let selected = AXCandidateItem(
+            text: "candidate0",
+            frame: CGRect(x: 20, y: 80, width: 50, height: 28)
+        )
+        let visible = [
+            selected,
+            AXCandidateItem(
+                text: "candidate1",
+                frame: CGRect(x: 80, y: 80, width: 50, height: 28)
+            ),
+            AXCandidateItem(
+                text: "candidate2",
+                frame: CGRect(x: 20, y: 110, width: 50, height: 28)
+            ),
+        ]
+
+        XCTAssertNil(
+            AXCandidateVisibleRowSelector.select(
+                selected: selected,
+                visible: visible
+            )
+        )
+    }
+
+    func testAXVisibleRowRejectsBulkVisibleChildren() {
+        let selected = AXCandidateItem(
+            text: "candidate0",
+            frame: CGRect(x: 0, y: 80, width: 50, height: 28)
+        )
+        let visible = (0..<30).map { index in
+            AXCandidateItem(
+                text: "candidate\(index)",
+                frame: CGRect(
+                    x: CGFloat(index * 60),
+                    y: 80,
+                    width: 50,
+                    height: 28
+                )
+            )
+        }
+
+        XCTAssertNil(
+            AXCandidateVisibleRowSelector.select(
+                selected: selected,
+                visible: visible
+            )
+        )
+    }
+
+    func testAXVisibleRowSupportsNineCandidates() throws {
+        let visible = (0..<9).map { index in
+            AXCandidateItem(
+                text: "candidate\(index)",
+                frame: CGRect(
+                    x: CGFloat(index * 52),
+                    y: 120,
+                    width: 44,
+                    height: 28
+                )
+            )
+        }
+
+        let row = try XCTUnwrap(
+            AXCandidateVisibleRowSelector.select(
+                selected: visible[4],
+                visible: visible
+            )
+        )
+
+        XCTAssertEqual(row.items, visible)
+        XCTAssertEqual(row.selectedIndex, 4)
+    }
+
+    func testAXVisibleRowDeduplicatesEquivalentCandidates() throws {
+        let selected = AXCandidateItem(
+            text: "same",
+            frame: CGRect(x: 20, y: 80, width: 50, height: 28)
+        )
+        let visible = [
+            selected,
+            AXCandidateItem(
+                text: "other",
+                frame: CGRect(x: 80, y: 80, width: 50, height: 28)
+            ),
+            selected,
+        ]
+
+        let row = try XCTUnwrap(
+            AXCandidateVisibleRowSelector.select(
+                selected: selected,
+                visible: visible
+            )
+        )
+
+        XCTAssertEqual(row.items.map(\.text), ["same", "other"])
+        XCTAssertEqual(row.selectedIndex, 0)
+    }
+
+    func testAXVisibleRowAcceptsMinorVerticalJitter() throws {
+        let selected = AXCandidateItem(
+            text: "candidate0",
+            frame: CGRect(x: 20, y: 80, width: 50, height: 28)
+        )
+        let visible = [
+            selected,
+            AXCandidateItem(
+                text: "candidate1",
+                frame: CGRect(x: 80, y: 81, width: 50, height: 28)
+            ),
+        ]
+
+        let row = try XCTUnwrap(
+            AXCandidateVisibleRowSelector.select(
+                selected: selected,
+                visible: visible
+            )
+        )
+
+        XCTAssertEqual(row.items.map(\.text), ["candidate0", "candidate1"])
+        XCTAssertEqual(row.selectedIndex, 0)
+    }
+
     func testCandidateMissRequiresTwoConsecutiveFrames() {
         var debouncer = CandidateMissDebouncer()
 
@@ -452,6 +761,21 @@ final class GlintMacTests: XCTestCase {
         debouncer.reset()
         XCTAssertFalse(debouncer.observeMiss())
         XCTAssertTrue(debouncer.observeMiss())
+    }
+
+    func testCompositionTrackerDetectsExplicitEnd() {
+        var tracker = CompositionTransitionTracker()
+
+        XCTAssertFalse(tracker.observe(.composing))
+        XCTAssertTrue(tracker.observe(.inactive))
+        XCTAssertFalse(tracker.observe(.inactive))
+    }
+
+    func testCompositionTrackerDoesNotTreatUnknownStateAsEnd() {
+        var tracker = CompositionTransitionTracker()
+
+        XCTAssertFalse(tracker.observe(.unknown))
+        XCTAssertFalse(tracker.observe(.inactive))
     }
 
     func testAmbiguousBlueHighlightsUseNumberedCandidateRow() {

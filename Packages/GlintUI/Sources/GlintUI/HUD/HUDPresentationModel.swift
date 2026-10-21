@@ -4,10 +4,11 @@ import SwiftUI
 @MainActor
 @Observable
 final class HUDPresentationModel {
-    var text: String
+    var items: [HUDItem]
     var backgroundOpacity: Double
     var textOpacity: Double
     var animatesTransitions: Bool
+    var showsOnlySelectedItem: Bool
 
     init(
         text: String,
@@ -15,10 +16,11 @@ final class HUDPresentationModel {
         textOpacity: Double = 1,
         animatesTransitions: Bool
     ) {
-        self.text = text
+        self.items = [HUDItem(id: 0, text: text)]
         self.backgroundOpacity = backgroundOpacity
         self.textOpacity = textOpacity
         self.animatesTransitions = animatesTransitions
+        self.showsOnlySelectedItem = false
     }
 }
 
@@ -26,41 +28,29 @@ struct HUDLiveView: View {
     let model: HUDPresentationModel
 
     var body: some View {
-        Text(model.text)
-            .font(.system(size: 14, weight: .medium))
-            .lineLimit(1)
-            .truncationMode(.tail)
-            .opacity(model.textOpacity)
-            .contentTransition(.opacity)
-            .animation(
-                model.animatesTransitions
-                    ? .easeOut(duration: 0.08)
-                    : nil,
-                value: model.text
-            )
-            .animation(
-                model.animatesTransitions
-                    ? .easeOut(duration: 0.06)
-                    : nil,
-                value: model.textOpacity
-            )
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background {
-                Capsule()
-                    .fill(
-                        Color(nsColor: .controlBackgroundColor)
-                            .opacity(model.backgroundOpacity)
-                    )
-                    .animation(
-                        model.animatesTransitions
-                            ? .easeOut(duration: 0.1)
-                            : nil,
-                        value: model.backgroundOpacity
-                    )
-            }
-            .overlay {
-                Capsule().stroke(.separator, lineWidth: 1)
-            }
+        HUDItemRow(
+            items: displayedItems,
+            backgroundOpacity: model.backgroundOpacity,
+            animatesBackground: model.animatesTransitions,
+            textOpacity: model.textOpacity
+        )
+    }
+
+    private var displayedItems: [HUDItem] {
+        guard model.showsOnlySelectedItem else {
+            return model.items
+        }
+        guard let selected = model.items.first(where: \.isSelected)
+                ?? model.items.first else {
+            return []
+        }
+        return [
+            HUDItem(
+                id: selected.id,
+                number: selected.number,
+                text: selected.text,
+                isSelected: true
+            ),
+        ]
     }
 }

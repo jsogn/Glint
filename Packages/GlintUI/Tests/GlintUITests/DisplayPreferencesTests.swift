@@ -1,4 +1,5 @@
 import Foundation
+import GlintCore
 import XCTest
 @testable import GlintUI
 
@@ -14,12 +15,14 @@ final class DisplayPreferencesTests: XCTestCase {
         first.candidateDwellDuration = 0.24
         first.candidateSpacing = 14
         first.hudOpacity = 0.72
+        first.translationScope = .row
 
         let second = DisplayPreferences(defaults: defaults)
         XCTAssertEqual(second.position, .above)
         XCTAssertEqual(second.candidateDwellDuration, 0.24)
         XCTAssertEqual(second.candidateSpacing, 14)
         XCTAssertEqual(second.hudOpacity, 0.72)
+        XCTAssertEqual(second.translationScope, .row)
         XCTAssertEqual(
             defaults.object(
                 forKey: "display.candidateDwellDuration"
@@ -87,6 +90,24 @@ final class DisplayPreferencesTests: XCTestCase {
             0.12,
             accuracy: 0.001
         )
+    }
+
+    @MainActor
+    func testTranslationScopeDefaultsToSelectedAndNotifiesChanges() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = DisplayPreferences(defaults: defaults)
+        XCTAssertEqual(preferences.translationScope, .selected)
+
+        var observed: [CandidateTranslationScope] = []
+        preferences.translationScopeDidChange = {
+            observed.append($0)
+        }
+        preferences.translationScope = .row
+
+        XCTAssertEqual(observed, [.row])
     }
 
 }

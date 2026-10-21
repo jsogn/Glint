@@ -106,7 +106,6 @@ final class AppEnvironment {
             preferences: preferences,
             manager: pluginManager
         )
-        await monitoring.setOCRConfiguration(resolution.configuration)
         if let warning = resolution.warning {
             return warning
         }
