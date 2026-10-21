@@ -1,0 +1,6071 @@
+{
+  "model_id": "zerodegress/Index-Translate-2B-MLX-4bit",
+  "category_filter": "polysemy",
+  "timestamp": "2026-10-21T11:57:07.420675+00:00",
+  "case_count": 80,
+  "variant_count": 4,
+  "load_seconds": 2.81,
+  "warmup_seconds": 0.09,
+  "loaded_rss_mb": 1621.1,
+  "peak_rss_mb": 1634.1,
+  "summary": {
+    "m0": {
+      "case_count": 80,
+      "acceptable": 19,
+      "acceptable_rate": 0.2375,
+      "invalid": 0,
+      "errors": 0,
+      "p50_latency_ms": 46.06,
+      "p95_latency_ms": 50.99,
+      "p50_prompt_tokens": 19,
+      "p95_prompt_tokens": 19,
+      "categories": {
+        "polysemy": {
+          "acceptable": 19,
+          "total": 80,
+          "rate": 0.2375
+        },
+        "business": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        },
+        "sentence": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        },
+        "control": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        }
+      },
+      "paired_vs_m0": {
+        "wins": 0,
+        "losses": 0,
+        "ties": 40
+      }
+    },
+    "m1": {
+      "case_count": 80,
+      "acceptable": 28,
+      "acceptable_rate": 0.35,
+      "invalid": 2,
+      "errors": 0,
+      "p50_latency_ms": 89.87,
+      "p95_latency_ms": 114.84,
+      "p50_prompt_tokens": 61,
+      "p95_prompt_tokens": 63,
+      "categories": {
+        "polysemy": {
+          "acceptable": 28,
+          "total": 80,
+          "rate": 0.35
+        },
+        "business": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        },
+        "sentence": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        },
+        "control": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        }
+      },
+      "paired_vs_m0": {
+        "wins": 10,
+        "losses": 1,
+        "ties": 29
+      }
+    },
+    "m2": {
+      "case_count": 80,
+      "acceptable": 39,
+      "acceptable_rate": 0.4875,
+      "invalid": 1,
+      "errors": 0,
+      "p50_latency_ms": 103.3,
+      "p95_latency_ms": 129.69,
+      "p50_prompt_tokens": 62,
+      "p95_prompt_tokens": 64,
+      "categories": {
+        "polysemy": {
+          "acceptable": 39,
+          "total": 80,
+          "rate": 0.4875
+        },
+        "business": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        },
+        "sentence": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        },
+        "control": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        }
+      },
+      "paired_vs_m0": {
+        "wins": 17,
+        "losses": 0,
+        "ties": 23
+      }
+    },
+    "m3": {
+      "case_count": 80,
+      "acceptable": 39,
+      "acceptable_rate": 0.4875,
+      "invalid": 1,
+      "errors": 0,
+      "p50_latency_ms": 103.6,
+      "p95_latency_ms": 130.13,
+      "p50_prompt_tokens": 62,
+      "p95_prompt_tokens": 64,
+      "categories": {
+        "polysemy": {
+          "acceptable": 39,
+          "total": 80,
+          "rate": 0.4875
+        },
+        "business": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        },
+        "sentence": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        },
+        "control": {
+          "acceptable": 0,
+          "total": 0,
+          "rate": null
+        }
+      },
+      "paired_vs_m0": {
+        "wins": 17,
+        "losses": 0,
+        "ties": 23
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "amb-001-a",
+      "variant": "m0",
+      "target": "方便",
+      "before": "这家店卖",
+      "after": "面",
+      "references": [
+        "instant"
+      ],
+      "output": "Convenient",
+      "target_output": "Convenient",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 49.95,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-001-a",
+      "variant": "m1",
+      "target": "方便",
+      "before": "这家店卖",
+      "after": "面",
+      "references": [
+        "instant"
+      ],
+      "output": "[convenient]",
+      "target_output": "convenient",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 92.21,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-001-a",
+      "variant": "m2",
+      "target": "方便",
+      "before": "这家店卖",
+      "after": "面",
+      "references": [
+        "instant"
+      ],
+      "output": "[convenient] noodles",
+      "target_output": "convenient",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 100.36,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-001-a",
+      "variant": "m3",
+      "target": "方便",
+      "before": "这家店卖",
+      "after": "面",
+      "references": [
+        "instant"
+      ],
+      "output": "[convenient] noodles",
+      "target_output": "convenient",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 97.9,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "m0",
+      "target": "方便",
+      "before": "你现在",
+      "after": "吗",
+      "references": [
+        "convenient",
+        "available",
+        "free"
+      ],
+      "output": "Convenient",
+      "target_output": "Convenient",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 48.3,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "m1",
+      "target": "方便",
+      "before": "你现在",
+      "after": "吗",
+      "references": [
+        "convenient",
+        "available",
+        "free"
+      ],
+      "output": "[convenient]",
+      "target_output": "convenient",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 87.82,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "m2",
+      "target": "方便",
+      "before": "你现在",
+      "after": "吗",
+      "references": [
+        "convenient",
+        "available",
+        "free"
+      ],
+      "output": "[convenient]",
+      "target_output": "convenient",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 88.78,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "m3",
+      "target": "方便",
+      "before": "你现在",
+      "after": "吗",
+      "references": [
+        "convenient",
+        "available",
+        "free"
+      ],
+      "output": "[convenient]",
+      "target_output": "convenient",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 89.93,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "m0",
+      "target": "处理",
+      "before": "请先",
+      "after": "这些数据",
+      "references": [
+        "process"
+      ],
+      "output": "Process",
+      "target_output": "Process",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 44.89,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "m1",
+      "target": "处理",
+      "before": "请先",
+      "after": "这些数据",
+      "references": [
+        "process"
+      ],
+      "output": "Please first [process].",
+      "target_output": "process",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 96.26,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "m2",
+      "target": "处理",
+      "before": "请先",
+      "after": "这些数据",
+      "references": [
+        "process"
+      ],
+      "output": "Please first [process] this data.",
+      "target_output": "process",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 113.98,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "m3",
+      "target": "处理",
+      "before": "请先",
+      "after": "这些数据",
+      "references": [
+        "process"
+      ],
+      "output": "Please first [process] this data.",
+      "target_output": "process",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 113.28,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "m0",
+      "target": "处理",
+      "before": "他很会",
+      "after": "客户投诉",
+      "references": [
+        "handle",
+        "deal with"
+      ],
+      "output": "Process",
+      "target_output": "Process",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 42.71,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "m1",
+      "target": "处理",
+      "before": "他很会",
+      "after": "客户投诉",
+      "references": [
+        "handle",
+        "deal with"
+      ],
+      "output": "He's good at [handling]",
+      "target_output": "handling",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 106.52,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "m2",
+      "target": "处理",
+      "before": "他很会",
+      "after": "客户投诉",
+      "references": [
+        "handle",
+        "deal with"
+      ],
+      "output": "He is very good at [handling] customer complaints.",
+      "target_output": "handling",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 130.2,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "m3",
+      "target": "处理",
+      "before": "他很会",
+      "after": "客户投诉",
+      "references": [
+        "handle",
+        "deal with"
+      ],
+      "output": "He is very good at [handling] customer complaints.",
+      "target_output": "handling",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 129.64,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "m0",
+      "target": "发布",
+      "before": "公司明天",
+      "after": "新版本",
+      "references": [
+        "release"
+      ],
+      "output": "Release",
+      "target_output": "Release",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 42.98,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "m1",
+      "target": "发布",
+      "before": "公司明天",
+      "after": "新版本",
+      "references": [
+        "release"
+      ],
+      "output": "[release]",
+      "target_output": "release",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 81.35,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "m2",
+      "target": "发布",
+      "before": "公司明天",
+      "after": "新版本",
+      "references": [
+        "release"
+      ],
+      "output": "[release]",
+      "target_output": "release",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 83.23,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "m3",
+      "target": "发布",
+      "before": "公司明天",
+      "after": "新版本",
+      "references": [
+        "release"
+      ],
+      "output": "[release]",
+      "target_output": "release",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 83.53,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "m0",
+      "target": "发布",
+      "before": "他在朋友圈",
+      "after": "消息",
+      "references": [
+        "post",
+        "publish"
+      ],
+      "output": "Release",
+      "target_output": "Release",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 43.58,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "m1",
+      "target": "发布",
+      "before": "他在朋友圈",
+      "after": "消息",
+      "references": [
+        "post",
+        "publish"
+      ],
+      "output": "He posted on his Moments.",
+      "target_output": "He posted on his Moments.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 101.76,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "m2",
+      "target": "发布",
+      "before": "他在朋友圈",
+      "after": "消息",
+      "references": [
+        "post",
+        "publish"
+      ],
+      "output": "He posted a message on his Moments.",
+      "target_output": "He posted a message on his Moments.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 115.28,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "m3",
+      "target": "发布",
+      "before": "他在朋友圈",
+      "after": "消息",
+      "references": [
+        "post",
+        "publish"
+      ],
+      "output": "He posted a message on his Moments.",
+      "target_output": "He posted a message on his Moments.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 115.53,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "m0",
+      "target": "落地",
+      "before": "这个方案已经",
+      "after": "",
+      "references": [
+        "implemented",
+        "rolled out"
+      ],
+      "output": "Implemented",
+      "target_output": "Implemented",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 44.69,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "m1",
+      "target": "落地",
+      "before": "这个方案已经",
+      "after": "",
+      "references": [
+        "implemented",
+        "rolled out"
+      ],
+      "output": "This plan has been [implemented].",
+      "target_output": "implemented",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 108.82,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "m2",
+      "target": "落地",
+      "before": "这个方案已经",
+      "after": "",
+      "references": [
+        "implemented",
+        "rolled out"
+      ],
+      "output": "This plan has been [implemented].",
+      "target_output": "implemented",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 109.01,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "m3",
+      "target": "落地",
+      "before": "这个方案已经",
+      "after": "",
+      "references": [
+        "implemented",
+        "rolled out"
+      ],
+      "output": "This plan has been [implemented].",
+      "target_output": "implemented",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 109.61,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "m0",
+      "target": "落地",
+      "before": "飞机准备",
+      "after": "",
+      "references": [
+        "land",
+        "touch down"
+      ],
+      "output": "Implemented",
+      "target_output": "Implemented",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 44.98,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "m1",
+      "target": "落地",
+      "before": "飞机准备",
+      "after": "",
+      "references": [
+        "land",
+        "touch down"
+      ],
+      "output": "[landing]",
+      "target_output": "landing",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.51,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "m2",
+      "target": "落地",
+      "before": "飞机准备",
+      "after": "",
+      "references": [
+        "land",
+        "touch down"
+      ],
+      "output": "[landing]",
+      "target_output": "landing",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.1,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "m3",
+      "target": "落地",
+      "before": "飞机准备",
+      "after": "",
+      "references": [
+        "land",
+        "touch down"
+      ],
+      "output": "[landing]",
+      "target_output": "landing",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 87.22,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "m0",
+      "target": "运行",
+      "before": "请先",
+      "after": "这个程序",
+      "references": [
+        "run",
+        "execute"
+      ],
+      "output": "Run",
+      "target_output": "Run",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 45.77,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "m1",
+      "target": "运行",
+      "before": "请先",
+      "after": "这个程序",
+      "references": [
+        "run",
+        "execute"
+      ],
+      "output": "Please first [run]",
+      "target_output": "run",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 97.9,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "m2",
+      "target": "运行",
+      "before": "请先",
+      "after": "这个程序",
+      "references": [
+        "run",
+        "execute"
+      ],
+      "output": "Please first [run] this program.",
+      "target_output": "run",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 117.59,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "m3",
+      "target": "运行",
+      "before": "请先",
+      "after": "这个程序",
+      "references": [
+        "run",
+        "execute"
+      ],
+      "output": "Please first [run] this program.",
+      "target_output": "run",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 116.96,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "m0",
+      "target": "运行",
+      "before": "这个系统",
+      "after": "成本太高",
+      "references": [
+        "operating"
+      ],
+      "output": "Run",
+      "target_output": "Run",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.99,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "m1",
+      "target": "运行",
+      "before": "这个系统",
+      "after": "成本太高",
+      "references": [
+        "operating"
+      ],
+      "output": "[running]",
+      "target_output": "running",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.08,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "m2",
+      "target": "运行",
+      "before": "这个系统",
+      "after": "成本太高",
+      "references": [
+        "operating"
+      ],
+      "output": "【run】",
+      "target_output": "run",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.22,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "m3",
+      "target": "运行",
+      "before": "这个系统",
+      "after": "成本太高",
+      "references": [
+        "operating"
+      ],
+      "output": "【run】",
+      "target_output": "run",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.92,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "m0",
+      "target": "看",
+      "before": "医生让你去",
+      "after": "病",
+      "references": [
+        "see",
+        "get examined"
+      ],
+      "output": "Look",
+      "target_output": "Look",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.46,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "m1",
+      "target": "看",
+      "before": "医生让你去",
+      "after": "病",
+      "references": [
+        "see",
+        "get examined"
+      ],
+      "output": "[look]",
+      "target_output": "look",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.08,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "m2",
+      "target": "看",
+      "before": "医生让你去",
+      "after": "病",
+      "references": [
+        "see",
+        "get examined"
+      ],
+      "output": "[see]",
+      "target_output": "see",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 87.24,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "m3",
+      "target": "看",
+      "before": "医生让你去",
+      "after": "病",
+      "references": [
+        "see",
+        "get examined"
+      ],
+      "output": "[see]",
+      "target_output": "see",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 86.44,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "m0",
+      "target": "看",
+      "before": "我在",
+      "after": "书",
+      "references": [
+        "read"
+      ],
+      "output": "Look",
+      "target_output": "Look",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.78,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "m1",
+      "target": "看",
+      "before": "我在",
+      "after": "书",
+      "references": [
+        "read"
+      ],
+      "output": "[Look]",
+      "target_output": "Look",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.89,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "m2",
+      "target": "看",
+      "before": "我在",
+      "after": "书",
+      "references": [
+        "read"
+      ],
+      "output": "[reading]",
+      "target_output": "reading",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.38,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "m3",
+      "target": "看",
+      "before": "我在",
+      "after": "书",
+      "references": [
+        "read"
+      ],
+      "output": "[reading]",
+      "target_output": "reading",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.22,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "m0",
+      "target": "开",
+      "before": "他每天",
+      "after": "车上班",
+      "references": [
+        "drive"
+      ],
+      "output": "Open",
+      "target_output": "Open",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.32,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "m1",
+      "target": "开",
+      "before": "他每天",
+      "after": "车上班",
+      "references": [
+        "drive"
+      ],
+      "output": "He opens every day",
+      "target_output": "He opens every day",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 91.08,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "m2",
+      "target": "开",
+      "before": "他每天",
+      "after": "车上班",
+      "references": [
+        "drive"
+      ],
+      "output": "[open]",
+      "target_output": "open",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.7,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "m3",
+      "target": "开",
+      "before": "他每天",
+      "after": "车上班",
+      "references": [
+        "drive"
+      ],
+      "output": "[open]",
+      "target_output": "open",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.17,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "m0",
+      "target": "开",
+      "before": "请",
+      "after": "一下灯",
+      "references": [
+        "turn on"
+      ],
+      "output": "Open",
+      "target_output": "Open",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.46,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "m1",
+      "target": "开",
+      "before": "请",
+      "after": "一下灯",
+      "references": [
+        "turn on"
+      ],
+      "output": "[Open]",
+      "target_output": "Open",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.75,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "m2",
+      "target": "开",
+      "before": "请",
+      "after": "一下灯",
+      "references": [
+        "turn on"
+      ],
+      "output": "Please 【open】 the light.",
+      "target_output": "open",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 110.03,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "m3",
+      "target": "开",
+      "before": "请",
+      "after": "一下灯",
+      "references": [
+        "turn on"
+      ],
+      "output": "Please 【open】 the light.",
+      "target_output": "open",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 109.28,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-008-a",
+      "variant": "m0",
+      "target": "打",
+      "before": "我想",
+      "after": "车去机场",
+      "references": [
+        "take"
+      ],
+      "output": "hit",
+      "target_output": "hit",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 43.88,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-008-a",
+      "variant": "m1",
+      "target": "打",
+      "before": "我想",
+      "after": "车去机场",
+      "references": [
+        "take"
+      ],
+      "output": "[hit]",
+      "target_output": "hit",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 84.82,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-008-a",
+      "variant": "m2",
+      "target": "打",
+      "before": "我想",
+      "after": "车去机场",
+      "references": [
+        "take"
+      ],
+      "output": "[drive] to the airport",
+      "target_output": "drive",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 103.3,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-008-a",
+      "variant": "m3",
+      "target": "打",
+      "before": "我想",
+      "after": "车去机场",
+      "references": [
+        "take"
+      ],
+      "output": "[drive] to the airport",
+      "target_output": "drive",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 103.47,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-008-b",
+      "variant": "m0",
+      "target": "打",
+      "before": "他们下午",
+      "after": "球",
+      "references": [
+        "play"
+      ],
+      "output": "hit",
+      "target_output": "hit",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 44.81,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-008-b",
+      "variant": "m1",
+      "target": "打",
+      "before": "他们下午",
+      "after": "球",
+      "references": [
+        "play"
+      ],
+      "output": "They [play] in the afternoon.",
+      "target_output": "play",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 114.84,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-008-b",
+      "variant": "m2",
+      "target": "打",
+      "before": "他们下午",
+      "after": "球",
+      "references": [
+        "play"
+      ],
+      "output": "They play [ball] in the afternoon.",
+      "target_output": "ball",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 120.88,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-008-b",
+      "variant": "m3",
+      "target": "打",
+      "before": "他们下午",
+      "after": "球",
+      "references": [
+        "play"
+      ],
+      "output": "They play [ball] in the afternoon.",
+      "target_output": "ball",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 120.32,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-009-a",
+      "variant": "m0",
+      "target": "上",
+      "before": "他每天",
+      "after": "网查资料",
+      "references": [
+        "browse",
+        "go online"
+      ],
+      "output": "Up",
+      "target_output": "Up",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.1,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-009-a",
+      "variant": "m1",
+      "target": "上",
+      "before": "他每天",
+      "after": "网查资料",
+      "references": [
+        "browse",
+        "go online"
+      ],
+      "output": "[go]",
+      "target_output": "go",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 84.38,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-009-a",
+      "variant": "m2",
+      "target": "上",
+      "before": "他每天",
+      "after": "网查资料",
+      "references": [
+        "browse",
+        "go online"
+      ],
+      "output": "[up]",
+      "target_output": "up",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.56,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-009-a",
+      "variant": "m3",
+      "target": "上",
+      "before": "他每天",
+      "after": "网查资料",
+      "references": [
+        "browse",
+        "go online"
+      ],
+      "output": "[up]",
+      "target_output": "up",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.45,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-009-b",
+      "variant": "m0",
+      "target": "上",
+      "before": "孩子明年",
+      "after": "学",
+      "references": [
+        "attend",
+        "go to"
+      ],
+      "output": "Up",
+      "target_output": "Up",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.73,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-009-b",
+      "variant": "m1",
+      "target": "上",
+      "before": "孩子明年",
+      "after": "学",
+      "references": [
+        "attend",
+        "go to"
+      ],
+      "output": "[up]",
+      "target_output": "up",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 84.79,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-009-b",
+      "variant": "m2",
+      "target": "上",
+      "before": "孩子明年",
+      "after": "学",
+      "references": [
+        "attend",
+        "go to"
+      ],
+      "output": "[school]",
+      "target_output": "school",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.27,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-009-b",
+      "variant": "m3",
+      "target": "上",
+      "before": "孩子明年",
+      "after": "学",
+      "references": [
+        "attend",
+        "go to"
+      ],
+      "output": "[school]",
+      "target_output": "school",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.94,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "m0",
+      "target": "下",
+      "before": "外面开始",
+      "after": "雨",
+      "references": [
+        "rain",
+        "raining"
+      ],
+      "output": "down",
+      "target_output": "down",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.25,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "m1",
+      "target": "下",
+      "before": "外面开始",
+      "after": "雨",
+      "references": [
+        "rain",
+        "raining"
+      ],
+      "output": "[down]",
+      "target_output": "down",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.7,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "m2",
+      "target": "下",
+      "before": "外面开始",
+      "after": "雨",
+      "references": [
+        "rain",
+        "raining"
+      ],
+      "output": "[rain]",
+      "target_output": "rain",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.32,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "m3",
+      "target": "下",
+      "before": "外面开始",
+      "after": "雨",
+      "references": [
+        "rain",
+        "raining"
+      ],
+      "output": "[rain]",
+      "target_output": "rain",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.65,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "m0",
+      "target": "下",
+      "before": "我们在下一站",
+      "after": "车",
+      "references": [
+        "get off"
+      ],
+      "output": "down",
+      "target_output": "down",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.09,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "m1",
+      "target": "下",
+      "before": "我们在下一站",
+      "after": "车",
+      "references": [
+        "get off"
+      ],
+      "output": "[Next]",
+      "target_output": "Next",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 84.5,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "m2",
+      "target": "下",
+      "before": "我们在下一站",
+      "after": "车",
+      "references": [
+        "get off"
+      ],
+      "output": "[Down]",
+      "target_output": "Down",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.15,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "m3",
+      "target": "下",
+      "before": "我们在下一站",
+      "after": "车",
+      "references": [
+        "get off"
+      ],
+      "output": "[Down]",
+      "target_output": "Down",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.23,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "m0",
+      "target": "点",
+      "before": "我想",
+      "after": "外卖",
+      "references": [
+        "order"
+      ],
+      "output": "Dot",
+      "target_output": "Dot",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.47,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "m1",
+      "target": "点",
+      "before": "我想",
+      "after": "外卖",
+      "references": [
+        "order"
+      ],
+      "output": "[click]",
+      "target_output": "click",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.77,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "m2",
+      "target": "点",
+      "before": "我想",
+      "after": "外卖",
+      "references": [
+        "order"
+      ],
+      "output": "I want to [order] takeout.",
+      "target_output": "order",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 121.24,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "m3",
+      "target": "点",
+      "before": "我想",
+      "after": "外卖",
+      "references": [
+        "order"
+      ],
+      "output": "I want to [order] takeout.",
+      "target_output": "order",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 121.59,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "m0",
+      "target": "点",
+      "before": "他",
+      "after": "头同意",
+      "references": [
+        "nod"
+      ],
+      "output": "Dot",
+      "target_output": "Dot",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.44,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "m1",
+      "target": "点",
+      "before": "他",
+      "after": "头同意",
+      "references": [
+        "nod"
+      ],
+      "output": "[click]",
+      "target_output": "click",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.18,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "m2",
+      "target": "点",
+      "before": "他",
+      "after": "头同意",
+      "references": [
+        "nod"
+      ],
+      "output": "He nodded in agreement.",
+      "target_output": "He nodded in agreement.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 99.27,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "m3",
+      "target": "点",
+      "before": "他",
+      "after": "头同意",
+      "references": [
+        "nod"
+      ],
+      "output": "He nodded in agreement.",
+      "target_output": "He nodded in agreement.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 96.87,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-012-a",
+      "variant": "m0",
+      "target": "花",
+      "before": "他每个月",
+      "after": "很多钱",
+      "references": [
+        "spend"
+      ],
+      "output": "flower",
+      "target_output": "flower",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 44.46,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-012-a",
+      "variant": "m1",
+      "target": "花",
+      "before": "他每个月",
+      "after": "很多钱",
+      "references": [
+        "spend"
+      ],
+      "output": "spends",
+      "target_output": "spends",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 79.35,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-012-a",
+      "variant": "m2",
+      "target": "花",
+      "before": "他每个月",
+      "after": "很多钱",
+      "references": [
+        "spend"
+      ],
+      "output": "[spend]",
+      "target_output": "spend",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.23,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-012-a",
+      "variant": "m3",
+      "target": "花",
+      "before": "他每个月",
+      "after": "很多钱",
+      "references": [
+        "spend"
+      ],
+      "output": "[spend]",
+      "target_output": "spend",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.57,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-012-b",
+      "variant": "m0",
+      "target": "花",
+      "before": "她买了一束",
+      "after": "",
+      "references": [
+        "flower",
+        "flowers"
+      ],
+      "output": "flower",
+      "target_output": "flower",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 44.46,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-012-b",
+      "variant": "m1",
+      "target": "花",
+      "before": "她买了一束",
+      "after": "",
+      "references": [
+        "flower",
+        "flowers"
+      ],
+      "output": "[flowers]",
+      "target_output": "flowers",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.48,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-012-b",
+      "variant": "m2",
+      "target": "花",
+      "before": "她买了一束",
+      "after": "",
+      "references": [
+        "flower",
+        "flowers"
+      ],
+      "output": "[flowers]",
+      "target_output": "flowers",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 86.1,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-012-b",
+      "variant": "m3",
+      "target": "花",
+      "before": "她买了一束",
+      "after": "",
+      "references": [
+        "flower",
+        "flowers"
+      ],
+      "output": "[flowers]",
+      "target_output": "flowers",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.8,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-013-a",
+      "variant": "m0",
+      "target": "过",
+      "before": "我们明天",
+      "after": "年",
+      "references": [
+        "celebrate"
+      ],
+      "output": "pass",
+      "target_output": "pass",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.48,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-013-a",
+      "variant": "m1",
+      "target": "过",
+      "before": "我们明天",
+      "after": "年",
+      "references": [
+        "celebrate"
+      ],
+      "output": "[pass]",
+      "target_output": "pass",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 84.87,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-013-a",
+      "variant": "m2",
+      "target": "过",
+      "before": "我们明天",
+      "after": "年",
+      "references": [
+        "celebrate"
+      ],
+      "output": "[New Year]",
+      "target_output": "New Year",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 92.26,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-013-a",
+      "variant": "m3",
+      "target": "过",
+      "before": "我们明天",
+      "after": "年",
+      "references": [
+        "celebrate"
+      ],
+      "output": "[New Year]",
+      "target_output": "New Year",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 93.42,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-013-b",
+      "variant": "m0",
+      "target": "过",
+      "before": "请小心",
+      "after": "马路",
+      "references": [
+        "cross"
+      ],
+      "output": "pass",
+      "target_output": "pass",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.54,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-013-b",
+      "variant": "m1",
+      "target": "过",
+      "before": "请小心",
+      "after": "马路",
+      "references": [
+        "cross"
+      ],
+      "output": "Please be careful with【pass】",
+      "target_output": "pass",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 113.26,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-013-b",
+      "variant": "m2",
+      "target": "过",
+      "before": "请小心",
+      "after": "马路",
+      "references": [
+        "cross"
+      ],
+      "output": "Please be careful [over] the road.",
+      "target_output": "over",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 124.52,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-013-b",
+      "variant": "m3",
+      "target": "过",
+      "before": "请小心",
+      "after": "马路",
+      "references": [
+        "cross"
+      ],
+      "output": "Please be careful [over] the road.",
+      "target_output": "over",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 122.62,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "m0",
+      "target": "走",
+      "before": "我们",
+      "after": "路去公司",
+      "references": [
+        "walk"
+      ],
+      "output": "walk",
+      "target_output": "walk",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 44.52,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "m1",
+      "target": "走",
+      "before": "我们",
+      "after": "路去公司",
+      "references": [
+        "walk"
+      ],
+      "output": "[go]",
+      "target_output": "go",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.52,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "m2",
+      "target": "走",
+      "before": "我们",
+      "after": "路去公司",
+      "references": [
+        "walk"
+      ],
+      "output": "[walk]",
+      "target_output": "walk",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.86,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "m3",
+      "target": "走",
+      "before": "我们",
+      "after": "路去公司",
+      "references": [
+        "walk"
+      ],
+      "output": "[walk]",
+      "target_output": "walk",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 86.26,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "m0",
+      "target": "走",
+      "before": "太晚了，我们",
+      "after": "吧",
+      "references": [
+        "leave",
+        "go"
+      ],
+      "output": "walk",
+      "target_output": "walk",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 44.62,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "m1",
+      "target": "走",
+      "before": "太晚了，我们",
+      "after": "吧",
+      "references": [
+        "leave",
+        "go"
+      ],
+      "output": "[Go]",
+      "target_output": "Go",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.78,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "m2",
+      "target": "走",
+      "before": "太晚了，我们",
+      "after": "吧",
+      "references": [
+        "leave",
+        "go"
+      ],
+      "output": "[Go]",
+      "target_output": "Go",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 86.62,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "m3",
+      "target": "走",
+      "before": "太晚了，我们",
+      "after": "吧",
+      "references": [
+        "leave",
+        "go"
+      ],
+      "output": "[Go]",
+      "target_output": "Go",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.9,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "m0",
+      "target": "发",
+      "before": "请",
+      "after": "邮件给我",
+      "references": [
+        "send"
+      ],
+      "output": "hair",
+      "target_output": "hair",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.38,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "m1",
+      "target": "发",
+      "before": "请",
+      "after": "邮件给我",
+      "references": [
+        "send"
+      ],
+      "output": "Please [send]",
+      "target_output": "send",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.93,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "m2",
+      "target": "发",
+      "before": "请",
+      "after": "邮件给我",
+      "references": [
+        "send"
+      ],
+      "output": "Please [send] an email to me.",
+      "target_output": "send",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 121.64,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "m3",
+      "target": "发",
+      "before": "请",
+      "after": "邮件给我",
+      "references": [
+        "send"
+      ],
+      "output": "Please [send] an email to me.",
+      "target_output": "send",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 122.12,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "m0",
+      "target": "发",
+      "before": "公司每月",
+      "after": "工资",
+      "references": [
+        "pay"
+      ],
+      "output": "hair",
+      "target_output": "hair",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.78,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "m1",
+      "target": "发",
+      "before": "公司每月",
+      "after": "工资",
+      "references": [
+        "pay"
+      ],
+      "output": "company monthly [send]",
+      "target_output": "send",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 98.33,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "m2",
+      "target": "发",
+      "before": "公司每月",
+      "after": "工资",
+      "references": [
+        "pay"
+      ],
+      "output": "[pay]",
+      "target_output": "pay",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 86.38,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "m3",
+      "target": "发",
+      "before": "公司每月",
+      "after": "工资",
+      "references": [
+        "pay"
+      ],
+      "output": "[pay]",
+      "target_output": "pay",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.89,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "m0",
+      "target": "收",
+      "before": "请查",
+      "after": "邮件",
+      "references": [
+        "receive"
+      ],
+      "output": "Collect",
+      "target_output": "Collect",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.8,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "m1",
+      "target": "收",
+      "before": "请查",
+      "after": "邮件",
+      "references": [
+        "receive"
+      ],
+      "output": "[collect]",
+      "target_output": "collect",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.59,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "m2",
+      "target": "收",
+      "before": "请查",
+      "after": "邮件",
+      "references": [
+        "receive"
+      ],
+      "output": "Please check the [receive] email.",
+      "target_output": "receive",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 117.07,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "m3",
+      "target": "收",
+      "before": "请查",
+      "after": "邮件",
+      "references": [
+        "receive"
+      ],
+      "output": "Please check the [receive] email.",
+      "target_output": "receive",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 117.96,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "m0",
+      "target": "收",
+      "before": "记得",
+      "after": "衣服",
+      "references": [
+        "bring in",
+        "collect"
+      ],
+      "output": "Collect",
+      "target_output": "Collect",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 45.37,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "m1",
+      "target": "收",
+      "before": "记得",
+      "after": "衣服",
+      "references": [
+        "bring in",
+        "collect"
+      ],
+      "output": "[collect]",
+      "target_output": "collect",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.55,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "m2",
+      "target": "收",
+      "before": "记得",
+      "after": "衣服",
+      "references": [
+        "bring in",
+        "collect"
+      ],
+      "output": "[collect] clothes",
+      "target_output": "collect",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 92.91,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "m3",
+      "target": "收",
+      "before": "记得",
+      "after": "衣服",
+      "references": [
+        "bring in",
+        "collect"
+      ],
+      "output": "[collect] clothes",
+      "target_output": "collect",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 93.19,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "m0",
+      "target": "接",
+      "before": "请",
+      "after": "电话",
+      "references": [
+        "answer"
+      ],
+      "output": "Take",
+      "target_output": "Take",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.77,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "m1",
+      "target": "接",
+      "before": "请",
+      "after": "电话",
+      "references": [
+        "answer"
+      ],
+      "output": "Please [take]",
+      "target_output": "take",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 95.39,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "m2",
+      "target": "接",
+      "before": "请",
+      "after": "电话",
+      "references": [
+        "answer"
+      ],
+      "output": "Please [take] the call.",
+      "target_output": "take",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 113.2,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "m3",
+      "target": "接",
+      "before": "请",
+      "after": "电话",
+      "references": [
+        "answer"
+      ],
+      "output": "Please [take] the call.",
+      "target_output": "take",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 116.09,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "m0",
+      "target": "接",
+      "before": "我们决定",
+      "after": "这个项目",
+      "references": [
+        "take on",
+        "accept"
+      ],
+      "output": "Take",
+      "target_output": "Take",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.56,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "m1",
+      "target": "接",
+      "before": "我们决定",
+      "after": "这个项目",
+      "references": [
+        "take on",
+        "accept"
+      ],
+      "output": "[accept]",
+      "target_output": "accept",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 88.44,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "m2",
+      "target": "接",
+      "before": "我们决定",
+      "after": "这个项目",
+      "references": [
+        "take on",
+        "accept"
+      ],
+      "output": "We decided to [take] this project.",
+      "target_output": "take",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 125.68,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "m3",
+      "target": "接",
+      "before": "我们决定",
+      "after": "这个项目",
+      "references": [
+        "take on",
+        "accept"
+      ],
+      "output": "We decided to [take] this project.",
+      "target_output": "take",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 126.96,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "m0",
+      "target": "带",
+      "before": "她在家",
+      "after": "孩子",
+      "references": [
+        "look after",
+        "care for"
+      ],
+      "output": "with",
+      "target_output": "with",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.96,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "m1",
+      "target": "带",
+      "before": "她在家",
+      "after": "孩子",
+      "references": [
+        "look after",
+        "care for"
+      ],
+      "output": "[with]",
+      "target_output": "with",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 88.48,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "m2",
+      "target": "带",
+      "before": "她在家",
+      "after": "孩子",
+      "references": [
+        "look after",
+        "care for"
+      ],
+      "output": "[with] the child",
+      "target_output": "with",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 102.01,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "m3",
+      "target": "带",
+      "before": "她在家",
+      "after": "孩子",
+      "references": [
+        "look after",
+        "care for"
+      ],
+      "output": "[with] the child",
+      "target_output": "with",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 104.45,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "m0",
+      "target": "带",
+      "before": "这个经理",
+      "after": "团队",
+      "references": [
+        "lead"
+      ],
+      "output": "with",
+      "target_output": "with",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.27,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "m1",
+      "target": "带",
+      "before": "这个经理",
+      "after": "团队",
+      "references": [
+        "lead"
+      ],
+      "output": "[leader]",
+      "target_output": "leader",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 89.74,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "m2",
+      "target": "带",
+      "before": "这个经理",
+      "after": "团队",
+      "references": [
+        "lead"
+      ],
+      "output": "This manager leads the team.",
+      "target_output": "This manager leads the team.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 109.5,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "m3",
+      "target": "带",
+      "before": "这个经理",
+      "after": "团队",
+      "references": [
+        "lead"
+      ],
+      "output": "This manager leads the team.",
+      "target_output": "This manager leads the team.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 108.32,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "m0",
+      "target": "换",
+      "before": "我想",
+      "after": "工作",
+      "references": [
+        "change"
+      ],
+      "output": "Replace",
+      "target_output": "Replace",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 47.05,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "m1",
+      "target": "换",
+      "before": "我想",
+      "after": "工作",
+      "references": [
+        "change"
+      ],
+      "output": "[change]",
+      "target_output": "change",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 89.69,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "m2",
+      "target": "换",
+      "before": "我想",
+      "after": "工作",
+      "references": [
+        "change"
+      ],
+      "output": "I want to [change] my job.",
+      "target_output": "change",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 125.41,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "m3",
+      "target": "换",
+      "before": "我想",
+      "after": "工作",
+      "references": [
+        "change"
+      ],
+      "output": "I want to [change] my job.",
+      "target_output": "change",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 125.58,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "m0",
+      "target": "换",
+      "before": "手机没电了，帮我",
+      "after": "电池",
+      "references": [
+        "replace",
+        "change"
+      ],
+      "output": "Replace",
+      "target_output": "Replace",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 45.97,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "m1",
+      "target": "换",
+      "before": "手机没电了，帮我",
+      "after": "电池",
+      "references": [
+        "replace",
+        "change"
+      ],
+      "output": "[change]",
+      "target_output": "change",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 88.54,
+      "prompt_tokens": 65,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "m2",
+      "target": "换",
+      "before": "手机没电了，帮我",
+      "after": "电池",
+      "references": [
+        "replace",
+        "change"
+      ],
+      "output": "[change]",
+      "target_output": "change",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 88.9,
+      "prompt_tokens": 66,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "m3",
+      "target": "换",
+      "before": "手机没电了，帮我",
+      "after": "电池",
+      "references": [
+        "replace",
+        "change"
+      ],
+      "output": "[change]",
+      "target_output": "change",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 88.5,
+      "prompt_tokens": 66,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "m0",
+      "target": "存",
+      "before": "我每个月",
+      "after": "一些钱",
+      "references": [
+        "save"
+      ],
+      "output": "store",
+      "target_output": "store",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.35,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "m1",
+      "target": "存",
+      "before": "我每个月",
+      "after": "一些钱",
+      "references": [
+        "save"
+      ],
+      "output": "I save every month.",
+      "target_output": "I save every month.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 99.16,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "m2",
+      "target": "存",
+      "before": "我每个月",
+      "after": "一些钱",
+      "references": [
+        "save"
+      ],
+      "output": "I save some money every month.",
+      "target_output": "I save some money every month.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 111.67,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "m3",
+      "target": "存",
+      "before": "我每个月",
+      "after": "一些钱",
+      "references": [
+        "save"
+      ],
+      "output": "I save some money every month.",
+      "target_output": "I save some money every month.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 110.53,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "m0",
+      "target": "存",
+      "before": "先查一下库存余",
+      "after": "量",
+      "references": [
+        "stock",
+        "inventory"
+      ],
+      "output": "store",
+      "target_output": "store",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.49,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "m1",
+      "target": "存",
+      "before": "先查一下库存余",
+      "after": "量",
+      "references": [
+        "stock",
+        "inventory"
+      ],
+      "output": "Check inventory balance [存]",
+      "target_output": "存",
+      "extraction": "chinese_only",
+      "status": "invalid",
+      "reason": "chinese_output",
+      "latency_ms": 103.61,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "m2",
+      "target": "存",
+      "before": "先查一下库存余",
+      "after": "量",
+      "references": [
+        "stock",
+        "inventory"
+      ],
+      "output": "Check the stock balance [存]",
+      "target_output": "存",
+      "extraction": "chinese_only",
+      "status": "invalid",
+      "reason": "chinese_output",
+      "latency_ms": 110.03,
+      "prompt_tokens": 65,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "m3",
+      "target": "存",
+      "before": "先查一下库存余",
+      "after": "量",
+      "references": [
+        "stock",
+        "inventory"
+      ],
+      "output": "Check the stock balance [存]",
+      "target_output": "存",
+      "extraction": "chinese_only",
+      "status": "invalid",
+      "reason": "chinese_output",
+      "latency_ms": 110.56,
+      "prompt_tokens": 65,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "m0",
+      "target": "放",
+      "before": "请",
+      "after": "音乐",
+      "references": [
+        "play"
+      ],
+      "output": "Let go",
+      "target_output": "Let go",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 50.83,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "m1",
+      "target": "放",
+      "before": "请",
+      "after": "音乐",
+      "references": [
+        "play"
+      ],
+      "output": "[place]",
+      "target_output": "place",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 85.36,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "m2",
+      "target": "放",
+      "before": "请",
+      "after": "音乐",
+      "references": [
+        "play"
+      ],
+      "output": "[play] music",
+      "target_output": "play",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.99,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "m3",
+      "target": "放",
+      "before": "请",
+      "after": "音乐",
+      "references": [
+        "play"
+      ],
+      "output": "[play] music",
+      "target_output": "play",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.75,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "m0",
+      "target": "放",
+      "before": "把行李",
+      "after": "在门口",
+      "references": [
+        "put",
+        "place"
+      ],
+      "output": "Let go",
+      "target_output": "Let go",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 50.68,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "m1",
+      "target": "放",
+      "before": "把行李",
+      "after": "在门口",
+      "references": [
+        "put",
+        "place"
+      ],
+      "output": "[put]",
+      "target_output": "put",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 86.48,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "m2",
+      "target": "放",
+      "before": "把行李",
+      "after": "在门口",
+      "references": [
+        "put",
+        "place"
+      ],
+      "output": "[put] the luggage at the door",
+      "target_output": "put",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 116.8,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "m3",
+      "target": "放",
+      "before": "把行李",
+      "after": "在门口",
+      "references": [
+        "put",
+        "place"
+      ],
+      "output": "[put] the luggage at the door",
+      "target_output": "put",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 116.37,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "m0",
+      "target": "做",
+      "before": "妈妈在",
+      "after": "饭",
+      "references": [
+        "cook",
+        "make"
+      ],
+      "output": "Do",
+      "target_output": "Do",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.42,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "m1",
+      "target": "做",
+      "before": "妈妈在",
+      "after": "饭",
+      "references": [
+        "cook",
+        "make"
+      ],
+      "output": "[doing]",
+      "target_output": "doing",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 83.76,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "m2",
+      "target": "做",
+      "before": "妈妈在",
+      "after": "饭",
+      "references": [
+        "cook",
+        "make"
+      ],
+      "output": "[making]",
+      "target_output": "making",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.06,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "m3",
+      "target": "做",
+      "before": "妈妈在",
+      "after": "饭",
+      "references": [
+        "cook",
+        "make"
+      ],
+      "output": "[making]",
+      "target_output": "making",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 88.02,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "m0",
+      "target": "做",
+      "before": "我们要",
+      "after": "决定",
+      "references": [
+        "make"
+      ],
+      "output": "Do",
+      "target_output": "Do",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.42,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "m1",
+      "target": "做",
+      "before": "我们要",
+      "after": "决定",
+      "references": [
+        "make"
+      ],
+      "output": "[do]",
+      "target_output": "do",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.61,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "m2",
+      "target": "做",
+      "before": "我们要",
+      "after": "决定",
+      "references": [
+        "make"
+      ],
+      "output": "[do]",
+      "target_output": "do",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 87.04,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "m3",
+      "target": "做",
+      "before": "我们要",
+      "after": "决定",
+      "references": [
+        "make"
+      ],
+      "output": "[do]",
+      "target_output": "do",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.11,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "m0",
+      "target": "想",
+      "before": "我一个人有点",
+      "after": "家",
+      "references": [
+        "miss"
+      ],
+      "output": "Want",
+      "target_output": "Want",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.06,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "m1",
+      "target": "想",
+      "before": "我一个人有点",
+      "after": "家",
+      "references": [
+        "miss"
+      ],
+      "output": "I'm a bit [wanting] alone.",
+      "target_output": "wanting",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 129.06,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "m2",
+      "target": "想",
+      "before": "我一个人有点",
+      "after": "家",
+      "references": [
+        "miss"
+      ],
+      "output": "[want] home",
+      "target_output": "want",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 93.24,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "m3",
+      "target": "想",
+      "before": "我一个人有点",
+      "after": "家",
+      "references": [
+        "miss"
+      ],
+      "output": "[want] home",
+      "target_output": "want",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 92.8,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "m0",
+      "target": "想",
+      "before": "让我",
+      "after": "办法",
+      "references": [
+        "think of",
+        "come up with"
+      ],
+      "output": "Want",
+      "target_output": "Want",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 44.86,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "m1",
+      "target": "想",
+      "before": "让我",
+      "after": "办法",
+      "references": [
+        "think of",
+        "come up with"
+      ],
+      "output": "[think]",
+      "target_output": "think",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 84.41,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "m2",
+      "target": "想",
+      "before": "让我",
+      "after": "办法",
+      "references": [
+        "think of",
+        "come up with"
+      ],
+      "output": "[think] a way",
+      "target_output": "think",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 97.17,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "m3",
+      "target": "想",
+      "before": "让我",
+      "after": "办法",
+      "references": [
+        "think of",
+        "come up with"
+      ],
+      "output": "[think] a way",
+      "target_output": "think",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 97.73,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-024-a",
+      "variant": "m0",
+      "target": "问",
+      "before": "请",
+      "after": "老师一个问题",
+      "references": [
+        "ask"
+      ],
+      "output": "Question",
+      "target_output": "Question",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.29,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-024-a",
+      "variant": "m1",
+      "target": "问",
+      "before": "请",
+      "after": "老师一个问题",
+      "references": [
+        "ask"
+      ],
+      "output": "[ask]",
+      "target_output": "ask",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.95,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-024-a",
+      "variant": "m2",
+      "target": "问",
+      "before": "请",
+      "after": "老师一个问题",
+      "references": [
+        "ask"
+      ],
+      "output": "Please [ask] the teacher a question.",
+      "target_output": "ask",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 122.81,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-024-a",
+      "variant": "m3",
+      "target": "问",
+      "before": "请",
+      "after": "老师一个问题",
+      "references": [
+        "ask"
+      ],
+      "output": "Please [ask] the teacher a question.",
+      "target_output": "ask",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 123.73,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-024-b",
+      "variant": "m0",
+      "target": "问",
+      "before": "要追究并",
+      "after": "责",
+      "references": [
+        "hold accountable",
+        "hold responsible"
+      ],
+      "output": "Question",
+      "target_output": "Question",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.12,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-024-b",
+      "variant": "m1",
+      "target": "问",
+      "before": "要追究并",
+      "after": "责",
+      "references": [
+        "hold accountable",
+        "hold responsible"
+      ],
+      "output": "To investigate and [ask]",
+      "target_output": "ask",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 105.22,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-024-b",
+      "variant": "m2",
+      "target": "问",
+      "before": "要追究并",
+      "after": "责",
+      "references": [
+        "hold accountable",
+        "hold responsible"
+      ],
+      "output": "To hold accountable and 【ask】",
+      "target_output": "ask",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 111.71,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-024-b",
+      "variant": "m3",
+      "target": "问",
+      "before": "要追究并",
+      "after": "责",
+      "references": [
+        "hold accountable",
+        "hold responsible"
+      ],
+      "output": "To hold accountable and 【ask】",
+      "target_output": "ask",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 112.4,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "m0",
+      "target": "报",
+      "before": "我想",
+      "after": "名参加比赛",
+      "references": [
+        "register",
+        "sign up"
+      ],
+      "output": "Report",
+      "target_output": "Report",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.1,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "m1",
+      "target": "报",
+      "before": "我想",
+      "after": "名参加比赛",
+      "references": [
+        "register",
+        "sign up"
+      ],
+      "output": "[report]",
+      "target_output": "report",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.83,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "m2",
+      "target": "报",
+      "before": "我想",
+      "after": "名参加比赛",
+      "references": [
+        "register",
+        "sign up"
+      ],
+      "output": "I want to [register] to participate in the competition.",
+      "target_output": "register",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 143.95,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "m3",
+      "target": "报",
+      "before": "我想",
+      "after": "名参加比赛",
+      "references": [
+        "register",
+        "sign up"
+      ],
+      "output": "I want to [register] to participate in the competition.",
+      "target_output": "register",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 146.19,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "m0",
+      "target": "报",
+      "before": "遇到危险请",
+      "after": "警",
+      "references": [
+        "call"
+      ],
+      "output": "Report",
+      "target_output": "Report",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.81,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "m1",
+      "target": "报",
+      "before": "遇到危险请",
+      "after": "警",
+      "references": [
+        "call"
+      ],
+      "output": "[Report]",
+      "target_output": "Report",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 88.97,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "m2",
+      "target": "报",
+      "before": "遇到危险请",
+      "after": "警",
+      "references": [
+        "call"
+      ],
+      "output": "[report]",
+      "target_output": "report",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 88.44,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "m3",
+      "target": "报",
+      "before": "遇到危险请",
+      "after": "警",
+      "references": [
+        "call"
+      ],
+      "output": "[report]",
+      "target_output": "report",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 91.05,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "m0",
+      "target": "结",
+      "before": "服务员，请",
+      "after": "账",
+      "references": [
+        "pay"
+      ],
+      "output": "Tie",
+      "target_output": "Tie",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 54.25,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "m1",
+      "target": "结",
+      "before": "服务员，请",
+      "after": "账",
+      "references": [
+        "pay"
+      ],
+      "output": "[Pay]",
+      "target_output": "Pay",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 88.38,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "m2",
+      "target": "结",
+      "before": "服务员，请",
+      "after": "账",
+      "references": [
+        "pay"
+      ],
+      "output": "[Pay]",
+      "target_output": "Pay",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.12,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "m3",
+      "target": "结",
+      "before": "服务员，请",
+      "after": "账",
+      "references": [
+        "pay"
+      ],
+      "output": "[Pay]",
+      "target_output": "Pay",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 93.1,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "m0",
+      "target": "结",
+      "before": "会议已经",
+      "after": "束",
+      "references": [
+        "end",
+        "finish"
+      ],
+      "output": "Tie",
+      "target_output": "Tie",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 54.24,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "m1",
+      "target": "结",
+      "before": "会议已经",
+      "after": "束",
+      "references": [
+        "end",
+        "finish"
+      ],
+      "output": "[concluded]",
+      "target_output": "concluded",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 97.67,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "m2",
+      "target": "结",
+      "before": "会议已经",
+      "after": "束",
+      "references": [
+        "end",
+        "finish"
+      ],
+      "output": "[End]",
+      "target_output": "End",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.72,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "m3",
+      "target": "结",
+      "before": "会议已经",
+      "after": "束",
+      "references": [
+        "end",
+        "finish"
+      ],
+      "output": "[End]",
+      "target_output": "End",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 93.96,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "m0",
+      "target": "行",
+      "before": "你明天能来",
+      "after": "吗",
+      "references": [
+        "okay",
+        "work"
+      ],
+      "output": "Go",
+      "target_output": "Go",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 49.21,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "m1",
+      "target": "行",
+      "before": "你明天能来",
+      "after": "吗",
+      "references": [
+        "okay",
+        "work"
+      ],
+      "output": "You can come tomorrow [Yes]",
+      "target_output": "Yes",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 117.44,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "m2",
+      "target": "行",
+      "before": "你明天能来",
+      "after": "吗",
+      "references": [
+        "okay",
+        "work"
+      ],
+      "output": "Can you come tomorrow?",
+      "target_output": "Can you come tomorrow?",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 103.99,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "m3",
+      "target": "行",
+      "before": "你明天能来",
+      "after": "吗",
+      "references": [
+        "okay",
+        "work"
+      ],
+      "output": "Can you come tomorrow?",
+      "target_output": "Can you come tomorrow?",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 106.0,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "m0",
+      "target": "行",
+      "before": "请去对面的银",
+      "after": "取钱",
+      "references": [
+        "bank"
+      ],
+      "output": "Go",
+      "target_output": "Go",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 48.65,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "m1",
+      "target": "行",
+      "before": "请去对面的银",
+      "after": "取钱",
+      "references": [
+        "bank"
+      ],
+      "output": "[bank]",
+      "target_output": "bank",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.16,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "m2",
+      "target": "行",
+      "before": "请去对面的银",
+      "after": "取钱",
+      "references": [
+        "bank"
+      ],
+      "output": "Please go to the bank across the street to withdraw money.",
+      "target_output": "Please go to the bank across the street to withdraw money.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 148.5,
+      "prompt_tokens": 65,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "m3",
+      "target": "行",
+      "before": "请去对面的银",
+      "after": "取钱",
+      "references": [
+        "bank"
+      ],
+      "output": "Please go to the bank across the street to withdraw money.",
+      "target_output": "Please go to the bank across the street to withdraw money.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 147.71,
+      "prompt_tokens": 65,
+      "error": null
+    },
+    {
+      "id": "amb-028-a",
+      "variant": "m0",
+      "target": "还",
+      "before": "请把钱",
+      "after": "给我",
+      "references": [
+        "return",
+        "give back"
+      ],
+      "output": "Still",
+      "target_output": "Still",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 47.66,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-028-a",
+      "variant": "m1",
+      "target": "还",
+      "before": "请把钱",
+      "after": "给我",
+      "references": [
+        "return",
+        "give back"
+      ],
+      "output": "[return]",
+      "target_output": "return",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 90.17,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-028-a",
+      "variant": "m2",
+      "target": "还",
+      "before": "请把钱",
+      "after": "给我",
+      "references": [
+        "return",
+        "give back"
+      ],
+      "output": "[return] the money to me",
+      "target_output": "return",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 117.35,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-028-a",
+      "variant": "m3",
+      "target": "还",
+      "before": "请把钱",
+      "after": "给我",
+      "references": [
+        "return",
+        "give back"
+      ],
+      "output": "[return] the money to me",
+      "target_output": "return",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 116.6,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-028-b",
+      "variant": "m0",
+      "target": "还",
+      "before": "他",
+      "after": "没回来",
+      "references": [
+        "still"
+      ],
+      "output": "Still",
+      "target_output": "Still",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 47.61,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-028-b",
+      "variant": "m1",
+      "target": "还",
+      "before": "他",
+      "after": "没回来",
+      "references": [
+        "still"
+      ],
+      "output": "[still]",
+      "target_output": "still",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 89.87,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-028-b",
+      "variant": "m2",
+      "target": "还",
+      "before": "他",
+      "after": "没回来",
+      "references": [
+        "still"
+      ],
+      "output": "[still]",
+      "target_output": "still",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 89.8,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-028-b",
+      "variant": "m3",
+      "target": "还",
+      "before": "他",
+      "after": "没回来",
+      "references": [
+        "still"
+      ],
+      "output": "[still]",
+      "target_output": "still",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 90.19,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "m0",
+      "target": "差",
+      "before": "现在八点",
+      "after": "不多",
+      "references": [
+        "about",
+        "almost"
+      ],
+      "output": "Difference",
+      "target_output": "Difference",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 47.59,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "m1",
+      "target": "差",
+      "before": "现在八点",
+      "after": "不多",
+      "references": [
+        "about",
+        "almost"
+      ],
+      "output": "8:00 [差]",
+      "target_output": "差",
+      "extraction": "chinese_only",
+      "status": "invalid",
+      "reason": "chinese_output",
+      "latency_ms": 112.95,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "m2",
+      "target": "差",
+      "before": "现在八点",
+      "after": "不多",
+      "references": [
+        "about",
+        "almost"
+      ],
+      "output": "[8]",
+      "target_output": "8",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 88.37,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "m3",
+      "target": "差",
+      "before": "现在八点",
+      "after": "不多",
+      "references": [
+        "about",
+        "almost"
+      ],
+      "output": "[8]",
+      "target_output": "8",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 87.14,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "m0",
+      "target": "差",
+      "before": "两个人的方案",
+      "after": "很多",
+      "references": [
+        "differ",
+        "different"
+      ],
+      "output": "Difference",
+      "target_output": "Difference",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.72,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "m1",
+      "target": "差",
+      "before": "两个人的方案",
+      "after": "很多",
+      "references": [
+        "differ",
+        "different"
+      ],
+      "output": "[Difference]",
+      "target_output": "Difference",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 87.33,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "m2",
+      "target": "差",
+      "before": "两个人的方案",
+      "after": "很多",
+      "references": [
+        "differ",
+        "different"
+      ],
+      "output": "[Many] differences between the two plans",
+      "target_output": "Many",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 119.33,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "m3",
+      "target": "差",
+      "before": "两个人的方案",
+      "after": "很多",
+      "references": [
+        "differ",
+        "different"
+      ],
+      "output": "[Many] differences between the two plans",
+      "target_output": "Many",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 114.79,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "m0",
+      "target": "好",
+      "before": "东西已经准备",
+      "after": "了",
+      "references": [
+        "ready",
+        "done"
+      ],
+      "output": "Good",
+      "target_output": "Good",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.0,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "m1",
+      "target": "好",
+      "before": "东西已经准备",
+      "after": "了",
+      "references": [
+        "ready",
+        "done"
+      ],
+      "output": "[Good]",
+      "target_output": "Good",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.58,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "m2",
+      "target": "好",
+      "before": "东西已经准备",
+      "after": "了",
+      "references": [
+        "ready",
+        "done"
+      ],
+      "output": "[Good]",
+      "target_output": "Good",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 104.43,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "m3",
+      "target": "好",
+      "before": "东西已经准备",
+      "after": "了",
+      "references": [
+        "ready",
+        "done"
+      ],
+      "output": "[Good]",
+      "target_output": "Good",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 89.77,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "m0",
+      "target": "好",
+      "before": "这扇门很",
+      "after": "开",
+      "references": [
+        "easy"
+      ],
+      "output": "Good",
+      "target_output": "Good",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 47.55,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "m1",
+      "target": "好",
+      "before": "这扇门很",
+      "after": "开",
+      "references": [
+        "easy"
+      ],
+      "output": "This door is very [good].",
+      "target_output": "good",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 111.32,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "m2",
+      "target": "好",
+      "before": "这扇门很",
+      "after": "开",
+      "references": [
+        "easy"
+      ],
+      "output": "This door is very [easy] to open.",
+      "target_output": "easy",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 129.69,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "m3",
+      "target": "好",
+      "before": "这扇门很",
+      "after": "开",
+      "references": [
+        "easy"
+      ],
+      "output": "This door is very [easy] to open.",
+      "target_output": "easy",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 130.13,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "m0",
+      "target": "大",
+      "before": "这是一个人工智能",
+      "after": "模型",
+      "references": [
+        "large",
+        "big"
+      ],
+      "output": "Big",
+      "target_output": "Big",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 45.92,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "m1",
+      "target": "大",
+      "before": "这是一个人工智能",
+      "after": "模型",
+      "references": [
+        "large",
+        "big"
+      ],
+      "output": "This is an artificial intelligence [Big]",
+      "target_output": "Big",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 119.12,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "m2",
+      "target": "大",
+      "before": "这是一个人工智能",
+      "after": "模型",
+      "references": [
+        "large",
+        "big"
+      ],
+      "output": "This is an artificial intelligence [large] model.",
+      "target_output": "large",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 130.61,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "m3",
+      "target": "大",
+      "before": "这是一个人工智能",
+      "after": "模型",
+      "references": [
+        "large",
+        "big"
+      ],
+      "output": "This is an artificial intelligence [large] model.",
+      "target_output": "large",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 132.54,
+      "prompt_tokens": 64,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "m0",
+      "target": "大",
+      "before": "外面的雨很",
+      "after": "",
+      "references": [
+        "heavy"
+      ],
+      "output": "Big",
+      "target_output": "Big",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 45.88,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "m1",
+      "target": "大",
+      "before": "外面的雨很",
+      "after": "",
+      "references": [
+        "heavy"
+      ],
+      "output": "[big]",
+      "target_output": "big",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.42,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "m2",
+      "target": "大",
+      "before": "外面的雨很",
+      "after": "",
+      "references": [
+        "heavy"
+      ],
+      "output": "[big]",
+      "target_output": "big",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.54,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "m3",
+      "target": "大",
+      "before": "外面的雨很",
+      "after": "",
+      "references": [
+        "heavy"
+      ],
+      "output": "[big]",
+      "target_output": "big",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 86.82,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "m0",
+      "target": "小",
+      "before": "请",
+      "after": "声说话",
+      "references": [
+        "quietly",
+        "softly"
+      ],
+      "output": "small",
+      "target_output": "small",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 45.75,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "m1",
+      "target": "小",
+      "before": "请",
+      "after": "声说话",
+      "references": [
+        "quietly",
+        "softly"
+      ],
+      "output": "[small]",
+      "target_output": "small",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 86.47,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "m2",
+      "target": "小",
+      "before": "请",
+      "after": "声说话",
+      "references": [
+        "quietly",
+        "softly"
+      ],
+      "output": "[small]",
+      "target_output": "small",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 88.08,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "m3",
+      "target": "小",
+      "before": "请",
+      "after": "声说话",
+      "references": [
+        "quietly",
+        "softly"
+      ],
+      "output": "[small]",
+      "target_output": "small",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 104.48,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "m0",
+      "target": "小",
+      "before": "这只是个",
+      "after": "程序",
+      "references": [
+        "small"
+      ],
+      "output": "small",
+      "target_output": "small",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 47.9,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "m1",
+      "target": "小",
+      "before": "这只是个",
+      "after": "程序",
+      "references": [
+        "small"
+      ],
+      "output": "[small]",
+      "target_output": "small",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 92.71,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "m2",
+      "target": "小",
+      "before": "这只是个",
+      "after": "程序",
+      "references": [
+        "small"
+      ],
+      "output": "[small] program",
+      "target_output": "small",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 97.63,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "m3",
+      "target": "小",
+      "before": "这只是个",
+      "after": "程序",
+      "references": [
+        "small"
+      ],
+      "output": "[small] program",
+      "target_output": "small",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 98.27,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "m0",
+      "target": "新",
+      "before": "今天看了",
+      "after": "闻",
+      "references": [
+        "news"
+      ],
+      "output": "New",
+      "target_output": "New",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 47.71,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "m1",
+      "target": "新",
+      "before": "今天看了",
+      "after": "闻",
+      "references": [
+        "news"
+      ],
+      "output": "[New]",
+      "target_output": "New",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 96.38,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "m2",
+      "target": "新",
+      "before": "今天看了",
+      "after": "闻",
+      "references": [
+        "news"
+      ],
+      "output": "[New] news",
+      "target_output": "New",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 105.55,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "m3",
+      "target": "新",
+      "before": "今天看了",
+      "after": "闻",
+      "references": [
+        "news"
+      ],
+      "output": "[New] news",
+      "target_output": "New",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 103.6,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "m0",
+      "target": "新",
+      "before": "他是",
+      "after": "员工",
+      "references": [
+        "new"
+      ],
+      "output": "New",
+      "target_output": "New",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 49.86,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "m1",
+      "target": "新",
+      "before": "他是",
+      "after": "员工",
+      "references": [
+        "new"
+      ],
+      "output": "He is [New]",
+      "target_output": "New",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 105.45,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "m2",
+      "target": "新",
+      "before": "他是",
+      "after": "员工",
+      "references": [
+        "new"
+      ],
+      "output": "He is a [new] employee.",
+      "target_output": "new",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 125.17,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "m3",
+      "target": "新",
+      "before": "他是",
+      "after": "员工",
+      "references": [
+        "new"
+      ],
+      "output": "He is a [new] employee.",
+      "target_output": "new",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 130.38,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "m0",
+      "target": "老",
+      "before": "这家",
+      "after": "店很有名",
+      "references": [
+        "old",
+        "long-established"
+      ],
+      "output": "old",
+      "target_output": "old",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 50.42,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "m1",
+      "target": "老",
+      "before": "这家",
+      "after": "店很有名",
+      "references": [
+        "old",
+        "long-established"
+      ],
+      "output": "[old]",
+      "target_output": "old",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 100.84,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "m2",
+      "target": "老",
+      "before": "这家",
+      "after": "店很有名",
+      "references": [
+        "old",
+        "long-established"
+      ],
+      "output": "[old]",
+      "target_output": "old",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 101.06,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "m3",
+      "target": "老",
+      "before": "这家",
+      "after": "店很有名",
+      "references": [
+        "old",
+        "long-established"
+      ],
+      "output": "[old]",
+      "target_output": "old",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 95.37,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "m0",
+      "target": "老",
+      "before": "他",
+      "after": "是迟到",
+      "references": [
+        "always"
+      ],
+      "output": "old",
+      "target_output": "old",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 47.88,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "m1",
+      "target": "老",
+      "before": "他",
+      "after": "是迟到",
+      "references": [
+        "always"
+      ],
+      "output": "[old]",
+      "target_output": "old",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 93.39,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "m2",
+      "target": "老",
+      "before": "他",
+      "after": "是迟到",
+      "references": [
+        "always"
+      ],
+      "output": "He【old】is late.",
+      "target_output": "old",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 119.88,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "m3",
+      "target": "老",
+      "before": "他",
+      "after": "是迟到",
+      "references": [
+        "always"
+      ],
+      "output": "He【old】is late.",
+      "target_output": "old",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 123.87,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "m0",
+      "target": "快",
+      "before": "他跑得很",
+      "after": "",
+      "references": [
+        "fast"
+      ],
+      "output": "Fast",
+      "target_output": "Fast",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 51.12,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "m1",
+      "target": "快",
+      "before": "他跑得很",
+      "after": "",
+      "references": [
+        "fast"
+      ],
+      "output": "[fast]",
+      "target_output": "fast",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 101.48,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "m2",
+      "target": "快",
+      "before": "他跑得很",
+      "after": "",
+      "references": [
+        "fast"
+      ],
+      "output": "[fast]",
+      "target_output": "fast",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 100.54,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "m3",
+      "target": "快",
+      "before": "他跑得很",
+      "after": "",
+      "references": [
+        "fast"
+      ],
+      "output": "[fast]",
+      "target_output": "fast",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 96.07,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "m0",
+      "target": "快",
+      "before": "春节",
+      "after": "到了",
+      "references": [
+        "soon"
+      ],
+      "output": "Fast",
+      "target_output": "Fast",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 49.26,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "m1",
+      "target": "快",
+      "before": "春节",
+      "after": "到了",
+      "references": [
+        "soon"
+      ],
+      "output": "Spring Festival [fast]",
+      "target_output": "fast",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 106.19,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "m2",
+      "target": "快",
+      "before": "春节",
+      "after": "到了",
+      "references": [
+        "soon"
+      ],
+      "output": "Spring Festival [fast] arrived",
+      "target_output": "fast",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 111.55,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "m3",
+      "target": "快",
+      "before": "春节",
+      "after": "到了",
+      "references": [
+        "soon"
+      ],
+      "output": "Spring Festival [fast] arrived",
+      "target_output": "fast",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 109.92,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "m0",
+      "target": "轻",
+      "before": "这个箱子很",
+      "after": "",
+      "references": [
+        "light"
+      ],
+      "output": "light",
+      "target_output": "light",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 46.95,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "m1",
+      "target": "轻",
+      "before": "这个箱子很",
+      "after": "",
+      "references": [
+        "light"
+      ],
+      "output": "[light]",
+      "target_output": "light",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.1,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "m2",
+      "target": "轻",
+      "before": "这个箱子很",
+      "after": "",
+      "references": [
+        "light"
+      ],
+      "output": "[light]",
+      "target_output": "light",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 94.45,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "m3",
+      "target": "轻",
+      "before": "这个箱子很",
+      "after": "",
+      "references": [
+        "light"
+      ],
+      "output": "[light]",
+      "target_output": "light",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 95.82,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "m0",
+      "target": "轻",
+      "before": "请",
+      "after": "地关门",
+      "references": [
+        "gently",
+        "softly"
+      ],
+      "output": "light",
+      "target_output": "light",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 50.05,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "m1",
+      "target": "轻",
+      "before": "请",
+      "after": "地关门",
+      "references": [
+        "gently",
+        "softly"
+      ],
+      "output": "[light]",
+      "target_output": "light",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 92.51,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "m2",
+      "target": "轻",
+      "before": "请",
+      "after": "地关门",
+      "references": [
+        "gently",
+        "softly"
+      ],
+      "output": "[Softly] close the door",
+      "target_output": "Softly",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 116.33,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "m3",
+      "target": "轻",
+      "before": "请",
+      "after": "地关门",
+      "references": [
+        "gently",
+        "softly"
+      ],
+      "output": "[Softly] close the door",
+      "target_output": "Softly",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 112.96,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "m0",
+      "target": "重",
+      "before": "这个包太",
+      "after": "了",
+      "references": [
+        "heavy"
+      ],
+      "output": "heavy",
+      "target_output": "heavy",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 46.63,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "m1",
+      "target": "重",
+      "before": "这个包太",
+      "after": "了",
+      "references": [
+        "heavy"
+      ],
+      "output": "This bag is too [heavy].",
+      "target_output": "heavy",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 116.51,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "m2",
+      "target": "重",
+      "before": "这个包太",
+      "after": "了",
+      "references": [
+        "heavy"
+      ],
+      "output": "This bag is too [heavy].",
+      "target_output": "heavy",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 119.39,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "m3",
+      "target": "重",
+      "before": "这个包太",
+      "after": "了",
+      "references": [
+        "heavy"
+      ],
+      "output": "This bag is too [heavy].",
+      "target_output": "heavy",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 120.12,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "m0",
+      "target": "重",
+      "before": "请",
+      "after": "新提交",
+      "references": [
+        "again",
+        "re"
+      ],
+      "output": "heavy",
+      "target_output": "heavy",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 46.58,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "m1",
+      "target": "重",
+      "before": "请",
+      "after": "新提交",
+      "references": [
+        "again",
+        "re"
+      ],
+      "output": "Please [re]",
+      "target_output": "re",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 95.49,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "m2",
+      "target": "重",
+      "before": "请",
+      "after": "新提交",
+      "references": [
+        "again",
+        "re"
+      ],
+      "output": "[Re]submit",
+      "target_output": "Re",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 96.4,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "m3",
+      "target": "重",
+      "before": "请",
+      "after": "新提交",
+      "references": [
+        "again",
+        "re"
+      ],
+      "output": "[Re]submit",
+      "target_output": "Re",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 96.72,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-038-a",
+      "variant": "m0",
+      "target": "留",
+      "before": "今晚我想",
+      "after": "在家",
+      "references": [
+        "stay"
+      ],
+      "output": "Leave",
+      "target_output": "Leave",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 62.28,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-038-a",
+      "variant": "m1",
+      "target": "留",
+      "before": "今晚我想",
+      "after": "在家",
+      "references": [
+        "stay"
+      ],
+      "output": "[stay]",
+      "target_output": "stay",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 93.96,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-038-a",
+      "variant": "m2",
+      "target": "留",
+      "before": "今晚我想",
+      "after": "在家",
+      "references": [
+        "stay"
+      ],
+      "output": "[stay] at home tonight",
+      "target_output": "stay",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 113.59,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-038-a",
+      "variant": "m3",
+      "target": "留",
+      "before": "今晚我想",
+      "after": "在家",
+      "references": [
+        "stay"
+      ],
+      "output": "[stay] at home tonight",
+      "target_output": "stay",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 111.36,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-038-b",
+      "variant": "m0",
+      "target": "留",
+      "before": "请给我",
+      "after": "个言",
+      "references": [
+        "leave"
+      ],
+      "output": "Leave",
+      "target_output": "Leave",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 46.96,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-038-b",
+      "variant": "m1",
+      "target": "留",
+      "before": "请给我",
+      "after": "个言",
+      "references": [
+        "leave"
+      ],
+      "output": "Please [keep]",
+      "target_output": "keep",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 95.43,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-038-b",
+      "variant": "m2",
+      "target": "留",
+      "before": "请给我",
+      "after": "个言",
+      "references": [
+        "leave"
+      ],
+      "output": "Please leave a message for me.",
+      "target_output": "Please leave a message for me.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 113.5,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-038-b",
+      "variant": "m3",
+      "target": "留",
+      "before": "请给我",
+      "after": "个言",
+      "references": [
+        "leave"
+      ],
+      "output": "Please leave a message for me.",
+      "target_output": "Please leave a message for me.",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 115.24,
+      "prompt_tokens": 63,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "m0",
+      "target": "退",
+      "before": "我想",
+      "after": "货",
+      "references": [
+        "return"
+      ],
+      "output": "Leave",
+      "target_output": "Leave",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.35,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "m1",
+      "target": "退",
+      "before": "我想",
+      "after": "货",
+      "references": [
+        "return"
+      ],
+      "output": "I want to [exit]",
+      "target_output": "exit",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 108.47,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "m2",
+      "target": "退",
+      "before": "我想",
+      "after": "货",
+      "references": [
+        "return"
+      ],
+      "output": "I want to [return] the product.",
+      "target_output": "return",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 128.2,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "m3",
+      "target": "退",
+      "before": "我想",
+      "after": "货",
+      "references": [
+        "return"
+      ],
+      "output": "I want to [return] the product.",
+      "target_output": "return",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 126.42,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "m0",
+      "target": "退",
+      "before": "请",
+      "after": "后一步",
+      "references": [
+        "step back",
+        "move back"
+      ],
+      "output": "Leave",
+      "target_output": "Leave",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 46.31,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "m1",
+      "target": "退",
+      "before": "请",
+      "after": "后一步",
+      "references": [
+        "step back",
+        "move back"
+      ],
+      "output": "[Exit]",
+      "target_output": "Exit",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 89.39,
+      "prompt_tokens": 60,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "m2",
+      "target": "退",
+      "before": "请",
+      "after": "后一步",
+      "references": [
+        "step back",
+        "move back"
+      ],
+      "output": "Please [back] one step.",
+      "target_output": "back",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 120.27,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "m3",
+      "target": "退",
+      "before": "请",
+      "after": "后一步",
+      "references": [
+        "step back",
+        "move back"
+      ],
+      "output": "Please [back] one step.",
+      "target_output": "back",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 124.75,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "m0",
+      "target": "升",
+      "before": "温度正在",
+      "after": "高",
+      "references": [
+        "rise",
+        "increase"
+      ],
+      "output": "rise",
+      "target_output": "rise",
+      "extraction": "direct",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 50.99,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "m1",
+      "target": "升",
+      "before": "温度正在",
+      "after": "高",
+      "references": [
+        "rise",
+        "increase"
+      ],
+      "output": "temperature is [rising]",
+      "target_output": "rising",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 108.7,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "m2",
+      "target": "升",
+      "before": "温度正在",
+      "after": "高",
+      "references": [
+        "rise",
+        "increase"
+      ],
+      "output": "[rising]",
+      "target_output": "rising",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 93.55,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "m3",
+      "target": "升",
+      "before": "温度正在",
+      "after": "高",
+      "references": [
+        "rise",
+        "increase"
+      ],
+      "output": "[rising]",
+      "target_output": "rising",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 93.71,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "m0",
+      "target": "升",
+      "before": "他刚",
+      "after": "职",
+      "references": [
+        "promoted"
+      ],
+      "output": "rise",
+      "target_output": "rise",
+      "extraction": "direct",
+      "status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 48.28,
+      "prompt_tokens": 19,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "m1",
+      "target": "升",
+      "before": "他刚",
+      "after": "职",
+      "references": [
+        "promoted"
+      ],
+      "output": "He just [ascended]",
+      "target_output": "ascended",
+      "extraction": "bracketed",
+      "status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 114.24,
+      "prompt_tokens": 61,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "m2",
+      "target": "升",
+      "before": "他刚",
+      "after": "职",
+      "references": [
+        "promoted"
+      ],
+      "output": "[promoted]",
+      "target_output": "promoted",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 105.72,
+      "prompt_tokens": 62,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "m3",
+      "target": "升",
+      "before": "他刚",
+      "after": "职",
+      "references": [
+        "promoted"
+      ],
+      "output": "[promoted]",
+      "target_output": "promoted",
+      "extraction": "bracketed",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 107.55,
+      "prompt_tokens": 62,
+      "error": null
+    }
+  ]
+}

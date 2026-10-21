@@ -2,10 +2,11 @@
 
 - Date: 2026-10-21
 - Branch: `codex/evaluate-context-disambiguation`
-- Model: `mlx-community/Hy-MT2-1.8B-4bit`
+- Models: Hy-MT2 1.8B, Qwen3 0.6B / 1.7B / 4B,
+  Index-Translate 2B
 - Corpus: 120 synthetic cases
-- Decision: **no-go for production integration with the current model and
-  dictionary assets**
+- Decision: **default off; context is feasible only as a model-selective,
+  opt-in capability**
 
 ## 1. Conclusion
 
@@ -16,6 +17,9 @@ assets cannot convert that signal into a reliable target translation.
   target. In the raw context run, `m1`–`m3` produced fewer acceptable results
   than the target-only baseline and frequently returned Chinese text or the full
   English sentence.
+- The limitation is not exclusive to Hy-MT2. Qwen3 0.6B and 1.7B also fail to
+  isolate the target reliably. Qwen3 4B and Index-Translate 2B preserve the
+  format and show large context gains, but with substantially higher latency.
 - When context was used only to choose from a known set of correct senses,
   Hy-MT2 improved polysemy accuracy from 61.3% to 90.0%. This proves that
   context can help the model make the intended semantic decision.
@@ -28,7 +32,9 @@ assets cannot convert that signal into a reliable target translation.
 - Accessibility bounded context extraction works in TextEdit, Chrome, and
   Safari. OCR is unnecessary for these controls.
 
-The current context feature does not pass the agreed production gates.
+The current context feature does not pass the original universal latency gate
+for automatic enablement. The model comparison below shows a viable selective
+path for Qwen3 4B and Index-Translate 2B, but not for every installed model.
 
 ## 2. Corpus
 
@@ -120,7 +126,86 @@ Raw results:
 - `Tools/ModelLab/results/context-choices.json`
 - `Tools/ModelLab/results/context-rerank-hy-mt2-dictionary.json`
 
-## 6. AX Feasibility
+## 6. Cross-Model Comparison
+
+All rows below use the 80 polysemy cases. Raw context means the model receives
+the marked sentence and must emit only the target. Reranking means the correct
+target sense is present in the supplied option set.
+
+### Raw Context
+
+| Model | No context | 24 + 8 context | Invalid | p95 no context | p95 context |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Hy-MT2 1.8B | 21.3% | 12.5% | 65/80 | 50.0ms | 119.1ms |
+| Qwen3 0.6B | 7.5% | 6.3% | 60/80 | 40.0ms | 49.4ms |
+| Qwen3 1.7B | 20.0% | 1.3% | 78/80 | 80.2ms | 111.8ms |
+| Qwen3 4B | 20.0% | 52.5% | 0/80 | 176.6ms | 283.4ms |
+| Index-Translate 2B | 23.8% | 48.8% | 1/80 | 51.0ms | 129.7ms |
+
+Qwen3 4B and Index-Translate 2B are the only local models that materially
+benefit from raw context while preserving a usable output format. The cost is a
+large p95 increase: about 107ms for Qwen3 4B and 79ms for Index-Translate 2B.
+
+Hy-MT2, Qwen3 0.6B, and Qwen3 1.7B frequently return Chinese text, the full
+sentence, or invalid formatting, so they must not receive raw contextual input.
+OPUS-MT is a sequence-to-sequence translator with no instruction channel; a
+smoke test translated the whole concatenated context rather than the target.
+It is not suitable for this path.
+
+### Oracle Context Reranking
+
+| Model | No context | With context | Paired W/L/T | p95 no context | p95 context |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Hy-MT2 1.8B | 61.3% | 90.0% | 20/1/19 | 91.6ms | 93.9ms |
+| Qwen3 0.6B | 77.5% | 92.5% | 12/0/28 | 34.6ms | 34.6ms |
+| Qwen3 1.7B | 73.8% | 91.3% | 15/2/23 | 78.4ms | 79.1ms |
+| Qwen3 4B | 68.8% | 98.8% | 23/0/17 | 166.6ms | 171.1ms |
+| Index-Translate 2B | 65.0% | 95.0% | 23/0/17 | 80.4ms | 80.9ms |
+
+When the candidate sense exists, context selection is highly effective across
+all models and adds almost no latency. Qwen3 4B is the quality leader;
+Index-Translate 2B is the best speed/quality balance; Qwen3 0.6B is the fastest
+useful selector.
+
+### Real Dictionary Candidate Reranking
+
+The candidate bottleneck remains independent of the model:
+
+| Model | No context | Context | Paired W/L/T |
+| --- | ---: | ---: | ---: |
+| Hy-MT2 1.8B | 12.1% | 15.2% | 2/0/31 |
+| Qwen3 0.6B | 13.6% | 13.6% | 2/2/29 |
+| Qwen3 4B | 15.2% | 24.2% | 5/0/28 |
+| Index-Translate 2B | 15.2% | 22.7% | 5/0/28 |
+
+- These rates use the 66 cases with at least two real dictionary choices.
+- Only 19/80 ambiguous cases contain a correct dictionary sense.
+- Better context selection cannot recover a sense that is absent from the
+  candidate set.
+
+## 7. Industry Patterns
+
+Published products and documentation converge on separating source text from
+context:
+
+- DeepL exposes `context` as a separate request field. The context influences
+  translation and is explicitly not translated itself.
+- Google Cloud Translation recommends glossaries to force domain-specific
+  interpretations of ambiguous words such as "bat".
+- Hy-MT2's official prompt examples include a `【背景信息】` plus
+  `【待翻译文本】` form and a multi-language translation-instruction profile.
+  It has no default system prompt. Our test of the 1.8B model with that form
+  still failed to reliably isolate the target, so prompt support alone does not
+  guarantee target-only output.
+- Context-aware LLM translation research uses prompting or fine-tuning with
+  source and context represented separately. The survey notes that naive
+  concatenation gives source and context the same priority, which can be
+  suboptimal.
+
+This supports a two-stage or model-specific design rather than one universal
+translation prompt.
+
+## 8. AX Feasibility
 
 The tool-only probe uses `AXStringForRange` for a bounded window and does not
 read the full field value.
@@ -145,7 +230,7 @@ Probe:
 
 - `Tools/GlintEval/Sources/ContextAXProbe/main.swift`
 
-## 7. Gate Review
+## 9. Gate Review
 
 | Gate | Result |
 | --- | --- |
@@ -157,22 +242,40 @@ Probe:
 | 24-character window retains 80% gain | No gain to retain in raw run |
 | TextEdit and Chrome AX support | Passed |
 
-## 8. Decision
+## 10. Decision
 
-Do not integrate context into the current production model-first path.
+Do not enable context globally in the current production model-first path.
 
 Do not change the privacy policy, monitoring controller, cache key, or routing
 behavior for this feature.
 
-Context should be reconsidered only if one of these prerequisites is met:
+The supported model set has two viable selective paths:
 
-1. The translation model can reliably produce a target-only constrained output.
-2. A stronger sense inventory is available, with reliable coverage for
-   ambiguous single characters and business terminology.
-3. A constrained decoding or two-stage design can select/generate a target
-   translation without translating the full sentence.
+1. **Qwen3 4B, highest quality:** enable context only as an explicit
+   high-quality option. It gains 32.5 percentage points on raw polysemy
+   translation and reaches 98.8% when choosing from known senses. Its p95
+   increases by about 107ms and memory use is high.
+2. **Index-Translate 2B, balanced:** enable context only as an explicit
+   balanced option. It gains about 25 percentage points on raw polysemy
+   translation and reaches 95% when choosing from known senses. Its p95
+   increases by about 79ms.
 
-The most promising next experiment is not more context extraction. It is
-improving the sense inventory or using an instruction-following model with
-target-only constrained output. The current AX path is available when that
-prerequisite is ready.
+Context must stay disabled for Hy-MT2 1.8B, Qwen3 0.6B, Qwen3 1.7B, and OPUS-MT.
+
+The next prerequisite is a better sense inventory or candidate-generation stage.
+The current dictionary lacks a correct sense for most ambiguous cases. A
+model-generated candidate set followed by Qwen3 0.6B or Qwen3 4B context
+reranking is a more promising next experiment than changing AX extraction.
+
+## 11. Sources
+
+- DeepL context parameter:
+  https://developers.deepl.com/api-reference/translate/request-translation
+- DeepL context examples:
+  https://developers.deepl.com/docs/learning-how-tos/examples-and-guides/how-to-use-context-parameter
+- Google Cloud Translation glossaries:
+  https://docs.cloud.google.com/translate/docs/advanced/glossary
+- Hy-MT2 official model repository:
+  https://github.com/Tencent-Hunyuan/Hy-MT2
+- Survey on context-aware machine translation:
+  https://arxiv.org/html/2506.07583v1

@@ -2,7 +2,7 @@
 
 - Date: 2026-10-21
 - Branch: `codex/evaluate-context-disambiguation`
-- Status: evaluated; no-go for production integration with current assets
+- Status: evaluated; default off with model-selective opt-in paths
 - Scope: measure whether bounded AX context improves the current model-first
   translation path before considering a product integration
 

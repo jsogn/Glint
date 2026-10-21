@@ -1,0 +1,2067 @@
+{
+  "model_id": "zerodegress/Index-Translate-2B-MLX-4bit",
+  "timestamp": "2026-10-21T12:00:17.264987+00:00",
+  "case_count": 66,
+  "variant_count": 2,
+  "choice_source": "Tools/ModelLab/results/context-choices.json",
+  "load_seconds": 2.36,
+  "warmup_seconds": 0.13,
+  "peak_rss_mb": 1634.0,
+  "summary": {
+    "r0": {
+      "case_count": 66,
+      "acceptable": 10,
+      "acceptable_rate": 0.15151515151515152,
+      "invalid": 0,
+      "errors": 0,
+      "p50_latency_ms": 73.3,
+      "p95_latency_ms": 105.57,
+      "paired_vs_r0": {
+        "wins": 0,
+        "losses": 0,
+        "ties": 33
+      }
+    },
+    "r2": {
+      "case_count": 66,
+      "acceptable": 15,
+      "acceptable_rate": 0.22727272727272727,
+      "invalid": 0,
+      "errors": 0,
+      "p50_latency_ms": 74.02,
+      "p95_latency_ms": 105.66,
+      "paired_vs_r0": {
+        "wins": 5,
+        "losses": 0,
+        "ties": 28
+      }
+    },
+    "coverage": {
+      "case_count": 80,
+      "eligible_two_plus": 66,
+      "correct_option_available": 19
+    }
+  },
+  "rows": [
+    {
+      "id": "amb-001-a",
+      "variant": "r0",
+      "target": "方便",
+      "choices": [
+        "convenient",
+        "suitable",
+        "facilitate",
+        "convenience",
+        "amenity",
+        "conveniently"
+      ],
+      "output": "convenient",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 80.74,
+      "error": null
+    },
+    {
+      "id": "amb-001-a",
+      "variant": "r2",
+      "target": "方便",
+      "choices": [
+        "convenient",
+        "suitable",
+        "facilitate",
+        "convenience",
+        "amenity",
+        "conveniently"
+      ],
+      "output": "convenient",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 94.19,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "r0",
+      "target": "方便",
+      "choices": [
+        "convenient",
+        "suitable",
+        "facilitate",
+        "convenience",
+        "amenity",
+        "conveniently"
+      ],
+      "output": "convenient",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.07,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "r2",
+      "target": "方便",
+      "choices": [
+        "convenient",
+        "suitable",
+        "facilitate",
+        "convenience",
+        "amenity",
+        "conveniently"
+      ],
+      "output": "convenient",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 91.4,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "r0",
+      "target": "处理",
+      "choices": [
+        "handle",
+        "process",
+        "deal with",
+        "treat",
+        "deal",
+        "treatment"
+      ],
+      "output": "handle",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.62,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "r2",
+      "target": "处理",
+      "choices": [
+        "handle",
+        "process",
+        "deal with",
+        "treat",
+        "deal",
+        "treatment"
+      ],
+      "output": "process",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.66,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "r0",
+      "target": "处理",
+      "choices": [
+        "handle",
+        "process",
+        "deal with",
+        "treat",
+        "deal",
+        "treatment"
+      ],
+      "output": "handle",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 72.28,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "r2",
+      "target": "处理",
+      "choices": [
+        "handle",
+        "process",
+        "deal with",
+        "treat",
+        "deal",
+        "treatment"
+      ],
+      "output": "handle",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 86.59,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "r0",
+      "target": "发布",
+      "choices": [
+        "release",
+        "issue",
+        "announce",
+        "publication"
+      ],
+      "output": "release",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 72.43,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "r2",
+      "target": "发布",
+      "choices": [
+        "release",
+        "issue",
+        "announce",
+        "publication"
+      ],
+      "output": "release",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.83,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "r0",
+      "target": "发布",
+      "choices": [
+        "release",
+        "issue",
+        "announce",
+        "publication"
+      ],
+      "output": "release",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.01,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "r2",
+      "target": "发布",
+      "choices": [
+        "release",
+        "issue",
+        "announce",
+        "publication"
+      ],
+      "output": "release",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.17,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "r0",
+      "target": "落地",
+      "choices": [
+        "implement",
+        "fall to the ground",
+        "be set on the ground",
+        "reach to the ground",
+        "ground"
+      ],
+      "output": "implement",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.3,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "r2",
+      "target": "落地",
+      "choices": [
+        "implement",
+        "fall to the ground",
+        "be set on the ground",
+        "reach to the ground",
+        "ground"
+      ],
+      "output": "fall to the ground",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 102.85,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "r0",
+      "target": "落地",
+      "choices": [
+        "implement",
+        "fall to the ground",
+        "be set on the ground",
+        "reach to the ground",
+        "ground"
+      ],
+      "output": "implement",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.84,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "r2",
+      "target": "落地",
+      "choices": [
+        "implement",
+        "fall to the ground",
+        "be set on the ground",
+        "reach to the ground",
+        "ground"
+      ],
+      "output": "fall to the ground",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 104.8,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "r0",
+      "target": "运行",
+      "choices": [
+        "run",
+        "operate",
+        "function",
+        "move along one's course (of celestial bodies etc",
+        "be in operation",
+        "move"
+      ],
+      "output": "run",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.66,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "r2",
+      "target": "运行",
+      "choices": [
+        "run",
+        "operate",
+        "function",
+        "move along one's course (of celestial bodies etc",
+        "be in operation",
+        "move"
+      ],
+      "output": "run",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.22,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "r0",
+      "target": "运行",
+      "choices": [
+        "run",
+        "operate",
+        "function",
+        "move along one's course (of celestial bodies etc",
+        "be in operation",
+        "move"
+      ],
+      "output": "run",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 86.89,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "r2",
+      "target": "运行",
+      "choices": [
+        "run",
+        "operate",
+        "function",
+        "move along one's course (of celestial bodies etc",
+        "be in operation",
+        "move"
+      ],
+      "output": "operate",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 85.58,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "r0",
+      "target": "看",
+      "choices": [
+        "look after",
+        "take care of",
+        "watch"
+      ],
+      "output": "watch",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.79,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "r2",
+      "target": "看",
+      "choices": [
+        "look after",
+        "take care of",
+        "watch"
+      ],
+      "output": "watch",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.8,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "r0",
+      "target": "看",
+      "choices": [
+        "look after",
+        "take care of",
+        "watch"
+      ],
+      "output": "watch",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.14,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "r2",
+      "target": "看",
+      "choices": [
+        "look after",
+        "take care of",
+        "watch"
+      ],
+      "output": "watch",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.9,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "r0",
+      "target": "开",
+      "choices": [
+        "open",
+        "start",
+        "turn on"
+      ],
+      "output": "open",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.95,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "r2",
+      "target": "开",
+      "choices": [
+        "open",
+        "start",
+        "turn on"
+      ],
+      "output": "turn on",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 78.6,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "r0",
+      "target": "开",
+      "choices": [
+        "open",
+        "start",
+        "turn on"
+      ],
+      "output": "open",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 69.32,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "r2",
+      "target": "开",
+      "choices": [
+        "open",
+        "start",
+        "turn on"
+      ],
+      "output": "open",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 70.24,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "r0",
+      "target": "下",
+      "choices": [
+        "down",
+        "downwards",
+        "below"
+      ],
+      "output": "down",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 70.94,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "r2",
+      "target": "下",
+      "choices": [
+        "down",
+        "downwards",
+        "below"
+      ],
+      "output": "down",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 77.12,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "r0",
+      "target": "下",
+      "choices": [
+        "down",
+        "downwards",
+        "below"
+      ],
+      "output": "down",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 74.82,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "r2",
+      "target": "下",
+      "choices": [
+        "down",
+        "downwards",
+        "below"
+      ],
+      "output": "down",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.95,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "r0",
+      "target": "点",
+      "choices": [
+        "point",
+        "dot",
+        "drop"
+      ],
+      "output": "point",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 74.29,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "r2",
+      "target": "点",
+      "choices": [
+        "point",
+        "dot",
+        "drop"
+      ],
+      "output": "point",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 83.61,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "r0",
+      "target": "点",
+      "choices": [
+        "point",
+        "dot",
+        "drop"
+      ],
+      "output": "point",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 77.34,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "r2",
+      "target": "点",
+      "choices": [
+        "point",
+        "dot",
+        "drop"
+      ],
+      "output": "point",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.72,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "r0",
+      "target": "走",
+      "choices": [
+        "walk",
+        "go",
+        "run"
+      ],
+      "output": "go",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.52,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "r2",
+      "target": "走",
+      "choices": [
+        "walk",
+        "go",
+        "run"
+      ],
+      "output": "go",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 74.02,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "r0",
+      "target": "走",
+      "choices": [
+        "walk",
+        "go",
+        "run"
+      ],
+      "output": "go",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 69.3,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "r2",
+      "target": "走",
+      "choices": [
+        "walk",
+        "go",
+        "run"
+      ],
+      "output": "go",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 72.28,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "r0",
+      "target": "发",
+      "choices": [
+        "send out",
+        "show (one's feeling",
+        "issue"
+      ],
+      "output": "send out",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 77.88,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "r2",
+      "target": "发",
+      "choices": [
+        "send out",
+        "show (one's feeling",
+        "issue"
+      ],
+      "output": "send out",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 79.05,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "r0",
+      "target": "发",
+      "choices": [
+        "send out",
+        "show (one's feeling",
+        "issue"
+      ],
+      "output": "send out",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 77.73,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "r2",
+      "target": "发",
+      "choices": [
+        "send out",
+        "show (one's feeling",
+        "issue"
+      ],
+      "output": "issue",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.98,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "r0",
+      "target": "收",
+      "choices": [
+        "receive",
+        "accept",
+        "collect"
+      ],
+      "output": "collect",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.01,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "r2",
+      "target": "收",
+      "choices": [
+        "receive",
+        "accept",
+        "collect"
+      ],
+      "output": "receive",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 72.49,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "r0",
+      "target": "收",
+      "choices": [
+        "receive",
+        "accept",
+        "collect"
+      ],
+      "output": "collect",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 82.36,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "r2",
+      "target": "收",
+      "choices": [
+        "receive",
+        "accept",
+        "collect"
+      ],
+      "output": "collect",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.97,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "r0",
+      "target": "接",
+      "choices": [
+        "receive",
+        "answer (the phone",
+        "meet or welcome sb"
+      ],
+      "output": "answer (the phone",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 91.65,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "r2",
+      "target": "接",
+      "choices": [
+        "receive",
+        "answer (the phone",
+        "meet or welcome sb"
+      ],
+      "output": "answer (the phone",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 90.32,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "r0",
+      "target": "接",
+      "choices": [
+        "receive",
+        "answer (the phone",
+        "meet or welcome sb"
+      ],
+      "output": "answer (the phone",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 90.55,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "r2",
+      "target": "接",
+      "choices": [
+        "receive",
+        "answer (the phone",
+        "meet or welcome sb"
+      ],
+      "output": "receive",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.69,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "r0",
+      "target": "带",
+      "choices": [
+        "band",
+        "belt",
+        "girdle"
+      ],
+      "output": "belt",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.07,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "r2",
+      "target": "带",
+      "choices": [
+        "band",
+        "belt",
+        "girdle"
+      ],
+      "output": "girdle",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 84.38,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "r0",
+      "target": "带",
+      "choices": [
+        "band",
+        "belt",
+        "girdle"
+      ],
+      "output": "belt",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.24,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "r2",
+      "target": "带",
+      "choices": [
+        "band",
+        "belt",
+        "girdle"
+      ],
+      "output": "band",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.7,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "r0",
+      "target": "换",
+      "choices": [
+        "exchange",
+        "change (clothes etc",
+        "substitute"
+      ],
+      "output": "exchange",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.11,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "r2",
+      "target": "换",
+      "choices": [
+        "exchange",
+        "change (clothes etc",
+        "substitute"
+      ],
+      "output": "change",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 73.83,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "r0",
+      "target": "换",
+      "choices": [
+        "exchange",
+        "change (clothes etc",
+        "substitute"
+      ],
+      "output": "exchange",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.23,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "r2",
+      "target": "换",
+      "choices": [
+        "exchange",
+        "change (clothes etc",
+        "substitute"
+      ],
+      "output": "change",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 74.51,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "r0",
+      "target": "存",
+      "choices": [
+        "exist",
+        "deposit",
+        "store"
+      ],
+      "output": "deposit",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 70.82,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "r2",
+      "target": "存",
+      "choices": [
+        "exist",
+        "deposit",
+        "store"
+      ],
+      "output": "deposit",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.23,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "r0",
+      "target": "存",
+      "choices": [
+        "exist",
+        "deposit",
+        "store"
+      ],
+      "output": "deposit",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.57,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "r2",
+      "target": "存",
+      "choices": [
+        "exist",
+        "deposit",
+        "store"
+      ],
+      "output": "exist",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.53,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "r0",
+      "target": "放",
+      "choices": [
+        "put",
+        "place",
+        "release"
+      ],
+      "output": "place",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.96,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "r2",
+      "target": "放",
+      "choices": [
+        "put",
+        "place",
+        "release"
+      ],
+      "output": "put",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.96,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "r0",
+      "target": "放",
+      "choices": [
+        "put",
+        "place",
+        "release"
+      ],
+      "output": "place",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 72.4,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "r2",
+      "target": "放",
+      "choices": [
+        "put",
+        "place",
+        "release"
+      ],
+      "output": "put",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.69,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "r0",
+      "target": "做",
+      "choices": [
+        "do",
+        "make",
+        "produce"
+      ],
+      "output": "make",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 71.1,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "r2",
+      "target": "做",
+      "choices": [
+        "do",
+        "make",
+        "produce"
+      ],
+      "output": "make",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 72.49,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "r0",
+      "target": "做",
+      "choices": [
+        "do",
+        "make",
+        "produce"
+      ],
+      "output": "make",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 71.04,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "r2",
+      "target": "做",
+      "choices": [
+        "do",
+        "make",
+        "produce"
+      ],
+      "output": "make",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 71.64,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "r0",
+      "target": "想",
+      "choices": [
+        "think",
+        "believe",
+        "suppose"
+      ],
+      "output": "think",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.61,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "r2",
+      "target": "想",
+      "choices": [
+        "think",
+        "believe",
+        "suppose"
+      ],
+      "output": "think",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.35,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "r0",
+      "target": "想",
+      "choices": [
+        "think",
+        "believe",
+        "suppose"
+      ],
+      "output": "think",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.11,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "r2",
+      "target": "想",
+      "choices": [
+        "think",
+        "believe",
+        "suppose"
+      ],
+      "output": "think",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.77,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "r0",
+      "target": "报",
+      "choices": [
+        "announce",
+        "inform",
+        "report"
+      ],
+      "output": "report",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.02,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "r2",
+      "target": "报",
+      "choices": [
+        "announce",
+        "inform",
+        "report"
+      ],
+      "output": "inform",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.31,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "r0",
+      "target": "报",
+      "choices": [
+        "announce",
+        "inform",
+        "report"
+      ],
+      "output": "report",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 70.5,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "r2",
+      "target": "报",
+      "choices": [
+        "announce",
+        "inform",
+        "report"
+      ],
+      "output": "report",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.93,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "r0",
+      "target": "结",
+      "choices": [
+        "produce (fruit or seeds",
+        "Taiwan pr. [jie2"
+      ],
+      "output": "jie2",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 77.73,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "r2",
+      "target": "结",
+      "choices": [
+        "produce (fruit or seeds",
+        "Taiwan pr. [jie2"
+      ],
+      "output": "jie2",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 79.16,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "r0",
+      "target": "结",
+      "choices": [
+        "produce (fruit or seeds",
+        "Taiwan pr. [jie2"
+      ],
+      "output": "jie2",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 78.31,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "r2",
+      "target": "结",
+      "choices": [
+        "produce (fruit or seeds",
+        "Taiwan pr. [jie2"
+      ],
+      "output": "jie2",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 79.92,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "r0",
+      "target": "行",
+      "choices": [
+        "row",
+        "series",
+        "age order (of brothers"
+      ],
+      "output": "row",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.3,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "r2",
+      "target": "行",
+      "choices": [
+        "row",
+        "series",
+        "age order (of brothers"
+      ],
+      "output": "row",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 77.52,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "r0",
+      "target": "行",
+      "choices": [
+        "row",
+        "series",
+        "age order (of brothers"
+      ],
+      "output": "row",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.13,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "r2",
+      "target": "行",
+      "choices": [
+        "row",
+        "series",
+        "age order (of brothers"
+      ],
+      "output": "row",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.69,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "r0",
+      "target": "差",
+      "choices": [
+        "difference",
+        "discrepancy",
+        "differ"
+      ],
+      "output": "discrepancy",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 94.05,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "r2",
+      "target": "差",
+      "choices": [
+        "difference",
+        "discrepancy",
+        "differ"
+      ],
+      "output": "difference",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.04,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "r0",
+      "target": "差",
+      "choices": [
+        "difference",
+        "discrepancy",
+        "differ"
+      ],
+      "output": "discrepancy",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 91.69,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "r2",
+      "target": "差",
+      "choices": [
+        "difference",
+        "discrepancy",
+        "differ"
+      ],
+      "output": "difference",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.95,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "r0",
+      "target": "好",
+      "choices": [
+        "good",
+        "well",
+        "proper"
+      ],
+      "output": "well",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.94,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "r2",
+      "target": "好",
+      "choices": [
+        "good",
+        "well",
+        "proper"
+      ],
+      "output": "good",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.67,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "r0",
+      "target": "好",
+      "choices": [
+        "good",
+        "well",
+        "proper"
+      ],
+      "output": "well",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.52,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "r2",
+      "target": "好",
+      "choices": [
+        "good",
+        "well",
+        "proper"
+      ],
+      "output": "good",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 73.41,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "r0",
+      "target": "大",
+      "choices": [
+        "big",
+        "huge",
+        "large"
+      ],
+      "output": "huge",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 77.69,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "r2",
+      "target": "大",
+      "choices": [
+        "big",
+        "huge",
+        "large"
+      ],
+      "output": "large",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.39,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "r0",
+      "target": "大",
+      "choices": [
+        "big",
+        "huge",
+        "large"
+      ],
+      "output": "huge",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 76.97,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "r2",
+      "target": "大",
+      "choices": [
+        "big",
+        "huge",
+        "large"
+      ],
+      "output": "huge",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 70.99,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "r0",
+      "target": "小",
+      "choices": [
+        "small",
+        "tiny",
+        "few"
+      ],
+      "output": "tiny",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 70.8,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "r2",
+      "target": "小",
+      "choices": [
+        "small",
+        "tiny",
+        "few"
+      ],
+      "output": "small",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.54,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "r0",
+      "target": "小",
+      "choices": [
+        "small",
+        "tiny",
+        "few"
+      ],
+      "output": "tiny",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 86.64,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "r2",
+      "target": "小",
+      "choices": [
+        "small",
+        "tiny",
+        "few"
+      ],
+      "output": "small",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.69,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "r0",
+      "target": "新",
+      "choices": [
+        "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+        "surname Xin"
+      ],
+      "output": "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 258.86,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "r2",
+      "target": "新",
+      "choices": [
+        "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+        "surname Xin"
+      ],
+      "output": "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 257.63,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "r0",
+      "target": "新",
+      "choices": [
+        "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+        "surname Xin"
+      ],
+      "output": "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 253.93,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "r2",
+      "target": "新",
+      "choices": [
+        "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+        "surname Xin"
+      ],
+      "output": "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 252.48,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "r0",
+      "target": "老",
+      "choices": [
+        "prefix used before the surname of a person or a numeral indicating the order of birth of the children in a family or to indicate affection or familiarity",
+        "old (of people",
+        "venerable (person"
+      ],
+      "output": "old (of people",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 105.83,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "r2",
+      "target": "老",
+      "choices": [
+        "prefix used before the surname of a person or a numeral indicating the order of birth of the children in a family or to indicate affection or familiarity",
+        "old (of people",
+        "venerable (person"
+      ],
+      "output": "venerable (person",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 111.86,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "r0",
+      "target": "老",
+      "choices": [
+        "prefix used before the surname of a person or a numeral indicating the order of birth of the children in a family or to indicate affection or familiarity",
+        "old (of people",
+        "venerable (person"
+      ],
+      "output": "old (of people",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 105.57,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "r2",
+      "target": "老",
+      "choices": [
+        "prefix used before the surname of a person or a numeral indicating the order of birth of the children in a family or to indicate affection or familiarity",
+        "old (of people",
+        "venerable (person"
+      ],
+      "output": "old (of people",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 105.66,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "r0",
+      "target": "快",
+      "choices": [
+        "rapid",
+        "quick",
+        "speed"
+      ],
+      "output": "quick",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.1,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "r2",
+      "target": "快",
+      "choices": [
+        "rapid",
+        "quick",
+        "speed"
+      ],
+      "output": "quick",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.83,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "r0",
+      "target": "快",
+      "choices": [
+        "rapid",
+        "quick",
+        "speed"
+      ],
+      "output": "quick",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.12,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "r2",
+      "target": "快",
+      "choices": [
+        "rapid",
+        "quick",
+        "speed"
+      ],
+      "output": "quick",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.14,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "r0",
+      "target": "轻",
+      "choices": [
+        "light",
+        "easy",
+        "gentle"
+      ],
+      "output": "light",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 71.29,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "r2",
+      "target": "轻",
+      "choices": [
+        "light",
+        "easy",
+        "gentle"
+      ],
+      "output": "light",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 72.93,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "r0",
+      "target": "轻",
+      "choices": [
+        "light",
+        "easy",
+        "gentle"
+      ],
+      "output": "light",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.51,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "r2",
+      "target": "轻",
+      "choices": [
+        "light",
+        "easy",
+        "gentle"
+      ],
+      "output": "gentle",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 78.62,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "r0",
+      "target": "重",
+      "choices": [
+        "repeat",
+        "repetition",
+        "again"
+      ],
+      "output": "repeat",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.74,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "r2",
+      "target": "重",
+      "choices": [
+        "repeat",
+        "repetition",
+        "again"
+      ],
+      "output": "repeat",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.89,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "r0",
+      "target": "重",
+      "choices": [
+        "repeat",
+        "repetition",
+        "again"
+      ],
+      "output": "repeat",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 72.75,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "r2",
+      "target": "重",
+      "choices": [
+        "repeat",
+        "repetition",
+        "again"
+      ],
+      "output": "again",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.24,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "r0",
+      "target": "退",
+      "choices": [
+        "retreat",
+        "decline",
+        "move back"
+      ],
+      "output": "retreat",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 78.54,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "r2",
+      "target": "退",
+      "choices": [
+        "retreat",
+        "decline",
+        "move back"
+      ],
+      "output": "decline",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 78.38,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "r0",
+      "target": "退",
+      "choices": [
+        "retreat",
+        "decline",
+        "move back"
+      ],
+      "output": "retreat",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 78.1,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "r2",
+      "target": "退",
+      "choices": [
+        "retreat",
+        "decline",
+        "move back"
+      ],
+      "output": "retreat",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 79.42,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "r0",
+      "target": "升",
+      "choices": [
+        "ascend",
+        "rise to the rank of",
+        "promote"
+      ],
+      "output": "ascend",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 77.15,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "r2",
+      "target": "升",
+      "choices": [
+        "ascend",
+        "rise to the rank of",
+        "promote"
+      ],
+      "output": "ascend",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 78.15,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "r0",
+      "target": "升",
+      "choices": [
+        "ascend",
+        "rise to the rank of",
+        "promote"
+      ],
+      "output": "ascend",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 78.29,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "r2",
+      "target": "升",
+      "choices": [
+        "ascend",
+        "rise to the rank of",
+        "promote"
+      ],
+      "output": "promote",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 78.41,
+      "error": null
+    }
+  ]
+}

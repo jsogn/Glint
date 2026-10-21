@@ -45,6 +45,13 @@ CONTEXT_PROMPT = (
     "文本：{text}\n"
     "只输出方括号中的英文翻译："
 )
+GENERAL_MODEL_SYSTEM_PROMPT = (
+    "You are a Chinese-to-English translation engine for a typing companion. "
+    "Follow the user's output constraints exactly. "
+    "When a target is marked in brackets, translate only that target using "
+    "the sentence as context. Never translate the surrounding sentence. "
+    "Output one English line with no Chinese."
+)
 
 
 @dataclass(frozen=True)
@@ -196,6 +203,12 @@ def build_prompt(case: ContextCase, variant: str) -> str:
         target=case.target,
         text=text,
     )
+
+
+def system_prompt(model_id: str) -> str | None:
+    if "Qwen3" in model_id:
+        return GENERAL_MODEL_SYSTEM_PROMPT
+    return None
 
 
 def normalize_translation(text: str) -> str:
@@ -457,6 +470,12 @@ def render_markdown(
 
 def run(args: argparse.Namespace) -> int:
     cases = load_cases(Path(args.cases))
+    if args.category:
+        cases = [
+            case
+            for case in cases
+            if case.category == args.category
+        ]
     if args.limit:
         cases = cases[: args.limit]
     if args.smoke:
@@ -493,8 +512,12 @@ def run(args: argparse.Namespace) -> int:
     loaded_rss = rss_mb()
 
     print("warmup...", flush=True)
+    model_system_prompt = system_prompt(args.model_id)
     warmup_started = time.perf_counter()
-    adapter.translate(build_prompt(cases[0], "m0"))
+    adapter.translate(
+        build_prompt(cases[0], "m0"),
+        system=model_system_prompt,
+    )
     warmup_seconds = time.perf_counter() - warmup_started
 
     rows: list[dict[str, Any]] = []
@@ -506,7 +529,10 @@ def run(args: argparse.Namespace) -> int:
             prompt_tokens = len(adapter.encode(prompt))
             started = time.perf_counter()
             try:
-                output = adapter.translate(prompt)
+                output = adapter.translate(
+                    prompt,
+                    system=model_system_prompt,
+                )
                 status, reason = score_output(output, case)
                 target_output, extraction = extract_target_output(output)
                 error = None
@@ -547,6 +573,7 @@ def run(args: argparse.Namespace) -> int:
     summary = summarize(rows, cases)
     result = {
         "model_id": args.model_id,
+        "category_filter": args.category,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "case_count": len(cases),
         "variant_count": len(VARIANTS),
@@ -575,6 +602,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-id", default=DEFAULT_MODEL_ID)
     parser.add_argument("--cases", default=str(DEFAULT_CASES_PATH))
     parser.add_argument("--output", default="")
+    parser.add_argument(
+        "--category",
+        choices=["polysemy", "business", "sentence", "control"],
+        default="",
+    )
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
