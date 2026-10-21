@@ -2,6 +2,29 @@ import Darwin
 import Foundation
 import GlintCore
 
+public enum CTranslate2EngineError: LocalizedError {
+    case modelNotFound(String)
+    case libraryNotFound(String)
+    case libraryLoadFailed(String)
+    case symbolsMissing
+    case modelLoadFailed(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .modelNotFound(let path):
+            "CTranslate2 模型目录不存在：\(path)"
+        case .libraryNotFound(let path):
+            "CTranslate2 运行库不存在：\(path)"
+        case .libraryLoadFailed(let message):
+            "CTranslate2 运行库加载失败：\(message)"
+        case .symbolsMissing:
+            "CTranslate2 桥接符号不完整"
+        case .modelLoadFailed(let message):
+            "CTranslate2 模型加载失败：\(message)"
+        }
+    }
+}
+
 public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
     private typealias CreateFn = @convention(c) (
         UnsafePointer<CChar>,
@@ -28,25 +51,33 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
     }
 
     public convenience init?() {
-        guard let modelURL = Self.locateModel() else {
+        guard let modelURL = Self.locateInstalledModel() else {
             return nil
         }
-        self.init(modelDirectory: modelURL)
+        try? self.init(modelDirectory: modelURL)
     }
 
-    public init?(
+    public init(
         modelDirectory: URL,
         libraryURL: URL? = nil
-    ) {
-        guard let libraryURL = libraryURL ?? Self.locateLibrary(),
-              FileManager.default.fileExists(atPath: modelDirectory.path) else {
-            lastError = "CTranslate2 library or model not found"
-            return nil
+    ) throws {
+        guard FileManager.default.fileExists(atPath: modelDirectory.path) else {
+            throw CTranslate2EngineError.modelNotFound(modelDirectory.path)
+        }
+        guard let libraryURL = libraryURL ?? Self.locateLibrary(
+            near: modelDirectory
+        ) else {
+            throw CTranslate2EngineError.libraryNotFound(
+                modelDirectory.deletingLastPathComponent()
+                    .appendingPathComponent("bin/libglintct2.dylib")
+                    .path
+            )
         }
 
         guard let dlHandle = dlopen(libraryURL.path, RTLD_NOW | RTLD_LOCAL) else {
-            lastError = String(cString: dlerror())
-            return nil
+            throw CTranslate2EngineError.libraryLoadFailed(
+                dlerror().map { String(cString: $0) } ?? "未知错误"
+            )
         }
         self.dlHandle = dlHandle
 
@@ -54,10 +85,9 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
               let translateSymbol = dlsym(dlHandle, "glint_ct2_translate"),
               let freeSymbol = dlsym(dlHandle, "glint_ct2_free_string"),
               let destroySymbol = dlsym(dlHandle, "glint_ct2_destroy") else {
-            lastError = "CTranslate2 bridge symbols not found"
             dlclose(dlHandle)
             self.dlHandle = nil
-            return nil
+            throw CTranslate2EngineError.symbolsMissing
         }
 
         let create = unsafeBitCast(createSymbol, to: CreateFn.self)
@@ -76,7 +106,9 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
         guard let engine else {
             dlclose(dlHandle)
             self.dlHandle = nil
-            return nil
+            throw CTranslate2EngineError.modelLoadFailed(
+                lastError ?? "未知错误"
+            )
         }
 
         self.engine = engine
@@ -118,31 +150,19 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
         }
     }
 
-    private static func locateLibrary() -> URL? {
+    private static func locateLibrary(near modelDirectory: URL) -> URL? {
         if let path = ProcessInfo.processInfo.environment["GLINT_CT2_LIBRARY"] {
             let url = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: url.path) { return url }
         }
-        if let support = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first?.appendingPathComponent(
-            "Glint/plugins/opus-ct2-int8/bin/libglintct2.dylib"
-        ), FileManager.default.fileExists(atPath: support.path) {
-            return support
-        }
-        let candidates = [
-            Bundle.main.url(forResource: "libglintct2", withExtension: "dylib", subdirectory: "CT2"),
-            Bundle.main.url(forResource: "libglintct2", withExtension: "dylib", subdirectory: "Resources/CT2"),
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("Resources/CT2/libglintct2.dylib"),
-        ]
-        return candidates.compactMap { $0 }.first {
-            FileManager.default.fileExists(atPath: $0.path)
-        }
+        let pluginLibrary = modelDirectory.deletingLastPathComponent()
+            .appendingPathComponent("bin/libglintct2.dylib")
+        return FileManager.default.fileExists(atPath: pluginLibrary.path)
+            ? pluginLibrary
+            : nil
     }
 
-    private static func locateModel() -> URL? {
+    private static func locateInstalledModel() -> URL? {
         if let path = ProcessInfo.processInfo.environment["GLINT_CT2_MODEL"] {
             let url = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: url.path) { return url }
@@ -151,20 +171,11 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first?.appendingPathComponent(
-            "Glint/plugins/opus-ct2-int8/model",
+            "Glint/plugins/mt-opus-zh-en/model",
             isDirectory: true
         ), FileManager.default.fileExists(atPath: support.path) {
             return support
         }
-        let candidates = [
-            Bundle.main.url(forResource: "opus-ct2-int8", withExtension: nil),
-            Bundle.main.url(forResource: "opus-ct2-int8", withExtension: nil, subdirectory: "Models"),
-            Bundle.main.url(forResource: "opus-ct2-int8", withExtension: nil, subdirectory: "Resources/Models"),
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("Resources/Models/opus-ct2-int8"),
-        ]
-        return candidates.compactMap { $0 }.first {
-            FileManager.default.fileExists(atPath: $0.path)
-        }
+        return nil
     }
 }

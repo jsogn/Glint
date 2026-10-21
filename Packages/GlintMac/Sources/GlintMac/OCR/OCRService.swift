@@ -126,12 +126,50 @@ public struct OCRService: Sendable {
     }
 
     public func detect(in image: CGImage, anchor: CGPoint? = nil) -> OCRDetection? {
-        guard let blueRect = Self.bestBlueComponent(in: image, anchor: anchor) else {
+        guard let blueRect = FocusedCandidateLocator.bestBlueComponent(
+                in: image,
+                anchor: anchor
+              ),
+              let recognition = recognizeCropped(
+                in: image,
+                rect: blueRect,
+                padding: 6
+              ) else {
             return nil
         }
+        let cleaned = Self.cleanCandidate(recognition.text)
+        guard !cleaned.isEmpty else { return nil }
+        return OCRDetection(
+            text: cleaned,
+            highlightRect: blueRect,
+            confidence: recognition.confidence
+        )
+    }
 
-        let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
-        let padded = blueRect.insetBy(dx: -6, dy: -6).intersection(bounds)
+    private func requestedBackend() -> OCRBackend? {
+        let requested = ProcessInfo.processInfo.environment[
+            "GLINT_OCR_BACKEND"
+        ]?.lowercased()
+        return switch requested {
+        case "vision": .vision
+        case "ppocr": .ppocr
+        default: nil
+        }
+    }
+
+    private func recognizeCropped(
+        in image: CGImage,
+        rect: CGRect,
+        padding: CGFloat
+    ) -> Recognition? {
+        let bounds = CGRect(
+            x: 0,
+            y: 0,
+            width: image.width,
+            height: image.height
+        )
+        let padded = rect.insetBy(dx: -padding, dy: -padding)
+            .intersection(bounds)
         guard padded.width > 8,
               padded.height > 8,
               let cropped = image.cropping(to: padded) else {
@@ -149,19 +187,11 @@ public struct OCRService: Sendable {
             if traceOCR {
                 fputs("Glint OCR: cache=hit text=\(cached.text)\n", stderr)
             }
-            return OCRDetection(
+            return Recognition(
                 text: cached.text,
-                highlightRect: blueRect,
-                confidence: cached.confidence
+                confidence: cached.confidence,
+                model: configuration.primaryModel
             )
-        }
-        let requestedBackend = ProcessInfo.processInfo.environment[
-            "GLINT_OCR_BACKEND"
-        ]?.lowercased()
-        let forcedBackend: OCRBackend? = switch requestedBackend {
-        case "vision": .vision
-        case "ppocr": .ppocr
-        default: nil
         }
         if traceOCR {
             fputs(
@@ -173,7 +203,7 @@ public struct OCRService: Sendable {
                 stderr
             )
         }
-        let recognition = if let forcedBackend {
+        let recognition = if let forcedBackend = requestedBackend() {
             forcedModel(for: forcedBackend).flatMap {
                 recognize(model: $0, in: cropped, trace: traceOCR)
             }
@@ -191,11 +221,10 @@ public struct OCRService: Sendable {
                 confidence: recognition.confidence
             )
         }
-
-        return OCRDetection(
+        return Recognition(
             text: cleaned,
-            highlightRect: blueRect,
-            confidence: recognition.confidence
+            confidence: recognition.confidence,
+            model: recognition.model
         )
     }
 
@@ -355,115 +384,5 @@ public struct OCRService: Sendable {
             return (best.string, best.confidence)
         }
         return candidates.max { $0.1 < $1.1 }
-    }
-
-    static func bestBlueComponent(in image: CGImage, anchor: CGPoint?) -> CGRect? {
-        let width = image.width
-        let height = image.height
-        guard width > 0, height > 0 else { return nil }
-
-        var pixels = [UInt8](repeating: 0, count: width * height * 4)
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let context = CGContext(
-            data: &pixels,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: width * 4,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            return nil
-        }
-        context.translateBy(x: 0, y: CGFloat(height))
-        context.scaleBy(x: 1, y: -1)
-        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-
-        var visited = [Bool](repeating: false, count: width * height)
-        var bestRect: CGRect?
-        var bestScore = Int.min
-        var bestDistanceSquared = CGFloat.greatestFiniteMagnitude
-
-        for y in 0..<height {
-            for x in 0..<width {
-                let index = y * width + x
-                if visited[index] { continue }
-                visited[index] = true
-
-                let offset = index * 4
-                let r = Int(pixels[offset])
-                let g = Int(pixels[offset + 1])
-                let b = Int(pixels[offset + 2])
-                guard b > 120, b - r > 40, b - g > 15 else { continue }
-
-                var stack = [index]
-                var area = 0
-                var minX = x
-                var maxX = x
-                var minY = y
-                var maxY = y
-
-                while let current = stack.popLast() {
-                    let cy = current / width
-                    let cx = current % width
-                    area += 1
-                    minX = min(minX, cx)
-                    maxX = max(maxX, cx)
-                    minY = min(minY, cy)
-                    maxY = max(maxY, cy)
-
-                    for (nx, ny) in [(cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)] {
-                        guard nx >= 0, nx < width, ny >= 0, ny < height else { continue }
-                        let neighbor = ny * width + nx
-                        if visited[neighbor] { continue }
-                        visited[neighbor] = true
-
-                        let neighborOffset = neighbor * 4
-                        let nr = Int(pixels[neighborOffset])
-                        let ng = Int(pixels[neighborOffset + 1])
-                        let nb = Int(pixels[neighborOffset + 2])
-                        if nb > 120, nb - nr > 40, nb - ng > 15 {
-                            stack.append(neighbor)
-                        }
-                    }
-                }
-
-                let componentWidth = maxX - minX + 1
-                let componentHeight = maxY - minY + 1
-                let topLeftRect = CGRect(
-                    x: minX,
-                    y: height - maxY - 1,
-                    width: componentWidth,
-                    height: componentHeight
-                )
-                guard area >= 400,
-                      componentWidth >= 30,
-                      componentHeight >= 16,
-                      componentWidth >= componentHeight,
-                      componentWidth <= componentHeight * 6,
-                      componentWidth <= 1200,
-                      componentHeight <= 120,
-                      area <= 80_000 else {
-                    continue
-                }
-
-                if let anchor {
-                    let dx = topLeftRect.midX - anchor.x
-                    let dy = topLeftRect.midY - anchor.y
-                    let distanceSquared = dx * dx + dy * dy
-                    if distanceSquared < bestDistanceSquared {
-                        bestDistanceSquared = distanceSquared
-                        bestRect = topLeftRect
-                    }
-                } else {
-                    let score = area - Int(topLeftRect.minY) * 10
-                    if score > bestScore {
-                        bestScore = score
-                        bestRect = topLeftRect
-                    }
-                }
-            }
-        }
-        return bestRect
     }
 }

@@ -2,19 +2,31 @@ import Foundation
 
 public enum PluginManagerError: Error, LocalizedError {
     case invalidPluginID
+    case pluginNotFound
+    case upgradeInProgress
 
     public var errorDescription: String? {
         switch self {
         case .invalidPluginID:
             "插件标识无效"
+        case .pluginNotFound:
+            "插件目录不存在"
+        case .upgradeInProgress:
+            "上一个插件升级尚未完成"
         }
     }
 }
 
 public actor PluginManager {
+    private struct PendingUpgrade {
+        let id: String
+        let backupURL: URL
+    }
+
     public private(set) var installed: [PluginManifest] = []
     private let pluginsDirectory: URL
     private let fileManager: FileManager
+    private var pendingUpgrade: PendingUpgrade?
 
     public init(
         baseDirectory: URL? = nil,
@@ -72,8 +84,12 @@ public actor PluginManager {
 
     @discardableResult
     public func installPreparedPlugin(
-        at sourceDirectory: URL
+        at sourceDirectory: URL,
+        keepBackup: Bool = false
     ) throws -> PluginManifest {
+        guard pendingUpgrade == nil else {
+            throw PluginManagerError.upgradeInProgress
+        }
         let manifestURL = sourceDirectory.appendingPathComponent("manifest.json")
         let data = try Data(contentsOf: manifestURL)
         let manifest = try JSONDecoder().decode(PluginManifest.self, from: data)
@@ -93,7 +109,14 @@ public actor PluginManager {
         do {
             try fileManager.moveItem(at: sourceDirectory, to: target)
             if hadExistingInstall {
-                try? fileManager.removeItem(at: backup)
+                if keepBackup {
+                    pendingUpgrade = PendingUpgrade(
+                        id: manifest.id,
+                        backupURL: backup
+                    )
+                } else {
+                    try? fileManager.removeItem(at: backup)
+                }
             }
         } catch {
             if hadExistingInstall,
@@ -109,14 +132,60 @@ public actor PluginManager {
         return manifest
     }
 
+    public func commitPendingUpgrade() throws {
+        guard let pendingUpgrade else { return }
+        if fileManager.fileExists(atPath: pendingUpgrade.backupURL.path) {
+            try fileManager.removeItem(at: pendingUpgrade.backupURL)
+        }
+        self.pendingUpgrade = nil
+    }
+
+    public func hasPendingUpgrade() -> Bool {
+        pendingUpgrade != nil
+    }
+
+    public func rollbackPendingUpgrade() throws {
+        guard let pendingUpgrade else { return }
+        let target = pluginsDirectory.appendingPathComponent(
+            pendingUpgrade.id,
+            isDirectory: true
+        )
+        guard fileManager.fileExists(atPath: pendingUpgrade.backupURL.path) else {
+            self.pendingUpgrade = nil
+            return
+        }
+        let failed = pluginsDirectory.appendingPathComponent(
+            ".failed-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        if fileManager.fileExists(atPath: target.path) {
+            try fileManager.moveItem(at: target, to: failed)
+        }
+        do {
+            try fileManager.moveItem(at: pendingUpgrade.backupURL, to: target)
+        } catch {
+            if fileManager.fileExists(atPath: failed.path),
+               !fileManager.fileExists(atPath: target.path) {
+                try? fileManager.moveItem(at: failed, to: target)
+            }
+            throw error
+        }
+        if fileManager.fileExists(atPath: failed.path) {
+            try? fileManager.removeItem(at: failed)
+        }
+        self.pendingUpgrade = nil
+        _ = installedPlugins()
+    }
+
     public func remove(id: String) throws {
         guard Self.isValidPluginID(id) else {
             throw PluginManagerError.invalidPluginID
         }
         let target = pluginsDirectory.appendingPathComponent(id, isDirectory: true)
-        if fileManager.fileExists(atPath: target.path) {
-            try fileManager.removeItem(at: target)
+        guard fileManager.fileExists(atPath: target.path) else {
+            throw PluginManagerError.pluginNotFound
         }
+        try fileManager.removeItem(at: target)
         installed.removeAll { $0.id == id }
     }
 
@@ -157,7 +226,16 @@ public actor PluginManager {
                 try? fileManager.removeItem(at: directory)
                 continue
             }
+            if name.hasPrefix(".failed-") {
+                try? fileManager.removeItem(at: directory)
+                continue
+            }
             guard name.hasPrefix(".backup-") else { continue }
+            if let pendingUpgrade,
+               directory.lastPathComponent
+                == pendingUpgrade.backupURL.lastPathComponent {
+                continue
+            }
             let manifestURL = directory.appendingPathComponent("manifest.json")
             guard let data = try? Data(contentsOf: manifestURL),
                   let manifest = try? JSONDecoder().decode(

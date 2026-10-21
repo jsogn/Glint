@@ -61,4 +61,18 @@ final class PluginManifestTests: XCTestCase {
         XCTAssertEqual(manifest.runtime, "huggingface-onnx")
         XCTAssertEqual(manifest.artifactFile, "inference.onnx")
     }
+
+    func testPluginVersionComparison() {
+        XCTAssertTrue(PluginVersion.isNewer("1.10.0", than: "1.9.9"))
+        XCTAssertFalse(PluginVersion.isNewer("1.0.0", than: "1.0"))
+        XCTAssertTrue(PluginVersion.isNewer("1.0.0", than: "1.0.0-beta.2"))
+        XCTAssertTrue(
+            PluginVersion.isNewer(
+                "2.0.0-beta.10",
+                than: "2.0.0-beta.2"
+            )
+        )
+        XCTAssertFalse(PluginVersion.isNewer("2.0.0-beta.2", than: "2.0.0"))
+        XCTAssertTrue(PluginVersion.isNewer("2026.10", than: "2026.9"))
+    }
 }

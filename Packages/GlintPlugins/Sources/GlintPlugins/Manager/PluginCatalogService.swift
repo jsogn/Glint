@@ -27,6 +27,25 @@ public enum PluginCatalogError: Error, LocalizedError, Equatable {
     }
 }
 
+public struct PluginCatalogFetchResult: Sendable {
+    public let plugins: [PluginManifest]
+    public let isNotModified: Bool
+    public let etag: String?
+    public let lastModified: String?
+
+    public init(
+        plugins: [PluginManifest],
+        isNotModified: Bool,
+        etag: String?,
+        lastModified: String?
+    ) {
+        self.plugins = plugins
+        self.isNotModified = isNotModified
+        self.etag = etag
+        self.lastModified = lastModified
+    }
+}
+
 public actor PluginCatalogService {
     private let manager: PluginManager
     private let fileManager: FileManager
@@ -43,23 +62,71 @@ public actor PluginCatalogService {
     }
 
     public func fetchCatalog(from url: URL) async throws -> [PluginManifest] {
+        try await fetchCatalogResult(from: url).plugins
+    }
+
+    public func fetchCatalogResult(
+        from url: URL,
+        etag: String? = nil,
+        lastModified: String? = nil
+    ) async throws -> PluginCatalogFetchResult {
         let data: Data
+        let responseETag: String?
+        let responseLastModified: String?
         if url.isFileURL {
             data = try Data(contentsOf: url)
+            responseETag = nil
+            responseLastModified = nil
         } else {
-            let (responseData, response) = try await session.data(from: url)
-            guard let http = response as? HTTPURLResponse,
-                  (200..<300).contains(http.statusCode) else {
+            var request = URLRequest(url: url)
+            if let etag {
+                request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+            }
+            if let lastModified {
+                request.setValue(
+                    lastModified,
+                    forHTTPHeaderField: "If-Modified-Since"
+                )
+            }
+            let (responseData, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                throw PluginCatalogError.invalidResponse
+            }
+            if http.statusCode == 304 {
+                return PluginCatalogFetchResult(
+                    plugins: [],
+                    isNotModified: true,
+                    etag: http.value(forHTTPHeaderField: "ETag") ?? etag,
+                    lastModified: http.value(
+                        forHTTPHeaderField: "Last-Modified"
+                    ) ?? lastModified
+                )
+            }
+            guard (200..<300).contains(http.statusCode) else {
                 throw PluginCatalogError.invalidResponse
             }
             data = responseData
+            responseETag = http.value(forHTTPHeaderField: "ETag")
+            responseLastModified = http.value(
+                forHTTPHeaderField: "Last-Modified"
+            )
         }
 
         let decoder = JSONDecoder()
-        if let plugins = try? decoder.decode([PluginManifest].self, from: data) {
-            return plugins
+        let plugins = if let plugins = try? decoder.decode(
+            [PluginManifest].self,
+            from: data
+        ) {
+            plugins
+        } else {
+            try decoder.decode(PluginCatalogPayload.self, from: data).plugins
         }
-        return try decoder.decode(PluginCatalogPayload.self, from: data).plugins
+        return PluginCatalogFetchResult(
+            plugins: plugins,
+            isNotModified: false,
+            etag: responseETag,
+            lastModified: responseLastModified
+        )
     }
 
     public func install(
@@ -165,8 +232,9 @@ public actor PluginCatalogService {
         let pluginDirectory = manifestURL.deletingLastPathComponent()
         try JSONEncoder().encode(manifest).write(to: manifestURL)
         try Task.checkCancellation()
-        let installed = try await manager.installLocalPlugin(
-            at: pluginDirectory
+        let installed = try await manager.installPreparedPlugin(
+            at: pluginDirectory,
+            keepBackup: true
         )
         progress?(1)
         return installed

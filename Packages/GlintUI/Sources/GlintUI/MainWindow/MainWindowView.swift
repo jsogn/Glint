@@ -25,7 +25,7 @@ public struct MainWindowView: View {
         }
         .navigationTitle(pageTitle)
         .task {
-            await model.refreshPlugins()
+            await model.refreshInstalledPlugins()
         }
     }
 
@@ -114,17 +114,31 @@ private struct PageContainer<Content: View>: View {
 
 struct SettingsCard<Content: View>: View {
     let title: String
+    let systemImage: String?
     let content: Content
 
-    init(_ title: String, @ViewBuilder content: () -> Content) {
+    init(
+        _ title: String,
+        systemImage: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
         self.title = title
+        self.systemImage = systemImage
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline)
+            HStack(spacing: 8) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16)
+                        .accessibilityHidden(true)
+                }
+                Text(title)
+                    .font(.headline)
+            }
             content
         }
         .padding(16)
@@ -224,7 +238,7 @@ private struct DisplayPage: View {
 
     var body: some View {
         PageContainer(subtitle: "控制翻译显示何时出现、出现在哪里。") {
-            SettingsCard("位置与延迟") {
+            SettingsCard("位置与触发") {
                 VStack(spacing: 0) {
                     Grid(
                         alignment: .leading,
@@ -257,15 +271,15 @@ private struct DisplayPage: View {
                     Divider()
 
                     sliderSetting(
-                        title: "显示延迟",
+                        title: "候选停留",
                         value: String(
                             format: "%.0f ms",
-                            preferences.stabilityDelay * 1000
+                            preferences.candidateDwellDuration * 1000
                         ),
-                        binding: $preferences.stabilityDelay,
-                        range: 0.1...0.8,
-                        step: 0.05,
-                        caption: "连续输入时自动隐藏，候选稳定后显示。"
+                        binding: $preferences.candidateDwellDuration,
+                        range: 0.08...0.3,
+                        step: 0.01,
+                        caption: "连续输入时不翻译；候选停留达到该时长后触发。"
                     )
                 }
             }
@@ -342,21 +356,28 @@ private struct PluginsPage: View {
 
     var body: some View {
         PageContainer {
-            pluginTabControl
+            HStack(spacing: 12) {
+                pluginTabControl
+                Spacer()
+                if model.isLoadingPlugins || model.isLoadingCatalog {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
             if let error = model.catalogError {
                 HStack(alignment: .top) {
                     Text(error)
                         .font(.caption)
                         .foregroundStyle(.red)
                     Spacer()
-                    Button("重新加载") {
-                        Task { await model.refreshPlugins() }
-                    }
                 }
             }
             pluginPanel(kind: selectedTab.kind)
         }
-        .task { await model.refreshPlugins() }
+        .task {
+            await model.refreshInstalledPlugins()
+            await model.checkForCatalogUpdates()
+        }
         .confirmationDialog(
             "卸载插件？",
             isPresented: Binding(
@@ -397,7 +418,11 @@ private struct PluginsPage: View {
         case .ocr: model.ocrPlugins
         }
         let available = model.availablePlugins.filter {
-            $0.type == kind && model.installedVersion(for: $0.id) != $0.version
+            guard $0.type == kind else { return false }
+            guard model.installedVersion(for: $0.id) != nil else {
+                return true
+            }
+            return model.update(for: $0) != nil
         }
 
         switch kind {
@@ -407,6 +432,9 @@ private struct PluginsPage: View {
             }
         case .translation:
             VStack(spacing: 16) {
+                if installed.isEmpty {
+                    translationSetupGuide(available: available)
+                }
                 SettingsCard("本地模型") {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(spacing: 10) {
@@ -471,6 +499,34 @@ private struct PluginsPage: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+    }
+
+    private func translationSetupGuide(
+        available: [PluginManifest]
+    ) -> some View {
+        SettingsCard("启用句子翻译") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Apple Vision 已可直接使用。安装离线翻译模型或配置在线接口后，可显示句子翻译。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    if let plugin = available.first(where: {
+                        $0.id == TranslationModelSelection.defaultModelID
+                    }) {
+                        Button("安装 \(plugin.name)") {
+                            model.installPlugin(plugin)
+                        }
+                        .disabled(
+                            model.isInstalling != nil
+                                || model.isImportingLocalModel
+                        )
+                    }
+                    Text("也可以导入本地模型，或使用下方的在线接口。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -652,7 +708,7 @@ private struct PluginsPage: View {
             }
             if !available.isEmpty {
                 Divider()
-                Text("可下载")
+                Text("可安装或更新")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.top, 12)
@@ -680,7 +736,7 @@ private struct PluginsPage: View {
                 Text(modelMetadata(for: plugin))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if model.isActiveTranslationModel(plugin),
+                if model.translationModelStatusModelID == plugin.id,
                    let status = model.translationModelStatusText {
                     Text(status)
                         .font(.caption)
@@ -743,33 +799,27 @@ private struct PluginsPage: View {
 
     private func catalogRow(_ plugin: PluginManifest) -> some View {
         let installedVersion = model.installedVersion(for: plugin.id)
-        let isCurrent = installedVersion == plugin.version
+        let update = model.update(for: plugin)
         let progress = model.installProgress[plugin.id]
-        let actionTitle: String = {
-            if installedVersion == nil { return "安装" }
-            return isCurrent ? "重新安装" : "更新"
-        }()
+        let actionTitle = installedVersion == nil ? "安装" : "更新"
 
         return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(plugin.name)
-                        .fontWeight(.medium)
-                    if plugin.recommended {
-                        Text("推荐")
-                            .font(.caption2.weight(.semibold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.blue.opacity(0.18), in: Capsule())
-                            .foregroundStyle(.blue)
-                    }
-                }
+                Text(plugin.name)
+                    .fontWeight(.medium)
                 Text(plugin.summary ?? fallbackSummary(for: plugin.type))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(modelMetadata(for: plugin))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let update {
+                    Text(
+                        "当前 \(update.currentVersion) → 新版本 \(update.availableVersion)"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                }
                 if !model.isCompatible(plugin) {
                     Text("需要至少 \(model.minimumMemoryText(for: plugin)) 内存")
                         .font(.caption)
@@ -793,8 +843,8 @@ private struct PluginsPage: View {
                 }
             } else {
                 VStack(alignment: .trailing, spacing: 6) {
-                    if installedVersion != nil, !isCurrent {
-                        Text("有新版本")
+                    if update != nil {
+                        Text("可更新")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -824,10 +874,14 @@ private struct PluginsPage: View {
     }
 
     private func modelMetadata(for plugin: PluginManifest) -> String {
-        ByteCountFormatter.string(
+        let size = ByteCountFormatter.string(
             fromByteCount: plugin.sizeBytes,
             countStyle: .file
-        ) + " · " + plugin.license
+        )
+        if plugin.source == .local || plugin.version == "local" {
+            return "本地导入 · \(size)"
+        }
+        return "版本 \(plugin.version) · \(size) · \(plugin.license)"
     }
 }
 
@@ -892,14 +946,18 @@ private struct PermissionsPage: View {
     var body: some View {
         PageContainer(subtitle: "全局生效只截取候选栏，不读取文本正文。") {
             SettingsCard("系统权限") {
-                LabeledContent(
-                    "屏幕录制",
-                    value: model.screenRecordingGranted ? "已授权" : "待授权"
+                PermissionStatusRow(
+                    title: "屏幕录制",
+                    symbol: "rectangle.dashed.badge.record",
+                    granted: model.screenRecordingGranted
                 )
-                LabeledContent(
-                    "辅助功能",
-                    value: model.accessibilityGranted ? "已授权" : "待授权"
+                Divider()
+                PermissionStatusRow(
+                    title: "辅助功能",
+                    symbol: "accessibility",
+                    granted: model.accessibilityGranted
                 )
+                Divider()
                 HStack {
                     if hasMissingPermissions {
                         Button {
@@ -932,11 +990,7 @@ private struct PermissionsPage: View {
                     .controlSize(.small)
                 }
             }
-            SettingsCard("隐私") {
-                Text("不保存候选文本、翻译结果或输入历史；推理不联网。")
-                Text("引导页会显示真实截取范围，让用户确认只截候选栏。")
-                    .foregroundStyle(.secondary)
-            }
+            PrivacyNoticeCard()
         }
         .onAppear {
             model.refreshPermissions()
@@ -959,6 +1013,44 @@ private struct PermissionsPage: View {
             return "授权屏幕录制"
         }
         return "授权辅助功能"
+    }
+}
+
+private struct PermissionStatusRow: View {
+    let title: String
+    let symbol: String
+    let granted: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Label {
+                Text(title)
+            } icon: {
+                Image(systemName: symbol)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18)
+            }
+            Spacer()
+            Text(granted ? "已授权" : "待授权")
+                .font(.callout)
+                .foregroundStyle(granted ? Color.secondary : Color.orange)
+        }
+        .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct PrivacyNoticeCard: View {
+    var body: some View {
+        SettingsCard("隐私", systemImage: "lock.shield") {
+            Text("不保存候选文本、翻译结果或输入历史。")
+            Text(
+                "默认使用本地词典、本地 OCR 和本地翻译模型；"
+                    + "启用 OpenAI 兼容接口时，候选文本会发送到所配置的服务。"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -995,18 +1087,7 @@ private struct AboutPage: View {
                     }
                 }
             }
-            SettingsCard("隐私") {
-                Label(
-                    "不保存候选文本、翻译结果或输入历史。",
-                    systemImage: "lock.shield"
-                )
-                Text(
-                    "默认使用本地词典、本地 OCR 和本地翻译模型；"
-                        + "启用 OpenAI 兼容接口时，候选文本会发送到所配置的服务。"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
+            PrivacyNoticeCard()
         }
     }
 }

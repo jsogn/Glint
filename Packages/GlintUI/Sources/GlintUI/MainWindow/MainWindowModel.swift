@@ -3,6 +3,31 @@ import GlintCore
 import GlintPlugins
 import Observation
 
+public struct PluginUpdateInfo: Sendable, Equatable {
+    public let currentVersion: String
+    public let availableVersion: String
+}
+
+struct CatalogUpdatePolicy {
+    static let successInterval: TimeInterval = 6 * 60 * 60
+    static let failureInterval: TimeInterval = 15 * 60
+
+    static func shouldCheck(
+        force: Bool,
+        now: Date,
+        lastSuccess: Date?,
+        lastFailure: Date?
+    ) -> Bool {
+        if force { return true }
+        if let lastFailure,
+           now.timeIntervalSince(lastFailure) < failureInterval {
+            return false
+        }
+        guard let lastSuccess else { return true }
+        return now.timeIntervalSince(lastSuccess) >= successInterval
+    }
+}
+
 @MainActor
 @Observable
 public final class MainWindowModel {
@@ -30,6 +55,7 @@ public final class MainWindowModel {
     public private(set) var localImportError: String?
     public private(set) var translationModelStatusText: String?
     public private(set) var translationModelStatusIsError = false
+    public private(set) var translationModelStatusModelID: String?
     public let displayPreferences: DisplayPreferences
     private let catalogURL: URL?
 
@@ -44,6 +70,16 @@ public final class MainWindowModel {
     @ObservationIgnored
     private let defaults: UserDefaults
     @ObservationIgnored
+    private let now: @MainActor () -> Date
+    @ObservationIgnored
+    private var lastCatalogSuccessAt: Date?
+    @ObservationIgnored
+    private var lastCatalogFailureAt: Date?
+    @ObservationIgnored
+    private var catalogETag: String?
+    @ObservationIgnored
+    private var catalogLastModified: String?
+    @ObservationIgnored
     private var installTask: Task<Void, Never>?
     @ObservationIgnored
     private var localImportTask: Task<Void, Never>?
@@ -56,7 +92,11 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var requestPermissionsAction: @MainActor () -> Void = {}
     @ObservationIgnored
-    public var activateTranslationModelAction: @MainActor () async -> String? = { nil }
+    public var activateTranslationModelAction:
+        @MainActor (String) async -> String? = { _ in nil }
+    @ObservationIgnored
+    public var releaseTranslationModelAction:
+        @MainActor (String) async -> Void = { _ in }
     @ObservationIgnored
     public var configureOCRRecognitionAction:
         @MainActor (OCRRecognitionPreferences) async -> String? = { _ in nil }
@@ -65,13 +105,16 @@ public final class MainWindowModel {
         @MainActor (OpenAICompatibleConfiguration) async throws -> Void = { _ in }
     @ObservationIgnored
     public var translationModeAction: @MainActor (TranslationMode) -> Void = { _ in }
+    @ObservationIgnored
+    public var translationConfigurationChangedAction: @MainActor () -> Void = {}
 
     public init(
         displayPreferences: DisplayPreferences? = nil,
         pluginManager: PluginManager = PluginManager(),
         catalogURL: URL? = nil,
         defaults: UserDefaults = .standard,
-        openAICompatibleStore: OpenAICompatibleConfigurationStore? = nil
+        openAICompatibleStore: OpenAICompatibleConfigurationStore? = nil,
+        now: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.displayPreferences = displayPreferences ?? DisplayPreferences()
         self.pluginManager = pluginManager
@@ -79,6 +122,7 @@ public final class MainWindowModel {
         self.localImportService = LocalModelImportService(manager: pluginManager)
         self.catalogURL = catalogURL ?? Self.defaultCatalogURL()
         self.defaults = defaults
+        self.now = now
         let openAICompatibleStore = openAICompatibleStore
             ?? OpenAICompatibleConfigurationStore(defaults: defaults)
         self.openAICompatibleStore = openAICompatibleStore
@@ -166,37 +210,68 @@ public final class MainWindowModel {
         requestPermissionsAction()
     }
 
-    public func refreshPlugins() async {
+    public func refreshInstalledPlugins() async {
         isLoadingPlugins = true
         installedPlugins = await pluginManager.installedPlugins()
         reconcileActiveTranslationModel()
         reconcileOCRRecognitionPreferences()
         isLoadingPlugins = false
         await configureOCRRecognition()
+        translationConfigurationChangedAction()
+    }
+
+    public func checkForCatalogUpdates(force: Bool = false) async {
         guard let catalogURL else {
             availablePlugins = []
             catalogMessage = "未配置插件目录"
-            catalogError = nil
+            return
+        }
+        guard !isLoadingCatalog else { return }
+        let currentDate = now()
+        guard CatalogUpdatePolicy.shouldCheck(
+            force: force,
+            now: currentDate,
+            lastSuccess: lastCatalogSuccessAt,
+            lastFailure: lastCatalogFailureAt
+        ) else {
             return
         }
 
         isLoadingCatalog = true
-        catalogError = nil
+        defer { isLoadingCatalog = false }
         do {
-            availablePlugins = try await catalogService.fetchCatalog(from: catalogURL)
-                .sorted {
-                    if $0.recommended != $1.recommended {
-                        return $0.recommended && !$1.recommended
-                    }
-                    return $0.name < $1.name
+            let result = try await catalogService.fetchCatalogResult(
+                from: catalogURL,
+                etag: catalogETag,
+                lastModified: catalogLastModified
+            )
+            if !result.isNotModified {
+                availablePlugins = result.plugins.sorted {
+                    $0.name < $1.name
                 }
+            }
+            catalogETag = result.etag
+            catalogLastModified = result.lastModified
+            lastCatalogSuccessAt = now()
+            lastCatalogFailureAt = nil
             catalogMessage = ""
         } catch {
-            availablePlugins = []
-            catalogMessage = "无法读取插件目录"
-            catalogError = error.localizedDescription
+            lastCatalogFailureAt = now()
+            catalogMessage = "暂时无法更新模型列表"
         }
-        isLoadingCatalog = false
+    }
+
+    public func checkForCatalogUpdatesAfterLaunch() async {
+        guard lastCatalogSuccessAt == nil,
+              lastCatalogFailureAt == nil else {
+            return
+        }
+        await checkForCatalogUpdates(force: true)
+    }
+
+    public func refreshPlugins() async {
+        await refreshInstalledPlugins()
+        await checkForCatalogUpdates(force: true)
     }
 
     public func installPlugin(_ plugin: PluginManifest) {
@@ -253,6 +328,10 @@ public final class MainWindowModel {
     }
 
     private func performInstallation(_ plugin: PluginManifest) async {
+        let wasActiveTranslation = plugin.type == .translation
+            && activeModelID == plugin.id
+        let wasActiveOCR = plugin.type == .ocr
+            && isOCRModelInUse(plugin.id)
         defer {
             installTask = nil
             isInstalling = nil
@@ -265,9 +344,52 @@ public final class MainWindowModel {
                     self?.installProgress[plugin.id] = value
                 }
             }
-            await refreshPlugins()
+            let hadPendingUpgrade = await pluginManager.hasPendingUpgrade()
+            await refreshInstalledPlugins()
+
+            if wasActiveTranslation {
+                translationModelStatusText = "正在加载新版本…"
+                translationModelStatusIsError = false
+                translationModelStatusModelID = plugin.id
+                let error = await activateTranslationModelAction(plugin.id)
+                if let error {
+                    if hadPendingUpgrade {
+                        try await pluginManager.rollbackPendingUpgrade()
+                        await refreshInstalledPlugins()
+                        _ = await activateTranslationModelAction(plugin.id)
+                        translationModelStatusText =
+                            "更新失败，已恢复旧版本：\(error)"
+                    } else {
+                        await releaseTranslationModelAction(plugin.id)
+                        try await catalogService.uninstall(id: plugin.id)
+                        await refreshInstalledPlugins()
+                        translationModelStatusText = "模型加载失败：\(error)"
+                    }
+                    translationModelStatusIsError = true
+                    translationModelStatusModelID = plugin.id
+                } else {
+                    try await pluginManager.commitPendingUpgrade()
+                    translationModelStatusText = nil
+                    translationModelStatusIsError = false
+                    translationModelStatusModelID = nil
+                }
+                translationConfigurationChangedAction()
+            } else if wasActiveOCR, ocrEngineStatusIsError {
+                if hadPendingUpgrade {
+                    try await pluginManager.rollbackPendingUpgrade()
+                    await refreshInstalledPlugins()
+                    catalogError = "识别模型更新失败，已恢复旧版本"
+                } else {
+                    try await catalogService.uninstall(id: plugin.id)
+                    await refreshInstalledPlugins()
+                    catalogError = "识别模型加载失败，已移除模型"
+                }
+            } else {
+                try await pluginManager.commitPendingUpgrade()
+            }
             installProgress[plugin.id] = 1
         } catch {
+            try? await pluginManager.rollbackPendingUpgrade()
             if !Self.isCancellation(error) {
                 catalogError = error.localizedDescription
             }
@@ -283,8 +405,14 @@ public final class MainWindowModel {
         }
         catalogError = nil
         do {
+            await releaseTranslationModelAction(plugin.id)
             try await catalogService.uninstall(id: plugin.id)
-            await refreshPlugins()
+            if translationModelStatusModelID == plugin.id {
+                translationModelStatusText = nil
+                translationModelStatusIsError = false
+                translationModelStatusModelID = nil
+            }
+            await refreshInstalledPlugins()
         } catch {
             catalogError = error.localizedDescription
         }
@@ -292,9 +420,10 @@ public final class MainWindowModel {
 
     public func activateTranslationModel(_ plugin: PluginManifest) {
         guard plugin.type == .translation else { return }
+        let previousModelID = activeModelID
         activeModelID = plugin.id
         TranslationModelSelection.select(plugin.id, in: defaults)
-        prepareActiveTranslationModel()
+        prepareActiveTranslationModel(rollbackTo: previousModelID)
     }
 
     public func setPrimaryOCRModel(id: String) {
@@ -352,6 +481,7 @@ public final class MainWindowModel {
         )
         TranslationModelSelection.select(activeModelID, in: defaults)
         prepareActiveTranslationModel()
+        translationConfigurationChangedAction()
     }
 
     @discardableResult
@@ -393,6 +523,7 @@ public final class MainWindowModel {
         openAIProviders = openAICompatibleStore.loadProviders()
         if activeOpenAIProvider?.id == provider.id {
             prepareActiveTranslationModel()
+            translationConfigurationChangedAction()
         }
         return provider
     }
@@ -406,7 +537,9 @@ public final class MainWindowModel {
         if wasActive {
             translationModelStatusText = nil
             translationModelStatusIsError = false
+            translationModelStatusModelID = nil
             reconcileActiveTranslationModel()
+            translationConfigurationChangedAction()
         }
     }
 
@@ -429,6 +562,20 @@ public final class MainWindowModel {
 
     public func isActiveTranslationModel(_ plugin: PluginManifest) -> Bool {
         plugin.type == .translation && plugin.id == activeModelID
+    }
+
+    public func update(for plugin: PluginManifest) -> PluginUpdateInfo? {
+        guard let installedVersion = installedVersion(for: plugin.id),
+              PluginVersion.isNewer(
+                plugin.version,
+                than: installedVersion
+              ) else {
+            return nil
+        }
+        return PluginUpdateInfo(
+            currentVersion: installedVersion,
+            availableVersion: plugin.version
+        )
     }
 
     public func isOCRModelInUse(_ modelID: String) -> Bool {
@@ -490,7 +637,10 @@ public final class MainWindowModel {
         }
         let models = installedPlugins.filter { $0.type == .translation }
         guard !models.contains(where: { $0.id == activeModelID }) else { return }
-        if let fallback = models.first(where: \.recommended) ?? models.first {
+        let fallback = models.first {
+            $0.id == TranslationModelSelection.defaultModelID
+        } ?? models.first
+        if let fallback {
             activateTranslationModel(fallback)
         } else {
             activeModelID = TranslationModelSelection.defaultModelID
@@ -498,21 +648,34 @@ public final class MainWindowModel {
         }
     }
 
-    private func prepareActiveTranslationModel() {
+    private func prepareActiveTranslationModel(rollbackTo previousModelID: String? = nil) {
         let modelID = activeModelID
         translationModelStatusText = "正在加载…"
         translationModelStatusIsError = false
+        translationModelStatusModelID = modelID
         Task { [weak self] in
             guard let self else { return }
-            let error = await activateTranslationModelAction()
+            let error = await activateTranslationModelAction(modelID)
             guard activeModelID == modelID else { return }
             if let error {
                 translationModelStatusText = error
                 translationModelStatusIsError = true
+                translationModelStatusModelID = modelID
+                if let previousModelID,
+                   previousModelID != modelID {
+                    activeModelID = previousModelID
+                    TranslationModelSelection.select(
+                        previousModelID,
+                        in: defaults
+                    )
+                    _ = await activateTranslationModelAction(previousModelID)
+                }
             } else {
                 translationModelStatusText = nil
                 translationModelStatusIsError = false
+                translationModelStatusModelID = nil
             }
+            translationConfigurationChangedAction()
         }
     }
 

@@ -28,10 +28,11 @@ struct OverviewPage: View {
                                 value: model.displayPreferences.position.title
                             ),
                             OverviewInfoRow(
-                                label: "稳定",
+                                label: "停留",
                                 value: String(
                                     format: "%.0f ms",
-                                    model.displayPreferences.stabilityDelay * 1_000
+                                    model.displayPreferences
+                                        .candidateDwellDuration * 1_000
                                 )
                             ),
                             OverviewInfoRow(
@@ -367,7 +368,7 @@ private enum OverviewRuntimeState {
 
     var statusColor: Color {
         switch self {
-        case .running: .yellow
+        case .running: .blue
         case .paused: .secondary
         case .permissions, .attention: .orange
         }

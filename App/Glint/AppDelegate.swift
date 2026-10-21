@@ -1,6 +1,7 @@
 import AppKit
 import CoreGraphics
 import GlintMac
+import GlintPlugins
 import GlintUI
 
 @MainActor
@@ -16,9 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let environment: AppEnvironment
     private let windowModel: MainWindowModel
     private var monitoringTask: Task<Void, Never>?
-    private var pendingHUDTask: Task<Void, Never>?
-    private var pendingCandidateText: String?
-    private var hudGeneration = 0
+    private var displayedCandidateRevision: UInt64?
     private var pendingPermissionStep: PermissionRequestStep?
     private var permissionRequestWasIssued = false
     private var screenCaptureWasRequested = false
@@ -49,6 +48,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mainWindowController = MainWindowController(model: windowModel)
         mainWindowController.show()
         refreshPermissionState()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self else { return }
+            await windowModel.refreshInstalledPlugins()
+            await windowModel.checkForCatalogUpdatesAfterLaunch()
+        }
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
             _ = await environment.configureOCR(
@@ -87,9 +92,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshPermissionState()
         if pendingPermissionStep != nil {
             continuePermissionRequest()
-        }
-        Task {
-            await windowModel.refreshPlugins()
         }
     }
 
@@ -133,12 +135,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 string: "  ●",
                 attributes: [
                     .font: NSFont.systemFont(ofSize: 5.5, weight: .bold),
-                    .foregroundColor: NSColor(
-                        srgbRed: 1,
-                        green: 0.90,
-                        blue: 0,
-                        alpha: 1
-                    ),
+                    .foregroundColor: NSColor.systemBlue,
                     .baselineOffset: 1.2,
                 ]
             )
@@ -179,10 +176,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowModel.requestPermissionsAction = { [weak self] in
             self?.beginPermissionRequest()
         }
-        windowModel.activateTranslationModelAction = { [weak self] in
+        windowModel.activateTranslationModelAction = { [weak self] modelID in
             guard let self else { return "翻译运行时不可用" }
-            await self.environment.translationRuntime.prepareSelectedModel()
-            return await self.environment.translationRuntime.lastError
+            return await self.environment.translationRuntime.prepare(
+                modelID: modelID
+            )
+        }
+        windowModel.releaseTranslationModelAction = { [weak self] modelID in
+            guard let self else { return }
+            await self.environment.translationRuntime.releaseResources(
+                for: modelID
+            )
         }
         windowModel.configureOCRRecognitionAction = {
             [weak self] preferences in
@@ -202,6 +206,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task {
                 await self.environment.monitoring.setMode(mode)
             }
+        }
+        windowModel.displayPreferences.candidateDwellDurationDidChange = {
+            [weak self] duration in
+            guard let self else { return }
+            Task {
+                await self.environment.monitoring.setCandidateDwellDuration(
+                    duration
+                )
+            }
+        }
+        windowModel.translationConfigurationChangedAction = { [weak self] in
+            self?.syncTranslationConfiguration()
         }
     }
 
@@ -250,9 +266,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         let mode = windowModel.translationMode
+        let candidateDwellDuration =
+            windowModel.displayPreferences.candidateDwellDuration
+        let configurationToken = translationConfigurationToken
         Task { [weak self] in
             guard let self else { return }
             await environment.monitoring.setMode(mode)
+            await environment.monitoring.setCandidateDwellDuration(
+                candidateDwellDuration
+            )
+            await environment.monitoring.setTranslationConfigurationToken(
+                configurationToken
+            )
             await environment.monitoring.start()
             markRuntimeReady()
         }
@@ -266,8 +291,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         shouldStartMonitoringAfterPreparation = false
         monitoringTask?.cancel()
         monitoringTask = nil
-        cancelPendingHUD()
-        hud.hide()
+        clearHUDState()
+        hud.hide(animated: false)
         updateStatusItem(isMonitoring: false)
         windowModel.isMonitoring = false
         windowModel.statusText = ""
@@ -282,16 +307,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .status(let status):
             windowModel.statusText = isActionableStatus(status) ? status : ""
             NSLog("Glint: %@", status)
-        case .result(let candidate, let result, let highlight):
+        case .candidateChanged:
+            hud.beginUpdate()
+        case .candidateEnded(let immediate):
+            clearHUDState()
+            hud.hide(animated: !immediate)
+        case .result(_, let result, let highlight, let revision):
             windowModel.statusText = ""
-            scheduleHUD(
-                candidate: candidate.text,
+            showHUD(
+                revision: revision,
                 text: result.displayText,
                 near: highlight.cgRect
             )
-        case .hidden:
-            cancelPendingHUD()
-            hud.hide()
         }
     }
 
@@ -301,45 +328,61 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             || status.hasPrefix("截取失败：")
     }
 
-    private func scheduleHUD(candidate: String, text: String, near rect: CGRect) {
-        guard pendingCandidateText != candidate else { return }
-        pendingCandidateText = candidate
-        pendingHUDTask?.cancel()
-        hudGeneration += 1
-        let generation = hudGeneration
-        hud.hide()
+    private func showHUD(
+        revision: UInt64,
+        text: String,
+        near rect: CGRect
+    ) {
+        guard monitoringTask != nil,
+              displayedCandidateRevision != revision else {
+            return
+        }
+        displayedCandidateRevision = revision
+        hud.show(
+            text: text,
+            near: rect,
+            position: windowModel.displayPreferences.position,
+            spacing: windowModel.displayPreferences.candidateSpacing,
+            opacity: windowModel.displayPreferences.hudOpacity
+        )
+    }
 
-        let delay = windowModel.displayPreferences.stabilityDelay
-        pendingHUDTask = Task { @MainActor [weak self] in
-            do {
-                try await Task.sleep(
-                    nanoseconds: UInt64(delay * 1_000_000_000)
-                )
-            } catch {
-                return
-            }
-            guard let self,
-                  self.monitoringTask != nil,
-                  self.hudGeneration == generation,
-                  self.pendingCandidateText == candidate else {
-                return
-            }
-            self.hud.show(
-                text: text,
-                near: rect,
-                position: self.windowModel.displayPreferences.position,
-                spacing: self.windowModel.displayPreferences.candidateSpacing,
-                opacity: self.windowModel.displayPreferences.hudOpacity
+    private func clearHUDState() {
+        displayedCandidateRevision = nil
+    }
+
+    private func syncTranslationConfiguration() {
+        let token = translationConfigurationToken
+        Task { [weak self] in
+            guard let self else { return }
+            await environment.monitoring.setTranslationConfigurationToken(
+                token
             )
-            self.pendingHUDTask = nil
         }
     }
 
-    private func cancelPendingHUD() {
-        pendingHUDTask?.cancel()
-        pendingHUDTask = nil
-        pendingCandidateText = nil
-        hudGeneration += 1
+    private var translationConfigurationToken: String {
+        let pluginVersions = windowModel.installedPlugins
+            .filter {
+                $0.type == .dictionary || $0.type == .translation
+            }
+            .map {
+                "\($0.id)@\($0.version)#\($0.revision ?? $0.sha256)"
+            }
+            .sorted()
+        let providerVersions = windowModel.openAIProviders
+            .map {
+                "\($0.id)@\($0.baseURL)#\($0.model)"
+            }
+            .sorted()
+        return (
+            [
+                "model=\(windowModel.activeModelID)",
+                "prompt=1",
+            ]
+                + pluginVersions
+                + providerVersions
+        ).joined(separator: "|")
     }
 
     private func refreshPermissionState() {

@@ -20,7 +20,7 @@ public enum HUDPosition: String, CaseIterable, Sendable {
 public final class DisplayPreferences {
     private enum Key {
         static let position = "display.position"
-        static let stabilityDelay = "display.stabilityDelay"
+        static let candidateDwellDuration = "display.candidateDwellDuration"
         static let candidateSpacing = "display.candidateSpacing"
         static let hudOpacity = "display.hudOpacity"
     }
@@ -28,20 +28,24 @@ public final class DisplayPreferences {
     @ObservationIgnored
     private let defaults: UserDefaults
 
+    @ObservationIgnored
+    public var candidateDwellDurationDidChange: (@MainActor (Double) -> Void)?
+
     public var position: HUDPosition {
         didSet {
             defaults.set(position.rawValue, forKey: Key.position)
         }
     }
 
-    public var stabilityDelay: Double {
+    public var candidateDwellDuration: Double {
         didSet {
-            let clamped = min(max(stabilityDelay, 0.1), 0.8)
-            if clamped != stabilityDelay {
-                stabilityDelay = clamped
+            let clamped = min(max(candidateDwellDuration, 0.08), 0.3)
+            if clamped != candidateDwellDuration {
+                candidateDwellDuration = clamped
                 return
             }
-            defaults.set(clamped, forKey: Key.stabilityDelay)
+            defaults.set(clamped, forKey: Key.candidateDwellDuration)
+            candidateDwellDurationDidChange?(clamped)
         }
     }
 
@@ -72,8 +76,13 @@ public final class DisplayPreferences {
         let storedPosition = defaults.string(forKey: Key.position)
         self.position = HUDPosition(rawValue: storedPosition ?? "") ?? .automatic
 
-        let storedDelay = defaults.object(forKey: Key.stabilityDelay) as? Double
-        self.stabilityDelay = min(max(storedDelay ?? 0.35, 0.1), 0.8)
+        let storedDwellDuration = defaults.object(
+            forKey: Key.candidateDwellDuration
+        ) as? Double
+        self.candidateDwellDuration = min(
+            max(storedDwellDuration ?? 0.12, 0.08),
+            0.3
+        )
 
         let storedSpacing = defaults.object(forKey: Key.candidateSpacing) as? Double
         self.candidateSpacing = min(max(storedSpacing ?? 8, 0), 24)
