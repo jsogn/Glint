@@ -25,8 +25,7 @@
 | 层 | 技术 |
 |---|---|
 | App shell | Swift 6、AppKit、SwiftUI |
-| 屏幕采集 | ScreenCaptureKit |
-| 候选定位 | Accessibility + Vision OCR |
+| 候选与上下文 | Accessibility |
 | 轻量翻译 | CTranslate2 C ABI + OPUS-MT int8 |
 | LLM 推理 | MLX Swift 3.32.3 / mlx-swift 0.32.3 |
 | Tokenizer | swift-transformers 1.3.5，本地目录加载 |
@@ -119,7 +118,7 @@ mlx[mt-index-translate-2b] 这个功能什么时候上线
 
 - 模型选择切换后的首次推理需要模型加载时间；App 启动时会预热当前模型；
 - K/V cache 和上下文排序尚未用于区分同一中文词的多个英文义项；
-- 候选栏高亮识别仍依赖系统强调色对应的蓝色连通区域；
+- 候选栏识别依赖 Apple 拼音暴露的 `InputMethodCandidateList` AX 结构；
 - 真实 TextEdit HUD 测试需要目标 App 使用苹果拼音输入源；
 - 模型插件尚未做独立签名清单，当前依赖 HTTPS、pinned revision 和 LFS SHA。
 - Index-Translate 当前使用社区 MLX 4-bit 转换；正式发行前应改为项目内可复现转换。

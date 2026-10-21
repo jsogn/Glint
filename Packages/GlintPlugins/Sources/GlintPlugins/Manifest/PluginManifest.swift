@@ -4,7 +4,6 @@ import GlintCore
 public enum PluginKind: String, Codable, Sendable {
     case dictionary
     case translation
-    case ocr
 }
 
 public enum PluginSource: String, Codable, Sendable {
@@ -29,7 +28,6 @@ public struct PluginManifest: Codable, Sendable, Equatable {
     public let recommended: Bool
     public let summary: String?
     public let revision: String?
-    public let artifactFile: String?
     public let source: PluginSource?
     public let promptProfile: TranslationPromptProfile?
 
@@ -50,7 +48,6 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         recommended: Bool,
         summary: String? = nil,
         revision: String? = nil,
-        artifactFile: String? = nil,
         source: PluginSource? = .catalog,
         promptProfile: TranslationPromptProfile? = nil
     ) {
@@ -70,7 +67,6 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         self.recommended = recommended
         self.summary = summary
         self.revision = revision
-        self.artifactFile = artifactFile
         self.source = source
         self.promptProfile = promptProfile
     }

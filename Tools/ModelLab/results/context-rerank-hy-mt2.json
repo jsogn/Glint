@@ -1,0 +1,2357 @@
+{
+  "model_id": "mlx-community/Hy-MT2-1.8B-4bit",
+  "timestamp": "2026-10-21T11:41:49.349427+00:00",
+  "case_count": 80,
+  "variant_count": 2,
+  "load_seconds": 2.13,
+  "warmup_seconds": 0.1,
+  "peak_rss_mb": 1456.3,
+  "summary": {
+    "r0": {
+      "case_count": 80,
+      "acceptable": 49,
+      "acceptable_rate": 0.6125,
+      "invalid": 2,
+      "errors": 0,
+      "p50_latency_ms": 62.12,
+      "p95_latency_ms": 91.57,
+      "paired_vs_r0": {
+        "wins": 0,
+        "losses": 0,
+        "ties": 40
+      }
+    },
+    "r2": {
+      "case_count": 80,
+      "acceptable": 72,
+      "acceptable_rate": 0.9,
+      "invalid": 0,
+      "errors": 0,
+      "p50_latency_ms": 77.8,
+      "p95_latency_ms": 93.9,
+      "paired_vs_r0": {
+        "wins": 20,
+        "losses": 1,
+        "ties": 19
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "amb-001-a",
+      "variant": "r0",
+      "target": "方便",
+      "choices": [
+        "instant",
+        "convenient"
+      ],
+      "output": "convenient",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 71.79,
+      "error": null
+    },
+    {
+      "id": "amb-001-a",
+      "variant": "r2",
+      "target": "方便",
+      "choices": [
+        "instant",
+        "convenient"
+      ],
+      "output": "convenient",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 91.36,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "r0",
+      "target": "方便",
+      "choices": [
+        "convenient",
+        "available",
+        "free",
+        "instant"
+      ],
+      "output": "convenient",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 88.85,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "r2",
+      "target": "方便",
+      "choices": [
+        "convenient",
+        "available",
+        "free",
+        "instant"
+      ],
+      "output": "convenient",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 89.78,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "r0",
+      "target": "处理",
+      "choices": [
+        "process",
+        "deal with customers"
+      ],
+      "output": "process",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 60.77,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "r2",
+      "target": "处理",
+      "choices": [
+        "process",
+        "deal with customers"
+      ],
+      "output": "process",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.22,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "r0",
+      "target": "处理",
+      "choices": [
+        "handle",
+        "deal with",
+        "process data"
+      ],
+      "output": "handle",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.96,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "r2",
+      "target": "处理",
+      "choices": [
+        "handle",
+        "deal with",
+        "process data"
+      ],
+      "output": "handle",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.81,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "r0",
+      "target": "发布",
+      "choices": [
+        "release",
+        "post"
+      ],
+      "output": "release",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 60.64,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "r2",
+      "target": "发布",
+      "choices": [
+        "release",
+        "post"
+      ],
+      "output": "release",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 89.09,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "r0",
+      "target": "发布",
+      "choices": [
+        "post",
+        "publish",
+        "release a version"
+      ],
+      "output": "post",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 93.01,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "r2",
+      "target": "发布",
+      "choices": [
+        "post",
+        "publish",
+        "release a version"
+      ],
+      "output": "post",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.69,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "r0",
+      "target": "落地",
+      "choices": [
+        "implemented",
+        "rolled out",
+        "landed"
+      ],
+      "output": "landed",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 65.86,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "r2",
+      "target": "落地",
+      "choices": [
+        "implemented",
+        "rolled out",
+        "landed"
+      ],
+      "output": "landed",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 83.47,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "r0",
+      "target": "落地",
+      "choices": [
+        "land",
+        "touch down",
+        "implemented"
+      ],
+      "output": "land",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 63.06,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "r2",
+      "target": "落地",
+      "choices": [
+        "land",
+        "touch down",
+        "implemented"
+      ],
+      "output": "land",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.63,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "r0",
+      "target": "运行",
+      "choices": [
+        "run",
+        "execute",
+        "operating cost"
+      ],
+      "output": "run",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 60.83,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "r2",
+      "target": "运行",
+      "choices": [
+        "run",
+        "execute",
+        "operating cost"
+      ],
+      "output": "run",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.47,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "r0",
+      "target": "运行",
+      "choices": [
+        "operating",
+        "execute"
+      ],
+      "output": "execute",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 60.82,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "r2",
+      "target": "运行",
+      "choices": [
+        "operating",
+        "execute"
+      ],
+      "output": "operating",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 82.33,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "r0",
+      "target": "看",
+      "choices": [
+        "see",
+        "get examined",
+        "read"
+      ],
+      "output": "see",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 62.74,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "r2",
+      "target": "看",
+      "choices": [
+        "see",
+        "get examined",
+        "read"
+      ],
+      "output": "get examined",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.89,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "r0",
+      "target": "看",
+      "choices": [
+        "read",
+        "see a doctor"
+      ],
+      "output": "see a doctor",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 74.97,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "r2",
+      "target": "看",
+      "choices": [
+        "read",
+        "see a doctor"
+      ],
+      "output": "see a doctor",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 89.03,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "r0",
+      "target": "开",
+      "choices": [
+        "drive",
+        "turn on"
+      ],
+      "output": "turn on",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 67.41,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "r2",
+      "target": "开",
+      "choices": [
+        "drive",
+        "turn on"
+      ],
+      "output": "drive",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.03,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "r0",
+      "target": "开",
+      "choices": [
+        "turn on",
+        "drive"
+      ],
+      "output": "turn on",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 71.61,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "r2",
+      "target": "开",
+      "choices": [
+        "turn on",
+        "drive"
+      ],
+      "output": "turn on",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 83.42,
+      "error": null
+    },
+    {
+      "id": "amb-008-a",
+      "variant": "r0",
+      "target": "打",
+      "choices": [
+        "take",
+        "play",
+        "hit"
+      ],
+      "output": "hit",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 62.54,
+      "error": null
+    },
+    {
+      "id": "amb-008-a",
+      "variant": "r2",
+      "target": "打",
+      "choices": [
+        "take",
+        "play",
+        "hit"
+      ],
+      "output": "take",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 93.9,
+      "error": null
+    },
+    {
+      "id": "amb-008-b",
+      "variant": "r0",
+      "target": "打",
+      "choices": [
+        "play",
+        "take a taxi",
+        "hit"
+      ],
+      "output": "hit",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 75.17,
+      "error": null
+    },
+    {
+      "id": "amb-008-b",
+      "variant": "r2",
+      "target": "打",
+      "choices": [
+        "play",
+        "take a taxi",
+        "hit"
+      ],
+      "output": "play",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.11,
+      "error": null
+    },
+    {
+      "id": "amb-009-a",
+      "variant": "r0",
+      "target": "上",
+      "choices": [
+        "browse",
+        "go online",
+        "attend school"
+      ],
+      "output": "go online",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 83.42,
+      "error": null
+    },
+    {
+      "id": "amb-009-a",
+      "variant": "r2",
+      "target": "上",
+      "choices": [
+        "browse",
+        "go online",
+        "attend school"
+      ],
+      "output": "go online",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 84.11,
+      "error": null
+    },
+    {
+      "id": "amb-009-b",
+      "variant": "r0",
+      "target": "上",
+      "choices": [
+        "attend",
+        "go to",
+        "browse"
+      ],
+      "output": "go to",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 69.78,
+      "error": null
+    },
+    {
+      "id": "amb-009-b",
+      "variant": "r2",
+      "target": "上",
+      "choices": [
+        "attend",
+        "go to",
+        "browse"
+      ],
+      "output": "go to",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 84.51,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "r0",
+      "target": "下",
+      "choices": [
+        "rain",
+        "raining",
+        "get off"
+      ],
+      "output": "get off",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 67.72,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "r2",
+      "target": "下",
+      "choices": [
+        "rain",
+        "raining",
+        "get off"
+      ],
+      "output": "rain",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 100.75,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "r0",
+      "target": "下",
+      "choices": [
+        "get off",
+        "rain"
+      ],
+      "output": "目标：下\n选项：\n- get off\n- rain",
+      "status": "invalid",
+      "reason": "multiple_lines",
+      "latency_ms": 148.42,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "r2",
+      "target": "下",
+      "choices": [
+        "get off",
+        "rain"
+      ],
+      "output": "get off",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 83.96,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "r0",
+      "target": "点",
+      "choices": [
+        "order",
+        "nod"
+      ],
+      "output": "order",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 64.51,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "r2",
+      "target": "点",
+      "choices": [
+        "order",
+        "nod"
+      ],
+      "output": "order",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.15,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "r0",
+      "target": "点",
+      "choices": [
+        "nod",
+        "order"
+      ],
+      "output": "order",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 64.17,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "r2",
+      "target": "点",
+      "choices": [
+        "nod",
+        "order"
+      ],
+      "output": "nod",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 77.23,
+      "error": null
+    },
+    {
+      "id": "amb-012-a",
+      "variant": "r0",
+      "target": "花",
+      "choices": [
+        "spend",
+        "flower"
+      ],
+      "output": "flower",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 61.83,
+      "error": null
+    },
+    {
+      "id": "amb-012-a",
+      "variant": "r2",
+      "target": "花",
+      "choices": [
+        "spend",
+        "flower"
+      ],
+      "output": "spend",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 81.07,
+      "error": null
+    },
+    {
+      "id": "amb-012-b",
+      "variant": "r0",
+      "target": "花",
+      "choices": [
+        "flower",
+        "flowers",
+        "spend"
+      ],
+      "output": "flower",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 58.54,
+      "error": null
+    },
+    {
+      "id": "amb-012-b",
+      "variant": "r2",
+      "target": "花",
+      "choices": [
+        "flower",
+        "flowers",
+        "spend"
+      ],
+      "output": "flower",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.13,
+      "error": null
+    },
+    {
+      "id": "amb-013-a",
+      "variant": "r0",
+      "target": "过",
+      "choices": [
+        "celebrate",
+        "cross"
+      ],
+      "output": "cross",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 60.85,
+      "error": null
+    },
+    {
+      "id": "amb-013-a",
+      "variant": "r2",
+      "target": "过",
+      "choices": [
+        "celebrate",
+        "cross"
+      ],
+      "output": "celebrate",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 86.0,
+      "error": null
+    },
+    {
+      "id": "amb-013-b",
+      "variant": "r0",
+      "target": "过",
+      "choices": [
+        "cross",
+        "celebrate"
+      ],
+      "output": "cross",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 58.75,
+      "error": null
+    },
+    {
+      "id": "amb-013-b",
+      "variant": "r2",
+      "target": "过",
+      "choices": [
+        "cross",
+        "celebrate"
+      ],
+      "output": "cross",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.02,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "r0",
+      "target": "走",
+      "choices": [
+        "walk",
+        "leave"
+      ],
+      "output": "walk",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 58.95,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "r2",
+      "target": "走",
+      "choices": [
+        "walk",
+        "leave"
+      ],
+      "output": "walk",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.57,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "r0",
+      "target": "走",
+      "choices": [
+        "leave",
+        "go",
+        "walk"
+      ],
+      "output": "walk",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 59.49,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "r2",
+      "target": "走",
+      "choices": [
+        "leave",
+        "go",
+        "walk"
+      ],
+      "output": "go",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.92,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "r0",
+      "target": "发",
+      "choices": [
+        "send",
+        "pay"
+      ],
+      "output": "send",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 60.05,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "r2",
+      "target": "发",
+      "choices": [
+        "send",
+        "pay"
+      ],
+      "output": "send",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 77.78,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "r0",
+      "target": "发",
+      "choices": [
+        "pay",
+        "send"
+      ],
+      "output": "send",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 64.59,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "r2",
+      "target": "发",
+      "choices": [
+        "pay",
+        "send"
+      ],
+      "output": "pay",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.95,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "r0",
+      "target": "收",
+      "choices": [
+        "receive",
+        "bring in"
+      ],
+      "output": "receive",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 60.05,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "r2",
+      "target": "收",
+      "choices": [
+        "receive",
+        "bring in"
+      ],
+      "output": "请查【收】邮件",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 101.95,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "r0",
+      "target": "收",
+      "choices": [
+        "bring in",
+        "collect",
+        "receive email"
+      ],
+      "output": "collect",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.21,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "r2",
+      "target": "收",
+      "choices": [
+        "bring in",
+        "collect",
+        "receive email"
+      ],
+      "output": "collect",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.24,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "r0",
+      "target": "接",
+      "choices": [
+        "answer",
+        "take on"
+      ],
+      "output": "answer",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 63.35,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "r2",
+      "target": "接",
+      "choices": [
+        "answer",
+        "take on"
+      ],
+      "output": "answer",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 77.96,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "r0",
+      "target": "接",
+      "choices": [
+        "take on",
+        "accept",
+        "answer a phone"
+      ],
+      "output": "accept",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.65,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "r2",
+      "target": "接",
+      "choices": [
+        "take on",
+        "accept",
+        "answer a phone"
+      ],
+      "output": "accept",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.28,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "r0",
+      "target": "带",
+      "choices": [
+        "look after",
+        "care for",
+        "lead"
+      ],
+      "output": "care for",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 79.37,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "r2",
+      "target": "带",
+      "choices": [
+        "look after",
+        "care for",
+        "lead"
+      ],
+      "output": "care for",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.1,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "r0",
+      "target": "带",
+      "choices": [
+        "lead",
+        "look after children"
+      ],
+      "output": "lead",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 61.19,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "r2",
+      "target": "带",
+      "choices": [
+        "lead",
+        "look after children"
+      ],
+      "output": "lead",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 79.33,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "r0",
+      "target": "换",
+      "choices": [
+        "change",
+        "replace"
+      ],
+      "output": "change",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 61.5,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "r2",
+      "target": "换",
+      "choices": [
+        "change",
+        "replace"
+      ],
+      "output": "change",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 77.62,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "r0",
+      "target": "换",
+      "choices": [
+        "replace",
+        "change",
+        "change jobs"
+      ],
+      "output": "change",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 59.67,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "r2",
+      "target": "换",
+      "choices": [
+        "replace",
+        "change",
+        "change jobs"
+      ],
+      "output": "replace",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.09,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "r0",
+      "target": "存",
+      "choices": [
+        "save",
+        "stock"
+      ],
+      "output": "save",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 59.42,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "r2",
+      "target": "存",
+      "choices": [
+        "save",
+        "stock"
+      ],
+      "output": "save",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.31,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "r0",
+      "target": "存",
+      "choices": [
+        "stock",
+        "inventory",
+        "save money"
+      ],
+      "output": "stock",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 63.87,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "r2",
+      "target": "存",
+      "choices": [
+        "stock",
+        "inventory",
+        "save money"
+      ],
+      "output": "stock",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 79.86,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "r0",
+      "target": "放",
+      "choices": [
+        "play",
+        "put"
+      ],
+      "output": "put",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 62.12,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "r2",
+      "target": "放",
+      "choices": [
+        "play",
+        "put"
+      ],
+      "output": "play",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.28,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "r0",
+      "target": "放",
+      "choices": [
+        "put",
+        "place",
+        "play"
+      ],
+      "output": "place",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 58.83,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "r2",
+      "target": "放",
+      "choices": [
+        "put",
+        "place",
+        "play"
+      ],
+      "output": "place",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.33,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "r0",
+      "target": "做",
+      "choices": [
+        "cook",
+        "make",
+        "make a decision"
+      ],
+      "output": "make",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 78.31,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "r2",
+      "target": "做",
+      "choices": [
+        "cook",
+        "make",
+        "make a decision"
+      ],
+      "output": "cook",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 98.91,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "r0",
+      "target": "做",
+      "choices": [
+        "make",
+        "cook"
+      ],
+      "output": "make",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 61.6,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "r2",
+      "target": "做",
+      "choices": [
+        "make",
+        "cook"
+      ],
+      "output": "make",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 81.04,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "r0",
+      "target": "想",
+      "choices": [
+        "miss",
+        "think"
+      ],
+      "output": "think",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 63.26,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "r2",
+      "target": "想",
+      "choices": [
+        "miss",
+        "think"
+      ],
+      "output": "miss",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.73,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "r0",
+      "target": "想",
+      "choices": [
+        "think of",
+        "come up with",
+        "miss home"
+      ],
+      "output": "come up with",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 92.2,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "r2",
+      "target": "想",
+      "choices": [
+        "think of",
+        "come up with",
+        "miss home"
+      ],
+      "output": "come up with",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 88.48,
+      "error": null
+    },
+    {
+      "id": "amb-024-a",
+      "variant": "r0",
+      "target": "问",
+      "choices": [
+        "ask",
+        "hold accountable"
+      ],
+      "output": "ask",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 62.95,
+      "error": null
+    },
+    {
+      "id": "amb-024-a",
+      "variant": "r2",
+      "target": "问",
+      "choices": [
+        "ask",
+        "hold accountable"
+      ],
+      "output": "ask",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 77.41,
+      "error": null
+    },
+    {
+      "id": "amb-024-b",
+      "variant": "r0",
+      "target": "问",
+      "choices": [
+        "hold accountable",
+        "hold responsible",
+        "ask a question"
+      ],
+      "output": "ask a question",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 91.57,
+      "error": null
+    },
+    {
+      "id": "amb-024-b",
+      "variant": "r2",
+      "target": "问",
+      "choices": [
+        "hold accountable",
+        "hold responsible",
+        "ask a question"
+      ],
+      "output": "hold accountable",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 82.1,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "r0",
+      "target": "报",
+      "choices": [
+        "register",
+        "sign up",
+        "call the police"
+      ],
+      "output": "register",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.01,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "r2",
+      "target": "报",
+      "choices": [
+        "register",
+        "sign up",
+        "call the police"
+      ],
+      "output": "register",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 78.4,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "r0",
+      "target": "报",
+      "choices": [
+        "call",
+        "register"
+      ],
+      "output": "register",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 63.8,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "r2",
+      "target": "报",
+      "choices": [
+        "call",
+        "register"
+      ],
+      "output": "call",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 76.65,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "r0",
+      "target": "结",
+      "choices": [
+        "pay",
+        "end"
+      ],
+      "output": "end",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 60.19,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "r2",
+      "target": "结",
+      "choices": [
+        "pay",
+        "end"
+      ],
+      "output": "pay",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.35,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "r0",
+      "target": "结",
+      "choices": [
+        "end",
+        "finish",
+        "pay"
+      ],
+      "output": "end",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 58.85,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "r2",
+      "target": "结",
+      "choices": [
+        "end",
+        "finish",
+        "pay"
+      ],
+      "output": "end",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 78.96,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "r0",
+      "target": "行",
+      "choices": [
+        "okay",
+        "work",
+        "bank"
+      ],
+      "output": "work",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 60.75,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "r2",
+      "target": "行",
+      "choices": [
+        "okay",
+        "work",
+        "bank"
+      ],
+      "output": "okay",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 82.11,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "r0",
+      "target": "行",
+      "choices": [
+        "bank",
+        "okay"
+      ],
+      "output": "okay",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 66.88,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "r2",
+      "target": "行",
+      "choices": [
+        "bank",
+        "okay"
+      ],
+      "output": "bank",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.68,
+      "error": null
+    },
+    {
+      "id": "amb-028-a",
+      "variant": "r0",
+      "target": "还",
+      "choices": [
+        "return",
+        "give back",
+        "still"
+      ],
+      "output": "目标：还\n选项：\n- return\n- give back\n- still",
+      "status": "invalid",
+      "reason": "multiple_lines",
+      "latency_ms": 154.87,
+      "error": null
+    },
+    {
+      "id": "amb-028-a",
+      "variant": "r2",
+      "target": "还",
+      "choices": [
+        "return",
+        "give back",
+        "still"
+      ],
+      "output": "return",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.19,
+      "error": null
+    },
+    {
+      "id": "amb-028-b",
+      "variant": "r0",
+      "target": "还",
+      "choices": [
+        "still",
+        "return"
+      ],
+      "output": "still",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 58.74,
+      "error": null
+    },
+    {
+      "id": "amb-028-b",
+      "variant": "r2",
+      "target": "还",
+      "choices": [
+        "still",
+        "return"
+      ],
+      "output": "still",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 78.4,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "r0",
+      "target": "差",
+      "choices": [
+        "about",
+        "almost",
+        "differ"
+      ],
+      "output": "about",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 68.37,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "r2",
+      "target": "差",
+      "choices": [
+        "about",
+        "almost",
+        "differ"
+      ],
+      "output": "almost",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 87.15,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "r0",
+      "target": "差",
+      "choices": [
+        "differ",
+        "different",
+        "almost"
+      ],
+      "output": "different",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 63.88,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "r2",
+      "target": "差",
+      "choices": [
+        "differ",
+        "different",
+        "almost"
+      ],
+      "output": "different",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 77.8,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "r0",
+      "target": "好",
+      "choices": [
+        "ready",
+        "done",
+        "easy"
+      ],
+      "output": "done",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 61.28,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "r2",
+      "target": "好",
+      "choices": [
+        "ready",
+        "done",
+        "easy"
+      ],
+      "output": "ready",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.97,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "r0",
+      "target": "好",
+      "choices": [
+        "easy",
+        "ready"
+      ],
+      "output": "easy",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 64.12,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "r2",
+      "target": "好",
+      "choices": [
+        "easy",
+        "ready"
+      ],
+      "output": "easy",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.85,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "r0",
+      "target": "大",
+      "choices": [
+        "large",
+        "big",
+        "heavy rain"
+      ],
+      "output": "大",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 59.0,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "r2",
+      "target": "大",
+      "choices": [
+        "large",
+        "big",
+        "heavy rain"
+      ],
+      "output": "large",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 73.37,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "r0",
+      "target": "大",
+      "choices": [
+        "heavy",
+        "large model"
+      ],
+      "output": "large model",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 64.13,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "r2",
+      "target": "大",
+      "choices": [
+        "heavy",
+        "large model"
+      ],
+      "output": "heavy",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.55,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "r0",
+      "target": "小",
+      "choices": [
+        "quietly",
+        "softly",
+        "small"
+      ],
+      "output": "small",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 58.52,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "r2",
+      "target": "小",
+      "choices": [
+        "quietly",
+        "softly",
+        "small"
+      ],
+      "output": "quietly",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 79.61,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "r0",
+      "target": "小",
+      "choices": [
+        "small",
+        "quietly"
+      ],
+      "output": "小",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 59.72,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "r2",
+      "target": "小",
+      "choices": [
+        "small",
+        "quietly"
+      ],
+      "output": "small",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.29,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "r0",
+      "target": "新",
+      "choices": [
+        "news",
+        "new"
+      ],
+      "output": "new",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 58.26,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "r2",
+      "target": "新",
+      "choices": [
+        "news",
+        "new"
+      ],
+      "output": "news",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.49,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "r0",
+      "target": "新",
+      "choices": [
+        "new",
+        "news"
+      ],
+      "output": "new",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 59.06,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "r2",
+      "target": "新",
+      "choices": [
+        "new",
+        "news"
+      ],
+      "output": "new",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.58,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "r0",
+      "target": "老",
+      "choices": [
+        "old",
+        "long-established",
+        "always"
+      ],
+      "output": "old",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 59.48,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "r2",
+      "target": "老",
+      "choices": [
+        "old",
+        "long-established",
+        "always"
+      ],
+      "output": "old",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.49,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "r0",
+      "target": "老",
+      "choices": [
+        "always",
+        "old"
+      ],
+      "output": "old",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 58.34,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "r2",
+      "target": "老",
+      "choices": [
+        "always",
+        "old"
+      ],
+      "output": "old",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 74.59,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "r0",
+      "target": "快",
+      "choices": [
+        "fast",
+        "soon"
+      ],
+      "output": "fast",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 60.41,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "r2",
+      "target": "快",
+      "choices": [
+        "fast",
+        "soon"
+      ],
+      "output": "fast",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.14,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "r0",
+      "target": "快",
+      "choices": [
+        "soon",
+        "fast"
+      ],
+      "output": "fast",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 61.52,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "r2",
+      "target": "快",
+      "choices": [
+        "soon",
+        "fast"
+      ],
+      "output": "fast",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 74.53,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "r0",
+      "target": "轻",
+      "choices": [
+        "light",
+        "gently"
+      ],
+      "output": "light",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 58.5,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "r2",
+      "target": "轻",
+      "choices": [
+        "light",
+        "gently"
+      ],
+      "output": "light",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 77.74,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "r0",
+      "target": "轻",
+      "choices": [
+        "gently",
+        "softly",
+        "light"
+      ],
+      "output": "轻",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 60.53,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "r2",
+      "target": "轻",
+      "choices": [
+        "gently",
+        "softly",
+        "light"
+      ],
+      "output": "请【轻】地关门",
+      "status": "incorrect",
+      "reason": "not_an_option",
+      "latency_ms": 105.86,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "r0",
+      "target": "重",
+      "choices": [
+        "heavy",
+        "again"
+      ],
+      "output": "heavy",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 59.77,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "r2",
+      "target": "重",
+      "choices": [
+        "heavy",
+        "again"
+      ],
+      "output": "heavy",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.34,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "r0",
+      "target": "重",
+      "choices": [
+        "again",
+        "re",
+        "heavy"
+      ],
+      "output": "re",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 62.15,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "r2",
+      "target": "重",
+      "choices": [
+        "again",
+        "re",
+        "heavy"
+      ],
+      "output": "again",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.25,
+      "error": null
+    },
+    {
+      "id": "amb-038-a",
+      "variant": "r0",
+      "target": "留",
+      "choices": [
+        "stay",
+        "leave a message"
+      ],
+      "output": "stay",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 61.35,
+      "error": null
+    },
+    {
+      "id": "amb-038-a",
+      "variant": "r2",
+      "target": "留",
+      "choices": [
+        "stay",
+        "leave a message"
+      ],
+      "output": "stay",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 74.95,
+      "error": null
+    },
+    {
+      "id": "amb-038-b",
+      "variant": "r0",
+      "target": "留",
+      "choices": [
+        "leave",
+        "stay"
+      ],
+      "output": "stay",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 60.86,
+      "error": null
+    },
+    {
+      "id": "amb-038-b",
+      "variant": "r2",
+      "target": "留",
+      "choices": [
+        "leave",
+        "stay"
+      ],
+      "output": "stay",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 76.68,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "r0",
+      "target": "退",
+      "choices": [
+        "return",
+        "step back"
+      ],
+      "output": "return",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 59.55,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "r2",
+      "target": "退",
+      "choices": [
+        "return",
+        "step back"
+      ],
+      "output": "return",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 77.07,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "r0",
+      "target": "退",
+      "choices": [
+        "step back",
+        "move back",
+        "return goods"
+      ],
+      "output": "step back",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 80.82,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "r2",
+      "target": "退",
+      "choices": [
+        "step back",
+        "move back",
+        "return goods"
+      ],
+      "output": "step back",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 81.94,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "r0",
+      "target": "升",
+      "choices": [
+        "rise",
+        "increase",
+        "promoted"
+      ],
+      "output": "rise",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 60.56,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "r2",
+      "target": "升",
+      "choices": [
+        "rise",
+        "increase",
+        "promoted"
+      ],
+      "output": "rise",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 75.72,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "r0",
+      "target": "升",
+      "choices": [
+        "promoted",
+        "rise"
+      ],
+      "output": "rise",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 61.02,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "r2",
+      "target": "升",
+      "choices": [
+        "promoted",
+        "rise"
+      ],
+      "output": "promoted",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 85.97,
+      "error": null
+    }
+  ]
+}

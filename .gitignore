@@ -13,6 +13,7 @@ Glint.xcodeproj/xcuserdata/
 Glint.xcodeproj/project.xcworkspace/xcuserdata/
 Tools/ModelLab/.venv/
 Tools/ModelLab/models/
+__pycache__/
 Tools/ModelLab/results/*
 !Tools/ModelLab/results/.gitkeep
 !Tools/ModelLab/results/*.json

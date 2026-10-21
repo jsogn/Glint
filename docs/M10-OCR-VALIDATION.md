@@ -1,5 +1,8 @@
 # Glint M10 OCR Validation
 
+> Historical document. OCR was removed from Glint on 2026-10-21 together with
+> ScreenCaptureKit, Apple Vision, ONNX Runtime, PP-OCR assets, and OCRLab.
+
 - 日期：2026-10-20
 - 目标：在不替换苹果输入法的前提下，稳定读取当前高亮候选
 - 结论：默认使用 Apple Vision，PP-OCRv6 small 作为按需安装插件

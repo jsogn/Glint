@@ -177,39 +177,6 @@ final class PluginCatalogServiceTests: XCTestCase {
         XCTAssertTrue(second.plugins.isEmpty)
     }
 
-    func testLegacyOCRArchiveRuntimeIsRejected() async {
-        let manifest = PluginManifest(
-            id: "test-ocr",
-            type: .ocr,
-            name: "Test OCR",
-            version: "1.0",
-            runtime: "onnxruntime",
-            capabilities: ["candidate"],
-            languages: ["zh-Hans"],
-            sizeBytes: 0,
-            sha256: "test",
-            url: URL(string: "https://example.invalid/test-ocr.zip")!,
-            license: "MIT",
-            minRAMBytes: 0,
-            quality: "test",
-            recommended: false
-        )
-        let service = PluginCatalogService(
-            manager: PluginManager(
-                baseDirectory: FileManager.default.temporaryDirectory
-                    .appendingPathComponent("GlintOCRReject-\(UUID().uuidString)")
-            )
-        )
-        do {
-            _ = try await service.install(manifest)
-            XCTFail("legacy OCR archive runtime should be rejected")
-        } catch let error as PluginCatalogError {
-            XCTAssertEqual(error, .unsupportedRuntime)
-        } catch {
-            XCTFail("unexpected error: \(error)")
-        }
-    }
-
     func testRemovingMissingPluginThrows() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("GlintMissingPlugin-\(UUID().uuidString)")
@@ -226,78 +193,6 @@ final class PluginCatalogServiceTests: XCTestCase {
         } catch {
             XCTFail("Unexpected error: \(error)")
         }
-    }
-
-    func testOCRModelPrefersMirrorAndFallsBackToOfficialSource() async throws {
-        let modelData = Data("official-ocr-model".utf8)
-        let digest = SHA256.hash(data: modelData)
-            .map { String(format: "%02x", $0) }
-            .joined()
-        let manifest = PluginManifest(
-            id: "test-hf-ocr",
-            type: .ocr,
-            name: "Test HF OCR",
-            version: "1.0",
-            runtime: "huggingface-onnx",
-            capabilities: ["candidate"],
-            languages: ["zh-Hans"],
-            sizeBytes: Int64(modelData.count),
-            sha256: digest,
-            url: URL(
-                string: "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx"
-            )!,
-            license: "Apache-2.0",
-            minRAMBytes: 0,
-            quality: "test",
-            recommended: false,
-            revision: "test-revision",
-            artifactFile: "inference.onnx"
-        )
-
-        let requestedHosts = LockedStringArray()
-        StubURLProtocol.handler = { request in
-            guard let url = request.url,
-                  let host = url.host else {
-                return nil
-            }
-            requestedHosts.append(host)
-            let status = host == "hf-mirror.com" ? 503 : 200
-            return (
-                HTTPURLResponse(
-                    url: url,
-                    statusCode: status,
-                    httpVersion: nil,
-                    headerFields: nil
-                )!,
-                status == 200 ? modelData : Data()
-            )
-        }
-        defer { StubURLProtocol.handler = nil }
-
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.protocolClasses = [StubURLProtocol.self]
-        let session = URLSession(configuration: configuration)
-        let root = FileManager.default.temporaryDirectory
-            .appendingPathComponent("GlintHFOCR-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: root) }
-        let manager = PluginManager(baseDirectory: root)
-        let service = PluginCatalogService(manager: manager, session: session)
-
-        _ = try await service.install(manifest)
-        let pluginDirectory = await manager.pluginDirectory(for: manifest.id)
-        XCTAssertEqual(
-            try Data(contentsOf: pluginDirectory.appendingPathComponent(
-                "model",
-                isDirectory: true
-            ).appendingPathComponent(
-                "model.onnx"
-            )),
-            modelData
-        )
-        XCTAssertEqual(Array(requestedHosts.values.prefix(2)), [
-            "hf-mirror.com",
-            "huggingface.co",
-        ])
     }
 
     private func createArchive(from source: URL, at archive: URL) throws {
@@ -341,21 +236,4 @@ private final class StubURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
-}
-
-private final class LockedStringArray: @unchecked Sendable {
-    private let lock = NSLock()
-    private var storage: [String] = []
-
-    func append(_ value: String) {
-        lock.lock()
-        defer { lock.unlock() }
-        storage.append(value)
-    }
-
-    var values: [String] {
-        lock.lock()
-        defer { lock.unlock() }
-        return storage
-    }
 }

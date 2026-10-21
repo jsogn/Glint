@@ -11,8 +11,7 @@
 
 Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构优先保证：
 
-1. 原生 macOS 集成：Accessibility、TIS、AppKit；ScreenCaptureKit 与 Vision
-   保留给后续上下文能力。
+1. 原生 macOS 集成：Accessibility、TIS、AppKit；候选识别不截图、不执行 OCR。
 2. 全局默认生效，但只读取当前输入法候选，不读文本正文。
 3. 词典和翻译模型都是可下载插件，模型不进入安装包。
 4. 翻译运行时可以替换，但插件不执行任意第三方代码。
@@ -29,7 +28,7 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 | HUD | AppKit `NSPanel` + SwiftUI `NSHostingView` |
 | UI | 系统 AppKit/SwiftUI 控件，不引入第三方 UI 组件库 |
 | 候选读取 | Accessibility `InputMethodCandidateList` |
-| 截取 / OCR | ScreenCaptureKit + Vision，保留给后续上下文能力 |
+| 上下文 | Accessibility `AXStringForRange`，仅读取有界前后文 |
 | 输入状态 | Carbon TIS + Accessibility API |
 | 词典 | SQLite + GRDB，CC-CEDICT，ECDICT 作为反查/词频辅助 |
 | 轻量翻译 | CTranslate2 int8（OPUS-MT） |
@@ -66,8 +65,6 @@ Glint/
 │   ├── GlintMac/
 │   │   ├── Package.swift
 │   │   ├── Sources/GlintMac/
-│   │   │   ├── Capture/
-│   │   │   ├── OCR/
 │   │   │   ├── Accessibility/
 │   │   │   └── InputSource/
 │   │   └── Tests/GlintMacTests/
@@ -141,12 +138,12 @@ Glint/
 
 ### GlintCore
 
-纯 Swift，不依赖 AppKit、ScreenCaptureKit 或数据库。
+纯 Swift，不依赖 AppKit 或数据库。
 
 包含：
 
 - `Candidate`、`CandidateKind`、`EnglishResult`、`TranslationMode`；
-- `DictionaryEngine`、`TranslationEngine`、`CaptureService`、`OCRService` 协议；
+- `DictionaryEngine`、`TranslationEngine` 协议；
 - `SmartRouter`：词典/模型/不显示的路由；
 - `AppPolicy`：MVP 固定 `.all`，后续白名单/黑名单；
 - 公共错误类型和插件 manifest 的领域模型。
@@ -159,7 +156,7 @@ Glint/
 - Accessibility 光标/控件 frame；
 - Accessibility 输入法候选读取；
 - 安全输入判断；
-- ScreenCaptureKit、Vision OCR 和蓝色胶囊检测保留给后续上下文能力。
+- 从标准文本控件读取有界上下文，不截图。
 
 不包含 UI、插件下载或词典数据。
 
@@ -230,7 +227,7 @@ GlintUI / GlintMac / GlintDictionary / GlintInference / GlintPlugins
   → GlintCore
 
 GlintCore
-  → 无 AppKit / ScreenCaptureKit / GRDB / MLX 依赖
+  → 无 AppKit / GRDB / MLX 依赖
 ```
 
 规则：
@@ -276,7 +273,7 @@ MonitoringController → @Observable AppState → MainWindowView
 
 - `MonitoringController`：主线程上的轻量调度器；定时/事件触发，单飞（single-flight）。
 - `AXCandidateReader`：候选识别主路径，缓存应用与候选列表节点。
-- `CandidateCapture` / `OCRService`：保留给后续上下文能力，当前不参与候选识别。
+- `AXCandidateReader`：候选识别唯一主路径。
 - `TranslationPipeline`：actor，取消旧请求，避免旧结果覆盖新候选。
 - `PluginManager`/`ModelDownloader`：actor；下载状态通过 AsyncStream 发布。
 - UI：`@MainActor`；只接收不可变的展示状态。
@@ -339,8 +336,7 @@ MonitoringController → @Observable AppState → MainWindowView
 
 ### 集成测试
 
-- 用 `Resources/Samples` 的候选栏截图测试 OCR/蓝色胶囊；
-- 用 mock `CaptureService` 测试 MonitoringController；
+- 用 AX 候选快照和 frame 数据测试 MonitoringController；
 - 用 mock `TranslationEngine` 测试 HUD 显示/隐藏；
 - 主窗口侧栏、插件下载状态、权限提示的 UI 测试。
 
@@ -354,8 +350,7 @@ MonitoringController → @Observable AppState → MainWindowView
 
 ## 13. ADR 列表
 
-- ADR-0001：不替换输入法，采用候选栏读取 + HUD；当前输入候选由 AX 读取，
-  原 OCR 路径保留给后续上下文能力。
+- ADR-0001：不替换输入法，采用候选栏读取 + HUD；输入候选由 AX 读取。
 - ADR-0002：Swift 6 + AppKit/SwiftUI 混合。
 - ADR-0003：插件模型作为数据，固定 runtime adapter。
 - ADR-0004：AppKit 生命周期承载菜单栏 + 主窗口 + HUD。
@@ -368,4 +363,3 @@ MonitoringController → @Observable AppState → MainWindowView
 2. CTranslate2 第一版是否直接 in-process 链接，还是先做独立 XPC 推理服务？
 3. 模型下载托管用 GitHub Releases、自建 CDN，还是模型平台直链？
 4. 主窗口是否需要在第一版支持多语言 UI（中文/英文）？
-5. 是否现在就把 demo 的 `ScreenCapture`/`CandidateDetector` 迁到 `GlintMac`，还是等 M1 完成后再迁？

@@ -1,5 +1,3 @@
-import AppKit
-import ApplicationServices
 import Darwin
 import Foundation
 import GlintCore
@@ -11,25 +9,7 @@ import GlintPlugins
 enum SelfCheck {
     static func run() -> Never {
         Task {
-            print("screenRecording=\(CGPreflightScreenCaptureAccess())")
             print("accessibility=\(FocusMonitor.isAccessibilityTrusted())")
-            let ocrPreferences = OCRRecognitionPreferences.load()
-            let ocrResolution = await OCRPluginLoader.resolve(
-                preferences: ocrPreferences,
-                manager: PluginManager()
-            )
-            let ocrService = OCRService(
-                configuration: ocrResolution.configuration
-            )
-            let ocrWarning = ocrResolution.warning
-                ?? ocrService.validateConfiguration()
-            print(
-                "ocr strategy=\(ocrPreferences.strategy.rawValue) "
-                    + "primary=\(ocrResolution.configuration.primaryModel.id) "
-                    + "backup=\(ocrResolution.configuration.backupModel?.id ?? "<none>") "
-                    + "ppocrAvailable=\(ocrService.isPPOCRAvailable) "
-                    + "warning=\(ocrWarning ?? "<none>")"
-            )
 
             let dictionary = DictionaryRouter(routes: [
                 DictionaryRoute(id: "dict-cedict", priority: 0, engine: CedictDictionary()),
@@ -113,84 +93,9 @@ enum SelfCheck {
                 print("mlx=<model not installed>")
             }
 
-            if ProcessInfo.processInfo.environment["GLINT_SCAN_LIVE"] == "1",
-               let snapshot = FocusMonitor().snapshot(),
-               let caret = snapshot.caretRect ?? snapshot.elementFrame {
-                let region = MonitoringController.captureRegion(
-                    caret: caret,
-                    elementFrame: snapshot.elementFrame
-                )
-                do {
-                    let image = try await CandidateCapture().capture(region: region)
-                    let anchor = CGPoint(
-                        x: (caret.midX - region.x) * CGFloat(image.width)
-                            / CGFloat(region.width),
-                        y: (caret.midY - region.y) * CGFloat(image.height)
-                            / CGFloat(region.height)
-                    )
-                    if let detection = ocrService.detect(in: image, anchor: anchor) {
-                        print(
-                            "live candidate=\(detection.text) "
-                                + "confidence=\(detection.confidence) "
-                                + "caret=\(caret) region=\(region.cgRect) "
-                                + "highlight=\(detection.highlightRect)"
-                        )
-                    } else {
-                        print(
-                            "live candidate=<not detected> "
-                                + "caret=\(caret) region=\(region.cgRect)"
-                        )
-                    }
-                } catch {
-                    print("live capture=<\(error.localizedDescription)>")
-                }
-            }
-
-            if let image = loadSampleImage() {
-                if let detection = ocrService.detect(in: image) {
-                    print("ocr candidate=\(detection.text) confidence=\(detection.confidence)")
-                    let candidate = Candidate(
-                        text: detection.text,
-                        kind: CandidateClassifier.classify(detection.text),
-                        confidence: Double(detection.confidence)
-                    )
-                    if let result = try? await dictionary.lookup(candidate) {
-                        print("ocr dictionary=\(result.displayText)")
-                    }
-                } else {
-                    print("ocr=<not detected>")
-                }
-            } else {
-                print("ocr sample=<not found>")
-            }
-
             exit(0)
         }
         RunLoop.main.run()
         exit(1)
-    }
-
-    private static func loadSampleImage() -> CGImage? {
-        let candidates = [
-            Bundle.main.url(
-                forResource: "sample-candidate-bar",
-                withExtension: "png",
-                subdirectory: "Samples"
-            ),
-            Bundle.main.url(
-                forResource: "sample-candidate-bar",
-                withExtension: "png",
-                subdirectory: "Resources/Samples"
-            ),
-            URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("Resources/Samples/sample-candidate-bar.png"),
-        ]
-        for url in candidates.compactMap({ $0 }) {
-            if let image = NSImage(contentsOf: url),
-               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                return cgImage
-            }
-        }
-        return nil
     }
 }

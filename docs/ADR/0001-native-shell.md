@@ -11,9 +11,8 @@ for settings and HUD content.
 
 ## Context
 
-The product depends on ScreenCaptureKit, Vision, Accessibility, TIS, a
-non-activating NSPanel, global TCC permissions, and notarization. These are
-first-class macOS APIs.
+The product depends on Accessibility, TIS, a non-activating NSPanel, TCC
+permission handling, and notarization. These are first-class macOS APIs.
 
 ## Consequences
 

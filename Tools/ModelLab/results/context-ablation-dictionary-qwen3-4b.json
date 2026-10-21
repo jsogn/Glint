@@ -1,0 +1,4357 @@
+{
+  "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "timestamp": "2026-10-21T12:33:31.560949+00:00",
+  "case_count": 80,
+  "variant_count": 2,
+  "choice_source": "Tools/ModelLab/results/context-candidate-bank.json",
+  "gold_source": "Tools/ModelLab/eval/context_choice_gold.json",
+  "load_seconds": 3.75,
+  "warmup_seconds": 0.26,
+  "peak_rss_mb": 2714.4,
+  "summary": {
+    "r0": {
+      "case_count": 80,
+      "acceptable": 21,
+      "acceptable_rate": 0.2625,
+      "correct_option_available": 43,
+      "conditional_acceptable_rate": 0.4883720930232558,
+      "invalid": 0,
+      "errors": 0,
+      "p50_latency_ms": 211.7,
+      "p95_latency_ms": 256.78,
+      "paired_vs_r0": {
+        "wins": 0,
+        "losses": 0,
+        "ties": 40
+      }
+    },
+    "r2": {
+      "case_count": 80,
+      "acceptable": 39,
+      "acceptable_rate": 0.4875,
+      "correct_option_available": 43,
+      "conditional_acceptable_rate": 0.9069767441860465,
+      "invalid": 0,
+      "errors": 0,
+      "p50_latency_ms": 229.42,
+      "p95_latency_ms": 264.09,
+      "paired_vs_r0": {
+        "wins": 16,
+        "losses": 0,
+        "ties": 24
+      }
+    },
+    "coverage": {
+      "case_count": 80,
+      "eligible_two_plus": 80,
+      "correct_option_available": 43
+    }
+  },
+  "rows": [
+    {
+      "id": "amb-001-a",
+      "variant": "r0",
+      "target": "方便",
+      "choices": [
+        "(euphemism) to relieve oneself",
+        "convenient",
+        "having money to spare",
+        "suitable",
+        "to facilitate",
+        "to make things easy",
+        "appropriate",
+        "available"
+      ],
+      "accepted_choices": [
+        "instant",
+        "ready-to-eat",
+        "quick-prep"
+      ],
+      "output": "B",
+      "selected_choice": "convenient",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 198.42,
+      "error": null
+    },
+    {
+      "id": "amb-001-a",
+      "variant": "r2",
+      "target": "方便",
+      "choices": [
+        "(euphemism) to relieve oneself",
+        "convenient",
+        "having money to spare",
+        "suitable",
+        "to facilitate",
+        "to make things easy",
+        "appropriate",
+        "available"
+      ],
+      "accepted_choices": [
+        "instant",
+        "ready-to-eat",
+        "quick-prep"
+      ],
+      "output": "B",
+      "selected_choice": "convenient",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 199.68,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "r0",
+      "target": "方便",
+      "choices": [
+        "(euphemism) to relieve oneself",
+        "convenient",
+        "having money to spare",
+        "suitable",
+        "to facilitate",
+        "to make things easy",
+        "appropriate",
+        "available"
+      ],
+      "accepted_choices": [
+        "convenient",
+        "available",
+        "free"
+      ],
+      "output": "B",
+      "selected_choice": "convenient",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 196.22,
+      "error": null
+    },
+    {
+      "id": "amb-001-b",
+      "variant": "r2",
+      "target": "方便",
+      "choices": [
+        "(euphemism) to relieve oneself",
+        "convenient",
+        "having money to spare",
+        "suitable",
+        "to facilitate",
+        "to make things easy",
+        "appropriate",
+        "available"
+      ],
+      "accepted_choices": [
+        "convenient",
+        "available",
+        "free"
+      ],
+      "output": "H",
+      "selected_choice": "available",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 197.78,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "r0",
+      "target": "处理",
+      "choices": [
+        "deal with",
+        "handle",
+        "process",
+        "to deal with",
+        "to handle",
+        "to process",
+        "to punish",
+        "to sell at reduced prices"
+      ],
+      "accepted_choices": [
+        "process",
+        "deal with",
+        "handle",
+        "to deal with",
+        "to handle",
+        "to process",
+        "tackle",
+        "manage",
+        "analyze"
+      ],
+      "output": "C",
+      "selected_choice": "process",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 207.41,
+      "error": null
+    },
+    {
+      "id": "amb-002-a",
+      "variant": "r2",
+      "target": "处理",
+      "choices": [
+        "deal with",
+        "handle",
+        "process",
+        "to deal with",
+        "to handle",
+        "to process",
+        "to punish",
+        "to sell at reduced prices"
+      ],
+      "accepted_choices": [
+        "process",
+        "deal with",
+        "handle",
+        "to deal with",
+        "to handle",
+        "to process",
+        "tackle",
+        "manage",
+        "analyze"
+      ],
+      "output": "C",
+      "selected_choice": "process",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 208.2,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "r0",
+      "target": "处理",
+      "choices": [
+        "deal with",
+        "handle",
+        "process",
+        "to deal with",
+        "to handle",
+        "to process",
+        "to punish",
+        "to sell at reduced prices"
+      ],
+      "accepted_choices": [
+        "handle",
+        "deal with",
+        "to handle",
+        "to deal with",
+        "manage",
+        "tackle",
+        "address"
+      ],
+      "output": "C",
+      "selected_choice": "process",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 200.05,
+      "error": null
+    },
+    {
+      "id": "amb-002-b",
+      "variant": "r2",
+      "target": "处理",
+      "choices": [
+        "deal with",
+        "handle",
+        "process",
+        "to deal with",
+        "to handle",
+        "to process",
+        "to punish",
+        "to sell at reduced prices"
+      ],
+      "accepted_choices": [
+        "handle",
+        "deal with",
+        "to handle",
+        "to deal with",
+        "manage",
+        "tackle",
+        "address"
+      ],
+      "output": "B",
+      "selected_choice": "handle",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 201.05,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "r0",
+      "target": "发布",
+      "choices": [
+        "release",
+        "to announce",
+        "to distribute",
+        "to issue",
+        "to release",
+        "issuance",
+        "issue",
+        "issued"
+      ],
+      "accepted_choices": [
+        "release",
+        "to release",
+        "launch",
+        "issue"
+      ],
+      "output": "A",
+      "selected_choice": "release",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 196.39,
+      "error": null
+    },
+    {
+      "id": "amb-003-a",
+      "variant": "r2",
+      "target": "发布",
+      "choices": [
+        "release",
+        "to announce",
+        "to distribute",
+        "to issue",
+        "to release",
+        "issuance",
+        "issue",
+        "issued"
+      ],
+      "accepted_choices": [
+        "release",
+        "to release",
+        "launch",
+        "issue"
+      ],
+      "output": "A",
+      "selected_choice": "release",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 197.32,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "r0",
+      "target": "发布",
+      "choices": [
+        "release",
+        "to announce",
+        "to distribute",
+        "to issue",
+        "to release",
+        "issuance",
+        "issue",
+        "issued"
+      ],
+      "accepted_choices": [
+        "post",
+        "publish",
+        "share"
+      ],
+      "output": "A",
+      "selected_choice": "release",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 197.02,
+      "error": null
+    },
+    {
+      "id": "amb-003-b",
+      "variant": "r2",
+      "target": "发布",
+      "choices": [
+        "release",
+        "to announce",
+        "to distribute",
+        "to issue",
+        "to release",
+        "issuance",
+        "issue",
+        "issued"
+      ],
+      "accepted_choices": [
+        "post",
+        "publish",
+        "share"
+      ],
+      "output": "A",
+      "selected_choice": "release",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 195.3,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "r0",
+      "target": "落地",
+      "choices": [
+        "implement",
+        "(fig.) to be implemented",
+        "(of a baby) to be born",
+        "(of a plane) to land",
+        "to be put into practice",
+        "to be set on the ground",
+        "to fall to the ground",
+        "to reach to the ground"
+      ],
+      "accepted_choices": [
+        "implemented",
+        "rolled out",
+        "implement",
+        "(fig.) to be implemented",
+        "to be put into practice",
+        "put into action",
+        "deployed",
+        "put into practice"
+      ],
+      "output": "D",
+      "selected_choice": "(of a plane) to land",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 235.8,
+      "error": null
+    },
+    {
+      "id": "amb-004-a",
+      "variant": "r2",
+      "target": "落地",
+      "choices": [
+        "implement",
+        "(fig.) to be implemented",
+        "(of a baby) to be born",
+        "(of a plane) to land",
+        "to be put into practice",
+        "to be set on the ground",
+        "to fall to the ground",
+        "to reach to the ground"
+      ],
+      "accepted_choices": [
+        "implemented",
+        "rolled out",
+        "implement",
+        "(fig.) to be implemented",
+        "to be put into practice",
+        "put into action",
+        "deployed",
+        "put into practice"
+      ],
+      "output": "A",
+      "selected_choice": "implement",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 236.48,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "r0",
+      "target": "落地",
+      "choices": [
+        "implement",
+        "(fig.) to be implemented",
+        "(of a baby) to be born",
+        "(of a plane) to land",
+        "to be put into practice",
+        "to be set on the ground",
+        "to fall to the ground",
+        "to reach to the ground"
+      ],
+      "accepted_choices": [
+        "land",
+        "touch down",
+        "(of a plane) to land",
+        "landing",
+        "touchdown"
+      ],
+      "output": "D",
+      "selected_choice": "(of a plane) to land",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 238.81,
+      "error": null
+    },
+    {
+      "id": "amb-004-b",
+      "variant": "r2",
+      "target": "落地",
+      "choices": [
+        "implement",
+        "(fig.) to be implemented",
+        "(of a baby) to be born",
+        "(of a plane) to land",
+        "to be put into practice",
+        "to be set on the ground",
+        "to fall to the ground",
+        "to reach to the ground"
+      ],
+      "accepted_choices": [
+        "land",
+        "touch down",
+        "(of a plane) to land",
+        "landing",
+        "touchdown"
+      ],
+      "output": "D",
+      "selected_choice": "(of a plane) to land",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 239.57,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "r0",
+      "target": "运行",
+      "choices": [
+        "function",
+        "operate",
+        "run",
+        "(fig.) to function",
+        "(of a computer) to run",
+        "(of a train service etc) to operate",
+        "(of celestial bodies etc) to move along one's course",
+        "to be in operation"
+      ],
+      "accepted_choices": [
+        "run",
+        "execute",
+        "launch"
+      ],
+      "output": "C",
+      "selected_choice": "run",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 232.53,
+      "error": null
+    },
+    {
+      "id": "amb-005-a",
+      "variant": "r2",
+      "target": "运行",
+      "choices": [
+        "function",
+        "operate",
+        "run",
+        "(fig.) to function",
+        "(of a computer) to run",
+        "(of a train service etc) to operate",
+        "(of celestial bodies etc) to move along one's course",
+        "to be in operation"
+      ],
+      "accepted_choices": [
+        "run",
+        "execute",
+        "launch"
+      ],
+      "output": "C",
+      "selected_choice": "run",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 241.85,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "r0",
+      "target": "运行",
+      "choices": [
+        "function",
+        "operate",
+        "run",
+        "(fig.) to function",
+        "(of a computer) to run",
+        "(of a train service etc) to operate",
+        "(of celestial bodies etc) to move along one's course",
+        "to be in operation"
+      ],
+      "accepted_choices": [
+        "operating",
+        "operation",
+        "running"
+      ],
+      "output": "C",
+      "selected_choice": "run",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 244.42,
+      "error": null
+    },
+    {
+      "id": "amb-005-b",
+      "variant": "r2",
+      "target": "运行",
+      "choices": [
+        "function",
+        "operate",
+        "run",
+        "(fig.) to function",
+        "(of a computer) to run",
+        "(of a train service etc) to operate",
+        "(of celestial bodies etc) to move along one's course",
+        "to be in operation"
+      ],
+      "accepted_choices": [
+        "operating",
+        "operation",
+        "running"
+      ],
+      "output": "C",
+      "selected_choice": "run",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 238.56,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "r0",
+      "target": "看",
+      "choices": [
+        "(after a verb) to give it a try",
+        "to call on",
+        "to consider",
+        "to depend on",
+        "to feel (that)",
+        "to guard",
+        "to look after",
+        "to look at"
+      ],
+      "accepted_choices": [
+        "see",
+        "get examined",
+        "examine",
+        "to examine"
+      ],
+      "output": "H",
+      "selected_choice": "to look at",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 200.22,
+      "error": null
+    },
+    {
+      "id": "amb-006-a",
+      "variant": "r2",
+      "target": "看",
+      "choices": [
+        "(after a verb) to give it a try",
+        "to call on",
+        "to consider",
+        "to depend on",
+        "to feel (that)",
+        "to guard",
+        "to look after",
+        "to look at"
+      ],
+      "accepted_choices": [
+        "see",
+        "get examined",
+        "examine",
+        "to examine"
+      ],
+      "output": "H",
+      "selected_choice": "to look at",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 244.57,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "r0",
+      "target": "看",
+      "choices": [
+        "(after a verb) to give it a try",
+        "to call on",
+        "to consider",
+        "to depend on",
+        "to feel (that)",
+        "to guard",
+        "to look after",
+        "to look at"
+      ],
+      "accepted_choices": [
+        "read",
+        "reading"
+      ],
+      "output": "H",
+      "selected_choice": "to look at",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 201.8,
+      "error": null
+    },
+    {
+      "id": "amb-006-b",
+      "variant": "r2",
+      "target": "看",
+      "choices": [
+        "(after a verb) to give it a try",
+        "to call on",
+        "to consider",
+        "to depend on",
+        "to feel (that)",
+        "to guard",
+        "to look after",
+        "to look at"
+      ],
+      "accepted_choices": [
+        "read",
+        "reading"
+      ],
+      "output": "H",
+      "selected_choice": "to look at",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 234.54,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "r0",
+      "target": "开",
+      "choices": [
+        "(directional complement) away",
+        "(of ships, vehicles, troops etc) to start",
+        "carat (gold)",
+        "off",
+        "to boil",
+        "to open (transitive or intransitive)",
+        "to operate",
+        "to put in operation"
+      ],
+      "accepted_choices": [
+        "drive",
+        "drives",
+        "to drive",
+        "to operate"
+      ],
+      "output": "F",
+      "selected_choice": "to open (transitive or intransitive)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 237.85,
+      "error": null
+    },
+    {
+      "id": "amb-007-a",
+      "variant": "r2",
+      "target": "开",
+      "choices": [
+        "(directional complement) away",
+        "(of ships, vehicles, troops etc) to start",
+        "carat (gold)",
+        "off",
+        "to boil",
+        "to open (transitive or intransitive)",
+        "to operate",
+        "to put in operation"
+      ],
+      "accepted_choices": [
+        "drive",
+        "drives",
+        "to drive",
+        "to operate"
+      ],
+      "output": "G",
+      "selected_choice": "to operate",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 240.18,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "r0",
+      "target": "开",
+      "choices": [
+        "(directional complement) away",
+        "(of ships, vehicles, troops etc) to start",
+        "carat (gold)",
+        "off",
+        "to boil",
+        "to open (transitive or intransitive)",
+        "to operate",
+        "to put in operation"
+      ],
+      "accepted_choices": [
+        "turn on",
+        "switch on"
+      ],
+      "output": "F",
+      "selected_choice": "to open (transitive or intransitive)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 234.76,
+      "error": null
+    },
+    {
+      "id": "amb-007-b",
+      "variant": "r2",
+      "target": "开",
+      "choices": [
+        "(directional complement) away",
+        "(of ships, vehicles, troops etc) to start",
+        "carat (gold)",
+        "off",
+        "to boil",
+        "to open (transitive or intransitive)",
+        "to operate",
+        "to put in operation"
+      ],
+      "accepted_choices": [
+        "turn on",
+        "switch on"
+      ],
+      "output": "F",
+      "selected_choice": "to open (transitive or intransitive)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 238.84,
+      "error": null
+    },
+    {
+      "id": "amb-008-a",
+      "variant": "r0",
+      "target": "打",
+      "choices": [
+        "(coll.) from",
+        "(loanword) dozen",
+        "since",
+        "Taiwan pr. [da3]",
+        "to fight",
+        "to hit",
+        "to strike",
+        "dozen"
+      ],
+      "accepted_choices": [
+        "take",
+        "ride",
+        "hitch",
+        "take a cab",
+        "ride a cab",
+        "hail a cab"
+      ],
+      "output": "F",
+      "selected_choice": "to hit",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 196.02,
+      "error": null
+    },
+    {
+      "id": "amb-008-a",
+      "variant": "r2",
+      "target": "打",
+      "choices": [
+        "(coll.) from",
+        "(loanword) dozen",
+        "since",
+        "Taiwan pr. [da3]",
+        "to fight",
+        "to hit",
+        "to strike",
+        "dozen"
+      ],
+      "accepted_choices": [
+        "take",
+        "ride",
+        "hitch",
+        "take a cab",
+        "ride a cab",
+        "hail a cab"
+      ],
+      "output": "D",
+      "selected_choice": "Taiwan pr. [da3]",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 198.25,
+      "error": null
+    },
+    {
+      "id": "amb-008-b",
+      "variant": "r0",
+      "target": "打",
+      "choices": [
+        "(coll.) from",
+        "(loanword) dozen",
+        "since",
+        "Taiwan pr. [da3]",
+        "to fight",
+        "to hit",
+        "to strike",
+        "dozen"
+      ],
+      "accepted_choices": [
+        "play",
+        "to play"
+      ],
+      "output": "F",
+      "selected_choice": "to hit",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 200.87,
+      "error": null
+    },
+    {
+      "id": "amb-008-b",
+      "variant": "r2",
+      "target": "打",
+      "choices": [
+        "(coll.) from",
+        "(loanword) dozen",
+        "since",
+        "Taiwan pr. [da3]",
+        "to fight",
+        "to hit",
+        "to strike",
+        "dozen"
+      ],
+      "accepted_choices": [
+        "play",
+        "to play"
+      ],
+      "output": "F",
+      "selected_choice": "to hit",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 199.69,
+      "error": null
+    },
+    {
+      "id": "amb-009-a",
+      "variant": "r0",
+      "target": "上",
+      "choices": [
+        "(bound form) up",
+        "(directional complement) up",
+        "(noun suffix) on",
+        "above",
+        "first (of multiple parts)",
+        "previous",
+        "to attend (class or university)",
+        "to climb"
+      ],
+      "accepted_choices": [
+        "browse",
+        "go online",
+        "access",
+        "log in to",
+        "to go online",
+        "to surf the internet",
+        "to access the internet"
+      ],
+      "output": "B",
+      "selected_choice": "(directional complement) up",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 197.04,
+      "error": null
+    },
+    {
+      "id": "amb-009-a",
+      "variant": "r2",
+      "target": "上",
+      "choices": [
+        "(bound form) up",
+        "(directional complement) up",
+        "(noun suffix) on",
+        "above",
+        "first (of multiple parts)",
+        "previous",
+        "to attend (class or university)",
+        "to climb"
+      ],
+      "accepted_choices": [
+        "browse",
+        "go online",
+        "access",
+        "log in to",
+        "to go online",
+        "to surf the internet",
+        "to access the internet"
+      ],
+      "output": "C",
+      "selected_choice": "(noun suffix) on",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 237.46,
+      "error": null
+    },
+    {
+      "id": "amb-009-b",
+      "variant": "r0",
+      "target": "上",
+      "choices": [
+        "(bound form) up",
+        "(directional complement) up",
+        "(noun suffix) on",
+        "above",
+        "first (of multiple parts)",
+        "previous",
+        "to attend (class or university)",
+        "to climb"
+      ],
+      "accepted_choices": [
+        "attend",
+        "go to",
+        "to attend (class or university)",
+        "enroll",
+        "start"
+      ],
+      "output": "B",
+      "selected_choice": "(directional complement) up",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 207.79,
+      "error": null
+    },
+    {
+      "id": "amb-009-b",
+      "variant": "r2",
+      "target": "上",
+      "choices": [
+        "(bound form) up",
+        "(directional complement) up",
+        "(noun suffix) on",
+        "above",
+        "first (of multiple parts)",
+        "previous",
+        "to attend (class or university)",
+        "to climb"
+      ],
+      "accepted_choices": [
+        "attend",
+        "go to",
+        "to attend (class or university)",
+        "enroll",
+        "start"
+      ],
+      "output": "B",
+      "selected_choice": "(directional complement) up",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 236.57,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "r0",
+      "target": "下",
+      "choices": [
+        "below",
+        "down",
+        "downwards",
+        "later",
+        "lower",
+        "measure word to show the frequency of an action",
+        "next (week etc)",
+        "second (of two parts)"
+      ],
+      "accepted_choices": [
+        "rain",
+        "raining",
+        "starts to rain",
+        "begins to pour",
+        "comes down",
+        "to start raining",
+        "to begin to rain",
+        "to come down (rain)"
+      ],
+      "output": "B",
+      "selected_choice": "down",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 200.48,
+      "error": null
+    },
+    {
+      "id": "amb-010-a",
+      "variant": "r2",
+      "target": "下",
+      "choices": [
+        "below",
+        "down",
+        "downwards",
+        "later",
+        "lower",
+        "measure word to show the frequency of an action",
+        "next (week etc)",
+        "second (of two parts)"
+      ],
+      "accepted_choices": [
+        "rain",
+        "raining",
+        "starts to rain",
+        "begins to pour",
+        "comes down",
+        "to start raining",
+        "to begin to rain",
+        "to come down (rain)"
+      ],
+      "output": "B",
+      "selected_choice": "down",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 205.25,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "r0",
+      "target": "下",
+      "choices": [
+        "below",
+        "down",
+        "downwards",
+        "later",
+        "lower",
+        "measure word to show the frequency of an action",
+        "next (week etc)",
+        "second (of two parts)"
+      ],
+      "accepted_choices": [
+        "get off"
+      ],
+      "output": "B",
+      "selected_choice": "down",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 216.13,
+      "error": null
+    },
+    {
+      "id": "amb-010-b",
+      "variant": "r2",
+      "target": "下",
+      "choices": [
+        "below",
+        "down",
+        "downwards",
+        "later",
+        "lower",
+        "measure word to show the frequency of an action",
+        "next (week etc)",
+        "second (of two parts)"
+      ],
+      "accepted_choices": [
+        "get off"
+      ],
+      "output": "B",
+      "selected_choice": "down",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 215.15,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "r0",
+      "target": "点",
+      "choices": [
+        "(after a number) o'clock",
+        "(after a verb or adjective) a bit more",
+        "(math.) decimal point",
+        "a bit",
+        "a small amount",
+        "classifier for small amounts",
+        "dot",
+        "dot stroke in Chinese characters"
+      ],
+      "accepted_choices": [
+        "order",
+        "place",
+        "order food"
+      ],
+      "output": "C",
+      "selected_choice": "(math.) decimal point",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 240.96,
+      "error": null
+    },
+    {
+      "id": "amb-011-a",
+      "variant": "r2",
+      "target": "点",
+      "choices": [
+        "(after a number) o'clock",
+        "(after a verb or adjective) a bit more",
+        "(math.) decimal point",
+        "a bit",
+        "a small amount",
+        "classifier for small amounts",
+        "dot",
+        "dot stroke in Chinese characters"
+      ],
+      "accepted_choices": [
+        "order",
+        "place",
+        "order food"
+      ],
+      "output": "G",
+      "selected_choice": "dot",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 245.54,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "r0",
+      "target": "点",
+      "choices": [
+        "(after a number) o'clock",
+        "(after a verb or adjective) a bit more",
+        "(math.) decimal point",
+        "a bit",
+        "a small amount",
+        "classifier for small amounts",
+        "dot",
+        "dot stroke in Chinese characters"
+      ],
+      "accepted_choices": [
+        "nod",
+        "nodded",
+        "indicated",
+        "gave a nod"
+      ],
+      "output": "C",
+      "selected_choice": "(math.) decimal point",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 235.37,
+      "error": null
+    },
+    {
+      "id": "amb-011-b",
+      "variant": "r2",
+      "target": "点",
+      "choices": [
+        "(after a number) o'clock",
+        "(after a verb or adjective) a bit more",
+        "(math.) decimal point",
+        "a bit",
+        "a small amount",
+        "classifier for small amounts",
+        "dot",
+        "dot stroke in Chinese characters"
+      ],
+      "accepted_choices": [
+        "nod",
+        "nodded",
+        "indicated",
+        "gave a nod"
+      ],
+      "output": "H",
+      "selected_choice": "dot stroke in Chinese characters",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 244.28,
+      "error": null
+    },
+    {
+      "id": "amb-012-a",
+      "variant": "r0",
+      "target": "花",
+      "choices": [
+        "(coll.) lecherous",
+        "also pr. [wei3]",
+        "blossom",
+        "fancy pattern",
+        "florid",
+        "flower",
+        "lustful",
+        "to spend (money, time)"
+      ],
+      "accepted_choices": [
+        "spend",
+        "to spend (money, time)",
+        "spends",
+        "pays"
+      ],
+      "output": "F",
+      "selected_choice": "flower",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 200.21,
+      "error": null
+    },
+    {
+      "id": "amb-012-a",
+      "variant": "r2",
+      "target": "花",
+      "choices": [
+        "(coll.) lecherous",
+        "also pr. [wei3]",
+        "blossom",
+        "fancy pattern",
+        "florid",
+        "flower",
+        "lustful",
+        "to spend (money, time)"
+      ],
+      "accepted_choices": [
+        "spend",
+        "to spend (money, time)",
+        "spends",
+        "pays"
+      ],
+      "output": "H",
+      "selected_choice": "to spend (money, time)",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 237.01,
+      "error": null
+    },
+    {
+      "id": "amb-012-b",
+      "variant": "r0",
+      "target": "花",
+      "choices": [
+        "(coll.) lecherous",
+        "also pr. [wei3]",
+        "blossom",
+        "fancy pattern",
+        "florid",
+        "flower",
+        "lustful",
+        "to spend (money, time)"
+      ],
+      "accepted_choices": [
+        "flower",
+        "flowers",
+        "bouquet",
+        "blossoms"
+      ],
+      "output": "F",
+      "selected_choice": "flower",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 198.92,
+      "error": null
+    },
+    {
+      "id": "amb-012-b",
+      "variant": "r2",
+      "target": "花",
+      "choices": [
+        "(coll.) lecherous",
+        "also pr. [wei3]",
+        "blossom",
+        "fancy pattern",
+        "florid",
+        "flower",
+        "lustful",
+        "to spend (money, time)"
+      ],
+      "accepted_choices": [
+        "flower",
+        "flowers",
+        "bouquet",
+        "blossoms"
+      ],
+      "output": "F",
+      "selected_choice": "flower",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 234.68,
+      "error": null
+    },
+    {
+      "id": "amb-013-a",
+      "variant": "r0",
+      "target": "过",
+      "choices": [
+        "(experienced action marker)",
+        "excessively",
+        "to celebrate (a holiday)",
+        "to cross",
+        "to get along",
+        "to go over",
+        "to live",
+        "to pass (time)"
+      ],
+      "accepted_choices": [
+        "celebrate",
+        "observe",
+        "have",
+        "to celebrate",
+        "to observe",
+        "to have",
+        "to celebrate (a holiday)"
+      ],
+      "output": "D",
+      "selected_choice": "to cross",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 197.52,
+      "error": null
+    },
+    {
+      "id": "amb-013-a",
+      "variant": "r2",
+      "target": "过",
+      "choices": [
+        "(experienced action marker)",
+        "excessively",
+        "to celebrate (a holiday)",
+        "to cross",
+        "to get along",
+        "to go over",
+        "to live",
+        "to pass (time)"
+      ],
+      "accepted_choices": [
+        "celebrate",
+        "observe",
+        "have",
+        "to celebrate",
+        "to observe",
+        "to have",
+        "to celebrate (a holiday)"
+      ],
+      "output": "C",
+      "selected_choice": "to celebrate (a holiday)",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 199.58,
+      "error": null
+    },
+    {
+      "id": "amb-013-b",
+      "variant": "r0",
+      "target": "过",
+      "choices": [
+        "(experienced action marker)",
+        "excessively",
+        "to celebrate (a holiday)",
+        "to cross",
+        "to get along",
+        "to go over",
+        "to live",
+        "to pass (time)"
+      ],
+      "accepted_choices": [
+        "cross",
+        "go through",
+        "pass",
+        "to cross",
+        "to go through",
+        "to pass"
+      ],
+      "output": "D",
+      "selected_choice": "to cross",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 203.2,
+      "error": null
+    },
+    {
+      "id": "amb-013-b",
+      "variant": "r2",
+      "target": "过",
+      "choices": [
+        "(experienced action marker)",
+        "excessively",
+        "to celebrate (a holiday)",
+        "to cross",
+        "to get along",
+        "to go over",
+        "to live",
+        "to pass (time)"
+      ],
+      "accepted_choices": [
+        "cross",
+        "go through",
+        "pass",
+        "to cross",
+        "to go through",
+        "to pass"
+      ],
+      "output": "D",
+      "selected_choice": "to cross",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 212.16,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "r0",
+      "target": "走",
+      "choices": [
+        "from",
+        "through",
+        "to change (shape, form, meaning)",
+        "to die (euph.)",
+        "to go",
+        "to go away",
+        "to leave",
+        "to move (of vehicle)"
+      ],
+      "accepted_choices": [
+        "walk",
+        "take a stroll",
+        "to walk",
+        "to stroll"
+      ],
+      "output": "E",
+      "selected_choice": "to go",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 209.05,
+      "error": null
+    },
+    {
+      "id": "amb-014-a",
+      "variant": "r2",
+      "target": "走",
+      "choices": [
+        "from",
+        "through",
+        "to change (shape, form, meaning)",
+        "to die (euph.)",
+        "to go",
+        "to go away",
+        "to leave",
+        "to move (of vehicle)"
+      ],
+      "accepted_choices": [
+        "walk",
+        "take a stroll",
+        "to walk",
+        "to stroll"
+      ],
+      "output": "E",
+      "selected_choice": "to go",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 235.53,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "r0",
+      "target": "走",
+      "choices": [
+        "from",
+        "through",
+        "to change (shape, form, meaning)",
+        "to die (euph.)",
+        "to go",
+        "to go away",
+        "to leave",
+        "to move (of vehicle)"
+      ],
+      "accepted_choices": [
+        "leave",
+        "go",
+        "depart",
+        "let's go",
+        "walk away",
+        "move on"
+      ],
+      "output": "E",
+      "selected_choice": "to go",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 199.18,
+      "error": null
+    },
+    {
+      "id": "amb-014-b",
+      "variant": "r2",
+      "target": "走",
+      "choices": [
+        "from",
+        "through",
+        "to change (shape, form, meaning)",
+        "to die (euph.)",
+        "to go",
+        "to go away",
+        "to leave",
+        "to move (of vehicle)"
+      ],
+      "accepted_choices": [
+        "leave",
+        "go",
+        "depart",
+        "let's go",
+        "walk away",
+        "move on"
+      ],
+      "output": "E",
+      "selected_choice": "to go",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 238.01,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "r0",
+      "target": "发",
+      "choices": [
+        "classifier for gunshots (rounds)",
+        "hair",
+        "Taiwan pr. [fa3]",
+        "to develop",
+        "to issue",
+        "to make a bundle of money",
+        "to send out",
+        "to show (one's feeling)"
+      ],
+      "accepted_choices": [
+        "send",
+        "to send out",
+        "dispatch",
+        "forward",
+        "transmit"
+      ],
+      "output": "E",
+      "selected_choice": "to issue",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 206.95,
+      "error": null
+    },
+    {
+      "id": "amb-015-a",
+      "variant": "r2",
+      "target": "发",
+      "choices": [
+        "classifier for gunshots (rounds)",
+        "hair",
+        "Taiwan pr. [fa3]",
+        "to develop",
+        "to issue",
+        "to make a bundle of money",
+        "to send out",
+        "to show (one's feeling)"
+      ],
+      "accepted_choices": [
+        "send",
+        "to send out",
+        "dispatch",
+        "forward",
+        "transmit"
+      ],
+      "output": "G",
+      "selected_choice": "to send out",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 236.88,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "r0",
+      "target": "发",
+      "choices": [
+        "classifier for gunshots (rounds)",
+        "hair",
+        "Taiwan pr. [fa3]",
+        "to develop",
+        "to issue",
+        "to make a bundle of money",
+        "to send out",
+        "to show (one's feeling)"
+      ],
+      "accepted_choices": [
+        "pay",
+        "distribute",
+        "issue"
+      ],
+      "output": "E",
+      "selected_choice": "to issue",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 201.8,
+      "error": null
+    },
+    {
+      "id": "amb-015-b",
+      "variant": "r2",
+      "target": "发",
+      "choices": [
+        "classifier for gunshots (rounds)",
+        "hair",
+        "Taiwan pr. [fa3]",
+        "to develop",
+        "to issue",
+        "to make a bundle of money",
+        "to send out",
+        "to show (one's feeling)"
+      ],
+      "accepted_choices": [
+        "pay",
+        "distribute",
+        "issue"
+      ],
+      "output": "E",
+      "selected_choice": "to issue",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 244.08,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "r0",
+      "target": "收",
+      "choices": [
+        "in care of (used on address line after name)",
+        "to accept",
+        "to collect",
+        "to put away",
+        "to receive",
+        "to restrain",
+        "to stop",
+        "to admit into"
+      ],
+      "accepted_choices": [
+        "receive",
+        "to receive",
+        "get"
+      ],
+      "output": "E",
+      "selected_choice": "to receive",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 202.12,
+      "error": null
+    },
+    {
+      "id": "amb-016-a",
+      "variant": "r2",
+      "target": "收",
+      "choices": [
+        "in care of (used on address line after name)",
+        "to accept",
+        "to collect",
+        "to put away",
+        "to receive",
+        "to restrain",
+        "to stop",
+        "to admit into"
+      ],
+      "accepted_choices": [
+        "receive",
+        "to receive",
+        "get"
+      ],
+      "output": "E",
+      "selected_choice": "to receive",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 238.88,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "r0",
+      "target": "收",
+      "choices": [
+        "in care of (used on address line after name)",
+        "to accept",
+        "to collect",
+        "to put away",
+        "to receive",
+        "to restrain",
+        "to stop",
+        "to admit into"
+      ],
+      "accepted_choices": [
+        "bring in",
+        "collect",
+        "to collect",
+        "put away"
+      ],
+      "output": "E",
+      "selected_choice": "to receive",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 202.23,
+      "error": null
+    },
+    {
+      "id": "amb-016-b",
+      "variant": "r2",
+      "target": "收",
+      "choices": [
+        "in care of (used on address line after name)",
+        "to accept",
+        "to collect",
+        "to put away",
+        "to receive",
+        "to restrain",
+        "to stop",
+        "to admit into"
+      ],
+      "accepted_choices": [
+        "bring in",
+        "collect",
+        "to collect",
+        "put away"
+      ],
+      "output": "D",
+      "selected_choice": "to put away",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 200.39,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "r0",
+      "target": "接",
+      "choices": [
+        "to answer (the phone)",
+        "to catch",
+        "to connect",
+        "to extend",
+        "to join",
+        "to meet or welcome sb",
+        "to receive",
+        "to take one's turn on duty"
+      ],
+      "accepted_choices": [
+        "answer",
+        "receive",
+        "to answer",
+        "to answer (the phone)"
+      ],
+      "output": "C",
+      "selected_choice": "to connect",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 201.0,
+      "error": null
+    },
+    {
+      "id": "amb-017-a",
+      "variant": "r2",
+      "target": "接",
+      "choices": [
+        "to answer (the phone)",
+        "to catch",
+        "to connect",
+        "to extend",
+        "to join",
+        "to meet or welcome sb",
+        "to receive",
+        "to take one's turn on duty"
+      ],
+      "accepted_choices": [
+        "answer",
+        "receive",
+        "to answer",
+        "to answer (the phone)"
+      ],
+      "output": "A",
+      "selected_choice": "to answer (the phone)",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 237.41,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "r0",
+      "target": "接",
+      "choices": [
+        "to answer (the phone)",
+        "to catch",
+        "to connect",
+        "to extend",
+        "to join",
+        "to meet or welcome sb",
+        "to receive",
+        "to take one's turn on duty"
+      ],
+      "accepted_choices": [
+        "take on",
+        "accept",
+        "take over",
+        "to take on",
+        "to accept",
+        "undertake"
+      ],
+      "output": "C",
+      "selected_choice": "to connect",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 200.31,
+      "error": null
+    },
+    {
+      "id": "amb-017-b",
+      "variant": "r2",
+      "target": "接",
+      "choices": [
+        "to answer (the phone)",
+        "to catch",
+        "to connect",
+        "to extend",
+        "to join",
+        "to meet or welcome sb",
+        "to receive",
+        "to take one's turn on duty"
+      ],
+      "accepted_choices": [
+        "take on",
+        "accept",
+        "take over",
+        "to take on",
+        "to accept",
+        "undertake"
+      ],
+      "output": "E",
+      "selected_choice": "to join",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 238.22,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "r0",
+      "target": "带",
+      "choices": [
+        "area",
+        "band",
+        "belt",
+        "girdle",
+        "region",
+        "ribbon",
+        "tire",
+        "to bear (i.e. to have)"
+      ],
+      "accepted_choices": [
+        "look after",
+        "care for",
+        "takes care of",
+        "looks after",
+        "to look after",
+        "to care for",
+        "to raise"
+      ],
+      "output": "H",
+      "selected_choice": "to bear (i.e. to have)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 201.56,
+      "error": null
+    },
+    {
+      "id": "amb-018-a",
+      "variant": "r2",
+      "target": "带",
+      "choices": [
+        "area",
+        "band",
+        "belt",
+        "girdle",
+        "region",
+        "ribbon",
+        "tire",
+        "to bear (i.e. to have)"
+      ],
+      "accepted_choices": [
+        "look after",
+        "care for",
+        "takes care of",
+        "looks after",
+        "to look after",
+        "to care for",
+        "to raise"
+      ],
+      "output": "B",
+      "selected_choice": "band",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 202.83,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "r0",
+      "target": "带",
+      "choices": [
+        "area",
+        "band",
+        "belt",
+        "girdle",
+        "region",
+        "ribbon",
+        "tire",
+        "to bear (i.e. to have)"
+      ],
+      "accepted_choices": [
+        "lead",
+        "leads",
+        "manages",
+        "supervises",
+        "guides"
+      ],
+      "output": "H",
+      "selected_choice": "to bear (i.e. to have)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 200.09,
+      "error": null
+    },
+    {
+      "id": "amb-018-b",
+      "variant": "r2",
+      "target": "带",
+      "choices": [
+        "area",
+        "band",
+        "belt",
+        "girdle",
+        "region",
+        "ribbon",
+        "tire",
+        "to bear (i.e. to have)"
+      ],
+      "accepted_choices": [
+        "lead",
+        "leads",
+        "manages",
+        "supervises",
+        "guides"
+      ],
+      "output": "B",
+      "selected_choice": "band",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 205.08,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "r0",
+      "target": "换",
+      "choices": [
+        "to change (clothes etc)",
+        "to convert (currency)",
+        "to exchange",
+        "to substitute",
+        "to switch"
+      ],
+      "accepted_choices": [
+        "change",
+        "switch"
+      ],
+      "output": "C",
+      "selected_choice": "to exchange",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 197.17,
+      "error": null
+    },
+    {
+      "id": "amb-019-a",
+      "variant": "r2",
+      "target": "换",
+      "choices": [
+        "to change (clothes etc)",
+        "to convert (currency)",
+        "to exchange",
+        "to substitute",
+        "to switch"
+      ],
+      "accepted_choices": [
+        "change",
+        "switch"
+      ],
+      "output": "E",
+      "selected_choice": "to switch",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 198.72,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "r0",
+      "target": "换",
+      "choices": [
+        "to change (clothes etc)",
+        "to convert (currency)",
+        "to exchange",
+        "to substitute",
+        "to switch"
+      ],
+      "accepted_choices": [
+        "replace",
+        "swap",
+        "change",
+        "to switch"
+      ],
+      "output": "C",
+      "selected_choice": "to exchange",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 199.69,
+      "error": null
+    },
+    {
+      "id": "amb-019-b",
+      "variant": "r2",
+      "target": "换",
+      "choices": [
+        "to change (clothes etc)",
+        "to convert (currency)",
+        "to exchange",
+        "to substitute",
+        "to switch"
+      ],
+      "accepted_choices": [
+        "replace",
+        "swap",
+        "change",
+        "to switch"
+      ],
+      "output": "D",
+      "selected_choice": "to substitute",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 205.11,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "r0",
+      "target": "存",
+      "choices": [
+        "to deposit",
+        "to exist",
+        "to keep",
+        "to store",
+        "to survive",
+        "to be in stock",
+        "to check",
+        "to cherish"
+      ],
+      "accepted_choices": [
+        "save",
+        "set aside",
+        "accumulate",
+        "to deposit"
+      ],
+      "output": "D",
+      "selected_choice": "to store",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 201.9,
+      "error": null
+    },
+    {
+      "id": "amb-020-a",
+      "variant": "r2",
+      "target": "存",
+      "choices": [
+        "to deposit",
+        "to exist",
+        "to keep",
+        "to store",
+        "to survive",
+        "to be in stock",
+        "to check",
+        "to cherish"
+      ],
+      "accepted_choices": [
+        "save",
+        "set aside",
+        "accumulate",
+        "to deposit"
+      ],
+      "output": "D",
+      "selected_choice": "to store",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 209.89,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "r0",
+      "target": "存",
+      "choices": [
+        "to deposit",
+        "to exist",
+        "to keep",
+        "to store",
+        "to survive",
+        "to be in stock",
+        "to check",
+        "to cherish"
+      ],
+      "accepted_choices": [
+        "stock",
+        "inventory",
+        "remaining",
+        "stored",
+        "available",
+        "reserve"
+      ],
+      "output": "D",
+      "selected_choice": "to store",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 205.66,
+      "error": null
+    },
+    {
+      "id": "amb-020-b",
+      "variant": "r2",
+      "target": "存",
+      "choices": [
+        "to deposit",
+        "to exist",
+        "to keep",
+        "to store",
+        "to survive",
+        "to be in stock",
+        "to check",
+        "to cherish"
+      ],
+      "accepted_choices": [
+        "stock",
+        "inventory",
+        "remaining",
+        "stored",
+        "available",
+        "reserve"
+      ],
+      "output": "D",
+      "selected_choice": "to store",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 205.29,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "r0",
+      "target": "放",
+      "choices": [
+        "to free",
+        "to let go",
+        "to let out",
+        "to place",
+        "to put",
+        "to release",
+        "to set off (fireworks)",
+        "to base on"
+      ],
+      "accepted_choices": [
+        "play",
+        "stream",
+        "broadcast"
+      ],
+      "output": "D",
+      "selected_choice": "to place",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 204.47,
+      "error": null
+    },
+    {
+      "id": "amb-021-a",
+      "variant": "r2",
+      "target": "放",
+      "choices": [
+        "to free",
+        "to let go",
+        "to let out",
+        "to place",
+        "to put",
+        "to release",
+        "to set off (fireworks)",
+        "to base on"
+      ],
+      "accepted_choices": [
+        "play",
+        "stream",
+        "broadcast"
+      ],
+      "output": "F",
+      "selected_choice": "to release",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 208.66,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "r0",
+      "target": "放",
+      "choices": [
+        "to free",
+        "to let go",
+        "to let out",
+        "to place",
+        "to put",
+        "to release",
+        "to set off (fireworks)",
+        "to base on"
+      ],
+      "accepted_choices": [
+        "put",
+        "place",
+        "to put",
+        "to place",
+        "store",
+        "to set"
+      ],
+      "output": "D",
+      "selected_choice": "to place",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 208.62,
+      "error": null
+    },
+    {
+      "id": "amb-021-b",
+      "variant": "r2",
+      "target": "放",
+      "choices": [
+        "to free",
+        "to let go",
+        "to let out",
+        "to place",
+        "to put",
+        "to release",
+        "to set off (fireworks)",
+        "to base on"
+      ],
+      "accepted_choices": [
+        "put",
+        "place",
+        "to put",
+        "to place",
+        "store",
+        "to set"
+      ],
+      "output": "E",
+      "selected_choice": "to put",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 204.74,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "r0",
+      "target": "做",
+      "choices": [
+        "(of a person) to be (an intermediary, a good student etc)",
+        "(of a thing) to serve as",
+        "to assume (an air or manner)",
+        "to be used for",
+        "to become (husband and wife, friends etc)",
+        "to compose",
+        "to do",
+        "to engage in"
+      ],
+      "accepted_choices": [
+        "cook",
+        "make",
+        "cooking",
+        "preparing",
+        "is cooking",
+        "is preparing",
+        "is cooking dinner"
+      ],
+      "output": "G",
+      "selected_choice": "to do",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 247.11,
+      "error": null
+    },
+    {
+      "id": "amb-022-a",
+      "variant": "r2",
+      "target": "做",
+      "choices": [
+        "(of a person) to be (an intermediary, a good student etc)",
+        "(of a thing) to serve as",
+        "to assume (an air or manner)",
+        "to be used for",
+        "to become (husband and wife, friends etc)",
+        "to compose",
+        "to do",
+        "to engage in"
+      ],
+      "accepted_choices": [
+        "cook",
+        "make",
+        "cooking",
+        "preparing",
+        "is cooking",
+        "is preparing",
+        "is cooking dinner"
+      ],
+      "output": "G",
+      "selected_choice": "to do",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 245.05,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "r0",
+      "target": "做",
+      "choices": [
+        "(of a person) to be (an intermediary, a good student etc)",
+        "(of a thing) to serve as",
+        "to assume (an air or manner)",
+        "to be used for",
+        "to become (husband and wife, friends etc)",
+        "to compose",
+        "to do",
+        "to engage in"
+      ],
+      "accepted_choices": [
+        "make",
+        "decide",
+        "to make",
+        "to decide"
+      ],
+      "output": "G",
+      "selected_choice": "to do",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 243.26,
+      "error": null
+    },
+    {
+      "id": "amb-022-b",
+      "variant": "r2",
+      "target": "做",
+      "choices": [
+        "(of a person) to be (an intermediary, a good student etc)",
+        "(of a thing) to serve as",
+        "to assume (an air or manner)",
+        "to be used for",
+        "to become (husband and wife, friends etc)",
+        "to compose",
+        "to do",
+        "to engage in"
+      ],
+      "accepted_choices": [
+        "make",
+        "decide",
+        "to make",
+        "to decide"
+      ],
+      "output": "G",
+      "selected_choice": "to do",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 249.65,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "r0",
+      "target": "想",
+      "choices": [
+        "to believe (that)",
+        "to desire",
+        "to devise",
+        "to miss (feel wistful about the absence of)",
+        "to think (about)",
+        "to think (that)",
+        "to think of",
+        "to want (to)"
+      ],
+      "accepted_choices": [
+        "miss",
+        "longed",
+        "missed",
+        "thought of",
+        "to miss (feel wistful about the absence of)"
+      ],
+      "output": "B",
+      "selected_choice": "to desire",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 209.91,
+      "error": null
+    },
+    {
+      "id": "amb-023-a",
+      "variant": "r2",
+      "target": "想",
+      "choices": [
+        "to believe (that)",
+        "to desire",
+        "to devise",
+        "to miss (feel wistful about the absence of)",
+        "to think (about)",
+        "to think (that)",
+        "to think of",
+        "to want (to)"
+      ],
+      "accepted_choices": [
+        "miss",
+        "longed",
+        "missed",
+        "thought of",
+        "to miss (feel wistful about the absence of)"
+      ],
+      "output": "D",
+      "selected_choice": "to miss (feel wistful about the absence of)",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.81,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "r0",
+      "target": "想",
+      "choices": [
+        "to believe (that)",
+        "to desire",
+        "to devise",
+        "to miss (feel wistful about the absence of)",
+        "to think (about)",
+        "to think (that)",
+        "to think of",
+        "to want (to)"
+      ],
+      "accepted_choices": [
+        "think of",
+        "come up with",
+        "to come up with",
+        "to figure",
+        "to devise"
+      ],
+      "output": "B",
+      "selected_choice": "to desire",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 204.45,
+      "error": null
+    },
+    {
+      "id": "amb-023-b",
+      "variant": "r2",
+      "target": "想",
+      "choices": [
+        "to believe (that)",
+        "to desire",
+        "to devise",
+        "to miss (feel wistful about the absence of)",
+        "to think (about)",
+        "to think (that)",
+        "to think of",
+        "to want (to)"
+      ],
+      "accepted_choices": [
+        "think of",
+        "come up with",
+        "to come up with",
+        "to figure",
+        "to devise"
+      ],
+      "output": "C",
+      "selected_choice": "to devise",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.71,
+      "error": null
+    },
+    {
+      "id": "amb-024-a",
+      "variant": "r0",
+      "target": "问",
+      "choices": [
+        "to ask",
+        "to inquire"
+      ],
+      "accepted_choices": [
+        "ask",
+        "inquire",
+        "question",
+        "to ask",
+        "to inquire"
+      ],
+      "output": "A",
+      "selected_choice": "to ask",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 163.3,
+      "error": null
+    },
+    {
+      "id": "amb-024-a",
+      "variant": "r2",
+      "target": "问",
+      "choices": [
+        "to ask",
+        "to inquire"
+      ],
+      "accepted_choices": [
+        "ask",
+        "inquire",
+        "question",
+        "to ask",
+        "to inquire"
+      ],
+      "output": "B",
+      "selected_choice": "to inquire",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 165.84,
+      "error": null
+    },
+    {
+      "id": "amb-024-b",
+      "variant": "r0",
+      "target": "问",
+      "choices": [
+        "to ask",
+        "to inquire"
+      ],
+      "accepted_choices": [
+        "hold accountable",
+        "hold responsible",
+        "blame"
+      ],
+      "output": "A",
+      "selected_choice": "to ask",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 166.48,
+      "error": null
+    },
+    {
+      "id": "amb-024-b",
+      "variant": "r2",
+      "target": "问",
+      "choices": [
+        "to ask",
+        "to inquire"
+      ],
+      "accepted_choices": [
+        "hold accountable",
+        "hold responsible",
+        "blame"
+      ],
+      "output": "B",
+      "selected_choice": "to inquire",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 167.76,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "r0",
+      "target": "报",
+      "choices": [
+        "bulletin",
+        "journal",
+        "newspaper",
+        "periodical",
+        "telegram",
+        "to announce",
+        "to inform",
+        "to recompense"
+      ],
+      "accepted_choices": [
+        "register",
+        "apply",
+        "sign up"
+      ],
+      "output": "C",
+      "selected_choice": "newspaper",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 209.23,
+      "error": null
+    },
+    {
+      "id": "amb-025-a",
+      "variant": "r2",
+      "target": "报",
+      "choices": [
+        "bulletin",
+        "journal",
+        "newspaper",
+        "periodical",
+        "telegram",
+        "to announce",
+        "to inform",
+        "to recompense"
+      ],
+      "accepted_choices": [
+        "register",
+        "apply",
+        "sign up"
+      ],
+      "output": "A",
+      "selected_choice": "bulletin",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 209.68,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "r0",
+      "target": "报",
+      "choices": [
+        "bulletin",
+        "journal",
+        "newspaper",
+        "periodical",
+        "telegram",
+        "to announce",
+        "to inform",
+        "to recompense"
+      ],
+      "accepted_choices": [
+        "call",
+        "report",
+        "alert"
+      ],
+      "output": "C",
+      "selected_choice": "newspaper",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 210.83,
+      "error": null
+    },
+    {
+      "id": "amb-025-b",
+      "variant": "r2",
+      "target": "报",
+      "choices": [
+        "bulletin",
+        "journal",
+        "newspaper",
+        "periodical",
+        "telegram",
+        "to announce",
+        "to inform",
+        "to recompense"
+      ],
+      "accepted_choices": [
+        "call",
+        "report",
+        "alert"
+      ],
+      "output": "A",
+      "selected_choice": "bulletin",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 216.01,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "r0",
+      "target": "结",
+      "choices": [
+        "(of a plant) to produce (fruit or seeds)",
+        "bond",
+        "knot",
+        "sturdy",
+        "Taiwan pr. [jie2]",
+        "to bind",
+        "to check out (of a hotel)",
+        "to tie"
+      ],
+      "accepted_choices": [
+        "pay",
+        "settle"
+      ],
+      "output": "A",
+      "selected_choice": "(of a plant) to produce (fruit or seeds)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 215.23,
+      "error": null
+    },
+    {
+      "id": "amb-026-a",
+      "variant": "r2",
+      "target": "结",
+      "choices": [
+        "(of a plant) to produce (fruit or seeds)",
+        "bond",
+        "knot",
+        "sturdy",
+        "Taiwan pr. [jie2]",
+        "to bind",
+        "to check out (of a hotel)",
+        "to tie"
+      ],
+      "accepted_choices": [
+        "pay",
+        "settle"
+      ],
+      "output": "G",
+      "selected_choice": "to check out (of a hotel)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 257.99,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "r0",
+      "target": "结",
+      "choices": [
+        "(of a plant) to produce (fruit or seeds)",
+        "bond",
+        "knot",
+        "sturdy",
+        "Taiwan pr. [jie2]",
+        "to bind",
+        "to check out (of a hotel)",
+        "to tie"
+      ],
+      "accepted_choices": [
+        "end",
+        "finish",
+        "ended",
+        "closed",
+        "concluded",
+        "finished"
+      ],
+      "output": "A",
+      "selected_choice": "(of a plant) to produce (fruit or seeds)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 219.69,
+      "error": null
+    },
+    {
+      "id": "amb-026-b",
+      "variant": "r2",
+      "target": "结",
+      "choices": [
+        "(of a plant) to produce (fruit or seeds)",
+        "bond",
+        "knot",
+        "sturdy",
+        "Taiwan pr. [jie2]",
+        "to bind",
+        "to check out (of a hotel)",
+        "to tie"
+      ],
+      "accepted_choices": [
+        "end",
+        "finish",
+        "ended",
+        "closed",
+        "concluded",
+        "finished"
+      ],
+      "output": "E",
+      "selected_choice": "Taiwan pr. [jie2]",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 254.89,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "r0",
+      "target": "行",
+      "choices": [
+        "(bound form) commercial firm",
+        "(bound form) current",
+        "(bound form) line of business",
+        "(bound form) row",
+        "(bound form) temporary",
+        "(bound form) to do",
+        "(bound form) to rank (first, second etc) among one's siblings (by age)",
+        "(bound form) to walk"
+      ],
+      "accepted_choices": [
+        "okay",
+        "work",
+        "yes",
+        "possible",
+        "fine"
+      ],
+      "output": "C",
+      "selected_choice": "(bound form) line of business",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 256.48,
+      "error": null
+    },
+    {
+      "id": "amb-027-a",
+      "variant": "r2",
+      "target": "行",
+      "choices": [
+        "(bound form) commercial firm",
+        "(bound form) current",
+        "(bound form) line of business",
+        "(bound form) row",
+        "(bound form) temporary",
+        "(bound form) to do",
+        "(bound form) to rank (first, second etc) among one's siblings (by age)",
+        "(bound form) to walk"
+      ],
+      "accepted_choices": [
+        "okay",
+        "work",
+        "yes",
+        "possible",
+        "fine"
+      ],
+      "output": "H",
+      "selected_choice": "(bound form) to walk",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 298.38,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "r0",
+      "target": "行",
+      "choices": [
+        "(bound form) commercial firm",
+        "(bound form) current",
+        "(bound form) line of business",
+        "(bound form) row",
+        "(bound form) temporary",
+        "(bound form) to do",
+        "(bound form) to rank (first, second etc) among one's siblings (by age)",
+        "(bound form) to walk"
+      ],
+      "accepted_choices": [
+        "bank",
+        "branch"
+      ],
+      "output": "C",
+      "selected_choice": "(bound form) line of business",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 256.81,
+      "error": null
+    },
+    {
+      "id": "amb-027-b",
+      "variant": "r2",
+      "target": "行",
+      "choices": [
+        "(bound form) commercial firm",
+        "(bound form) current",
+        "(bound form) line of business",
+        "(bound form) row",
+        "(bound form) temporary",
+        "(bound form) to do",
+        "(bound form) to rank (first, second etc) among one's siblings (by age)",
+        "(bound form) to walk"
+      ],
+      "accepted_choices": [
+        "bank",
+        "branch"
+      ],
+      "output": "A",
+      "selected_choice": "(bound form) commercial firm",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 297.4,
+      "error": null
+    },
+    {
+      "id": "amb-028-a",
+      "variant": "r0",
+      "target": "还",
+      "choices": [
+        "also",
+        "as early as",
+        "else",
+        "even",
+        "even more",
+        "fairly",
+        "in addition",
+        "passably (good)"
+      ],
+      "accepted_choices": [
+        "return",
+        "give back",
+        "pay back",
+        "refund",
+        "reimburse"
+      ],
+      "output": "A",
+      "selected_choice": "also",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 211.88,
+      "error": null
+    },
+    {
+      "id": "amb-028-a",
+      "variant": "r2",
+      "target": "还",
+      "choices": [
+        "also",
+        "as early as",
+        "else",
+        "even",
+        "even more",
+        "fairly",
+        "in addition",
+        "passably (good)"
+      ],
+      "accepted_choices": [
+        "return",
+        "give back",
+        "pay back",
+        "refund",
+        "reimburse"
+      ],
+      "output": "A",
+      "selected_choice": "also",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 218.78,
+      "error": null
+    },
+    {
+      "id": "amb-028-b",
+      "variant": "r0",
+      "target": "还",
+      "choices": [
+        "also",
+        "as early as",
+        "else",
+        "even",
+        "even more",
+        "fairly",
+        "in addition",
+        "passably (good)"
+      ],
+      "accepted_choices": [
+        "still",
+        "hasn't yet",
+        "not yet",
+        "has yet"
+      ],
+      "output": "A",
+      "selected_choice": "also",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 211.85,
+      "error": null
+    },
+    {
+      "id": "amb-028-b",
+      "variant": "r2",
+      "target": "还",
+      "choices": [
+        "also",
+        "as early as",
+        "else",
+        "even",
+        "even more",
+        "fairly",
+        "in addition",
+        "passably (good)"
+      ],
+      "accepted_choices": [
+        "still",
+        "hasn't yet",
+        "not yet",
+        "has yet"
+      ],
+      "output": "A",
+      "selected_choice": "also",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 213.41,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "r0",
+      "target": "差",
+      "choices": [
+        "(archaic) person sent on such an errand",
+        "(literary) a little",
+        "(math.) difference (amount remaining after a subtraction)",
+        "difference",
+        "different",
+        "discrepancy",
+        "inferior",
+        "job"
+      ],
+      "accepted_choices": [
+        "about",
+        "almost",
+        "short of"
+      ],
+      "output": "C",
+      "selected_choice": "(math.) difference (amount remaining after a subtraction)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 217.3,
+      "error": null
+    },
+    {
+      "id": "amb-029-a",
+      "variant": "r2",
+      "target": "差",
+      "choices": [
+        "(archaic) person sent on such an errand",
+        "(literary) a little",
+        "(math.) difference (amount remaining after a subtraction)",
+        "difference",
+        "different",
+        "discrepancy",
+        "inferior",
+        "job"
+      ],
+      "accepted_choices": [
+        "about",
+        "almost",
+        "short of"
+      ],
+      "output": "B",
+      "selected_choice": "(literary) a little",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 264.09,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "r0",
+      "target": "差",
+      "choices": [
+        "(archaic) person sent on such an errand",
+        "(literary) a little",
+        "(math.) difference (amount remaining after a subtraction)",
+        "difference",
+        "different",
+        "discrepancy",
+        "inferior",
+        "job"
+      ],
+      "accepted_choices": [
+        "differ",
+        "different",
+        "difference",
+        "discrepancy",
+        "far apart"
+      ],
+      "output": "C",
+      "selected_choice": "(math.) difference (amount remaining after a subtraction)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 221.46,
+      "error": null
+    },
+    {
+      "id": "amb-029-b",
+      "variant": "r2",
+      "target": "差",
+      "choices": [
+        "(archaic) person sent on such an errand",
+        "(literary) a little",
+        "(math.) difference (amount remaining after a subtraction)",
+        "difference",
+        "different",
+        "discrepancy",
+        "inferior",
+        "job"
+      ],
+      "accepted_choices": [
+        "differ",
+        "different",
+        "difference",
+        "discrepancy",
+        "far apart"
+      ],
+      "output": "C",
+      "selected_choice": "(math.) difference (amount remaining after a subtraction)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 255.72,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "r0",
+      "target": "好",
+      "choices": [
+        "(after a form of address) hello",
+        "(before a verb) easy to",
+        "(before a verb) good to",
+        "(before an adjective for exclamatory effect) so",
+        "(of two people) close",
+        "(verb complement indicating completion)",
+        "all right!",
+        "appropriate"
+      ],
+      "accepted_choices": [
+        "ready",
+        "done",
+        "perfect",
+        "prepared"
+      ],
+      "output": "C",
+      "selected_choice": "(before a verb) good to",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 260.9,
+      "error": null
+    },
+    {
+      "id": "amb-030-a",
+      "variant": "r2",
+      "target": "好",
+      "choices": [
+        "(after a form of address) hello",
+        "(before a verb) easy to",
+        "(before a verb) good to",
+        "(before an adjective for exclamatory effect) so",
+        "(of two people) close",
+        "(verb complement indicating completion)",
+        "all right!",
+        "appropriate"
+      ],
+      "accepted_choices": [
+        "ready",
+        "done",
+        "perfect",
+        "prepared"
+      ],
+      "output": "F",
+      "selected_choice": "(verb complement indicating completion)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 258.47,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "r0",
+      "target": "好",
+      "choices": [
+        "(after a form of address) hello",
+        "(before a verb) easy to",
+        "(before a verb) good to",
+        "(before an adjective for exclamatory effect) so",
+        "(of two people) close",
+        "(verb complement indicating completion)",
+        "all right!",
+        "appropriate"
+      ],
+      "accepted_choices": [
+        "easy",
+        "easy to"
+      ],
+      "output": "C",
+      "selected_choice": "(before a verb) good to",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 256.78,
+      "error": null
+    },
+    {
+      "id": "amb-030-b",
+      "variant": "r2",
+      "target": "好",
+      "choices": [
+        "(after a form of address) hello",
+        "(before a verb) easy to",
+        "(before a verb) good to",
+        "(before an adjective for exclamatory effect) so",
+        "(of two people) close",
+        "(verb complement indicating completion)",
+        "all right!",
+        "appropriate"
+      ],
+      "accepted_choices": [
+        "easy",
+        "easy to"
+      ],
+      "output": "B",
+      "selected_choice": "(before a verb) easy to",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 265.78,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "r0",
+      "target": "大",
+      "choices": [
+        "(dialect) father",
+        "(dialect) uncle (father's brother)",
+        "big",
+        "freely",
+        "fully",
+        "great",
+        "greatly",
+        "large"
+      ],
+      "accepted_choices": [
+        "large",
+        "big",
+        "great",
+        "giant",
+        "massive"
+      ],
+      "output": "C",
+      "selected_choice": "big",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 216.7,
+      "error": null
+    },
+    {
+      "id": "amb-031-a",
+      "variant": "r2",
+      "target": "大",
+      "choices": [
+        "(dialect) father",
+        "(dialect) uncle (father's brother)",
+        "big",
+        "freely",
+        "fully",
+        "great",
+        "greatly",
+        "large"
+      ],
+      "accepted_choices": [
+        "large",
+        "big",
+        "great",
+        "giant",
+        "massive"
+      ],
+      "output": "H",
+      "selected_choice": "large",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 216.75,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "r0",
+      "target": "大",
+      "choices": [
+        "(dialect) father",
+        "(dialect) uncle (father's brother)",
+        "big",
+        "freely",
+        "fully",
+        "great",
+        "greatly",
+        "large"
+      ],
+      "accepted_choices": [
+        "heavy",
+        "intense",
+        "strong"
+      ],
+      "output": "C",
+      "selected_choice": "big",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 213.6,
+      "error": null
+    },
+    {
+      "id": "amb-031-b",
+      "variant": "r2",
+      "target": "大",
+      "choices": [
+        "(dialect) father",
+        "(dialect) uncle (father's brother)",
+        "big",
+        "freely",
+        "fully",
+        "great",
+        "greatly",
+        "large"
+      ],
+      "accepted_choices": [
+        "heavy",
+        "intense",
+        "strong"
+      ],
+      "output": "C",
+      "selected_choice": "big",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 217.38,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "r0",
+      "target": "小",
+      "choices": [
+        "few",
+        "small",
+        "tiny",
+        "young",
+        "briefly, for a short while",
+        "minor, petty",
+        "slightly, a little",
+        "small, tiny, little"
+      ],
+      "accepted_choices": [
+        "quietly",
+        "softly",
+        "quiet",
+        "soft",
+        "low"
+      ],
+      "output": "B",
+      "selected_choice": "small",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 216.22,
+      "error": null
+    },
+    {
+      "id": "amb-032-a",
+      "variant": "r2",
+      "target": "小",
+      "choices": [
+        "few",
+        "small",
+        "tiny",
+        "young",
+        "briefly, for a short while",
+        "minor, petty",
+        "slightly, a little",
+        "small, tiny, little"
+      ],
+      "accepted_choices": [
+        "quietly",
+        "softly",
+        "quiet",
+        "soft",
+        "low"
+      ],
+      "output": "B",
+      "selected_choice": "small",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 219.13,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "r0",
+      "target": "小",
+      "choices": [
+        "few",
+        "small",
+        "tiny",
+        "young",
+        "briefly, for a short while",
+        "minor, petty",
+        "slightly, a little",
+        "small, tiny, little"
+      ],
+      "accepted_choices": [
+        "small",
+        "tiny",
+        "minor"
+      ],
+      "output": "B",
+      "selected_choice": "small",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 213.72,
+      "error": null
+    },
+    {
+      "id": "amb-032-b",
+      "variant": "r2",
+      "target": "小",
+      "choices": [
+        "few",
+        "small",
+        "tiny",
+        "young",
+        "briefly, for a short while",
+        "minor, petty",
+        "slightly, a little",
+        "small, tiny, little"
+      ],
+      "accepted_choices": [
+        "small",
+        "tiny",
+        "minor"
+      ],
+      "output": "B",
+      "selected_choice": "small",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 217.14,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "r0",
+      "target": "新",
+      "choices": [
+        "meso- (chemistry)",
+        "new",
+        "newly",
+        "fresh",
+        "recently or just married",
+        "the new",
+        "to make new",
+        "unused"
+      ],
+      "accepted_choices": [
+        "news",
+        "newspaper"
+      ],
+      "output": "B",
+      "selected_choice": "new",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 211.7,
+      "error": null
+    },
+    {
+      "id": "amb-033-a",
+      "variant": "r2",
+      "target": "新",
+      "choices": [
+        "meso- (chemistry)",
+        "new",
+        "newly",
+        "fresh",
+        "recently or just married",
+        "the new",
+        "to make new",
+        "unused"
+      ],
+      "accepted_choices": [
+        "news",
+        "newspaper"
+      ],
+      "output": "B",
+      "selected_choice": "new",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 213.96,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "r0",
+      "target": "新",
+      "choices": [
+        "meso- (chemistry)",
+        "new",
+        "newly",
+        "fresh",
+        "recently or just married",
+        "the new",
+        "to make new",
+        "unused"
+      ],
+      "accepted_choices": [
+        "new",
+        "fresh",
+        "recent"
+      ],
+      "output": "B",
+      "selected_choice": "new",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 209.56,
+      "error": null
+    },
+    {
+      "id": "amb-033-b",
+      "variant": "r2",
+      "target": "新",
+      "choices": [
+        "meso- (chemistry)",
+        "new",
+        "newly",
+        "fresh",
+        "recently or just married",
+        "the new",
+        "to make new",
+        "unused"
+      ],
+      "accepted_choices": [
+        "new",
+        "fresh",
+        "recent"
+      ],
+      "output": "B",
+      "selected_choice": "new",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 213.72,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "r0",
+      "target": "老",
+      "choices": [
+        "(of meat etc) tough",
+        "all the time",
+        "always",
+        "experienced",
+        "of long standing",
+        "of the past",
+        "old (of people)",
+        "outdated"
+      ],
+      "accepted_choices": [
+        "old",
+        "long-established",
+        "of long standing",
+        "traditional",
+        "timeless",
+        "classic"
+      ],
+      "output": "G",
+      "selected_choice": "old (of people)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 219.61,
+      "error": null
+    },
+    {
+      "id": "amb-034-a",
+      "variant": "r2",
+      "target": "老",
+      "choices": [
+        "(of meat etc) tough",
+        "all the time",
+        "always",
+        "experienced",
+        "of long standing",
+        "of the past",
+        "old (of people)",
+        "outdated"
+      ],
+      "accepted_choices": [
+        "old",
+        "long-established",
+        "of long standing",
+        "traditional",
+        "timeless",
+        "classic"
+      ],
+      "output": "E",
+      "selected_choice": "of long standing",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 217.78,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "r0",
+      "target": "老",
+      "choices": [
+        "(of meat etc) tough",
+        "all the time",
+        "always",
+        "experienced",
+        "of long standing",
+        "of the past",
+        "old (of people)",
+        "outdated"
+      ],
+      "accepted_choices": [
+        "always",
+        "all the time"
+      ],
+      "output": "G",
+      "selected_choice": "old (of people)",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 216.31,
+      "error": null
+    },
+    {
+      "id": "amb-034-b",
+      "variant": "r2",
+      "target": "老",
+      "choices": [
+        "(of meat etc) tough",
+        "all the time",
+        "always",
+        "experienced",
+        "of long standing",
+        "of the past",
+        "old (of people)",
+        "outdated"
+      ],
+      "accepted_choices": [
+        "always",
+        "all the time"
+      ],
+      "output": "C",
+      "selected_choice": "always",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 228.73,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "r0",
+      "target": "快",
+      "choices": [
+        "almost",
+        "clever",
+        "forthright",
+        "gratified",
+        "plainspoken",
+        "pleasant",
+        "pleased",
+        "quick"
+      ],
+      "accepted_choices": [
+        "fast",
+        "quick",
+        "rapid"
+      ],
+      "output": "H",
+      "selected_choice": "quick",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 240.46,
+      "error": null
+    },
+    {
+      "id": "amb-035-a",
+      "variant": "r2",
+      "target": "快",
+      "choices": [
+        "almost",
+        "clever",
+        "forthright",
+        "gratified",
+        "plainspoken",
+        "pleasant",
+        "pleased",
+        "quick"
+      ],
+      "accepted_choices": [
+        "fast",
+        "quick",
+        "rapid"
+      ],
+      "output": "H",
+      "selected_choice": "quick",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 234.12,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "r0",
+      "target": "快",
+      "choices": [
+        "almost",
+        "clever",
+        "forthright",
+        "gratified",
+        "plainspoken",
+        "pleasant",
+        "pleased",
+        "quick"
+      ],
+      "accepted_choices": [
+        "soon",
+        "approaching"
+      ],
+      "output": "H",
+      "selected_choice": "quick",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 230.04,
+      "error": null
+    },
+    {
+      "id": "amb-035-b",
+      "variant": "r2",
+      "target": "快",
+      "choices": [
+        "almost",
+        "clever",
+        "forthright",
+        "gratified",
+        "plainspoken",
+        "pleasant",
+        "pleased",
+        "quick"
+      ],
+      "accepted_choices": [
+        "soon",
+        "approaching"
+      ],
+      "output": "A",
+      "selected_choice": "almost",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 235.32,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "r0",
+      "target": "轻",
+      "choices": [
+        "easy",
+        "frivolous",
+        "gentle",
+        "light",
+        "neutral",
+        "reckless",
+        "small in number",
+        "soft"
+      ],
+      "accepted_choices": [
+        "light",
+        "lightweight"
+      ],
+      "output": "D",
+      "selected_choice": "light",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 226.66,
+      "error": null
+    },
+    {
+      "id": "amb-036-a",
+      "variant": "r2",
+      "target": "轻",
+      "choices": [
+        "easy",
+        "frivolous",
+        "gentle",
+        "light",
+        "neutral",
+        "reckless",
+        "small in number",
+        "soft"
+      ],
+      "accepted_choices": [
+        "light",
+        "lightweight"
+      ],
+      "output": "D",
+      "selected_choice": "light",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.76,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "r0",
+      "target": "轻",
+      "choices": [
+        "easy",
+        "frivolous",
+        "gentle",
+        "light",
+        "neutral",
+        "reckless",
+        "small in number",
+        "soft"
+      ],
+      "accepted_choices": [
+        "gently",
+        "softly",
+        "lightly"
+      ],
+      "output": "D",
+      "selected_choice": "light",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 217.08,
+      "error": null
+    },
+    {
+      "id": "amb-036-b",
+      "variant": "r2",
+      "target": "轻",
+      "choices": [
+        "easy",
+        "frivolous",
+        "gentle",
+        "light",
+        "neutral",
+        "reckless",
+        "small in number",
+        "soft"
+      ],
+      "accepted_choices": [
+        "gently",
+        "softly",
+        "lightly"
+      ],
+      "output": "C",
+      "selected_choice": "gentle",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 218.21,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "r0",
+      "target": "重",
+      "choices": [
+        "again",
+        "classifier: layer",
+        "heavy",
+        "re-",
+        "repetition",
+        "serious",
+        "to attach importance to",
+        "to repeat"
+      ],
+      "accepted_choices": [
+        "heavy",
+        "too heavy"
+      ],
+      "output": "C",
+      "selected_choice": "heavy",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 213.63,
+      "error": null
+    },
+    {
+      "id": "amb-037-a",
+      "variant": "r2",
+      "target": "重",
+      "choices": [
+        "again",
+        "classifier: layer",
+        "heavy",
+        "re-",
+        "repetition",
+        "serious",
+        "to attach importance to",
+        "to repeat"
+      ],
+      "accepted_choices": [
+        "heavy",
+        "too heavy"
+      ],
+      "output": "C",
+      "selected_choice": "heavy",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 228.03,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "r0",
+      "target": "重",
+      "choices": [
+        "again",
+        "classifier: layer",
+        "heavy",
+        "re-",
+        "repetition",
+        "serious",
+        "to attach importance to",
+        "to repeat"
+      ],
+      "accepted_choices": [
+        "again",
+        "re",
+        "once again",
+        "repetition"
+      ],
+      "output": "C",
+      "selected_choice": "heavy",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 222.99,
+      "error": null
+    },
+    {
+      "id": "amb-037-b",
+      "variant": "r2",
+      "target": "重",
+      "choices": [
+        "again",
+        "classifier: layer",
+        "heavy",
+        "re-",
+        "repetition",
+        "serious",
+        "to attach importance to",
+        "to repeat"
+      ],
+      "accepted_choices": [
+        "again",
+        "re",
+        "once again",
+        "repetition"
+      ],
+      "output": "D",
+      "selected_choice": "re-",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 229.42,
+      "error": null
+    },
+    {
+      "id": "amb-038-a",
+      "variant": "r0",
+      "target": "留",
+      "choices": [
+        "to keep",
+        "to leave (a message etc)",
+        "to preserve",
+        "to remain",
+        "to retain",
+        "to stay",
+        "to accept (a gift)",
+        "to ask someone to stay"
+      ],
+      "accepted_choices": [
+        "stay",
+        "remain",
+        "to stay",
+        "to remain"
+      ],
+      "output": "D",
+      "selected_choice": "to remain",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 228.63,
+      "error": null
+    },
+    {
+      "id": "amb-038-a",
+      "variant": "r2",
+      "target": "留",
+      "choices": [
+        "to keep",
+        "to leave (a message etc)",
+        "to preserve",
+        "to remain",
+        "to retain",
+        "to stay",
+        "to accept (a gift)",
+        "to ask someone to stay"
+      ],
+      "accepted_choices": [
+        "stay",
+        "remain",
+        "to stay",
+        "to remain"
+      ],
+      "output": "F",
+      "selected_choice": "to stay",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 254.65,
+      "error": null
+    },
+    {
+      "id": "amb-038-b",
+      "variant": "r0",
+      "target": "留",
+      "choices": [
+        "to keep",
+        "to leave (a message etc)",
+        "to preserve",
+        "to remain",
+        "to retain",
+        "to stay",
+        "to accept (a gift)",
+        "to ask someone to stay"
+      ],
+      "accepted_choices": [
+        "leave",
+        "to leave (a message etc)"
+      ],
+      "output": "D",
+      "selected_choice": "to remain",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 216.84,
+      "error": null
+    },
+    {
+      "id": "amb-038-b",
+      "variant": "r2",
+      "target": "留",
+      "choices": [
+        "to keep",
+        "to leave (a message etc)",
+        "to preserve",
+        "to remain",
+        "to retain",
+        "to stay",
+        "to accept (a gift)",
+        "to ask someone to stay"
+      ],
+      "accepted_choices": [
+        "leave",
+        "to leave (a message etc)"
+      ],
+      "output": "B",
+      "selected_choice": "to leave (a message etc)",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 270.43,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "r0",
+      "target": "退",
+      "choices": [
+        "to decline",
+        "to reject",
+        "to retreat",
+        "to return (sth)",
+        "to withdraw",
+        "to cause to move backward",
+        "to ebb",
+        "to fade"
+      ],
+      "accepted_choices": [
+        "return",
+        "refund",
+        "to return (sth)"
+      ],
+      "output": "C",
+      "selected_choice": "to retreat",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 224.28,
+      "error": null
+    },
+    {
+      "id": "amb-039-a",
+      "variant": "r2",
+      "target": "退",
+      "choices": [
+        "to decline",
+        "to reject",
+        "to retreat",
+        "to return (sth)",
+        "to withdraw",
+        "to cause to move backward",
+        "to ebb",
+        "to fade"
+      ],
+      "accepted_choices": [
+        "return",
+        "refund",
+        "to return (sth)"
+      ],
+      "output": "D",
+      "selected_choice": "to return (sth)",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 217.6,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "r0",
+      "target": "退",
+      "choices": [
+        "to decline",
+        "to reject",
+        "to retreat",
+        "to return (sth)",
+        "to withdraw",
+        "to cause to move backward",
+        "to ebb",
+        "to fade"
+      ],
+      "accepted_choices": [
+        "step back",
+        "move back",
+        "retreat",
+        "to retreat",
+        "recede",
+        "withdraw"
+      ],
+      "output": "C",
+      "selected_choice": "to retreat",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 225.76,
+      "error": null
+    },
+    {
+      "id": "amb-039-b",
+      "variant": "r2",
+      "target": "退",
+      "choices": [
+        "to decline",
+        "to reject",
+        "to retreat",
+        "to return (sth)",
+        "to withdraw",
+        "to cause to move backward",
+        "to ebb",
+        "to fade"
+      ],
+      "accepted_choices": [
+        "step back",
+        "move back",
+        "retreat",
+        "to retreat",
+        "recede",
+        "withdraw"
+      ],
+      "output": "C",
+      "selected_choice": "to retreat",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 222.5,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "r0",
+      "target": "升",
+      "choices": [
+        "liter",
+        "to ascend",
+        "to elevate",
+        "to promote",
+        "to rise",
+        "a volume unit of measure:",
+        "litre (unit of measure for volume, chiefly for liquid measure, equal to one thousandth of the cubic metre)",
+        "sharp (♯)"
+      ],
+      "accepted_choices": [
+        "rise",
+        "increase",
+        "climb",
+        "rising",
+        "increasing",
+        "climbing"
+      ],
+      "output": "E",
+      "selected_choice": "to rise",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 261.33,
+      "error": null
+    },
+    {
+      "id": "amb-040-a",
+      "variant": "r2",
+      "target": "升",
+      "choices": [
+        "liter",
+        "to ascend",
+        "to elevate",
+        "to promote",
+        "to rise",
+        "a volume unit of measure:",
+        "litre (unit of measure for volume, chiefly for liquid measure, equal to one thousandth of the cubic metre)",
+        "sharp (♯)"
+      ],
+      "accepted_choices": [
+        "rise",
+        "increase",
+        "climb",
+        "rising",
+        "increasing",
+        "climbing"
+      ],
+      "output": "E",
+      "selected_choice": "to rise",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 262.6,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "r0",
+      "target": "升",
+      "choices": [
+        "liter",
+        "to ascend",
+        "to elevate",
+        "to promote",
+        "to rise",
+        "a volume unit of measure:",
+        "litre (unit of measure for volume, chiefly for liquid measure, equal to one thousandth of the cubic metre)",
+        "sharp (♯)"
+      ],
+      "accepted_choices": [
+        "promoted",
+        "to promote"
+      ],
+      "output": "E",
+      "selected_choice": "to rise",
+      "status": "incorrect",
+      "reason": "wrong_option",
+      "latency_ms": 262.85,
+      "error": null
+    },
+    {
+      "id": "amb-040-b",
+      "variant": "r2",
+      "target": "升",
+      "choices": [
+        "liter",
+        "to ascend",
+        "to elevate",
+        "to promote",
+        "to rise",
+        "a volume unit of measure:",
+        "litre (unit of measure for volume, chiefly for liquid measure, equal to one thousandth of the cubic metre)",
+        "sharp (♯)"
+      ],
+      "accepted_choices": [
+        "promoted",
+        "to promote"
+      ],
+      "output": "D",
+      "selected_choice": "to promote",
+      "status": "acceptable",
+      "reason": "",
+      "latency_ms": 260.67,
+      "error": null
+    }
+  ],
+  "rescored_at": "2026-10-21T12:41:06.447650+00:00"
+}

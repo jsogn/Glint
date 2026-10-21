@@ -26,11 +26,6 @@
 
 每个插件包含 `url`、`sha256`、版本、大小、许可证、语言和内存要求。
 
-OCR 插件使用 `type: "ocr"`、`runtime: "huggingface-onnx"`，目录中的 `url`
-是 Paddle 官方 Hugging Face 仓库，`revision` 固定模型版本，`artifactFile`
-指定权重文件名，`sha256` 是官方权重的 SHA-256。安装器只下载模型到插件目录；
-ONNX Runtime 和字符表由主 App 提供。
-
 MLX 模型使用 `runtime: "mlx"` 和 Hugging Face 仓库 URL。安装器会读取仓库
 snapshot、按 `revision` 固定版本并逐个文件下载；`sha256` 字段仅作为目录标识，
 真实权重以 Hugging Face LFS SHA-256 为准。
@@ -41,8 +36,7 @@ snapshot、按 `revision` 固定版本并逐个文件下载；`sha256` 字段仅
 2. `GLINT_HF_MIRROR`，默认 `https://hf-mirror.com`
 3. `https://huggingface.co`
 
-任一线路失败时都会清理当前临时结果并使用下一条线路重试。OCR 模型同样遵循
-这一顺序。
+任一线路失败时都会清理当前临时结果并使用下一条线路重试。
 
 `version` 是 Glint 插件接入包版本，不是上游模型版本，因此不在模型列表作为
 模型身份展示。界面展示模型名、简介、安装体积和许可证；更新状态只显示“有新版本”。
@@ -69,8 +63,8 @@ GLINT_PLUGIN_CATALOG_URL=https://example.com/glint/catalog.json \
 
 1. 拉取目录并展示可用插件；
 2. ZIP 插件下载到临时目录，校验 SHA-256 后解压；
-3. OCR 模型按 `revision + artifactFile` 从国内镜像或官方仓库直接下载；
-4. 校验模型大小和官方 SHA-256；
+3. MLX 模型按 `revision` 从国内镜像或官方仓库下载 snapshot；
+4. 校验模型文件；
 5. 写入插件清单并替换本地插件目录；
 6. 刷新真实安装状态。
 
@@ -79,8 +73,7 @@ GLINT_PLUGIN_CATALOG_URL=https://example.com/glint/catalog.json \
 
 ## 插件页
 
-- “翻译词典”“翻译模型”“文字识别”三个 Tab 展示对应插件；
-- Apple Vision 作为内置识别引擎显示在“文字识别”中，无需下载；
+- “翻译词典”“翻译模型”两个 Tab 展示对应插件；
 - 目录中未安装或版本更新的插件会直接出现在对应卡片中；
 - 下载进度、更新和安装错误都在对应位置展示。
 
@@ -101,8 +94,6 @@ http://127.0.0.1:8765/catalog.json
 
 CC-CEDICT、ECDICT、Wiktionary Chinese-English 和已安装的 OPUS-MT 会被打包并提供 SHA-256。
 Qwen3 模型不打包 ZIP，而是由 App 从固定 revision 的 Hugging Face snapshot 下载。
-PP-OCRv6 small 和 medium 只下载官方 `inference.onnx`，不经过 Glint CDN；
-两者共用 App 内置的 ONNX Runtime 和 PP-OCRv6 字符表。
 
 ## 当前限制
 

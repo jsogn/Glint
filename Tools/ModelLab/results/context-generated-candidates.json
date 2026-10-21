@@ -1,0 +1,2880 @@
+{
+  "generated_at": "2026-10-21T12:38:53.428209+00:00",
+  "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "validated": false,
+  "p50_latency_ms": 362.4,
+  "p95_latency_ms": 463.7,
+  "evaluation": {
+    "case_count": 80,
+    "available": 79,
+    "recall": 0.9875,
+    "candidate_precision": 0.7373134328358208,
+    "top1_accuracy": 0.8875,
+    "prompts": {
+      "direct": {
+        "generated": 240,
+        "accepted": 180,
+        "top1_hits": 71,
+        "precision": 0.75,
+        "top1_accuracy": 0.8875
+      },
+      "compound_aware": {
+        "generated": 237,
+        "accepted": 184,
+        "top1_hits": 72,
+        "precision": 0.7763713080168776,
+        "top1_accuracy": 0.9
+      }
+    }
+  },
+  "entries": {
+    "amb-001-a": {
+      "target": "方便",
+      "category": "polysemy",
+      "references": [
+        "instant"
+      ],
+      "candidates": [
+        "convenience",
+        "ready-to-eat",
+        "instant",
+        "quick-prep"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "convenience  \nready-to-eat  \ninstant",
+          "candidates": [
+            "convenience",
+            "ready-to-eat",
+            "instant"
+          ],
+          "latency_ms": 714.51
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "convenience  \nready-to-eat  \nquick-prep",
+          "candidates": [
+            "convenience",
+            "ready-to-eat",
+            "quick-prep"
+          ],
+          "latency_ms": 381.42
+        }
+      ]
+    },
+    "amb-001-b": {
+      "target": "方便",
+      "category": "polysemy",
+      "references": [
+        "convenient",
+        "available",
+        "free"
+      ],
+      "candidates": [
+        "available",
+        "free",
+        "at your convenience",
+        "at one's convenience"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "available  \nfree  \nat your convenience",
+          "candidates": [
+            "available",
+            "free",
+            "at your convenience"
+          ],
+          "latency_ms": 289.59
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "at one's convenience  \navailable  \nfree",
+          "candidates": [
+            "at one's convenience",
+            "available",
+            "free"
+          ],
+          "latency_ms": 300.44
+        }
+      ]
+    },
+    "amb-002-a": {
+      "target": "处理",
+      "category": "polysemy",
+      "references": [
+        "process"
+      ],
+      "candidates": [
+        "tackle",
+        "manage",
+        "analyze"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "tackle  \nmanage  \nanalyze",
+          "candidates": [
+            "tackle",
+            "manage",
+            "analyze"
+          ],
+          "latency_ms": 274.81
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "tackle  \nmanage  \nanalyze",
+          "candidates": [
+            "tackle",
+            "manage",
+            "analyze"
+          ],
+          "latency_ms": 311.38
+        }
+      ]
+    },
+    "amb-002-b": {
+      "target": "处理",
+      "category": "polysemy",
+      "references": [
+        "handle",
+        "deal with"
+      ],
+      "candidates": [
+        "manage",
+        "address",
+        "deal with"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "manage  \naddress  \ndeal with",
+          "candidates": [
+            "manage",
+            "address",
+            "deal with"
+          ],
+          "latency_ms": 277.26
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "manage  \naddress  \ndeal with",
+          "candidates": [
+            "manage",
+            "address",
+            "deal with"
+          ],
+          "latency_ms": 320.08
+        }
+      ]
+    },
+    "amb-003-a": {
+      "target": "发布",
+      "category": "polysemy",
+      "references": [
+        "release"
+      ],
+      "candidates": [
+        "launch",
+        "release",
+        "announce",
+        "introduce"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "launch  \nrelease  \nannounce",
+          "candidates": [
+            "launch",
+            "release",
+            "announce"
+          ],
+          "latency_ms": 268.09
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "launch  \nrelease  \nintroduce",
+          "candidates": [
+            "launch",
+            "release",
+            "introduce"
+          ],
+          "latency_ms": 317.5
+        }
+      ]
+    },
+    "amb-003-b": {
+      "target": "发布",
+      "category": "polysemy",
+      "references": [
+        "post",
+        "publish"
+      ],
+      "candidates": [
+        "post",
+        "share",
+        "announce",
+        "broadcast"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "post  \nshare  \nannounce",
+          "candidates": [
+            "post",
+            "share",
+            "announce"
+          ],
+          "latency_ms": 264.35
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "post  \nshare  \nbroadcast",
+          "candidates": [
+            "post",
+            "share",
+            "broadcast"
+          ],
+          "latency_ms": 303.74
+        }
+      ]
+    },
+    "amb-004-a": {
+      "target": "落地",
+      "category": "polysemy",
+      "references": [
+        "implemented",
+        "rolled out"
+      ],
+      "candidates": [
+        "implemented",
+        "put into action",
+        "deployed",
+        "put into practice",
+        "materialized"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "implemented  \nput into action  \ndeployed",
+          "candidates": [
+            "implemented",
+            "put into action",
+            "deployed"
+          ],
+          "latency_ms": 300.38
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "implemented  \nput into practice  \nmaterialized",
+          "candidates": [
+            "implemented",
+            "put into practice",
+            "materialized"
+          ],
+          "latency_ms": 337.36
+        }
+      ]
+    },
+    "amb-004-b": {
+      "target": "落地",
+      "category": "polysemy",
+      "references": [
+        "land",
+        "touch down"
+      ],
+      "candidates": [
+        "landing",
+        "touchdown",
+        "approach"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "landing  \ntouchdown  \napproach",
+          "candidates": [
+            "landing",
+            "touchdown",
+            "approach"
+          ],
+          "latency_ms": 286.29
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "landing  \ntouchdown  \napproach",
+          "candidates": [
+            "landing",
+            "touchdown",
+            "approach"
+          ],
+          "latency_ms": 291.03
+        }
+      ]
+    },
+    "amb-005-a": {
+      "target": "运行",
+      "category": "polysemy",
+      "references": [
+        "run",
+        "execute"
+      ],
+      "candidates": [
+        "run",
+        "execute",
+        "launch"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "run  \nexecute  \nlaunch",
+          "candidates": [
+            "run",
+            "execute",
+            "launch"
+          ],
+          "latency_ms": 263.0
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "run  \nexecute  \nlaunch",
+          "candidates": [
+            "run",
+            "execute",
+            "launch"
+          ],
+          "latency_ms": 299.63
+        }
+      ]
+    },
+    "amb-005-b": {
+      "target": "运行",
+      "category": "polysemy",
+      "references": [
+        "operating"
+      ],
+      "candidates": [
+        "operation",
+        "running",
+        "functioning"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "operation  \nrunning  \nfunctioning",
+          "candidates": [
+            "operation",
+            "running",
+            "functioning"
+          ],
+          "latency_ms": 270.43
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "operation  \nrunning  \nfunctioning",
+          "candidates": [
+            "operation",
+            "running",
+            "functioning"
+          ],
+          "latency_ms": 314.87
+        }
+      ]
+    },
+    "amb-006-a": {
+      "target": "看",
+      "category": "polysemy",
+      "references": [
+        "see",
+        "get examined"
+      ],
+      "candidates": [
+        "visit",
+        "examine",
+        "check out",
+        "to visit",
+        "to examine",
+        "to check out"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "visit  \nexamine  \ncheck out",
+          "candidates": [
+            "visit",
+            "examine",
+            "check out"
+          ],
+          "latency_ms": 291.5
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to visit  \nto examine  \nto check out",
+          "candidates": [
+            "to visit",
+            "to examine",
+            "to check out"
+          ],
+          "latency_ms": 349.85
+        }
+      ]
+    },
+    "amb-006-b": {
+      "target": "看",
+      "category": "polysemy",
+      "references": [
+        "read"
+      ],
+      "candidates": [
+        "reading",
+        "staring at",
+        "observing",
+        "gazing at"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "reading  \nstaring at  \nobserving",
+          "candidates": [
+            "reading",
+            "staring at",
+            "observing"
+          ],
+          "latency_ms": 310.6
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "reading  \nstaring at  \ngazing at",
+          "candidates": [
+            "reading",
+            "staring at",
+            "gazing at"
+          ],
+          "latency_ms": 325.36
+        }
+      ]
+    },
+    "amb-007-a": {
+      "target": "开",
+      "category": "polysemy",
+      "references": [
+        "drive"
+      ],
+      "candidates": [
+        "drives",
+        "takes",
+        "rides",
+        "to drive",
+        "to operate",
+        "to run"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "drives  \ntakes  \nrides",
+          "candidates": [
+            "drives",
+            "takes",
+            "rides"
+          ],
+          "latency_ms": 284.71
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to drive  \nto operate  \nto run",
+          "candidates": [
+            "to drive",
+            "to operate",
+            "to run"
+          ],
+          "latency_ms": 345.97
+        }
+      ]
+    },
+    "amb-007-b": {
+      "target": "开",
+      "category": "polysemy",
+      "references": [
+        "turn on"
+      ],
+      "candidates": [
+        "turn on",
+        "switch on",
+        "turn off"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "turn on  \nswitch on  \nturn off",
+          "candidates": [
+            "turn on",
+            "switch on",
+            "turn off"
+          ],
+          "latency_ms": 310.73
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "turn on  \nswitch on  \nturn on",
+          "candidates": [
+            "turn on",
+            "switch on"
+          ],
+          "latency_ms": 350.9
+        }
+      ]
+    },
+    "amb-008-a": {
+      "target": "打",
+      "category": "polysemy",
+      "references": [
+        "take"
+      ],
+      "candidates": [
+        "take",
+        "ride",
+        "hitch",
+        "take a cab",
+        "ride a cab",
+        "hail a cab"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "take  \nride  \nhitch",
+          "candidates": [
+            "take",
+            "ride",
+            "hitch"
+          ],
+          "latency_ms": 291.0
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "take a cab  \nride a cab  \nhail a cab",
+          "candidates": [
+            "take a cab",
+            "ride a cab",
+            "hail a cab"
+          ],
+          "latency_ms": 419.31
+        }
+      ]
+    },
+    "amb-008-b": {
+      "target": "打",
+      "category": "polysemy",
+      "references": [
+        "play"
+      ],
+      "candidates": [
+        "play",
+        "hit",
+        "throw",
+        "to play",
+        "to hit",
+        "to engage in"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "play  \nhit  \nthrow",
+          "candidates": [
+            "play",
+            "hit",
+            "throw"
+          ],
+          "latency_ms": 286.63
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to play  \nto hit  \nto engage in",
+          "candidates": [
+            "to play",
+            "to hit",
+            "to engage in"
+          ],
+          "latency_ms": 388.38
+        }
+      ]
+    },
+    "amb-009-a": {
+      "target": "上",
+      "category": "polysemy",
+      "references": [
+        "browse",
+        "go online"
+      ],
+      "candidates": [
+        "go online",
+        "access",
+        "log in to",
+        "to go online",
+        "to surf the internet",
+        "to access the internet"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "go online  \naccess  \nlog in to",
+          "candidates": [
+            "go online",
+            "access",
+            "log in to"
+          ],
+          "latency_ms": 331.0
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to go online  \nto surf the internet  \nto access the internet",
+          "candidates": [
+            "to go online",
+            "to surf the internet",
+            "to access the internet"
+          ],
+          "latency_ms": 439.63
+        }
+      ]
+    },
+    "amb-009-b": {
+      "target": "上",
+      "category": "polysemy",
+      "references": [
+        "attend",
+        "go to"
+      ],
+      "candidates": [
+        "enroll",
+        "start",
+        "attend"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "enroll  \nstart  \nattend",
+          "candidates": [
+            "enroll",
+            "start",
+            "attend"
+          ],
+          "latency_ms": 299.36
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "enroll  \nstart  \nattend",
+          "candidates": [
+            "enroll",
+            "start",
+            "attend"
+          ],
+          "latency_ms": 361.52
+        }
+      ]
+    },
+    "amb-010-a": {
+      "target": "下",
+      "category": "polysemy",
+      "references": [
+        "rain",
+        "raining"
+      ],
+      "candidates": [
+        "starts to rain",
+        "begins to pour",
+        "comes down",
+        "to start raining",
+        "to begin to rain",
+        "to come down (rain)"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "starts to rain  \nbegins to pour  \ncomes down",
+          "candidates": [
+            "starts to rain",
+            "begins to pour",
+            "comes down"
+          ],
+          "latency_ms": 386.35
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to start raining  \nto begin to rain  \nto come down (rain)",
+          "candidates": [
+            "to start raining",
+            "to begin to rain",
+            "to come down (rain)"
+          ],
+          "latency_ms": 483.71
+        }
+      ]
+    },
+    "amb-010-b": {
+      "target": "下",
+      "category": "polysemy",
+      "references": [
+        "get off"
+      ],
+      "candidates": [
+        "next",
+        "below",
+        "down",
+        "the next"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "next  \nbelow  \ndown",
+          "candidates": [
+            "next",
+            "below",
+            "down"
+          ],
+          "latency_ms": 308.12
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "next  \nthe next  \nbelow",
+          "candidates": [
+            "next",
+            "the next",
+            "below"
+          ],
+          "latency_ms": 379.08
+        }
+      ]
+    },
+    "amb-011-a": {
+      "target": "点",
+      "category": "polysemy",
+      "references": [
+        "order"
+      ],
+      "candidates": [
+        "order",
+        "place",
+        "click",
+        "order food"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "order  \nplace  \nclick",
+          "candidates": [
+            "order",
+            "place",
+            "click"
+          ],
+          "latency_ms": 317.33
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "place  \norder  \norder food",
+          "candidates": [
+            "place",
+            "order",
+            "order food"
+          ],
+          "latency_ms": 330.75
+        }
+      ]
+    },
+    "amb-011-b": {
+      "target": "点",
+      "category": "polysemy",
+      "references": [
+        "nod"
+      ],
+      "candidates": [
+        "nodded",
+        "indicated",
+        "approved",
+        "gave a nod",
+        "pressed"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "nodded  \nindicated  \napproved",
+          "candidates": [
+            "nodded",
+            "indicated",
+            "approved"
+          ],
+          "latency_ms": 350.96
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "nodded  \ngave a nod  \npressed",
+          "candidates": [
+            "nodded",
+            "gave a nod",
+            "pressed"
+          ],
+          "latency_ms": 419.85
+        }
+      ]
+    },
+    "amb-012-a": {
+      "target": "花",
+      "category": "polysemy",
+      "references": [
+        "spend"
+      ],
+      "candidates": [
+        "spends",
+        "pays",
+        "destroys",
+        "pends (rare)",
+        "distributes (in a specific context)"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "spends  \npays  \ndestroys",
+          "candidates": [
+            "spends",
+            "pays",
+            "destroys"
+          ],
+          "latency_ms": 351.38
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "spends  \npends (rare)  \ndistributes (in a specific context)",
+          "candidates": [
+            "spends",
+            "pends (rare)",
+            "distributes (in a specific context)"
+          ],
+          "latency_ms": 545.72
+        }
+      ]
+    },
+    "amb-012-b": {
+      "target": "花",
+      "category": "polysemy",
+      "references": [
+        "flower",
+        "flowers"
+      ],
+      "candidates": [
+        "flowers",
+        "bouquet",
+        "blossoms"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "flowers  \nbouquet  \nblossoms",
+          "candidates": [
+            "flowers",
+            "bouquet",
+            "blossoms"
+          ],
+          "latency_ms": 359.24
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "flowers  \nbouquet  \nblossoms",
+          "candidates": [
+            "flowers",
+            "bouquet",
+            "blossoms"
+          ],
+          "latency_ms": 405.56
+        }
+      ]
+    },
+    "amb-013-a": {
+      "target": "过",
+      "category": "polysemy",
+      "references": [
+        "celebrate"
+      ],
+      "candidates": [
+        "celebrate",
+        "observe",
+        "have",
+        "to celebrate",
+        "to observe",
+        "to have"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "celebrate  \nobserve  \nhave",
+          "candidates": [
+            "celebrate",
+            "observe",
+            "have"
+          ],
+          "latency_ms": 317.02
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to celebrate  \nto observe  \nto have",
+          "candidates": [
+            "to celebrate",
+            "to observe",
+            "to have"
+          ],
+          "latency_ms": 395.75
+        }
+      ]
+    },
+    "amb-013-b": {
+      "target": "过",
+      "category": "polysemy",
+      "references": [
+        "cross"
+      ],
+      "candidates": [
+        "cross",
+        "go through",
+        "pass",
+        "to cross",
+        "to go through",
+        "to pass"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "cross  \ngo through  \npass",
+          "candidates": [
+            "cross",
+            "go through",
+            "pass"
+          ],
+          "latency_ms": 324.75
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to cross  \nto go through  \nto pass",
+          "candidates": [
+            "to cross",
+            "to go through",
+            "to pass"
+          ],
+          "latency_ms": 414.62
+        }
+      ]
+    },
+    "amb-014-a": {
+      "target": "走",
+      "category": "polysemy",
+      "references": [
+        "walk"
+      ],
+      "candidates": [
+        "walk",
+        "go",
+        "take a stroll",
+        "to walk",
+        "to go",
+        "to stroll"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "walk  \ngo  \ntake a stroll",
+          "candidates": [
+            "walk",
+            "go",
+            "take a stroll"
+          ],
+          "latency_ms": 338.45
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to walk  \nto go  \nto stroll",
+          "candidates": [
+            "to walk",
+            "to go",
+            "to stroll"
+          ],
+          "latency_ms": 406.67
+        }
+      ]
+    },
+    "amb-014-b": {
+      "target": "走",
+      "category": "polysemy",
+      "references": [
+        "leave",
+        "go"
+      ],
+      "candidates": [
+        "let's go",
+        "depart",
+        "leave",
+        "walk away",
+        "move on"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "let's go  \ndepart  \nleave",
+          "candidates": [
+            "let's go",
+            "depart",
+            "leave"
+          ],
+          "latency_ms": 350.01
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "let's go  \nwalk away  \nmove on",
+          "candidates": [
+            "let's go",
+            "walk away",
+            "move on"
+          ],
+          "latency_ms": 428.44
+        }
+      ]
+    },
+    "amb-015-a": {
+      "target": "发",
+      "category": "polysemy",
+      "references": [
+        "send"
+      ],
+      "candidates": [
+        "send",
+        "dispatch",
+        "forward",
+        "transmit"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "send  \ndispatch  \nforward",
+          "candidates": [
+            "send",
+            "dispatch",
+            "forward"
+          ],
+          "latency_ms": 324.94
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "send  \ndispatch  \ntransmit",
+          "candidates": [
+            "send",
+            "dispatch",
+            "transmit"
+          ],
+          "latency_ms": 393.86
+        }
+      ]
+    },
+    "amb-015-b": {
+      "target": "发",
+      "category": "polysemy",
+      "references": [
+        "pay"
+      ],
+      "candidates": [
+        "pay",
+        "distribute",
+        "issue"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "pay  \ndistribute  \nissue",
+          "candidates": [
+            "pay",
+            "distribute",
+            "issue"
+          ],
+          "latency_ms": 340.47
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "issue  \ndistribute  \npay",
+          "candidates": [
+            "issue",
+            "distribute",
+            "pay"
+          ],
+          "latency_ms": 375.41
+        }
+      ]
+    },
+    "amb-016-a": {
+      "target": "收",
+      "category": "polysemy",
+      "references": [
+        "receive"
+      ],
+      "candidates": [
+        "receive",
+        "inbox",
+        "pickup",
+        "get"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "receive  \ninbox  \npickup",
+          "candidates": [
+            "receive",
+            "inbox",
+            "pickup"
+          ],
+          "latency_ms": 300.81
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "receive  \npickup  \nget",
+          "candidates": [
+            "receive",
+            "pickup",
+            "get"
+          ],
+          "latency_ms": 390.32
+        }
+      ]
+    },
+    "amb-016-b": {
+      "target": "收",
+      "category": "polysemy",
+      "references": [
+        "bring in",
+        "collect"
+      ],
+      "candidates": [
+        "put away",
+        "fold",
+        "store",
+        "take off"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "put away  \nfold  \nstore",
+          "candidates": [
+            "put away",
+            "fold",
+            "store"
+          ],
+          "latency_ms": 335.08
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "put away  \ntake off  \nfold",
+          "candidates": [
+            "put away",
+            "take off",
+            "fold"
+          ],
+          "latency_ms": 352.33
+        }
+      ]
+    },
+    "amb-017-a": {
+      "target": "接",
+      "category": "polysemy",
+      "references": [
+        "answer"
+      ],
+      "candidates": [
+        "take",
+        "answer",
+        "receive"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "take  \nanswer  \nreceive",
+          "candidates": [
+            "take",
+            "answer",
+            "receive"
+          ],
+          "latency_ms": 342.09
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "take  \nanswer  \nreceive",
+          "candidates": [
+            "take",
+            "answer",
+            "receive"
+          ],
+          "latency_ms": 347.78
+        }
+      ]
+    },
+    "amb-017-b": {
+      "target": "接",
+      "category": "polysemy",
+      "references": [
+        "take on",
+        "accept"
+      ],
+      "candidates": [
+        "take on",
+        "accept",
+        "take over",
+        "to take on",
+        "to accept",
+        "to undertake"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "take on  \naccept  \ntake over",
+          "candidates": [
+            "take on",
+            "accept",
+            "take over"
+          ],
+          "latency_ms": 381.97
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to take on  \nto accept  \nto undertake",
+          "candidates": [
+            "to take on",
+            "to accept",
+            "to undertake"
+          ],
+          "latency_ms": 444.58
+        }
+      ]
+    },
+    "amb-018-a": {
+      "target": "带",
+      "category": "polysemy",
+      "references": [
+        "look after",
+        "care for"
+      ],
+      "candidates": [
+        "takes care of",
+        "looks after",
+        "chews on",
+        "to look after",
+        "to care for",
+        "to raise"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "takes care of  \nlooks after  \nchews on",
+          "candidates": [
+            "takes care of",
+            "looks after",
+            "chews on"
+          ],
+          "latency_ms": 488.95
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to look after  \nto care for  \nto raise",
+          "candidates": [
+            "to look after",
+            "to care for",
+            "to raise"
+          ],
+          "latency_ms": 509.62
+        }
+      ]
+    },
+    "amb-018-b": {
+      "target": "带",
+      "category": "polysemy",
+      "references": [
+        "lead"
+      ],
+      "candidates": [
+        "leads",
+        "manages",
+        "supervises",
+        "guides"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "leads  \nmanages  \nsupervises",
+          "candidates": [
+            "leads",
+            "manages",
+            "supervises"
+          ],
+          "latency_ms": 430.94
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "leads  \nguides  \nsupervises",
+          "candidates": [
+            "leads",
+            "guides",
+            "supervises"
+          ],
+          "latency_ms": 465.73
+        }
+      ]
+    },
+    "amb-019-a": {
+      "target": "换",
+      "category": "polysemy",
+      "references": [
+        "change"
+      ],
+      "candidates": [
+        "change",
+        "switch",
+        "replace"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "change  \nswitch  \nreplace",
+          "candidates": [
+            "change",
+            "switch",
+            "replace"
+          ],
+          "latency_ms": 379.99
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "switch  \nchange  \nreplace",
+          "candidates": [
+            "switch",
+            "change",
+            "replace"
+          ],
+          "latency_ms": 361.97
+        }
+      ]
+    },
+    "amb-019-b": {
+      "target": "换",
+      "category": "polysemy",
+      "references": [
+        "replace",
+        "change"
+      ],
+      "candidates": [
+        "replace",
+        "swap",
+        "change"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "replace  \nswap  \nchange",
+          "candidates": [
+            "replace",
+            "swap",
+            "change"
+          ],
+          "latency_ms": 352.02
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "replace  \nswap  \nchange",
+          "candidates": [
+            "replace",
+            "swap",
+            "change"
+          ],
+          "latency_ms": 421.68
+        }
+      ]
+    },
+    "amb-020-a": {
+      "target": "存",
+      "category": "polysemy",
+      "references": [
+        "save"
+      ],
+      "candidates": [
+        "save",
+        "set aside",
+        "accumulate"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "save  \nset aside  \naccumulate",
+          "candidates": [
+            "save",
+            "set aside",
+            "accumulate"
+          ],
+          "latency_ms": 376.94
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "save  \nset aside  \naccumulate",
+          "candidates": [
+            "save",
+            "set aside",
+            "accumulate"
+          ],
+          "latency_ms": 425.32
+        }
+      ]
+    },
+    "amb-020-b": {
+      "target": "存",
+      "category": "polysemy",
+      "references": [
+        "stock",
+        "inventory"
+      ],
+      "candidates": [
+        "remaining",
+        "stored",
+        "available",
+        "stock",
+        "reserve"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "remaining  \nstored  \navailable",
+          "candidates": [
+            "remaining",
+            "stored",
+            "available"
+          ],
+          "latency_ms": 356.6
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "stock  \nremaining  \nreserve",
+          "candidates": [
+            "stock",
+            "remaining",
+            "reserve"
+          ],
+          "latency_ms": 405.57
+        }
+      ]
+    },
+    "amb-021-a": {
+      "target": "放",
+      "category": "polysemy",
+      "references": [
+        "play"
+      ],
+      "candidates": [
+        "play",
+        "set",
+        "stream",
+        "broadcast"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "play  \nset  \nstream",
+          "candidates": [
+            "play",
+            "set",
+            "stream"
+          ],
+          "latency_ms": 318.81
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "play  \nbroadcast  \nstream",
+          "candidates": [
+            "play",
+            "broadcast",
+            "stream"
+          ],
+          "latency_ms": 325.9
+        }
+      ]
+    },
+    "amb-021-b": {
+      "target": "放",
+      "category": "polysemy",
+      "references": [
+        "put",
+        "place"
+      ],
+      "candidates": [
+        "place",
+        "put",
+        "store",
+        "to place",
+        "to put",
+        "to set"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "place  \nput  \nstore",
+          "candidates": [
+            "place",
+            "put",
+            "store"
+          ],
+          "latency_ms": 341.58
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to place  \nto put  \nto set",
+          "candidates": [
+            "to place",
+            "to put",
+            "to set"
+          ],
+          "latency_ms": 448.68
+        }
+      ]
+    },
+    "amb-022-a": {
+      "target": "做",
+      "category": "polysemy",
+      "references": [
+        "cook",
+        "make"
+      ],
+      "candidates": [
+        "cooking",
+        "preparing",
+        "handling",
+        "is cooking",
+        "is preparing",
+        "is cooking dinner"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "cooking  \npreparing  \nhandling",
+          "candidates": [
+            "cooking",
+            "preparing",
+            "handling"
+          ],
+          "latency_ms": 372.39
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "is cooking  \nis preparing  \nis cooking dinner",
+          "candidates": [
+            "is cooking",
+            "is preparing",
+            "is cooking dinner"
+          ],
+          "latency_ms": 483.46
+        }
+      ]
+    },
+    "amb-022-b": {
+      "target": "做",
+      "category": "polysemy",
+      "references": [
+        "make"
+      ],
+      "candidates": [
+        "make",
+        "decide",
+        "take",
+        "to make",
+        "to decide",
+        "to carry out"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "make  \ndecide  \ntake",
+          "candidates": [
+            "make",
+            "decide",
+            "take"
+          ],
+          "latency_ms": 384.52
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to make  \nto decide  \nto carry out",
+          "candidates": [
+            "to make",
+            "to decide",
+            "to carry out"
+          ],
+          "latency_ms": 421.83
+        }
+      ]
+    },
+    "amb-023-a": {
+      "target": "想",
+      "category": "polysemy",
+      "references": [
+        "miss"
+      ],
+      "candidates": [
+        "longed",
+        "missed",
+        "thought of"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "longed  \nmissed  \nthought of",
+          "candidates": [
+            "longed",
+            "missed",
+            "thought of"
+          ],
+          "latency_ms": 406.53
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "longed  \nmissed  \nthought of",
+          "candidates": [
+            "longed",
+            "missed",
+            "thought of"
+          ],
+          "latency_ms": 462.51
+        }
+      ]
+    },
+    "amb-023-b": {
+      "target": "想",
+      "category": "polysemy",
+      "references": [
+        "think of",
+        "come up with"
+      ],
+      "candidates": [
+        "to think",
+        "to come up with",
+        "to figure"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "to think  \nto come up with  \nto figure",
+          "candidates": [
+            "to think",
+            "to come up with",
+            "to figure"
+          ],
+          "latency_ms": 429.83
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to think  \nto come up with  \nto figure",
+          "candidates": [
+            "to think",
+            "to come up with",
+            "to figure"
+          ],
+          "latency_ms": 416.72
+        }
+      ]
+    },
+    "amb-024-a": {
+      "target": "问",
+      "category": "polysemy",
+      "references": [
+        "ask"
+      ],
+      "candidates": [
+        "ask",
+        "inquire",
+        "question",
+        "to inquire",
+        "to ask",
+        "to question"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "ask  \ninquire  \nquestion",
+          "candidates": [
+            "ask",
+            "inquire",
+            "question"
+          ],
+          "latency_ms": 351.91
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "to inquire  \nto ask  \nto question",
+          "candidates": [
+            "to inquire",
+            "to ask",
+            "to question"
+          ],
+          "latency_ms": 430.14
+        }
+      ]
+    },
+    "amb-024-b": {
+      "target": "问",
+      "category": "polysemy",
+      "references": [
+        "hold accountable",
+        "hold responsible"
+      ],
+      "candidates": [
+        "hold accountable",
+        "question",
+        "blame"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "hold accountable  \nquestion  \nblame",
+          "candidates": [
+            "hold accountable",
+            "question",
+            "blame"
+          ],
+          "latency_ms": 374.09
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "hold accountable  \nquestion  \nblame",
+          "candidates": [
+            "hold accountable",
+            "question",
+            "blame"
+          ],
+          "latency_ms": 421.68
+        }
+      ]
+    },
+    "amb-025-a": {
+      "target": "报",
+      "category": "polysemy",
+      "references": [
+        "register",
+        "sign up"
+      ],
+      "candidates": [
+        "register",
+        "apply",
+        "sign up"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "register  \napply  \nsign up",
+          "candidates": [
+            "register",
+            "apply",
+            "sign up"
+          ],
+          "latency_ms": 342.83
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "sign up  \nregister  \napply",
+          "candidates": [
+            "sign up",
+            "register",
+            "apply"
+          ],
+          "latency_ms": 394.74
+        }
+      ]
+    },
+    "amb-025-b": {
+      "target": "报",
+      "category": "polysemy",
+      "references": [
+        "call"
+      ],
+      "candidates": [
+        "call",
+        "report",
+        "alert",
+        "notify"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "call  \nreport  \nalert",
+          "candidates": [
+            "call",
+            "report",
+            "alert"
+          ],
+          "latency_ms": 340.38
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "report  \nalert  \nnotify",
+          "candidates": [
+            "report",
+            "alert",
+            "notify"
+          ],
+          "latency_ms": 398.98
+        }
+      ]
+    },
+    "amb-026-a": {
+      "target": "结",
+      "category": "polysemy",
+      "references": [
+        "pay"
+      ],
+      "candidates": [
+        "finalise",
+        "pay",
+        "settle",
+        "close",
+        "finish"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "finalise  \npay  \nsettle",
+          "candidates": [
+            "finalise",
+            "pay",
+            "settle"
+          ],
+          "latency_ms": 384.41
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "settle  \nclose  \nfinish",
+          "candidates": [
+            "settle",
+            "close",
+            "finish"
+          ],
+          "latency_ms": 427.97
+        }
+      ]
+    },
+    "amb-026-b": {
+      "target": "结",
+      "category": "polysemy",
+      "references": [
+        "end",
+        "finish"
+      ],
+      "candidates": [
+        "ended",
+        "closed",
+        "concluded",
+        "finished"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "ended  \nclosed  \nconcluded",
+          "candidates": [
+            "ended",
+            "closed",
+            "concluded"
+          ],
+          "latency_ms": 363.06
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "ended  \nconcluded  \nfinished",
+          "candidates": [
+            "ended",
+            "concluded",
+            "finished"
+          ],
+          "latency_ms": 416.47
+        }
+      ]
+    },
+    "amb-027-a": {
+      "target": "行",
+      "category": "polysemy",
+      "references": [
+        "okay",
+        "work"
+      ],
+      "candidates": [
+        "okay",
+        "yes",
+        "possible",
+        "fine"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "okay  \nyes  \npossible",
+          "candidates": [
+            "okay",
+            "yes",
+            "possible"
+          ],
+          "latency_ms": 354.87
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "okay  \nfine  \nyes",
+          "candidates": [
+            "okay",
+            "fine",
+            "yes"
+          ],
+          "latency_ms": 402.76
+        }
+      ]
+    },
+    "amb-027-b": {
+      "target": "行",
+      "category": "polysemy",
+      "references": [
+        "bank"
+      ],
+      "candidates": [
+        "bank",
+        "institution",
+        "branch"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "bank  \ninstitution  \nbranch",
+          "candidates": [
+            "bank",
+            "institution",
+            "branch"
+          ],
+          "latency_ms": 341.55
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "bank",
+          "candidates": [
+            "bank"
+          ],
+          "latency_ms": 345.64
+        }
+      ]
+    },
+    "amb-028-a": {
+      "target": "还",
+      "category": "polysemy",
+      "references": [
+        "return",
+        "give back"
+      ],
+      "candidates": [
+        "return",
+        "pay back",
+        "refund",
+        "reimburse"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "return  \npay back  \nrefund",
+          "candidates": [
+            "return",
+            "pay back",
+            "refund"
+          ],
+          "latency_ms": 353.09
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "return  \npay back  \nreimburse",
+          "candidates": [
+            "return",
+            "pay back",
+            "reimburse"
+          ],
+          "latency_ms": 434.11
+        }
+      ]
+    },
+    "amb-028-b": {
+      "target": "还",
+      "category": "polysemy",
+      "references": [
+        "still"
+      ],
+      "candidates": [
+        "hasn't yet",
+        "still",
+        "not yet",
+        "has yet"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "hasn't yet  \nstill  \nnot yet",
+          "candidates": [
+            "hasn't yet",
+            "still",
+            "not yet"
+          ],
+          "latency_ms": 374.59
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "has yet  \nstill  \nnot yet",
+          "candidates": [
+            "has yet",
+            "still",
+            "not yet"
+          ],
+          "latency_ms": 388.43
+        }
+      ]
+    },
+    "amb-029-a": {
+      "target": "差",
+      "category": "polysemy",
+      "references": [
+        "about",
+        "almost"
+      ],
+      "candidates": [
+        "short of",
+        "a bit",
+        "slightly"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "short of  \na bit  \nslightly",
+          "candidates": [
+            "short of",
+            "a bit",
+            "slightly"
+          ],
+          "latency_ms": 362.4
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "short of  \na bit  \nslightly",
+          "candidates": [
+            "short of",
+            "a bit",
+            "slightly"
+          ],
+          "latency_ms": 404.59
+        }
+      ]
+    },
+    "amb-029-b": {
+      "target": "差",
+      "category": "polysemy",
+      "references": [
+        "differ",
+        "different"
+      ],
+      "candidates": [
+        "different",
+        "far apart",
+        "offensive"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "different  \nfar apart  \noffensive",
+          "candidates": [
+            "different",
+            "far apart",
+            "offensive"
+          ],
+          "latency_ms": 340.4
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "different  \nfar apart  \noffensive",
+          "candidates": [
+            "different",
+            "far apart",
+            "offensive"
+          ],
+          "latency_ms": 389.82
+        }
+      ]
+    },
+    "amb-030-a": {
+      "target": "好",
+      "category": "polysemy",
+      "references": [
+        "ready",
+        "done"
+      ],
+      "candidates": [
+        "ready",
+        "done",
+        "perfect",
+        "prepared"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "ready  \ndone  \nperfect",
+          "candidates": [
+            "ready",
+            "done",
+            "perfect"
+          ],
+          "latency_ms": 312.04
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "ready  \ndone  \nprepared",
+          "candidates": [
+            "ready",
+            "done",
+            "prepared"
+          ],
+          "latency_ms": 362.68
+        }
+      ]
+    },
+    "amb-030-b": {
+      "target": "好",
+      "category": "polysemy",
+      "references": [
+        "easy"
+      ],
+      "candidates": [
+        "easy",
+        "smooth",
+        "pleasant"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "easy  \nsmooth  \npleasant",
+          "candidates": [
+            "easy",
+            "smooth",
+            "pleasant"
+          ],
+          "latency_ms": 321.9
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "easy  \nsmooth  \npleasant",
+          "candidates": [
+            "easy",
+            "smooth",
+            "pleasant"
+          ],
+          "latency_ms": 378.56
+        }
+      ]
+    },
+    "amb-031-a": {
+      "target": "大",
+      "category": "polysemy",
+      "references": [
+        "large",
+        "big"
+      ],
+      "candidates": [
+        "large",
+        "giant",
+        "massive"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "large  \ngiant  \nmassive",
+          "candidates": [
+            "large",
+            "giant",
+            "massive"
+          ],
+          "latency_ms": 345.89
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "large  \ngiant  \nmassive",
+          "candidates": [
+            "large",
+            "giant",
+            "massive"
+          ],
+          "latency_ms": 387.67
+        }
+      ]
+    },
+    "amb-031-b": {
+      "target": "大",
+      "category": "polysemy",
+      "references": [
+        "heavy"
+      ],
+      "candidates": [
+        "heavy",
+        "intense",
+        "big",
+        "strong"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "heavy  \nintense  \nbig",
+          "candidates": [
+            "heavy",
+            "intense",
+            "big"
+          ],
+          "latency_ms": 324.02
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "heavy  \nintense  \nstrong",
+          "candidates": [
+            "heavy",
+            "intense",
+            "strong"
+          ],
+          "latency_ms": 389.49
+        }
+      ]
+    },
+    "amb-032-a": {
+      "target": "小",
+      "category": "polysemy",
+      "references": [
+        "quietly",
+        "softly"
+      ],
+      "candidates": [
+        "quiet",
+        "soft",
+        "light",
+        "small",
+        "low"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "quiet  \nsoft  \nlight",
+          "candidates": [
+            "quiet",
+            "soft",
+            "light"
+          ],
+          "latency_ms": 327.27
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "quiet  \nsmall  \nlow",
+          "candidates": [
+            "quiet",
+            "small",
+            "low"
+          ],
+          "latency_ms": 392.13
+        }
+      ]
+    },
+    "amb-032-b": {
+      "target": "小",
+      "category": "polysemy",
+      "references": [
+        "small"
+      ],
+      "candidates": [
+        "minor",
+        "small",
+        "tiny"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "minor  \nsmall  \ntiny",
+          "candidates": [
+            "minor",
+            "small",
+            "tiny"
+          ],
+          "latency_ms": 331.69
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "small  \ntiny  \nminor",
+          "candidates": [
+            "small",
+            "tiny",
+            "minor"
+          ],
+          "latency_ms": 389.73
+        }
+      ]
+    },
+    "amb-033-a": {
+      "target": "新",
+      "category": "polysemy",
+      "references": [
+        "news"
+      ],
+      "candidates": [
+        "new",
+        "recent",
+        "fresh",
+        "news",
+        "newspaper"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "new  \nrecent  \nfresh",
+          "candidates": [
+            "new",
+            "recent",
+            "fresh"
+          ],
+          "latency_ms": 335.41
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "new  \nnews  \nnewspaper",
+          "candidates": [
+            "new",
+            "news",
+            "newspaper"
+          ],
+          "latency_ms": 413.64
+        }
+      ]
+    },
+    "amb-033-b": {
+      "target": "新",
+      "category": "polysemy",
+      "references": [
+        "new"
+      ],
+      "candidates": [
+        "new",
+        "recent",
+        "fresh",
+        "newly",
+        "recently"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "new  \nrecent  \nfresh",
+          "candidates": [
+            "new",
+            "recent",
+            "fresh"
+          ],
+          "latency_ms": 324.15
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "new  \nnewly  \nrecently",
+          "candidates": [
+            "new",
+            "newly",
+            "recently"
+          ],
+          "latency_ms": 351.28
+        }
+      ]
+    },
+    "amb-034-a": {
+      "target": "老",
+      "category": "polysemy",
+      "references": [
+        "old",
+        "long-established"
+      ],
+      "candidates": [
+        "old",
+        "traditional",
+        "long-established",
+        "timeless",
+        "classic"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "old  \ntraditional  \nlong-established",
+          "candidates": [
+            "old",
+            "traditional",
+            "long-established"
+          ],
+          "latency_ms": 340.2
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "old  \ntimeless  \nclassic",
+          "candidates": [
+            "old",
+            "timeless",
+            "classic"
+          ],
+          "latency_ms": 406.4
+        }
+      ]
+    },
+    "amb-034-b": {
+      "target": "老",
+      "category": "polysemy",
+      "references": [
+        "always"
+      ],
+      "candidates": [
+        "just",
+        "always",
+        "nevertheless"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "just  \nalways  \nnevertheless",
+          "candidates": [
+            "just",
+            "always",
+            "nevertheless"
+          ],
+          "latency_ms": 353.09
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "just  \nalways  \nnevertheless",
+          "candidates": [
+            "just",
+            "always",
+            "nevertheless"
+          ],
+          "latency_ms": 403.89
+        }
+      ]
+    },
+    "amb-035-a": {
+      "target": "快",
+      "category": "polysemy",
+      "references": [
+        "fast"
+      ],
+      "candidates": [
+        "fast",
+        "quick",
+        "rapid"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "fast  \nquick  \nrapid",
+          "candidates": [
+            "fast",
+            "quick",
+            "rapid"
+          ],
+          "latency_ms": 340.49
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "fast  \nquick  \nrapid",
+          "candidates": [
+            "fast",
+            "quick",
+            "rapid"
+          ],
+          "latency_ms": 396.39
+        }
+      ]
+    },
+    "amb-035-b": {
+      "target": "快",
+      "category": "polysemy",
+      "references": [
+        "soon"
+      ],
+      "candidates": [
+        "soon",
+        "early",
+        "approaching",
+        "in a hurry"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "soon  \nearly  \napproaching",
+          "candidates": [
+            "soon",
+            "early",
+            "approaching"
+          ],
+          "latency_ms": 356.93
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "approaching  \nsoon  \nin a hurry",
+          "candidates": [
+            "approaching",
+            "soon",
+            "in a hurry"
+          ],
+          "latency_ms": 369.99
+        }
+      ]
+    },
+    "amb-036-a": {
+      "target": "轻",
+      "category": "polysemy",
+      "references": [
+        "light"
+      ],
+      "candidates": [
+        "light",
+        "lightweight",
+        "light-bodied",
+        "lightness"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "light  \nlightweight  \nlight-bodied",
+          "candidates": [
+            "light",
+            "lightweight",
+            "light-bodied"
+          ],
+          "latency_ms": 360.23
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "light  \nlightweight  \nlightness",
+          "candidates": [
+            "light",
+            "lightweight",
+            "lightness"
+          ],
+          "latency_ms": 402.86
+        }
+      ]
+    },
+    "amb-036-b": {
+      "target": "轻",
+      "category": "polysemy",
+      "references": [
+        "gently",
+        "softly"
+      ],
+      "candidates": [
+        "gently",
+        "softly",
+        "lightly"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "gently  \nsoftly  \nlightly",
+          "candidates": [
+            "gently",
+            "softly",
+            "lightly"
+          ],
+          "latency_ms": 361.78
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "gently  \nsoftly  \nlightly",
+          "candidates": [
+            "gently",
+            "softly",
+            "lightly"
+          ],
+          "latency_ms": 414.85
+        }
+      ]
+    },
+    "amb-037-a": {
+      "target": "重",
+      "category": "polysemy",
+      "references": [
+        "heavy"
+      ],
+      "candidates": [
+        "heavy",
+        "burden",
+        "weight",
+        "too heavy",
+        "burdened"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "heavy  \nburden  \nweight",
+          "candidates": [
+            "heavy",
+            "burden",
+            "weight"
+          ],
+          "latency_ms": 359.86
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "heavy  \ntoo heavy  \nburdened",
+          "candidates": [
+            "heavy",
+            "too heavy",
+            "burdened"
+          ],
+          "latency_ms": 465.44
+        }
+      ]
+    },
+    "amb-037-b": {
+      "target": "重",
+      "category": "polysemy",
+      "references": [
+        "again",
+        "re"
+      ],
+      "candidates": [
+        "re",
+        "again",
+        "once",
+        "once again"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "re  \nagain  \nonce",
+          "candidates": [
+            "re",
+            "again",
+            "once"
+          ],
+          "latency_ms": 372.02
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "re  \nagain  \nonce again",
+          "candidates": [
+            "re",
+            "again",
+            "once again"
+          ],
+          "latency_ms": 462.17
+        }
+      ]
+    },
+    "amb-038-a": {
+      "target": "留",
+      "category": "polysemy",
+      "references": [
+        "stay"
+      ],
+      "candidates": [
+        "stay",
+        "remain",
+        "keep"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "stay  \nremain  \nkeep",
+          "candidates": [
+            "stay",
+            "remain",
+            "keep"
+          ],
+          "latency_ms": 386.05
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "stay  \nremain  \nkeep",
+          "candidates": [
+            "stay",
+            "remain",
+            "keep"
+          ],
+          "latency_ms": 463.7
+        }
+      ]
+    },
+    "amb-038-b": {
+      "target": "留",
+      "category": "polysemy",
+      "references": [
+        "leave"
+      ],
+      "candidates": [
+        "reserve",
+        "keep",
+        "allow",
+        "leave",
+        "retain"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "reserve  \nkeep  \nallow",
+          "candidates": [
+            "reserve",
+            "keep",
+            "allow"
+          ],
+          "latency_ms": 388.63
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "leave  \nretain  \nreserve",
+          "candidates": [
+            "leave",
+            "retain",
+            "reserve"
+          ],
+          "latency_ms": 446.28
+        }
+      ]
+    },
+    "amb-039-a": {
+      "target": "退",
+      "category": "polysemy",
+      "references": [
+        "return"
+      ],
+      "candidates": [
+        "return",
+        "refund",
+        "cancel",
+        "revoke"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "return  \nrefund  \ncancel",
+          "candidates": [
+            "return",
+            "refund",
+            "cancel"
+          ],
+          "latency_ms": 359.27
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "return  \nrevoke  \ncancel",
+          "candidates": [
+            "return",
+            "revoke",
+            "cancel"
+          ],
+          "latency_ms": 362.86
+        }
+      ]
+    },
+    "amb-039-b": {
+      "target": "退",
+      "category": "polysemy",
+      "references": [
+        "step back",
+        "move back"
+      ],
+      "candidates": [
+        "step back",
+        "recede",
+        "withdraw"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "step back  \nrecede  \nwithdraw",
+          "candidates": [
+            "step back",
+            "recede",
+            "withdraw"
+          ],
+          "latency_ms": 377.48
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "step back  \nrecede  \nwithdraw",
+          "candidates": [
+            "step back",
+            "recede",
+            "withdraw"
+          ],
+          "latency_ms": 445.72
+        }
+      ]
+    },
+    "amb-040-a": {
+      "target": "升",
+      "category": "polysemy",
+      "references": [
+        "rise",
+        "increase"
+      ],
+      "candidates": [
+        "rise",
+        "increase",
+        "climb",
+        "rising",
+        "increasing",
+        "climbing"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "rise  \nincrease  \nclimb",
+          "candidates": [
+            "rise",
+            "increase",
+            "climb"
+          ],
+          "latency_ms": 342.89
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "rising  \nincreasing  \nclimbing",
+          "candidates": [
+            "rising",
+            "increasing",
+            "climbing"
+          ],
+          "latency_ms": 426.87
+        }
+      ]
+    },
+    "amb-040-b": {
+      "target": "升",
+      "category": "polysemy",
+      "references": [
+        "promoted"
+      ],
+      "candidates": [
+        "promoted",
+        "advanced",
+        "elevated"
+      ],
+      "generations": [
+        {
+          "prompt": "direct",
+          "output": "promoted  \nadvanced  \nelevated",
+          "candidates": [
+            "promoted",
+            "advanced",
+            "elevated"
+          ],
+          "latency_ms": 367.07
+        },
+        {
+          "prompt": "compound_aware",
+          "output": "promoted  \nadvanced  \nelevated",
+          "candidates": [
+            "promoted",
+            "advanced",
+            "elevated"
+          ],
+          "latency_ms": 419.13
+        }
+      ]
+    }
+  }
+}

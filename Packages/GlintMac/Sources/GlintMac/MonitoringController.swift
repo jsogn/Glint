@@ -9,6 +9,24 @@ private let monitoringLogger = Logger(
     category: "Monitoring"
 )
 
+public struct CandidateRegion: Sendable, Equatable {
+    public let x: Double
+    public let y: Double
+    public let width: Double
+    public let height: Double
+
+    public init(x: Double, y: Double, width: Double, height: Double) {
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    }
+
+    public var cgRect: CGRect {
+        CGRect(x: x, y: y, width: width, height: height)
+    }
+}
+
 struct CandidateMissDebouncer: Sendable {
     private let threshold: Int
     private var consecutiveMisses = 0
@@ -67,7 +85,7 @@ public enum MonitoringEvent: Sendable {
     case candidateEnded(immediate: Bool)
     case results(
         [CandidateTranslationPresentation],
-        CaptureRegion,
+        CandidateRegion,
         revision: UInt64
     )
 }
@@ -120,10 +138,7 @@ public struct CandidateTranslationPresentation: Sendable, Equatable {
 public actor MonitoringController {
     private let inputSource = InputSourceMonitor()
     private let focus = FocusMonitor()
-    private let capture = CandidateCapture()
     private let axCandidates = AXCandidateReader()
-    private var ocr = OCRService()
-    private var ocrConfiguration = OCRRuntimeConfiguration.appleVision
     private let router: SmartRouter
     private let stream: AsyncStream<MonitoringEvent>
     private let continuation: AsyncStream<MonitoringEvent>.Continuation
@@ -184,17 +199,6 @@ public actor MonitoringController {
         await translationMemo.clear()
     }
 
-    public func setOCRConfiguration(_ configuration: OCRRuntimeConfiguration) {
-        guard configuration != ocrConfiguration else { return }
-        ocrConfiguration = configuration
-        ocr = OCRService(configuration: configuration)
-        invalidateCandidate(immediate: true)
-        let configuredOCR = ocr
-        Task.detached(priority: .userInitiated) {
-            configuredOCR.warmUpConfiguredBackends()
-        }
-    }
-
     public func start() {
         guard task == nil else { return }
         lastPermissionCheck = 0
@@ -231,11 +235,6 @@ public actor MonitoringController {
                     >= 1_000_000_000
         if shouldCheckPermissions {
             lastPermissionCheck = permissionCheckTimestamp
-            guard CGPreflightScreenCaptureAccess() else {
-                invalidateCandidate(immediate: true)
-                emitStatus("需要屏幕录制权限")
-                return 1_000_000_000
-            }
             guard FocusMonitor.isAccessibilityTrusted() else {
                 invalidateCandidate(immediate: true)
                 emitStatus("需要辅助功能权限")
@@ -408,7 +407,7 @@ public actor MonitoringController {
     private func startTranslation(
         candidates: [Candidate],
         selectedIndex: Int,
-        highlight: CaptureRegion,
+        highlight: CandidateRegion,
         revision: UInt64
     ) {
         let mode = mode
@@ -497,7 +496,7 @@ public actor MonitoringController {
 
     private func completeTranslation(
         _ translations: [CandidateTranslationPresentation],
-        highlight: CaptureRegion,
+        highlight: CandidateRegion,
         revision: UInt64
     ) {
         guard revision == typingTracker.revision,
@@ -609,36 +608,13 @@ public actor MonitoringController {
         continuation.yield(.candidateEnded(immediate: immediate))
     }
 
-    public static func captureRegion(
-        caret: CGRect,
-        elementFrame: CGRect?
-    ) -> CaptureRegion {
-        let display = displayBounds(containing: CGPoint(x: caret.midX, y: caret.midY))
-        let width = min(1_000, max(600, display.width - 16))
-        let height: CGFloat = 160
-        let left = caret.midX - width / 2
-        let x = max(display.minX + 8, min(left, display.maxX - width - 8))
-
-        // The IME candidate bar can sit above or below the caret depending on
-        // the application and available screen space, so capture a band around it.
-        var y = caret.midY - height / 2
-        y = max(display.minY + 8, min(y, display.maxY - height - 8))
-
-        return CaptureRegion(
-            x: Double(x),
-            y: Double(y),
-            width: Double(width),
-            height: Double(height)
-        )
-    }
-
     static func candidateRegion(
         for frame: CGRect
-    ) -> CaptureRegion? {
+    ) -> CandidateRegion? {
         guard frame.width > 0, frame.height > 0 else {
             return nil
         }
-        return CaptureRegion(
+        return CandidateRegion(
             x: Double(frame.minX),
             y: Double(frame.minY),
             width: Double(frame.width),
@@ -684,21 +660,4 @@ public actor MonitoringController {
         )
     }
 
-    private static func displayBounds(containing point: CGPoint) -> CGRect {
-        var count: UInt32 = 0
-        guard CGGetActiveDisplayList(0, nil, &count) == .success, count > 0 else {
-            return CGRect(x: 0, y: 0, width: 1440, height: 900)
-        }
-        var displays = [CGDirectDisplayID](repeating: 0, count: Int(count))
-        guard CGGetActiveDisplayList(count, &displays, &count) == .success else {
-            return CGRect(x: 0, y: 0, width: 1440, height: 900)
-        }
-        for display in displays {
-            let bounds = CGDisplayBounds(display)
-            if bounds.contains(point) {
-                return bounds
-            }
-        }
-        return CGDisplayBounds(CGMainDisplayID())
-    }
 }

@@ -137,18 +137,6 @@ public actor PluginCatalogService {
         if manifest.runtime == "mlx" {
             return try await installMLXSnapshot(manifest, progress: progress)
         }
-        if manifest.runtime == "huggingface-onnx" {
-            guard manifest.type == .ocr else {
-                throw PluginCatalogError.unsupportedRuntime
-            }
-            return try await installHuggingFaceOCRModel(
-                manifest,
-                progress: progress
-            )
-        }
-        guard manifest.type != .ocr else {
-            throw PluginCatalogError.unsupportedRuntime
-        }
 
         let workDirectory = fileManager.temporaryDirectory
             .appendingPathComponent("GlintPlugin-\(UUID().uuidString)", isDirectory: true)
@@ -504,99 +492,6 @@ public actor PluginCatalogService {
             hasher.update(data: data)
         }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
-    }
-
-    private func installHuggingFaceOCRModel(
-        _ manifest: PluginManifest,
-        progress: (@Sendable (Double) -> Void)?
-    ) async throws -> PluginManifest {
-        guard let repository = Self.huggingFaceRepositoryID(from: manifest.url),
-              let revision = manifest.revision,
-              !revision.isEmpty,
-              let artifactFile = manifest.artifactFile,
-              !artifactFile.isEmpty,
-              !artifactFile.contains("/"),
-              !artifactFile.contains("..") else {
-            throw PluginCatalogError.invalidModelRepository
-        }
-
-        let workDirectory = fileManager.temporaryDirectory
-            .appendingPathComponent("GlintOCRModel-\(UUID().uuidString)", isDirectory: true)
-        let pluginDirectory = workDirectory.appendingPathComponent(
-            "plugin",
-            isDirectory: true
-        )
-        let modelDirectory = pluginDirectory.appendingPathComponent(
-            "model",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(
-            at: modelDirectory,
-            withIntermediateDirectories: true
-        )
-        defer { try? fileManager.removeItem(at: workDirectory) }
-
-        let destination = modelDirectory.appendingPathComponent("model.onnx")
-        var lastError: Error?
-        for endpoint in Self.huggingFaceEndpoints(for: manifest.url) {
-            try Task.checkCancellation()
-            progress?(0)
-            try? fileManager.removeItem(at: destination)
-            do {
-                guard let downloadURL = URL(
-                    string: "\(endpoint.absoluteString)/\(repository)/resolve/"
-                        + "\(revision)/\(artifactFile)"
-                ) else {
-                    throw PluginCatalogError.invalidModelRepository
-                }
-                let delegate = DownloadProgressDelegate(progress: progress)
-                let (temporaryURL, response) = try await session.download(
-                    from: downloadURL,
-                    delegate: delegate
-                )
-                try Task.checkCancellation()
-                guard let http = response as? HTTPURLResponse,
-                      (200..<300).contains(http.statusCode) else {
-                    throw PluginCatalogError.invalidResponse
-                }
-                try fileManager.moveItem(at: temporaryURL, to: destination)
-
-                let actualSize = try destination.resourceValues(
-                    forKeys: [.fileSizeKey]
-                ).fileSize ?? 0
-                guard manifest.sizeBytes == 0
-                    || actualSize == Int(manifest.sizeBytes) else {
-                    throw PluginCatalogError.invalidModelSnapshot
-                }
-                guard manifest.sha256 != "HUGGINGFACE_SNAPSHOT",
-                      try Self.sha256(of: destination)
-                        == manifest.sha256.lowercased() else {
-                    throw PluginCatalogError.invalidModelSnapshot
-                }
-                lastError = nil
-                break
-            } catch {
-                if Task.isCancelled || (error as? URLError)?.code == .cancelled {
-                    throw CancellationError()
-                }
-                lastError = error
-                try? fileManager.removeItem(at: destination)
-            }
-        }
-        if let lastError {
-            throw lastError
-        }
-
-        progress?(0.9)
-        try JSONEncoder().encode(manifest).write(
-            to: pluginDirectory.appendingPathComponent("manifest.json")
-        )
-        try Task.checkCancellation()
-        let installed = try await manager.installLocalPlugin(
-            at: pluginDirectory
-        )
-        progress?(1)
-        return installed
     }
 
     private static let defaultSession: URLSession = {
