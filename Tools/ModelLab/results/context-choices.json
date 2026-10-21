@@ -1,0 +1,1009 @@
+{
+  "entries" : {
+    "amb-001-a" : {
+      "choices" : [
+        "convenient",
+        "suitable",
+        "facilitate",
+        "convenience",
+        "amenity",
+        "conveniently"
+      ],
+      "kind" : "word",
+      "target" : "方便"
+    },
+    "amb-001-b" : {
+      "choices" : [
+        "convenient",
+        "suitable",
+        "facilitate",
+        "convenience",
+        "amenity",
+        "conveniently"
+      ],
+      "kind" : "word",
+      "target" : "方便"
+    },
+    "amb-002-a" : {
+      "choices" : [
+        "handle",
+        "process",
+        "deal with",
+        "treat",
+        "deal",
+        "treatment"
+      ],
+      "kind" : "word",
+      "target" : "处理"
+    },
+    "amb-002-b" : {
+      "choices" : [
+        "handle",
+        "process",
+        "deal with",
+        "treat",
+        "deal",
+        "treatment"
+      ],
+      "kind" : "word",
+      "target" : "处理"
+    },
+    "amb-003-a" : {
+      "choices" : [
+        "release",
+        "issue",
+        "announce",
+        "publication"
+      ],
+      "kind" : "word",
+      "target" : "发布"
+    },
+    "amb-003-b" : {
+      "choices" : [
+        "release",
+        "issue",
+        "announce",
+        "publication"
+      ],
+      "kind" : "word",
+      "target" : "发布"
+    },
+    "amb-004-a" : {
+      "choices" : [
+        "implement",
+        "fall to the ground",
+        "be set on the ground",
+        "reach to the ground",
+        "ground"
+      ],
+      "kind" : "word",
+      "target" : "落地"
+    },
+    "amb-004-b" : {
+      "choices" : [
+        "implement",
+        "fall to the ground",
+        "be set on the ground",
+        "reach to the ground",
+        "ground"
+      ],
+      "kind" : "word",
+      "target" : "落地"
+    },
+    "amb-005-a" : {
+      "choices" : [
+        "run",
+        "operate",
+        "function",
+        "move along one's course (of celestial bodies etc",
+        "be in operation",
+        "move"
+      ],
+      "kind" : "word",
+      "target" : "运行"
+    },
+    "amb-005-b" : {
+      "choices" : [
+        "run",
+        "operate",
+        "function",
+        "move along one's course (of celestial bodies etc",
+        "be in operation",
+        "move"
+      ],
+      "kind" : "word",
+      "target" : "运行"
+    },
+    "amb-006-a" : {
+      "choices" : [
+        "look after",
+        "take care of",
+        "watch"
+      ],
+      "kind" : "word",
+      "target" : "看"
+    },
+    "amb-006-b" : {
+      "choices" : [
+        "look after",
+        "take care of",
+        "watch"
+      ],
+      "kind" : "word",
+      "target" : "看"
+    },
+    "amb-007-a" : {
+      "choices" : [
+        "open",
+        "start",
+        "turn on"
+      ],
+      "kind" : "word",
+      "target" : "开"
+    },
+    "amb-007-b" : {
+      "choices" : [
+        "open",
+        "start",
+        "turn on"
+      ],
+      "kind" : "word",
+      "target" : "开"
+    },
+    "amb-008-a" : {
+      "choices" : [
+
+      ],
+      "kind" : "word",
+      "target" : "打"
+    },
+    "amb-008-b" : {
+      "choices" : [
+
+      ],
+      "kind" : "word",
+      "target" : "打"
+    },
+    "amb-009-a" : {
+      "choices" : [
+        "see 上聲|上声[shang3 sheng1"
+      ],
+      "kind" : "word",
+      "target" : "上"
+    },
+    "amb-009-b" : {
+      "choices" : [
+        "see 上聲|上声[shang3 sheng1"
+      ],
+      "kind" : "word",
+      "target" : "上"
+    },
+    "amb-010-a" : {
+      "choices" : [
+        "down",
+        "downwards",
+        "below"
+      ],
+      "kind" : "word",
+      "target" : "下"
+    },
+    "amb-010-b" : {
+      "choices" : [
+        "down",
+        "downwards",
+        "below"
+      ],
+      "kind" : "word",
+      "target" : "下"
+    },
+    "amb-011-a" : {
+      "choices" : [
+        "point",
+        "dot",
+        "drop"
+      ],
+      "kind" : "word",
+      "target" : "点"
+    },
+    "amb-011-b" : {
+      "choices" : [
+        "point",
+        "dot",
+        "drop"
+      ],
+      "kind" : "word",
+      "target" : "点"
+    },
+    "amb-012-a" : {
+      "choices" : [
+        "surname Hua"
+      ],
+      "kind" : "word",
+      "target" : "花"
+    },
+    "amb-012-b" : {
+      "choices" : [
+        "surname Hua"
+      ],
+      "kind" : "word",
+      "target" : "花"
+    },
+    "amb-013-a" : {
+      "choices" : [
+        "surname Guo"
+      ],
+      "kind" : "word",
+      "target" : "过"
+    },
+    "amb-013-b" : {
+      "choices" : [
+        "surname Guo"
+      ],
+      "kind" : "word",
+      "target" : "过"
+    },
+    "amb-014-a" : {
+      "choices" : [
+        "walk",
+        "go",
+        "run"
+      ],
+      "kind" : "word",
+      "target" : "走"
+    },
+    "amb-014-b" : {
+      "choices" : [
+        "walk",
+        "go",
+        "run"
+      ],
+      "kind" : "word",
+      "target" : "走"
+    },
+    "amb-015-a" : {
+      "choices" : [
+        "send out",
+        "show (one's feeling",
+        "issue"
+      ],
+      "kind" : "word",
+      "target" : "发"
+    },
+    "amb-015-b" : {
+      "choices" : [
+        "send out",
+        "show (one's feeling",
+        "issue"
+      ],
+      "kind" : "word",
+      "target" : "发"
+    },
+    "amb-016-a" : {
+      "choices" : [
+        "receive",
+        "accept",
+        "collect"
+      ],
+      "kind" : "word",
+      "target" : "收"
+    },
+    "amb-016-b" : {
+      "choices" : [
+        "receive",
+        "accept",
+        "collect"
+      ],
+      "kind" : "word",
+      "target" : "收"
+    },
+    "amb-017-a" : {
+      "choices" : [
+        "receive",
+        "answer (the phone",
+        "meet or welcome sb"
+      ],
+      "kind" : "word",
+      "target" : "接"
+    },
+    "amb-017-b" : {
+      "choices" : [
+        "receive",
+        "answer (the phone",
+        "meet or welcome sb"
+      ],
+      "kind" : "word",
+      "target" : "接"
+    },
+    "amb-018-a" : {
+      "choices" : [
+        "band",
+        "belt",
+        "girdle"
+      ],
+      "kind" : "word",
+      "target" : "带"
+    },
+    "amb-018-b" : {
+      "choices" : [
+        "band",
+        "belt",
+        "girdle"
+      ],
+      "kind" : "word",
+      "target" : "带"
+    },
+    "amb-019-a" : {
+      "choices" : [
+        "exchange",
+        "change (clothes etc",
+        "substitute"
+      ],
+      "kind" : "word",
+      "target" : "换"
+    },
+    "amb-019-b" : {
+      "choices" : [
+        "exchange",
+        "change (clothes etc",
+        "substitute"
+      ],
+      "kind" : "word",
+      "target" : "换"
+    },
+    "amb-020-a" : {
+      "choices" : [
+        "exist",
+        "deposit",
+        "store"
+      ],
+      "kind" : "word",
+      "target" : "存"
+    },
+    "amb-020-b" : {
+      "choices" : [
+        "exist",
+        "deposit",
+        "store"
+      ],
+      "kind" : "word",
+      "target" : "存"
+    },
+    "amb-021-a" : {
+      "choices" : [
+        "put",
+        "place",
+        "release"
+      ],
+      "kind" : "word",
+      "target" : "放"
+    },
+    "amb-021-b" : {
+      "choices" : [
+        "put",
+        "place",
+        "release"
+      ],
+      "kind" : "word",
+      "target" : "放"
+    },
+    "amb-022-a" : {
+      "choices" : [
+        "do",
+        "make",
+        "produce"
+      ],
+      "kind" : "word",
+      "target" : "做"
+    },
+    "amb-022-b" : {
+      "choices" : [
+        "do",
+        "make",
+        "produce"
+      ],
+      "kind" : "word",
+      "target" : "做"
+    },
+    "amb-023-a" : {
+      "choices" : [
+        "think",
+        "believe",
+        "suppose"
+      ],
+      "kind" : "word",
+      "target" : "想"
+    },
+    "amb-023-b" : {
+      "choices" : [
+        "think",
+        "believe",
+        "suppose"
+      ],
+      "kind" : "word",
+      "target" : "想"
+    },
+    "amb-024-a" : {
+      "choices" : [
+        "ask"
+      ],
+      "kind" : "word",
+      "target" : "问"
+    },
+    "amb-024-b" : {
+      "choices" : [
+        "ask"
+      ],
+      "kind" : "word",
+      "target" : "问"
+    },
+    "amb-025-a" : {
+      "choices" : [
+        "announce",
+        "inform",
+        "report"
+      ],
+      "kind" : "word",
+      "target" : "报"
+    },
+    "amb-025-b" : {
+      "choices" : [
+        "announce",
+        "inform",
+        "report"
+      ],
+      "kind" : "word",
+      "target" : "报"
+    },
+    "amb-026-a" : {
+      "choices" : [
+        "produce (fruit or seeds",
+        "Taiwan pr. [jie2"
+      ],
+      "kind" : "word",
+      "target" : "结"
+    },
+    "amb-026-b" : {
+      "choices" : [
+        "produce (fruit or seeds",
+        "Taiwan pr. [jie2"
+      ],
+      "kind" : "word",
+      "target" : "结"
+    },
+    "amb-027-a" : {
+      "choices" : [
+        "row",
+        "series",
+        "age order (of brothers"
+      ],
+      "kind" : "word",
+      "target" : "行"
+    },
+    "amb-027-b" : {
+      "choices" : [
+        "row",
+        "series",
+        "age order (of brothers"
+      ],
+      "kind" : "word",
+      "target" : "行"
+    },
+    "amb-028-a" : {
+      "choices" : [
+        "surname Huan"
+      ],
+      "kind" : "word",
+      "target" : "还"
+    },
+    "amb-028-b" : {
+      "choices" : [
+        "surname Huan"
+      ],
+      "kind" : "word",
+      "target" : "还"
+    },
+    "amb-029-a" : {
+      "choices" : [
+        "difference",
+        "discrepancy",
+        "differ"
+      ],
+      "kind" : "word",
+      "target" : "差"
+    },
+    "amb-029-b" : {
+      "choices" : [
+        "difference",
+        "discrepancy",
+        "differ"
+      ],
+      "kind" : "word",
+      "target" : "差"
+    },
+    "amb-030-a" : {
+      "choices" : [
+        "good",
+        "well",
+        "proper"
+      ],
+      "kind" : "word",
+      "target" : "好"
+    },
+    "amb-030-b" : {
+      "choices" : [
+        "good",
+        "well",
+        "proper"
+      ],
+      "kind" : "word",
+      "target" : "好"
+    },
+    "amb-031-a" : {
+      "choices" : [
+        "big",
+        "huge",
+        "large"
+      ],
+      "kind" : "word",
+      "target" : "大"
+    },
+    "amb-031-b" : {
+      "choices" : [
+        "big",
+        "huge",
+        "large"
+      ],
+      "kind" : "word",
+      "target" : "大"
+    },
+    "amb-032-a" : {
+      "choices" : [
+        "small",
+        "tiny",
+        "few"
+      ],
+      "kind" : "word",
+      "target" : "小"
+    },
+    "amb-032-b" : {
+      "choices" : [
+        "small",
+        "tiny",
+        "few"
+      ],
+      "kind" : "word",
+      "target" : "小"
+    },
+    "amb-033-a" : {
+      "choices" : [
+        "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+        "surname Xin"
+      ],
+      "kind" : "word",
+      "target" : "新"
+    },
+    "amb-033-b" : {
+      "choices" : [
+        "abbr. for Xinjiang 新疆[Xin1 jiang1] or Singapore 新加坡[Xin1 jia1 po1",
+        "surname Xin"
+      ],
+      "kind" : "word",
+      "target" : "新"
+    },
+    "amb-034-a" : {
+      "choices" : [
+        "prefix used before the surname of a person or a numeral indicating the order of birth of the children in a family or to indicate affection or familiarity",
+        "old (of people",
+        "venerable (person"
+      ],
+      "kind" : "word",
+      "target" : "老"
+    },
+    "amb-034-b" : {
+      "choices" : [
+        "prefix used before the surname of a person or a numeral indicating the order of birth of the children in a family or to indicate affection or familiarity",
+        "old (of people",
+        "venerable (person"
+      ],
+      "kind" : "word",
+      "target" : "老"
+    },
+    "amb-035-a" : {
+      "choices" : [
+        "rapid",
+        "quick",
+        "speed"
+      ],
+      "kind" : "word",
+      "target" : "快"
+    },
+    "amb-035-b" : {
+      "choices" : [
+        "rapid",
+        "quick",
+        "speed"
+      ],
+      "kind" : "word",
+      "target" : "快"
+    },
+    "amb-036-a" : {
+      "choices" : [
+        "light",
+        "easy",
+        "gentle"
+      ],
+      "kind" : "word",
+      "target" : "轻"
+    },
+    "amb-036-b" : {
+      "choices" : [
+        "light",
+        "easy",
+        "gentle"
+      ],
+      "kind" : "word",
+      "target" : "轻"
+    },
+    "amb-037-a" : {
+      "choices" : [
+        "repeat",
+        "repetition",
+        "again"
+      ],
+      "kind" : "word",
+      "target" : "重"
+    },
+    "amb-037-b" : {
+      "choices" : [
+        "repeat",
+        "repetition",
+        "again"
+      ],
+      "kind" : "word",
+      "target" : "重"
+    },
+    "amb-038-a" : {
+      "choices" : [
+        "old variant of 留[liu2"
+      ],
+      "kind" : "word",
+      "target" : "留"
+    },
+    "amb-038-b" : {
+      "choices" : [
+        "old variant of 留[liu2"
+      ],
+      "kind" : "word",
+      "target" : "留"
+    },
+    "amb-039-a" : {
+      "choices" : [
+        "retreat",
+        "decline",
+        "move back"
+      ],
+      "kind" : "word",
+      "target" : "退"
+    },
+    "amb-039-b" : {
+      "choices" : [
+        "retreat",
+        "decline",
+        "move back"
+      ],
+      "kind" : "word",
+      "target" : "退"
+    },
+    "amb-040-a" : {
+      "choices" : [
+        "ascend",
+        "rise to the rank of",
+        "promote"
+      ],
+      "kind" : "word",
+      "target" : "升"
+    },
+    "amb-040-b" : {
+      "choices" : [
+        "ascend",
+        "rise to the rank of",
+        "promote"
+      ],
+      "kind" : "word",
+      "target" : "升"
+    },
+    "biz-001" : {
+      "choices" : [
+        "requirement review"
+      ],
+      "kind" : "phrase",
+      "target" : "需求评审"
+    },
+    "biz-002" : {
+      "choices" : [
+        "technical debt"
+      ],
+      "kind" : "phrase",
+      "target" : "技术债"
+    },
+    "biz-003" : {
+      "choices" : [
+        "canary release"
+      ],
+      "kind" : "phrase",
+      "target" : "灰度发布"
+    },
+    "biz-004" : {
+      "choices" : [
+        "rollback"
+      ],
+      "kind" : "phrase",
+      "target" : "回滚"
+    },
+    "biz-005" : {
+      "choices" : [
+        "event tracking"
+      ],
+      "kind" : "phrase",
+      "target" : "埋点"
+    },
+    "biz-006" : {
+      "choices" : [
+        "user persona"
+      ],
+      "kind" : "phrase",
+      "target" : "用户画像"
+    },
+    "biz-007" : {
+      "choices" : [
+        "cold start"
+      ],
+      "kind" : "phrase",
+      "target" : "冷启动"
+    },
+    "biz-008" : {
+      "choices" : [
+        "critical path"
+      ],
+      "kind" : "phrase",
+      "target" : "关键路径"
+    },
+    "biz-009" : {
+      "choices" : [
+        "fallback plan"
+      ],
+      "kind" : "phrase",
+      "target" : "兜底方案"
+    },
+    "biz-010" : {
+      "choices" : [
+        "break down the problem"
+      ],
+      "kind" : "phrase",
+      "target" : "拆解问题"
+    },
+    "biz-011" : {
+      "choices" : [
+        "managing up"
+      ],
+      "kind" : "phrase",
+      "target" : "向上管理"
+    },
+    "biz-012" : {
+      "choices" : [
+        "close the loop"
+      ],
+      "kind" : "phrase",
+      "target" : "形成闭环"
+    },
+    "biz-013" : {
+      "choices" : [
+        "iterate quickly in small steps"
+      ],
+      "kind" : "phrase",
+      "target" : "小步快跑"
+    },
+    "biz-014" : {
+      "choices" : [
+        "retrospective summary"
+      ],
+      "kind" : "phrase",
+      "target" : "复盘总结"
+    },
+    "biz-015" : {
+      "choices" : [
+        "side-by-side comparison"
+      ],
+      "kind" : "phrase",
+      "target" : "横向对比"
+    },
+    "ctl-001" : {
+      "choices" : [
+        "hello",
+        "Hi",
+        "How are you",
+        "ciao",
+        "hiya",
+        "Bonjour"
+      ],
+      "kind" : "word",
+      "target" : "你好"
+    },
+    "ctl-002" : {
+      "choices" : [
+        "algorithm",
+        "arithmetic",
+        "method of calculation"
+      ],
+      "kind" : "word",
+      "target" : "算法"
+    },
+    "ctl-003" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "今天天气不错"
+    },
+    "ctl-004" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我先看一下"
+    },
+    "ctl-005" : {
+      "choices" : [
+        "milestone",
+        "marker",
+        "milepost"
+      ],
+      "kind" : "word",
+      "target" : "里程碑"
+    },
+    "ctl-006" : {
+      "choices" : [
+        "input method"
+      ],
+      "kind" : "word",
+      "target" : "输入法"
+    },
+    "ctl-007" : {
+      "choices" : [
+        "How are you?"
+      ],
+      "kind" : "sentence",
+      "target" : "你好吗"
+    },
+    "ctl-008" : {
+      "choices" : [
+        "technical debt"
+      ],
+      "kind" : "phrase",
+      "target" : "技术债"
+    },
+    "ctl-009" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "这个功能什么时候上线"
+    },
+    "ctl-010" : {
+      "choices" : [
+        "thank you",
+        "thanks",
+        "thank",
+        "ta"
+      ],
+      "kind" : "word",
+      "target" : "谢谢"
+    },
+    "sen-001" : {
+      "choices" : [
+        "no problem"
+      ],
+      "kind" : "sentence",
+      "target" : "没问题"
+    },
+    "sen-002" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "再确认一下"
+    },
+    "sen-003" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "不太合适"
+    },
+    "sen-004" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "尽快处理"
+    },
+    "sen-005" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "可以再讨论"
+    },
+    "sen-006" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "先放一放"
+    },
+    "sen-007" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我来跟进"
+    },
+    "sen-008" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "有风险"
+    },
+    "sen-009" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "已经完成"
+    },
+    "sen-010" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "需要确认"
+    },
+    "sen-011" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "明天可以吗"
+    },
+    "sen-012" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "看起来不错"
+    },
+    "sen-013" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "暂时不用"
+    },
+    "sen-014" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "很有帮助"
+    },
+    "sen-015" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "可能来不及"
+    }
+  },
+  "generatedAt" : "2026-10-21T11:43:15Z"
+}

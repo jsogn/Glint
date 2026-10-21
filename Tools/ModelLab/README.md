@@ -41,3 +41,28 @@ M1 模型实验区。这里只做模型对比，不进入 App 安装包。
 - Python 只用于实验和模型转换；
 - 不把 Python 或模型文件放进 App；
 - 不把模型下载逻辑写进 App，直到 M1 选出运行时。
+
+## 上下文评估
+
+语料和 runner：
+
+```bash
+python3 Tools/ModelLab/eval/run_context_eval.py --dry-run
+HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
+  Tools/ModelLab/eval/run_context_eval.py
+```
+
+词典候选与上下文重排：
+
+```bash
+swift run --package-path Tools/GlintEval DictionaryChoices \
+  --cases Tools/ModelLab/eval/context_cases.json \
+  --output Tools/ModelLab/results/context-choices.json
+
+HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
+  Tools/ModelLab/eval/run_context_rerank.py \
+  --choices-file Tools/ModelLab/results/context-choices.json
+```
+
+评估结论见
+[`docs/M16-CONTEXT-EVALUATION.md`](../../docs/M16-CONTEXT-EVALUATION.md)。

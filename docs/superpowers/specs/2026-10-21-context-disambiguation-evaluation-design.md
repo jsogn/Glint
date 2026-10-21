@@ -2,7 +2,7 @@
 
 - Date: 2026-10-21
 - Branch: `codex/evaluate-context-disambiguation`
-- Status: approved for evaluation implementation
+- Status: evaluated; no-go for production integration with current assets
 - Scope: measure whether bounded AX context improves the current model-first
   translation path before considering a product integration
 
