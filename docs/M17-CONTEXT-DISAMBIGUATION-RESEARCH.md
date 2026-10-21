@@ -3,7 +3,9 @@
 - Date: 2026-10-21
 - Branch: `codex/evaluate-context-disambiguation`
 - Scope: synthetic candidate disambiguation research only
-- App behavior changed: no
+- Context routing behavior changed during research: no
+- Follow-up cleanup: inactive OCR, screenshot, and Screen Recording code paths
+  were removed after this study confirmed context does not need OCR
 
 ## 1. Decision
 

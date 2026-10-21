@@ -99,17 +99,4 @@ final class AppEnvironment {
         }
     }
 
-    func configureOCR(
-        preferences: OCRRecognitionPreferences
-    ) async -> String? {
-        let resolution = await OCRPluginLoader.resolve(
-            preferences: preferences,
-            manager: pluginManager
-        )
-        if let warning = resolution.warning {
-            return warning
-        }
-        return OCRService(configuration: resolution.configuration)
-            .validateConfiguration()
-    }
 }

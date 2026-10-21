@@ -22,7 +22,6 @@
 		B70CAFEBB2416E25B0FFED97 /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2E26ACCA8E4915ED8C4AAE15 /* GlintCore */; };
 		D418B3179EEE536BCCF50C9D /* GlintUI in Frameworks */ = {isa = PBXBuildFile; productRef = FBD93326229A8A62F071CD36 /* GlintUI */; };
 		D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */; };
-		E6E1424A2809676493A0B484 /* OCRPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BB60E100470D1D016785CFB /* OCRPluginLoader.swift */; };
 		F66206E2AF6A12351EC83B1C /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */; };
 		FA3C47D17A7C09E8852FB155 /* GlintDictionary in Frameworks */ = {isa = PBXBuildFile; productRef = 0B46DF0B3D2714D2CEC06F6E /* GlintDictionary */; };
 /* End PBXBuildFile section */
@@ -39,7 +38,6 @@
 		5F675D0EDB2453ADD8136057 /* GlintInference */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintInference; path = Packages/GlintInference; sourceTree = SOURCE_ROOT; };
 		65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		8BB60E100470D1D016785CFB /* OCRPluginLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRPluginLoader.swift; sourceTree = "<group>"; };
 		A6CE2C298747A802E1589A8C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		A89662015EFDEBDACF1DAB11 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources; sourceTree = SOURCE_ROOT; };
 		D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryPluginLoader.swift; sourceTree = "<group>"; };
@@ -114,7 +112,6 @@
 				0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */,
 				D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */,
 				A6CE2C298747A802E1589A8C /* main.swift */,
-				8BB60E100470D1D016785CFB /* OCRPluginLoader.swift */,
 				58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */,
 			);
 			path = Glint;
@@ -261,7 +258,6 @@
 				B63A5AEECF778A78BD185434 /* AppDelegate.swift in Sources */,
 				21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */,
 				D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */,
-				E6E1424A2809676493A0B484 /* OCRPluginLoader.swift in Sources */,
 				B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */,
 				30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */,
 			);

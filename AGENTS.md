@@ -35,8 +35,7 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换苹果输�
 - 主窗口：AppKit `NSWindow` + SwiftUI `NSHostingController`。
 - HUD：AppKit `NSPanel` + SwiftUI。
 - UI：系统 SwiftUI/AppKit 控件，不引入第三方 UI 组件库。
-- 截图：ScreenCaptureKit。
-- OCR：默认 Apple Vision；可选 PP-OCRv6 Small / Medium。
+- 候选读取：Accessibility `InputMethodCandidateList`。
 - 词典：SQLite 插件，当前包括 CC-CEDICT、ECDICT、Wiktionary。
 - 翻译：本地 CTranslate2 / MLX 模型；另支持多个 OpenAI 兼容接口。
 - 日志：OSLog，默认脱敏。
@@ -45,7 +44,7 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换苹果输�
 
 - `App/Glint/`：组合根、App 生命周期、菜单栏、主窗口和 HUD 协调。
 - `Packages/GlintCore/`：领域模型、路由、偏好选择和纯 Swift 协议。
-- `Packages/GlintMac/`：Accessibility、TIS、ScreenCaptureKit、Vision、PP-OCR。
+- `Packages/GlintMac/`：Accessibility、TIS、候选监控和 HUD 定位。
 - `Packages/GlintDictionary/`：SQLite 词典、查询和排序。
 - `Packages/GlintInference/`：CTranslate2、MLX、OpenAI 兼容翻译运行时。
 - `Packages/GlintPlugins/`：manifest、下载、镜像回退、校验和原子安装。
@@ -121,36 +120,20 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 测试结束不要把 App 关闭；保持最新版本运行，方便用户继续测试。
 - 原生 App 不支持二进制热更新，代码重建后必须重启一次才能加载新代码。
 - 同一时间只允许一个 Glint 进程。
-- 监控只能在 OCR 配置和翻译运行时准备完成后启动，不能在异步初始化进行中提前启动。
+- 监控只能在翻译运行时准备完成后启动，不能在异步初始化进行中提前启动。
 
 ## 测试要求
 
 - 修改 `GlintCore`：运行 `swift test --package-path Packages/GlintCore`。
-- 修改 OCR、截图、Accessibility、TIS：运行 `swift test --package-path Packages/GlintMac`。
+- 修改 Accessibility、TIS 或候选监控：运行 `swift test --package-path Packages/GlintMac`。
 - 修改词典：运行 `swift test --package-path Packages/GlintDictionary`。
 - 修改翻译运行时：运行 `swift test --package-path Packages/GlintInference`。
 - 修改插件系统：运行 `swift test --package-path Packages/GlintPlugins`。
 - 修改 UI 或设置模型：运行 `swift test --package-path Packages/GlintUI`。
 - 跨模块或发布前修改：运行完整 `./scripts/test.sh`。
-- OCR 性能结论必须使用 Release，不以 Debug 延迟作为产品结论。
 - UI 修改要启动真实 App 并检查浅色/深色、窗口缩放和空状态。
 - UI 样式可先用 Preview 快速迭代，但涉及 AppKit 生命周期、TCC、AX、输入法或
   NSPanel 行为时必须启动真实 App 验证。
-
-## OCR 规则
-
-- 默认引擎是 Apple Vision。
-- 用户可以选择任意已安装 OCR 模型作为主模型和备用模型。
-- 主模型与备用模型不能相同。
-- 识别策略固定为：
-  - 自动回退：主模型不可靠时调用备用模型。
-  - 双模型校验：每次同时运行两个模型。
-  - 仅主模型：隐藏备用模型配置。
-- 使用中的主模型或备用模型不可卸载。
-- 主模型失效时回退 Apple Vision；备用模型失效时自动清空。
-- 候选指纹、缓存大小、TTL、自适应轮询和截图上下文属于内部实现，不暴露给用户。
-- “识别策略”应使用独立卡片，与 OCR 模型资源列表分开。
-- “仅主模型”时必须从布局中移除备用模型行，不能只禁用。
 
 ## 翻译与插件规则
 
@@ -161,7 +144,7 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 精确翻译结果只允许使用有容量上限的内存 LRU，并必须按模型、prompt 和插件版本隔离。
 - 每个候选 revision 只允许当前结果进入 HUD；候选变化时取消旧任务并让旧译文进入淡化占位，不得关闭组合会话中的 HUD。
 - 只有候选栏结束、提交、失焦、切换输入法或安全输入时才关闭 HUD。
-- 权限状态检查必须节流，不得在每次 OCR 轮询中重复访问 TCC。
+- 权限状态检查必须节流，不得在每次候选轮询中重复访问 TCC。
 - 词典和翻译模型均由 `PluginManager` 安装、更新和卸载。
 - 插件是数据包，不允许执行任意第三方代码。
 - 下载必须校验 SHA256；优先国内镜像，失败后回退官方源。
@@ -183,7 +166,7 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 动画必须遵循 macOS Reduce Motion；开启时取消位移和文字过渡。
 - “候选停留”使用 `display.candidateDwellDuration`，表示候选稳定多久后触发翻译，范围 80–300ms；不得重新解释为翻译后的额外延迟。
 - 不在运行时弹大卡片、Toast 或错误对话框；权限问题除外。
-- 权限页必须主动调用 `CGRequestScreenCaptureAccess()` 和辅助功能 Prompt API；不能只打开系统设置。
+- 权限页必须主动调用辅助功能 Prompt API；不能只打开系统设置。
 - 首次启动在主窗口可见后自动请求一次权限；用户拒绝后不再自动重复，保留页面内手动重试。
 - 用户拒绝权限后，系统设置入口作为备用路径。
 - UI 文案简洁、中文优先，避免开发者术语和内部算法名。
@@ -193,7 +176,7 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 不安装键盘事件监听。
 - 不保存候选文本、翻译结果或输入历史。
 - 不读取选中文字内容；只使用选区长度判断是否应跳过。
-- 不截取整屏，不读取输入框正文。
+- 不截图、不读取输入框正文。
 - 本地模型推理不得联网。
 - 只有用户主动配置并选择 OpenAI 兼容接口时才发送当前候选。
 - 密码框、终端安全输入和其他 Secure Input 场景必须跳过。
@@ -205,7 +188,7 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - UI 状态和 AppKit 对象保持在 `@MainActor`。
 - 跨 actor 数据必须满足 `Sendable`。
 - 优先使用值类型和小接口，避免全局可变状态。
-- 不把网络下载、OCR、推理和 UI 状态混在同一模块。
+- 不把网络下载、推理和 UI 状态混在同一模块。
 - 新增设置时先明确归属：通用、翻译、识别、显示与触发、插件与模型、权限与隐私。
 - 新增用户偏好必须有默认值、迁移策略和测试。
 
@@ -214,5 +197,5 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 行为、架构或性能结论变化时同步更新对应 `docs/` 文件。
 - README 只保留用户需要的产品介绍、功能、安装和隐私说明。
 - 提交前执行 `git diff --check`。
-- Commit 使用清晰的英文祈使句，例如 `Fix OCR strategy card alignment`。
+- Commit 使用清晰的英文祈使句，例如 `Fix plugin card alignment`。
 - 用户要求交付或推送时，再执行 commit 和 `git push origin main`。

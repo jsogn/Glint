@@ -1,5 +1,9 @@
 # Glint M15 AX Candidate Validation
 
+> Follow-up: on 2026-10-21 the inactive OCR fallback described below was
+> removed. Glint now has a single AX candidate path and requests only
+> Accessibility permission.
+
 - 日期：2026-10-21
 - 分支：`codex/validate-accessibility-candidate-reader`
 - 机器：Apple M4 Pro、48GB、macOS 26.6.2（25G83）

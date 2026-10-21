@@ -32,36 +32,6 @@ final class PluginManifestTests: XCTestCase {
         XCTAssertEqual(manifest.revision, "abc123")
     }
 
-    func testOCRManifestDecoding() throws {
-        let json = """
-        {
-          "id": "ocr-ppocrv6-small",
-          "type": "ocr",
-          "name": "PP-OCRv6 Small",
-          "version": "2026.10",
-          "runtime": "huggingface-onnx",
-          "capabilities": ["candidate"],
-          "languages": ["zh-Hans", "en"],
-          "sizeBytes": 55000000,
-          "sha256": "abc",
-          "url": "https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx",
-          "license": "Apache-2.0",
-          "minRAMBytes": 0,
-          "quality": "accurate",
-          "recommended": true,
-          "revision": "abc123",
-          "artifactFile": "inference.onnx"
-        }
-        """
-        let manifest = try JSONDecoder().decode(
-            PluginManifest.self,
-            from: Data(json.utf8)
-        )
-        XCTAssertEqual(manifest.type, .ocr)
-        XCTAssertEqual(manifest.runtime, "huggingface-onnx")
-        XCTAssertEqual(manifest.artifactFile, "inference.onnx")
-    }
-
     func testPluginVersionComparison() {
         XCTAssertTrue(PluginVersion.isNewer("1.10.0", than: "1.9.9"))
         XCTAssertFalse(PluginVersion.isNewer("1.0.0", than: "1.0"))

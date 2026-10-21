@@ -53,11 +53,6 @@ build_plugin \
   "$staging/dict-wiktionary-zh-en" \
   "Resources/Plugins/dict-wiktionary-zh-en/manifest.json"
 
-cp PluginAssets/ocr-ppocrv6-small/manifest.json \
-  "$staging/ocr-ppocrv6-small.json"
-cp PluginAssets/ocr-ppocrv6-medium/manifest.json \
-  "$staging/ocr-ppocrv6-medium.json"
-
 model_source="Tools/ModelLab/models/opus-ct2-int8"
 binary_source="Vendor/ct2"
 if [[ -f "$model_source/model.bin" && -f "$binary_source/libglintct2.dylib" ]]; then

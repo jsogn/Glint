@@ -69,20 +69,12 @@ jq \
   '.sha256 = $sha | .url = $url | .sizeBytes = $size' \
   Resources/Plugins/mt-opus-zh-en/manifest.json > "$opus_catalog_manifest"
 
-ocr_small_manifest="$CATALOG_ASSETS/ocr-ppocrv6-small.json"
-ocr_medium_manifest="$CATALOG_ASSETS/ocr-ppocrv6-medium.json"
-cp PluginAssets/ocr-ppocrv6-small/manifest.json "$ocr_small_manifest"
-cp PluginAssets/ocr-ppocrv6-medium/manifest.json "$ocr_medium_manifest"
-rm -f "$CATALOG_ASSETS/ocr-ppocrv6-small.zip"
-
 jq -s '{plugins: .}' \
   Resources/Plugins/llm-qwen3-0.6b/manifest.json \
   Resources/Plugins/llm-qwen3-1.7b/manifest.json \
   Resources/Plugins/llm-qwen3-4b/manifest.json \
   Resources/Plugins/mt-hy-mt2-1.8b/manifest.json \
   Resources/Plugins/mt-index-translate-2b/manifest.json \
-  "$ocr_small_manifest" \
-  "$ocr_medium_manifest" \
   "$opus_catalog_manifest" > "$CATALOG_SUPPORT/catalog.json"
 
 echo "installed dev plugins in $SUPPORT"

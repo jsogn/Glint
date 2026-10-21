@@ -397,11 +397,6 @@ private struct DisplayPagePreview: View {
         .preferredColorScheme(.light)
 }
 
-private struct OCRModelChoice: Identifiable {
-    let id: String
-    let name: String
-}
-
 private struct PluginsPage: View {
     let model: MainWindowModel
     @State private var pluginToRemove: PluginManifest?
@@ -468,7 +463,6 @@ private struct PluginsPage: View {
         let installed: [PluginManifest] = switch kind {
         case .dictionary: model.dictionaryPlugins
         case .translation: model.translationPlugins
-        case .ocr: model.ocrPlugins
         }
         let available = model.availablePlugins.filter {
             guard $0.type == kind else { return false }
@@ -529,31 +523,6 @@ private struct PluginsPage: View {
                 }
                 OpenAICompatibleProvidersView(model: model)
             }
-        case .ocr:
-            VStack(spacing: 16) {
-                SettingsCard("识别策略") {
-                    recognitionStrategySection
-                }
-                SettingsPanel(minHeight: 420) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        builtInVisionRow
-                        Divider()
-                            .padding(.vertical, 8)
-                        pluginRows(installed: installed, available: available)
-                        if let status = model.ocrEngineStatusText {
-                            Text(status)
-                                .font(.caption)
-                                .foregroundStyle(
-                                    model.ocrEngineStatusIsError
-                                        ? Color.red
-                                        : Color.secondary
-                                )
-                                .padding(.top, 8)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
         }
     }
 
@@ -562,7 +531,7 @@ private struct PluginsPage: View {
     ) -> some View {
         SettingsCard("启用句子翻译") {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Apple Vision 已可直接使用。安装离线翻译模型或配置在线接口后，可显示句子翻译。")
+                Text("安装离线翻译模型或配置在线接口后，可显示句子翻译。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack(spacing: 10) {
@@ -583,162 +552,6 @@ private struct PluginsPage: View {
                 }
             }
         }
-    }
-
-    private var recognitionStrategySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
-                GridRow {
-                    Text("模式")
-                    Color.clear
-                        .frame(height: 1)
-                        .gridCellUnsizedAxes(.vertical)
-                    Picker(
-                        "模式",
-                        selection: Binding(
-                            get: {
-                                model.ocrRecognitionPreferences.strategy
-                            },
-                            set: { model.setOCRRecognitionStrategy($0) }
-                        )
-                    ) {
-                        ForEach(OCRRecognitionStrategy.allCases, id: \.self) {
-                            strategy in
-                            Text(strategy.title).tag(strategy)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: 340, alignment: .trailing)
-                    .gridCellAnchor(.trailing)
-                }
-
-                Divider()
-                    .gridCellColumns(3)
-
-                GridRow {
-                    Text("主模型")
-                    Color.clear
-                        .frame(height: 1)
-                        .gridCellUnsizedAxes(.vertical)
-                    Picker(
-                        "主模型",
-                        selection: Binding(
-                            get: {
-                                model.ocrRecognitionPreferences.primaryModelID
-                            },
-                            set: { model.setPrimaryOCRModel(id: $0) }
-                        )
-                    ) {
-                        ForEach(ocrModelChoices) { choice in
-                            Text(choice.name).tag(choice.id)
-                        }
-                    }
-                    .labelsHidden()
-                    .menuStyle(.borderlessButton)
-                    .menuIndicator(.visible)
-                    .buttonStyle(.plain)
-                    .frame(width: 340, alignment: .trailing)
-                    .gridCellAnchor(.trailing)
-                }
-
-                Divider()
-                    .gridCellColumns(3)
-
-                if model.ocrRecognitionPreferences.strategy != .primaryOnly {
-                    GridRow {
-                        Text("备用模型")
-                        Color.clear
-                            .frame(height: 1)
-                            .gridCellUnsizedAxes(.vertical)
-                        Picker(
-                            "备用模型",
-                            selection: Binding(
-                                get: {
-                                    model.ocrRecognitionPreferences
-                                        .backupModelID
-                                },
-                                set: { model.setBackupOCRModel(id: $0) }
-                            )
-                        ) {
-                            Text("未选择").tag(String?.none)
-                            ForEach(backupModelChoices) { choice in
-                                Text(choice.name).tag(Optional(choice.id))
-                            }
-                        }
-                        .labelsHidden()
-                        .menuStyle(.borderlessButton)
-                        .menuIndicator(.visible)
-                        .buttonStyle(.plain)
-                        .frame(width: 340, alignment: .trailing)
-                        .gridCellAnchor(.trailing)
-                    }
-
-                    Divider()
-                        .gridCellColumns(3)
-                }
-            }
-            .frame(maxWidth: .infinity)
-
-            Text(strategyDescription)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var strategyDescription: String {
-        if model.ocrRecognitionPreferences.strategy == .primaryOnly {
-            return "只使用主模型，备用模型暂不参与识别。"
-        }
-        guard let backupID = model.ocrRecognitionPreferences.backupModelID else {
-            return "请选择备用模型后启用自动回退或双模型校验。"
-        }
-        let backup = model.ocrModelName(backupID)
-        switch model.ocrRecognitionPreferences.strategy {
-        case .automaticFallback:
-            return "主模型结果不可靠时，再使用 \(backup)。"
-        case .dualVerification:
-            return "每次同时运行主模型和 \(backup)，优先保证准确率。"
-        case .primaryOnly:
-            return ""
-        }
-    }
-
-    private var ocrModelChoices: [OCRModelChoice] {
-        [
-            OCRModelChoice(
-                id: OCRRecognitionPreferences.visionModelID,
-                name: "Apple Vision"
-            ),
-        ] + model.ocrPlugins.map {
-            OCRModelChoice(id: $0.id, name: $0.name)
-        }
-    }
-
-    private var backupModelChoices: [OCRModelChoice] {
-        ocrModelChoices.filter {
-            $0.id != model.ocrRecognitionPreferences.primaryModelID
-        }
-    }
-
-    private var builtInVisionRow: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Apple Vision")
-                Text("系统内置，无需下载。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("系统内置 · macOS")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            ocrModelBadges(
-                modelID: OCRRecognitionPreferences.visionModelID
-            )
-        }
-        .padding(.vertical, 8)
     }
 
     private func pluginRows(
@@ -779,7 +592,6 @@ private struct PluginsPage: View {
 
     private func installedRow(_ plugin: PluginManifest) -> some View {
         let isInUse = model.isActiveTranslationModel(plugin)
-            || model.isOCRModelInUse(plugin.id)
         return HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text(plugin.name)
@@ -817,8 +629,6 @@ private struct PluginsPage: View {
                         model.isInstalling != nil || model.isImportingLocalModel
                     )
                 }
-            } else if plugin.type == .ocr {
-                ocrModelBadges(modelID: plugin.id)
             }
             if !isInUse {
                 Button("卸载", role: .destructive) {
@@ -828,25 +638,6 @@ private struct PluginsPage: View {
                     model.isInstalling != nil || model.isImportingLocalModel
                 )
             }
-        }
-    }
-
-    @ViewBuilder
-    private func ocrModelBadges(modelID: String) -> some View {
-        if model.ocrRecognitionPreferences.primaryModelID == modelID {
-            Text("主模型")
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(.blue.opacity(0.16), in: Capsule())
-                .foregroundStyle(.blue)
-        } else if model.ocrRecognitionPreferences.backupModelID == modelID {
-            Text("备用模型")
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(.secondary.opacity(0.12), in: Capsule())
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -921,8 +712,6 @@ private struct PluginsPage: View {
             return "本地词典，支持中英词汇和短语。"
         case .translation:
             return "离线翻译模型，适合短句翻译。"
-        case .ocr:
-            return "本地候选识别模型，适合小字号和复杂背景。"
         }
     }
 
@@ -941,13 +730,11 @@ private struct PluginsPage: View {
 private enum PluginTab: String, CaseIterable, Hashable {
     case dictionary
     case translation
-    case ocr
 
     var title: String {
         switch self {
         case .dictionary: "翻译词典"
         case .translation: "翻译模型"
-        case .ocr: "文字识别"
         }
     }
 
@@ -955,7 +742,6 @@ private enum PluginTab: String, CaseIterable, Hashable {
         switch self {
         case .dictionary: .dictionary
         case .translation: .translation
-        case .ocr: .ocr
         }
     }
 }
@@ -1000,31 +786,12 @@ extension CandidateTranslationScope {
     }
 }
 
-extension OCRRecognitionStrategy {
-    var title: String {
-        switch self {
-        case .automaticFallback:
-            return "自动回退"
-        case .dualVerification:
-            return "双模型校验"
-        case .primaryOnly:
-            return "仅主模型"
-        }
-    }
-}
-
 private struct PermissionsPage: View {
     let model: MainWindowModel
 
     var body: some View {
-        PageContainer(subtitle: "全局生效只截取候选栏，不读取文本正文。") {
+        PageContainer(subtitle: "全局生效，只读取系统候选，不读取输入框正文。") {
             SettingsCard("系统权限") {
-                PermissionStatusRow(
-                    title: "屏幕录制",
-                    symbol: "rectangle.dashed.badge.record",
-                    granted: model.screenRecordingGranted
-                )
-                Divider()
                 PermissionStatusRow(
                     title: "辅助功能",
                     symbol: "accessibility",
@@ -1044,7 +811,7 @@ private struct PermissionsPage: View {
                     Button("重新检查") { model.refreshPermissions() }
                 }
                 if hasMissingPermissions {
-                    Text("点击后会请求系统加入权限列表。屏幕录制授权完成后，如提示未消失，请重新启动 Glint。")
+                    Text("点击后会请求系统加入权限列表。授权完成后，如提示未消失，请重新启动 Glint。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Divider()
@@ -1053,9 +820,6 @@ private struct PermissionsPage: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Button("屏幕录制设置") {
-                            openPrivacyPane("Privacy_ScreenCapture")
-                        }
                         Button("辅助功能设置") {
                             openPrivacyPane("Privacy_Accessibility")
                         }
@@ -1078,14 +842,11 @@ private struct PermissionsPage: View {
     }
 
     private var hasMissingPermissions: Bool {
-        !model.screenRecordingGranted || !model.accessibilityGranted
+        !model.accessibilityGranted
     }
 
     private var permissionRequestTitle: String {
-        if !model.screenRecordingGranted {
-            return "授权屏幕录制"
-        }
-        return "授权辅助功能"
+        "授权辅助功能"
     }
 }
 
@@ -1118,7 +879,7 @@ private struct PrivacyNoticeCard: View {
         SettingsCard("隐私", systemImage: "lock.shield") {
             Text("不保存候选文本、翻译结果或输入历史。")
             Text(
-                "默认使用本地词典、本地 OCR 和本地翻译模型；"
+                "候选通过 macOS 辅助功能读取；本地翻译模型不联网。"
                     + "启用 OpenAI 兼容接口时，候选文本会发送到所配置的服务。"
             )
             .font(.caption)

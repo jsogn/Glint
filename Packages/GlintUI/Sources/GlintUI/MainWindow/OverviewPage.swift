@@ -104,19 +104,7 @@ private struct OverviewStatusCard: View {
     }
 
     private var missingPermissionText: String? {
-        switch (
-            model.screenRecordingGranted,
-            model.accessibilityGranted
-        ) {
-        case (false, false):
-            return "需要屏幕录制和辅助功能权限。"
-        case (false, true):
-            return "需要屏幕录制权限。"
-        case (true, false):
-            return "需要辅助功能权限。"
-        case (true, true):
-            return nil
-        }
+        model.accessibilityGranted ? nil : "需要辅助功能权限。"
     }
 
     private var attentionMessage: String? {
@@ -222,7 +210,7 @@ private struct OverviewPipeline: View {
             stage(symbol: "keyboard", label: "输入", value: "苹果拼音")
             arrow
             stage(
-                symbol: "viewfinder",
+                symbol: "text.cursor",
                 label: "识别",
                 value: model.candidateSummary
             )
