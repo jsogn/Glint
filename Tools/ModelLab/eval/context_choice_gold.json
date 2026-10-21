@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-10-21",
+  "description": "Manually reviewed acceptable candidate surfaces for each synthetic context. This set is for the candidate-reranking study only and is not used by the App.",
+  "cases": {
+    "amb-001-a": [
+      "instant",
+      "ready-to-eat",
+      "quick-prep"
+    ],
+    "amb-001-b": [
+      "convenient",
+      "available",
+      "free"
+    ],
+    "amb-002-a": [
+      "process",
+      "deal with",
+      "handle",
+      "to deal with",
+      "to handle",
+      "to process",
+      "tackle",
+      "manage",
+      "analyze"
+    ],
+    "amb-002-b": [
+      "handle",
+      "deal with",
+      "to handle",
+      "to deal with",
+      "manage",
+      "tackle",
+      "address"
+    ],
+    "amb-003-a": [
+      "release",
+      "to release",
+      "launch",
+      "issue"
+    ],
+    "amb-003-b": [
+      "post",
+      "publish",
+      "share"
+    ],
+    "amb-004-a": [
+      "implemented",
+      "rolled out",
+      "implement",
+      "(fig.) to be implemented",
+      "to be put into practice",
+      "put into action",
+      "deployed",
+      "put into practice"
+    ],
+    "amb-004-b": [
+      "land",
+      "touch down",
+      "(of a plane) to land",
+      "landing",
+      "touchdown"
+    ],
+    "amb-005-a": [
+      "run",
+      "execute",
+      "launch"
+    ],
+    "amb-005-b": [
+      "operating",
+      "operation",
+      "running"
+    ],
+    "amb-006-a": [
+      "see",
+      "get examined",
+      "examine",
+      "to examine"
+    ],
+    "amb-006-b": [
+      "read",
+      "reading"
+    ],
+    "amb-007-a": [
+      "drive",
+      "drives",
+      "to drive",
+      "to operate"
+    ],
+    "amb-007-b": [
+      "turn on",
+      "switch on"
+    ],
+    "amb-008-a": [
+      "take",
+      "ride",
+      "hitch",
+      "take a cab",
+      "ride a cab",
+      "hail a cab"
+    ],
+    "amb-008-b": [
+      "play",
+      "to play"
+    ],
+    "amb-009-a": [
+      "browse",
+      "go online",
+      "access",
+      "log in to",
+      "to go online",
+      "to surf the internet",
+      "to access the internet"
+    ],
+    "amb-009-b": [
+      "attend",
+      "go to",
+      "to attend (class or university)",
+      "enroll",
+      "start"
+    ],
+    "amb-010-a": [
+      "rain",
+      "raining",
+      "starts to rain",
+      "begins to pour",
+      "comes down",
+      "to start raining",
+      "to begin to rain",
+      "to come down (rain)"
+    ],
+    "amb-010-b": [
+      "get off"
+    ],
+    "amb-011-a": [
+      "order",
+      "place",
+      "order food"
+    ],
+    "amb-011-b": [
+      "nod",
+      "nodded",
+      "indicated",
+      "gave a nod"
+    ],
+    "amb-012-a": [
+      "spend",
+      "to spend (money, time)",
+      "spends",
+      "pays"
+    ],
+    "amb-012-b": [
+      "flower",
+      "flowers",
+      "bouquet",
+      "blossoms"
+    ],
+    "amb-013-a": [
+      "celebrate",
+      "observe",
+      "have",
+      "to celebrate",
+      "to observe",
+      "to have",
+      "to celebrate (a holiday)"
+    ],
+    "amb-013-b": [
+      "cross",
+      "go through",
+      "pass",
+      "to cross",
+      "to go through",
+      "to pass"
+    ],
+    "amb-014-a": [
+      "walk",
+      "take a stroll",
+      "to walk",
+      "to stroll"
+    ],
+    "amb-014-b": [
+      "leave",
+      "go",
+      "depart",
+      "let's go",
+      "walk away",
+      "move on"
+    ],
+    "amb-015-a": [
+      "send",
+      "to send out",
+      "dispatch",
+      "forward",
+      "transmit"
+    ],
+    "amb-015-b": [
+      "pay",
+      "distribute",
+      "issue"
+    ],
+    "amb-016-a": [
+      "receive",
+      "to receive",
+      "get"
+    ],
+    "amb-016-b": [
+      "bring in",
+      "collect",
+      "to collect",
+      "put away"
+    ],
+    "amb-017-a": [
+      "answer",
+      "receive",
+      "to answer",
+      "to answer (the phone)"
+    ],
+    "amb-017-b": [
+      "take on",
+      "accept",
+      "take over",
+      "to take on",
+      "to accept",
+      "undertake"
+    ],
+    "amb-018-a": [
+      "look after",
+      "care for",
+      "takes care of",
+      "looks after",
+      "to look after",
+      "to care for",
+      "to raise"
+    ],
+    "amb-018-b": [
+      "lead",
+      "leads",
+      "manages",
+      "supervises",
+      "guides"
+    ],
+    "amb-019-a": [
+      "change",
+      "switch"
+    ],
+    "amb-019-b": [
+      "replace",
+      "swap",
+      "change",
+      "to switch"
+    ],
+    "amb-020-a": [
+      "save",
+      "set aside",
+      "accumulate",
+      "to deposit"
+    ],
+    "amb-020-b": [
+      "stock",
+      "inventory",
+      "remaining",
+      "stored",
+      "available",
+      "reserve"
+    ],
+    "amb-021-a": [
+      "play",
+      "stream",
+      "broadcast"
+    ],
+    "amb-021-b": [
+      "put",
+      "place",
+      "to put",
+      "to place",
+      "store",
+      "to set"
+    ],
+    "amb-022-a": [
+      "cook",
+      "make",
+      "cooking",
+      "preparing",
+      "is cooking",
+      "is preparing",
+      "is cooking dinner"
+    ],
+    "amb-022-b": [
+      "make",
+      "decide",
+      "to make",
+      "to decide"
+    ],
+    "amb-023-a": [
+      "miss",
+      "longed",
+      "missed",
+      "thought of",
+      "to miss (feel wistful about the absence of)"
+    ],
+    "amb-023-b": [
+      "think of",
+      "come up with",
+      "to come up with",
+      "to figure",
+      "to devise"
+    ],
+    "amb-024-a": [
+      "ask",
+      "inquire",
+      "question",
+      "to ask",
+      "to inquire"
+    ],
+    "amb-024-b": [
+      "hold accountable",
+      "hold responsible",
+      "blame"
+    ],
+    "amb-025-a": [
+      "register",
+      "apply",
+      "sign up"
+    ],
+    "amb-025-b": [
+      "call",
+      "report",
+      "alert"
+    ],
+    "amb-026-a": [
+      "pay",
+      "settle"
+    ],
+    "amb-026-b": [
+      "end",
+      "finish",
+      "ended",
+      "closed",
+      "concluded",
+      "finished"
+    ],
+    "amb-027-a": [
+      "okay",
+      "work",
+      "yes",
+      "possible",
+      "fine"
+    ],
+    "amb-027-b": [
+      "bank",
+      "branch"
+    ],
+    "amb-028-a": [
+      "return",
+      "give back",
+      "pay back",
+      "refund",
+      "reimburse"
+    ],
+    "amb-028-b": [
+      "still",
+      "hasn't yet",
+      "not yet",
+      "has yet"
+    ],
+    "amb-029-a": [
+      "about",
+      "almost",
+      "short of"
+    ],
+    "amb-029-b": [
+      "differ",
+      "different",
+      "difference",
+      "discrepancy",
+      "far apart"
+    ],
+    "amb-030-a": [
+      "ready",
+      "done",
+      "perfect",
+      "prepared"
+    ],
+    "amb-030-b": [
+      "easy",
+      "easy to"
+    ],
+    "amb-031-a": [
+      "large",
+      "big",
+      "great",
+      "giant",
+      "massive"
+    ],
+    "amb-031-b": [
+      "heavy",
+      "intense",
+      "strong"
+    ],
+    "amb-032-a": [
+      "quietly",
+      "softly",
+      "quiet",
+      "soft",
+      "low"
+    ],
+    "amb-032-b": [
+      "small",
+      "tiny",
+      "minor"
+    ],
+    "amb-033-a": [
+      "news",
+      "newspaper"
+    ],
+    "amb-033-b": [
+      "new",
+      "fresh",
+      "recent"
+    ],
+    "amb-034-a": [
+      "old",
+      "long-established",
+      "of long standing",
+      "traditional",
+      "timeless",
+      "classic"
+    ],
+    "amb-034-b": [
+      "always",
+      "all the time"
+    ],
+    "amb-035-a": [
+      "fast",
+      "quick",
+      "rapid"
+    ],
+    "amb-035-b": [
+      "soon",
+      "approaching"
+    ],
+    "amb-036-a": [
+      "light",
+      "lightweight"
+    ],
+    "amb-036-b": [
+      "gently",
+      "softly",
+      "lightly"
+    ],
+    "amb-037-a": [
+      "heavy",
+      "too heavy"
+    ],
+    "amb-037-b": [
+      "again",
+      "re",
+      "once again",
+      "repetition"
+    ],
+    "amb-038-a": [
+      "stay",
+      "remain",
+      "to stay",
+      "to remain"
+    ],
+    "amb-038-b": [
+      "leave",
+      "to leave (a message etc)"
+    ],
+    "amb-039-a": [
+      "return",
+      "refund",
+      "to return (sth)"
+    ],
+    "amb-039-b": [
+      "step back",
+      "move back",
+      "retreat",
+      "to retreat",
+      "recede",
+      "withdraw"
+    ],
+    "amb-040-a": [
+      "rise",
+      "increase",
+      "climb",
+      "rising",
+      "increasing",
+      "climbing"
+    ],
+    "amb-040-b": [
+      "promoted",
+      "to promote"
+    ]
+  }
+}

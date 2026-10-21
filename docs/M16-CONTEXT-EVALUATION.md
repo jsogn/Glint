@@ -1,5 +1,11 @@
 # M16 Context Disambiguation Evaluation
 
+> This milestone established raw-context feasibility. Candidate-source and
+> end-to-end follow-up results are in
+> [M17](M17-CONTEXT-DISAMBIGUATION-RESEARCH.md). The M17 study supersedes the
+> earlier recommendation to continue with a dictionary-plus-generated candidate
+> bank.
+
 - Date: 2026-10-21
 - Branch: `codex/evaluate-context-disambiguation`
 - Models: Hy-MT2 1.8B, Qwen3 0.6B / 1.7B / 4B,

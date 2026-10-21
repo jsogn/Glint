@@ -65,4 +65,17 @@ HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
 ```
 
 评估结论见
-[`docs/M16-CONTEXT-EVALUATION.md`](../../docs/M16-CONTEXT-EVALUATION.md)。
+[`docs/M16-CONTEXT-EVALUATION.md`](../../docs/M16-CONTEXT-EVALUATION.md)
+和
+[`docs/M17-CONTEXT-DISAMBIGUATION-RESEARCH.md`](../../docs/M17-CONTEXT-DISAMBIGUATION-RESEARCH.md)。
+
+M17 的生成候选和候选来源消融流程见
+[`Tools/CandidateLab/README.md`](../CandidateLab/README.md)。候选重排结果使用
+人工审阅的合成语料 gold：
+
+```bash
+python3 Tools/ModelLab/eval/run_context_rerank.py \
+  --choices-file Tools/ModelLab/results/context-generated-candidates.json \
+  --gold-file Tools/ModelLab/eval/context_choice_gold.json \
+  --dry-run
+```
