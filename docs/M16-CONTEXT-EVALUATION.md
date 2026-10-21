@@ -234,13 +234,13 @@ Probe:
 
 | Gate | Result |
 | --- | --- |
-| Ambiguous accuracy +10pp | Failed for raw context and real dictionary rerank |
-| Overall accuracy +3pp | Failed |
-| No control regression >2pp | Raw context failed; control wording unchanged |
-| Invalid/error unchanged | Failed |
-| p95 latency +20ms or less | Raw context failed; oracle rerank passed |
-| 24-character window retains 80% gain | No gain to retain in raw run |
-| TextEdit and Chrome AX support | Passed |
+| Ambiguous accuracy +10pp | Passed by Qwen3 4B and Index raw context; failed by Hy-MT2, Qwen3 0.6B, and 1.7B |
+| Overall accuracy +3pp | Not established outside the polysemy subset |
+| No control regression >2pp | Not established for the additional model matrix |
+| Invalid/error unchanged | Passed by Qwen3 4B and Index raw context |
+| p95 latency +20ms or less | Failed by every raw-context model; passed by oracle reranking |
+| 24-character window retains 80% gain | Passed by Qwen3 4B and Index; 24 and 48 characters tied |
+| TextEdit, Chrome, and Safari AX support | Passed |
 
 ## 10. Decision
 
@@ -261,6 +261,17 @@ The supported model set has two viable selective paths:
    increases by about 79ms.
 
 Context must stay disabled for Hy-MT2 1.8B, Qwen3 0.6B, Qwen3 1.7B, and OPUS-MT.
+
+Suggested capability matrix:
+
+| Model | Raw context output | Context sense selection | Product rule |
+| --- | --- | --- | --- |
+| Qwen3 4B | Good | Best | Allow only as explicit high-quality context mode |
+| Index-Translate 2B | Good | Strong | Allow only as explicit balanced context mode |
+| Qwen3 0.6B | Poor | Strong and fastest | Use only in a future candidate-reranking stage |
+| Qwen3 1.7B | Poor | Good | No raw context; reranking only |
+| Hy-MT2 1.8B | Poor | Good | Keep default context-free |
+| OPUS-MT | Not instruction-capable | Not evaluated | Keep context-free |
 
 The next prerequisite is a better sense inventory or candidate-generation stage.
 The current dictionary lacks a correct sense for most ambiguous cases. A

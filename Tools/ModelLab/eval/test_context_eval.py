@@ -9,6 +9,7 @@ from run_context_eval import (
     load_cases,
     normalize_translation,
     score_output,
+    system_prompt,
 )
 
 
@@ -79,6 +80,19 @@ class ContextEvalTests(unittest.TestCase):
         self.assertEqual(
             score_output("方便", case),
             ("invalid", "chinese_output"),
+        )
+
+    def test_general_models_receive_system_instructions(self):
+        self.assertIn(
+            "Follow the user's output constraints",
+            system_prompt(
+                "mlx-community/Qwen3-0.6B-4bit"
+            ),
+        )
+        self.assertIsNone(
+            system_prompt(
+                "zerodegress/Index-Translate-2B-MLX-4bit"
+            )
         )
 
     def test_extracts_single_english_bracket_target(self):
