@@ -42,6 +42,8 @@ final class OCREngineModelTests: XCTestCase {
         XCTAssertTrue(stillInstalled.contains { $0.id == "ocr-test" })
 
         try await manager.remove(id: "ocr-test")
+        let remaining = await manager.installedPlugins()
+        XCTAssertTrue(remaining.isEmpty)
         await model.refreshPlugins()
 
         XCTAssertEqual(
@@ -85,6 +87,8 @@ final class OCREngineModelTests: XCTestCase {
         )
 
         try await manager.remove(id: "ocr-test")
+        let remaining = await manager.installedPlugins()
+        XCTAssertTrue(remaining.isEmpty)
         await model.refreshPlugins()
         XCTAssertNil(model.ocrRecognitionPreferences.backupModelID)
         XCTAssertEqual(

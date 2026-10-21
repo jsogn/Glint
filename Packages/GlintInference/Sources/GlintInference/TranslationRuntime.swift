@@ -11,8 +11,6 @@ public actor TranslationRuntime: TranslationEngine {
     private let openAISession: URLSession
     private var activeModel: ResolvedTranslationModel?
     private var activeEngine: (any TranslationEngine)?
-    private var fallbackEngine: CTranslate2Engine?
-    private var fallbackInitialized = false
     private(set) public var lastError: String?
 
     public init(
@@ -32,12 +30,16 @@ public actor TranslationRuntime: TranslationEngine {
     }
 
     public func prepareSelectedModel() async {
-        let modelID = selectedModelID
+        _ = await prepare(modelID: selectedModelID)
+    }
+
+    @discardableResult
+    public func prepare(modelID: String) async -> String? {
         guard let descriptor = await modelResolver(modelID) else {
             activeModel = nil
             activeEngine = nil
             lastError = "未找到所选翻译模型"
-            return
+            return lastError
         }
 
         // Release the previous multi-gigabyte container before loading a new one.
@@ -52,10 +54,18 @@ public actor TranslationRuntime: TranslationEngine {
             activeEngine = engine
             lastError = nil
         } catch {
-            activeModel = descriptor
+            activeModel = nil
             activeEngine = nil
             lastError = error.localizedDescription
         }
+        return lastError
+    }
+
+    public func releaseResources(for modelID: String) {
+        guard activeModel?.modelID == modelID else { return }
+        activeEngine = nil
+        activeModel = nil
+        lastError = nil
     }
 
     public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
@@ -74,17 +84,14 @@ public actor TranslationRuntime: TranslationEngine {
             }
         }
 
-        guard let fallbackEngine = fallback() else {
-            if let lastError {
-                throw NSError(
-                    domain: "Glint.TranslationRuntime",
-                    code: 1,
-                    userInfo: [NSLocalizedDescriptionKey: lastError]
-                )
-            }
-            throw GlintError.engineUnavailable
+        if let lastError {
+            throw NSError(
+                domain: "Glint.TranslationRuntime",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: lastError]
+            )
         }
-        return try await fallbackEngine.translate(candidate)
+        throw GlintError.engineUnavailable
     }
 
     public static func selectedModelID(in defaults: UserDefaults = .standard) -> String {
@@ -109,30 +116,13 @@ public actor TranslationRuntime: TranslationEngine {
                 promptProfile: promptProfile
             )
         case let .ctranslate2(_, directory):
-            guard let engine = CTranslate2Engine(modelDirectory: directory) else {
-                throw NSError(
-                    domain: "Glint.TranslationRuntime",
-                    code: 2,
-                    userInfo: [
-                        NSLocalizedDescriptionKey: "无法加载 CTranslate2 模型"
-                    ]
-                )
-            }
-            return engine
+            return try CTranslate2Engine(modelDirectory: directory)
         case let .openAICompatible(_, configuration):
             return OpenAICompatibleTranslationEngine(
                 configuration: configuration,
                 session: openAISession
             )
         }
-    }
-
-    private func fallback() -> CTranslate2Engine? {
-        if !fallbackInitialized {
-            fallbackInitialized = true
-            fallbackEngine = CTranslate2Engine()
-        }
-        return fallbackEngine
     }
 
     private static func defaultModel(
@@ -153,6 +143,23 @@ public actor TranslationRuntime: TranslationEngine {
                 ),
                 configuration: configuration
             )
+        }
+
+        if modelID == TranslationModelSelection.defaultModelID,
+           let support = FileManager.default.urls(
+               for: .applicationSupportDirectory,
+               in: .userDomainMask
+           ).first {
+            let directory = support.appendingPathComponent(
+                "Glint/plugins/mt-opus-zh-en/model",
+                isDirectory: true
+            )
+            if FileManager.default.fileExists(atPath: directory.path) {
+                return .ctranslate2(
+                    modelID: modelID,
+                    directory: directory
+                )
+            }
         }
 
         guard TranslationModelSelection.usesMLX(modelID),

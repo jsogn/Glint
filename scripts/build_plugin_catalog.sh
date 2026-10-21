@@ -58,12 +58,18 @@ cp PluginAssets/ocr-ppocrv6-small/manifest.json \
 cp PluginAssets/ocr-ppocrv6-medium/manifest.json \
   "$staging/ocr-ppocrv6-medium.json"
 
-installed_model="$HOME/Library/Application Support/Glint/plugins/opus-ct2-int8"
-if [[ -f "$installed_model/model/model.bin" ]]; then
+model_source="Tools/ModelLab/models/opus-ct2-int8"
+binary_source="Vendor/ct2"
+if [[ -f "$model_source/model.bin" && -f "$binary_source/libglintct2.dylib" ]]; then
   mkdir -p "$staging/mt-opus-zh-en"
   cp Resources/Plugins/mt-opus-zh-en/manifest.json "$staging/mt-opus-zh-en/"
-  cp -R "$installed_model/model" "$staging/mt-opus-zh-en/"
-  cp -R "$installed_model/bin" "$staging/mt-opus-zh-en/"
+  cp -R "$model_source" "$staging/mt-opus-zh-en/model"
+  cp -R "$binary_source" "$staging/mt-opus-zh-en/bin"
+  codesign --force --sign - \
+    "$staging/mt-opus-zh-en/bin/libctranslate2.dylib" \
+    "$staging/mt-opus-zh-en/bin/libsentencepiece.0.0.0.dylib" \
+    "$staging/mt-opus-zh-en/bin/libglintct2.dylib" \
+    >/dev/null 2>&1 || true
   build_plugin \
     "mt-opus-zh-en" \
     "$staging/mt-opus-zh-en" \

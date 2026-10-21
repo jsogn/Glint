@@ -114,6 +114,69 @@ final class PluginCatalogServiceTests: XCTestCase {
         XCTAssertTrue(remaining.isEmpty)
     }
 
+    func testCatalogFetchUsesConditionalRequest() async throws {
+        let body = Data(#"{"plugins":[]}"#.utf8)
+        StubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            if request.value(forHTTPHeaderField: "If-None-Match")
+                == "\"catalog-v1\"" {
+                return (
+                    HTTPURLResponse(
+                        url: url,
+                        statusCode: 304,
+                        httpVersion: nil,
+                        headerFields: [
+                            "ETag": "\"catalog-v1\"",
+                        ]
+                    )!,
+                    Data()
+                )
+            }
+            return (
+                HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: [
+                        "ETag": "\"catalog-v1\"",
+                        "Last-Modified": "Wed, 21 Oct 2026 10:00:00 GMT",
+                    ]
+                )!,
+                body
+            )
+        }
+        defer { StubURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let service = PluginCatalogService(
+            manager: PluginManager(
+                baseDirectory: FileManager.default.temporaryDirectory
+                    .appendingPathComponent(
+                        "GlintCatalogETag-\(UUID().uuidString)"
+                    )
+            ),
+            session: URLSession(configuration: configuration)
+        )
+        let url = URL(string: "https://example.com/catalog.json")!
+
+        let first = try await service.fetchCatalogResult(from: url)
+        XCTAssertFalse(first.isNotModified)
+        XCTAssertEqual(first.etag, "\"catalog-v1\"")
+        XCTAssertEqual(
+            first.lastModified,
+            "Wed, 21 Oct 2026 10:00:00 GMT"
+        )
+
+        let second = try await service.fetchCatalogResult(
+            from: url,
+            etag: first.etag,
+            lastModified: first.lastModified
+        )
+        XCTAssertTrue(second.isNotModified)
+        XCTAssertTrue(second.plugins.isEmpty)
+    }
+
     func testLegacyOCRArchiveRuntimeIsRejected() async {
         let manifest = PluginManifest(
             id: "test-ocr",
@@ -144,6 +207,24 @@ final class PluginCatalogServiceTests: XCTestCase {
             XCTAssertEqual(error, .unsupportedRuntime)
         } catch {
             XCTFail("unexpected error: \(error)")
+        }
+    }
+
+    func testRemovingMissingPluginThrows() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GlintMissingPlugin-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = PluginManager(baseDirectory: root)
+
+        do {
+            try await manager.remove(id: "missing-plugin")
+            XCTFail("Removing a missing plugin should fail")
+        } catch let error as PluginManagerError {
+            guard case .pluginNotFound = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error: \(error)")
         }
     }
 

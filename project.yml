@@ -43,6 +43,9 @@ targets:
       - path: Resources
         buildPhase: resources
         type: folder
+        excludes:
+          - Models
+          - CT2
     info:
       path: App/Glint/Info.plist
       properties:

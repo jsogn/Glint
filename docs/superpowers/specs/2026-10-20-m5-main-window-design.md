@@ -26,7 +26,7 @@ Remote plugin download remains outside M5.
 An `@Observable`, main-actor settings object with:
 
 - `position`: automatic, above, or below.
-- `stabilityDelay`: clamped to 0.1...0.5 seconds.
+- `candidateDwellDuration`: clamped to 0.08...0.3 seconds.
 
 Persistence uses `UserDefaults` and can be injected for tests.
 

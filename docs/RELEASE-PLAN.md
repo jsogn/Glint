@@ -44,11 +44,12 @@ Glint 当前是可稳定运行的开发版本，但还不是可分发包。
 当前需要纳入嵌套签名的二进制：
 
 ```text
-Contents/Resources/Resources/CT2/libctranslate2.dylib
-Contents/Resources/Resources/CT2/libglintct2.dylib
-Contents/Resources/Resources/CT2/libsentencepiece.0.0.0.dylib
 Contents/Resources/Resources/ONNXRuntime/libonnxruntime.1.dylib
 ```
+
+OPUS-MT 使用的 CTranslate2、SentencePiece 和桥接动态库属于按需安装插件，
+不得进入 App bundle。发布插件前这些动态库必须使用同一 Developer ID Team
+签名，并随插件清单校验版本。
 
 Release 构建不得使用 `CODE_SIGNING_ALLOWED=NO`。签名顺序应先内层动态库，后主 App，
 全部使用 hardened runtime 和时间戳。
