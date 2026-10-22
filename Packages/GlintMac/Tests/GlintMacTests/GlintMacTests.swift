@@ -269,19 +269,17 @@ final class GlintMacTests: XCTestCase {
                         frame: CGRect(x: 80, y: 80, width: 70, height: 28),
                         isSelected: true
                     ),
-                ],
-                listFrame: CGRect(x: 10, y: 80, width: 360, height: 28)
+                ]
             )
         )
 
         XCTAssertEqual(
             frame,
-            CGRect(x: 10, y: 80, width: 360, height: 28)
+            CGRect(x: 20, y: 80, width: 130, height: 28)
         )
     }
 
     func testRowModeAnchorsToVisibleRowInsideCandidateWindow() throws {
-        let expandedWindow = CGRect(x: 10, y: 20, width: 540, height: 260)
         let frame = try XCTUnwrap(
             MonitoringController.candidateDisplayFrame(
                 scope: .row,
@@ -292,19 +290,17 @@ final class GlintMacTests: XCTestCase {
                         frame: CGRect(x: 40, y: 170, width: 50, height: 28),
                         isSelected: true
                     ),
-                ],
-                windowFrame: expandedWindow,
-                listFrame: CGRect(x: 20, y: 30, width: 500, height: 220)
+                ]
             )
         )
 
         XCTAssertEqual(
             frame,
-            CGRect(x: 20, y: 170, width: 500, height: 28)
+            CGRect(x: 40, y: 170, width: 50, height: 28)
         )
     }
 
-    func testRowModePrefersVisibleListOriginOverWindowOrigin() throws {
+    func testRowModeUsesVisibleCandidateUnionInsteadOfContainer() throws {
         let frame = try XCTUnwrap(
             MonitoringController.candidateDisplayFrame(
                 scope: .row,
@@ -320,15 +316,13 @@ final class GlintMacTests: XCTestCase {
                         ),
                         isSelected: true
                     ),
-                ],
-                windowFrame: CGRect(x: 90, y: 20, width: 1_200, height: 100),
-                listFrame: CGRect(x: 380, y: 80, width: 800, height: 28)
+                ]
             )
         )
 
         XCTAssertEqual(
             frame,
-            CGRect(x: 380, y: 80, width: 800, height: 28)
+            CGRect(x: 400, y: 80, width: 100, height: 28)
         )
     }
 
@@ -339,8 +333,7 @@ final class GlintMacTests: XCTestCase {
             MonitoringController.candidateDisplayFrame(
                 scope: .selected,
                 selectedFrame: selected,
-                options: [],
-                listFrame: CGRect(x: 10, y: 80, width: 360, height: 28)
+                options: []
             ),
             selected
         )

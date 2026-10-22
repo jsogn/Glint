@@ -370,9 +370,7 @@ public actor MonitoringController {
               let displayFrame = Self.candidateDisplayFrame(
                   scope: translationScope,
                   selectedFrame: candidateFrame,
-                  options: axCandidate.options,
-                  windowFrame: axCandidate.candidateWindowFrame,
-                  listFrame: axCandidate.candidateListFrame
+                  options: axCandidate.options
               ),
               let displayAnchor = Self.candidateRegion(
                   for: displayFrame
@@ -868,9 +866,7 @@ public actor MonitoringController {
     static func candidateDisplayFrame(
         scope: CandidateTranslationScope,
         selectedFrame: CGRect,
-        options: [AXCandidateOption],
-        windowFrame: CGRect? = nil,
-        listFrame: CGRect?
+        options: [AXCandidateOption]
     ) -> CGRect? {
         guard scope == .row else {
             return selectedFrame.width > 0 && selectedFrame.height > 0
@@ -886,21 +882,10 @@ public actor MonitoringController {
             return candidateDisplayFrame(
                 scope: .selected,
                 selectedFrame: selectedFrame,
-                options: [],
-                windowFrame: nil,
-                listFrame: listFrame
+                options: []
             )
         }
-        let widthFrame = [listFrame, windowFrame].compactMap { $0 }.first {
-            $0.width > 0
-        }
-        let width = max(rowFrame.width, widthFrame?.width ?? 0)
-        return CGRect(
-            x: widthFrame?.minX ?? rowFrame.minX,
-            y: rowFrame.minY,
-            width: width,
-            height: rowFrame.height
-        )
+        return rowFrame
     }
 
 }
