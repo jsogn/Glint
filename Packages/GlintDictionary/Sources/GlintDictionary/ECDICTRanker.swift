@@ -137,7 +137,7 @@ public final class ECDICTRanker: @unchecked Sendable {
             Bundle.main.url(
                 forResource: "ecdict_rank",
                 withExtension: "sqlite3",
-                subdirectory: "Plugins/dict-ecdict"
+                subdirectory: "dict-ecdict"
             ),
             Bundle.main.url(
                 forResource: "ecdict_rank",

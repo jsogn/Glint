@@ -1,11 +1,12 @@
 # Glint Architecture v0.1
 
-- 状态：Draft，待确认
+- 状态：现行草案
 - 日期：2026-10-19
+- 最近校准：2026-10-22
 - 平台：macOS 14+，Apple Silicon
 - 语言：Swift 6
 - 关联 PRD：`docs/PRD-v0.2.md`
-- 关联 Demo：`/Users/alone/code/PinyinLensDemo`
+- 关联 Demo：外部 PinyinLensDemo 原型仓库
 
 ## 1. 架构目标
 
@@ -13,7 +14,8 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 
 1. 原生 macOS 集成：Accessibility、TIS、AppKit；候选识别不截图、不执行 OCR。
 2. 全局默认生效，但只读取当前输入法候选，不读文本正文。
-3. 词典和翻译模型都是可下载插件，模型不进入安装包。
+3. CC-CEDICT、ECDICT 和 Wiktionary 是只读内置词典；其他词典与翻译模型按插件
+   管理，模型不进入安装包。
 4. 翻译运行时可以替换，但插件不执行任意第三方代码。
 5. App 逻辑与模型实验分离，先完成 M1 模型 spike，再把胜出的运行时接进 App。
 6. 默认不保存候选文本、翻译结果或输入历史。
@@ -28,14 +30,14 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 | HUD | AppKit `NSPanel` + SwiftUI `NSHostingView` |
 | UI | 系统 AppKit/SwiftUI 控件，不引入第三方 UI 组件库 |
 | 候选读取 | Accessibility `InputMethodCandidateList` |
-| 上下文 | Accessibility `AXStringForRange`，仅读取有界前后文 |
+| 上下文 | 当前不读取输入框正文；如后续启用，必须单独评审隐私边界 |
 | 输入状态 | Carbon TIS + Accessibility API |
-| 词典 | SQLite + GRDB，CC-CEDICT，ECDICT 作为反查/词频辅助 |
+| 词典 | 系统 SQLite3，CC-CEDICT，ECDICT 作为反查/词频辅助 |
 | 轻量翻译 | CTranslate2 int8（OPUS-MT） |
 | 专用翻译 LLM | MLX Swift（Hy-MT2 1.8B / Index-Translate 2B） |
 | 通用多语言 LLM | MLX Swift（Qwen3 0.6B / 1.7B / 4B，可选） |
 | 插件管理 | 自研 manifest + 下载/校验/安装器 |
-| 更新 | Sparkle |
+| 更新 | 尚未接入 |
 | 日志 | OSLog，默认脱敏 |
 | 分发 | Developer ID + 公证，先直接下载 |
 
@@ -114,12 +116,10 @@ Glint/
 │       ├── eval/
 │       └── results/
 ├── Resources/
+│   ├── Dictionary/
+│   ├── Evaluation/
 │   ├── Plugins/
-│   │   ├── dict-cedict/
-│   │   ├── mt-opus-zh-en/
-│   │   ├── mt-m2m100/
-│   │   └── llm-qwen3-4b/
-│   └── Samples/
+│   └── catalog.json
 ├── docs/
 │   ├── PRD-v0.2.md
 │   ├── ARCHITECTURE-v0.1.md
@@ -156,13 +156,13 @@ Glint/
 - Accessibility 光标/控件 frame；
 - Accessibility 输入法候选读取；
 - 安全输入判断；
-- 从标准文本控件读取有界上下文，不截图。
+- 当前不读取输入框正文；如后续启用上下文，必须经过独立隐私评审。
 
 不包含 UI、插件下载或词典数据。
 
 ### GlintDictionary
 
-- SQLite/GRDB 数据库访问；
+- SQLite3 数据库访问；
 - CC-CEDICT 词条查询；
 - 英文对应词排序（词频、ECDICT 反查、人工 override）；
 - 词典插件的加载接口。
@@ -190,7 +190,8 @@ Glint/
 - `MainWindowController` + SwiftUI 页面；
 - `HUDController` + `NSPanel`；
 - 侧栏、插件卡片、权限卡片、预览；
-- 只依赖 `GlintCore` 的 view model/协议，不直接实现截取或推理。
+- 依赖 `GlintCore` 的领域类型和 `GlintPlugins` 的 manifest/manager
+  接口，不直接实现截取或推理。
 
 ### GlintApp
 
@@ -217,17 +218,16 @@ Python 实验环境，只用于 M1：
 
 ```text
 GlintApp
-  → GlintUI
-  → GlintMac
-  → GlintDictionary
-  → GlintInference
-  → GlintPlugins
+  → GlintUI / GlintMac / GlintDictionary / GlintInference / GlintPlugins
 
-GlintUI / GlintMac / GlintDictionary / GlintInference / GlintPlugins
+GlintUI
+  → GlintCore / GlintPlugins
+
+GlintMac / GlintDictionary / GlintInference / GlintPlugins
   → GlintCore
 
 GlintCore
-  → 无 AppKit / GRDB / MLX 依赖
+  → 无 AppKit / SQLite / MLX 依赖
 ```
 
 规则：
@@ -284,23 +284,31 @@ MonitoringController → @Observable AppState → MainWindowView
 - 插件 manifest 是唯一入口；模型/词库是数据，不带可执行代码。
 - 支持两种插件类型：`dictionary`、`translation`。
 - 固定运行时适配器：
+  - `cedict-sqlite` → CC-CEDICT 查询与 overrides；
+  - `ecdict-rank` → ECDICT 词频和义项排序；
+  - `sqlite-v1` → 扩展词典；
   - `ctranslate2` → CTranslate2Bridge；
   - `mlx` → MLX Swift；
   - `apple-translation` → 可选的系统适配器。
+- CC-CEDICT、overrides、ECDICT 和 Wiktionary 作为只读核心词典直接随 App
+  提供，不复制到 Application Support，不参与安装和卸载。
+- 词典路由由只读内置词典和 Application Support 中的可选插件合并；内置 ID
+  优先，插件列表不得重复注册同一词典。
 - 下载目录：
 
 ```text
 ~/Library/Application Support/Glint/
   plugins/
-    dict-cedict/
     mt-opus-zh-en/
   models/
   cache/
   logs/
 ```
 
-- 安装流程：下载临时文件 → 校验大小/SHA256 → 解压到临时目录 → 校验 manifest → 原子移动到插件目录 → 更新 registry。
-- 删除流程：先取消推理/卸载模型，再删除目录和 registry 条目。
+- 安装流程：下载可选插件 → 校验 manifest 和 SHA256 → 原子替换插件目录 →
+  更新 registry。
+- 删除流程：先取消推理/卸载模型，再删除目录和 registry 条目。核心词典不提供
+  删除操作。
 - 不支持任意第三方 dylib、脚本或可执行文件。
 
 ## 10. 持久化与隐私
@@ -315,11 +323,12 @@ MonitoringController → @Observable AppState → MainWindowView
 
 - Xcode workspace + 本地 Swift packages + 一个 App target。
 - 依赖：
-  - GRDB（SQLite）；
-  - Sparkle（更新）；
-  - ZIPFoundation（模型包）；
+  - 系统 SQLite3；
   - MLX Swift（高质量翻译插件）；
   - CTranslate2（通过 `Bridges/CTranslate2Bridge`）。
+- App target 只复制运行时 allowlist：`catalog.json`、`dict-cedict`、
+  `dict-ecdict` 和 `dict-wiktionary-zh-en` 三个只读核心词典。评测数据、可选
+  插件和模型目录不得由 `Resources` 整目录进入 App。
 - App 第一版不启用 App Sandbox；使用 Developer ID + hardened runtime + 公证。
 - Bundle ID 暂定 `com.local.glint`，正式签名/团队确定后再改。
 - `scripts/build.sh`、`scripts/test.sh` 只封装 `xcodebuild`/`swift test`，不复制 demo 的 `swiftc` 流程。

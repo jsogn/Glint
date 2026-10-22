@@ -92,8 +92,11 @@ python3 -m http.server 8765 --directory build/plugin-catalog
 http://127.0.0.1:8765/catalog.json
 ```
 
-CC-CEDICT、ECDICT、Wiktionary Chinese-English 和已安装的 OPUS-MT 会被打包并提供 SHA-256。
+已安装的 OPUS-MT 会被打包并提供 SHA-256。
 Qwen3 模型不打包 ZIP，而是由 App 从固定 revision 的 Hugging Face snapshot 下载。
+
+CC-CEDICT、ECDICT 和 Wiktionary 是 App 内的只读核心词典，不通过插件目录
+下载、安装或卸载。
 
 ## 当前限制
 

@@ -7,6 +7,7 @@ public enum PluginKind: String, Codable, Sendable {
 }
 
 public enum PluginSource: String, Codable, Sendable {
+    case bundled
     case catalog
     case local
 }

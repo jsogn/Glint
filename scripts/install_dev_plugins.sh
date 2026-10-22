@@ -1,22 +1,12 @@
 #!/bin/zsh
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/plugin_catalog_manifests.zsh
 
 SUPPORT="$HOME/Library/Application Support/Glint/plugins"
 CATALOG_SUPPORT="$HOME/Library/Application Support/Glint"
 CATALOG_ASSETS="$CATALOG_SUPPORT/catalog-assets"
 mkdir -p "$CATALOG_ASSETS"
-mkdir -p "$SUPPORT/dict-cedict" "$SUPPORT/dict-ecdict" "$SUPPORT/dict-wiktionary-zh-en"
-
-cp Resources/Plugins/dict-cedict/manifest.json "$SUPPORT/dict-cedict/manifest.json"
-cp Resources/Dictionary/cedict.sqlite3 "$SUPPORT/dict-cedict/cedict.sqlite3"
-cp Resources/Dictionary/overrides.json "$SUPPORT/dict-cedict/overrides.json"
-
-cp Resources/Plugins/dict-ecdict/manifest.json "$SUPPORT/dict-ecdict/manifest.json"
-cp Resources/Plugins/dict-ecdict/ecdict_rank.sqlite3 "$SUPPORT/dict-ecdict/ecdict_rank.sqlite3"
-
-cp Resources/Plugins/dict-wiktionary-zh-en/manifest.json "$SUPPORT/dict-wiktionary-zh-en/manifest.json"
-cp Resources/Plugins/dict-wiktionary-zh-en/dictionary.sqlite3 "$SUPPORT/dict-wiktionary-zh-en/dictionary.sqlite3"
 
 opus_plugin="$SUPPORT/mt-opus-zh-en"
 # Optional models are provisioned only when explicitly requested or already
@@ -53,7 +43,7 @@ if [[ ! -f "$opus_catalog_archive" ]]; then
     "$opus_staging/mt-opus-zh-en/bin/libsentencepiece.0.0.0.dylib" \
     "$opus_staging/mt-opus-zh-en/bin/libglintct2.dylib" \
     >/dev/null 2>&1 || true
-  /usr/bin/ditto -c -k --keepParent \
+  /usr/bin/ditto -c -k --norsrc --keepParent \
     "$opus_staging/mt-opus-zh-en" \
     "$opus_catalog_archive"
   rm -rf "$opus_staging"
@@ -70,11 +60,7 @@ jq \
   Resources/Plugins/mt-opus-zh-en/manifest.json > "$opus_catalog_manifest"
 
 jq -s '{plugins: .}' \
-  Resources/Plugins/llm-qwen3-0.6b/manifest.json \
-  Resources/Plugins/llm-qwen3-1.7b/manifest.json \
-  Resources/Plugins/llm-qwen3-4b/manifest.json \
-  Resources/Plugins/mt-hy-mt2-1.8b/manifest.json \
-  Resources/Plugins/mt-index-translate-2b/manifest.json \
+  "${GLINT_CATALOG_MODEL_MANIFESTS[@]}" \
   "$opus_catalog_manifest" > "$CATALOG_SUPPORT/catalog.json"
 
 echo "installed dev plugins in $SUPPORT"

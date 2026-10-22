@@ -3,9 +3,9 @@
   "generated_at": "2026-10-21T12:40:01.913901+00:00",
   "sources": {
     "cedict": "/tmp/cedict_1_0_ts_utf-8_mdbg.txt.gz",
-    "ecdict": "/Users/alone/Library/Application Support/Glint/plugins/dict-ecdict/ecdict_rank.sqlite3",
-    "wiktionary": "/Users/alone/Library/Application Support/Glint/plugins/dict-wiktionary-zh-en/dictionary.sqlite3",
-    "curated": "/Users/alone/Library/Application Support/Glint/plugins/dict-cedict/overrides.json"
+    "ecdict": "~/Library/Application Support/Glint/plugins/dict-ecdict/ecdict_rank.sqlite3",
+    "wiktionary": "~/Library/Application Support/Glint/plugins/dict-wiktionary-zh-en/dictionary.sqlite3",
+    "curated": "~/Library/Application Support/Glint/plugins/dict-cedict/overrides.json"
   },
   "source_counts": {
     "cedict": 356,

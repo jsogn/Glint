@@ -177,7 +177,7 @@ Input Source = com.apple.inputmethod.SCIM.ITABC
 在不受 Codex/ChatGPT 覆盖层影响的前台会话中：
 
 ```bash
-cd /Users/alone/code/Glint
+cd <Glint 仓库根目录>
 ./scripts/run.sh
 ```
 

@@ -1,8 +1,63 @@
 import CoreGraphics
 import XCTest
+import GlintCore
 @testable import GlintMac
 
+private struct StubInputSource: InputSourceReading {
+    let active: Bool
+
+    @MainActor
+    func isApplePinyinActive() -> Bool {
+        active
+    }
+}
+
+private struct StubFocus: FocusReading {
+    func snapshot() -> FocusSnapshot? {
+        nil
+    }
+}
+
+private struct StubCandidates: AXCandidateReading {
+    func snapshot(
+        processIdentifier: pid_t?,
+        includeVisibleCandidates: Bool
+    ) -> AXCandidateSnapshot? {
+        nil
+    }
+}
+
+private struct EmptyDictionary: DictionaryEngine {
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        nil
+    }
+}
+
+private struct EmptyTranslation: TranslationEngine {
+    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        nil
+    }
+}
+
 final class GlintMacTests: XCTestCase {
+    func testMonitoringControllerUsesInjectedBoundaries() async {
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: false),
+            focus: StubFocus(),
+            axCandidates: StubCandidates(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        let interval = await controller.tick()
+
+        XCTAssertEqual(interval, 250_000_000)
+    }
+
     func testCandidateRegionConvertsToCGRect() {
         let region = CandidateRegion(x: 10, y: 20, width: 300, height: 120)
         XCTAssertEqual(region.cgRect.origin.x, 10)

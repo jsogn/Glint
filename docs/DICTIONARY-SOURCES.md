@@ -17,7 +17,7 @@
 ```bash
 python3 Tools/DictionaryBuilder/build_sqlite.py \
   --cedict-gz /tmp/cedict_1_0_ts_utf-8_mdbg.txt.gz \
-  --output Resources/Dictionary/cedict.sqlite3
+  --output Resources/Plugins/dict-cedict/cedict.sqlite3
 ```
 
 ### ECDICT
@@ -32,7 +32,7 @@ python3 Tools/DictionaryBuilder/build_sqlite.py \
 - 来源：https://kaikki.org/dictionary/Chinese/
 - 许可证：CC BY-SA 4.0 + GFDL
 - 角色：覆盖量大的开放中文词条，补充 CC-CEDICT/ECDICT
-- 状态：已构建 `dict-wiktionary-zh-en`，支持简繁查询；M19 规范化联合库
+- 状态：已构建并随 App 提供 `dict-wiktionary-zh-en`，支持简繁查询；M19 规范化联合库
   证明其能显著提高义项覆盖率，但原始首项排序仍需 ECDICT 和人工 override
 - 注意：目录和安装页必须保留 Wiktionary 署名与相同方式共享许可
 

@@ -40,12 +40,17 @@ targets:
         excludes:
           - Info.plist
           - Glint.entitlements
-      - path: Resources
+      - path: Resources/catalog.json
+        buildPhase: resources
+      - path: Resources/Plugins/dict-cedict
         buildPhase: resources
         type: folder
-        excludes:
-          - Models
-          - CT2
+      - path: Resources/Plugins/dict-ecdict
+        buildPhase: resources
+        type: folder
+      - path: Resources/Plugins/dict-wiktionary-zh-en
+        buildPhase: resources
+        type: folder
     info:
       path: App/Glint/Info.plist
       properties:

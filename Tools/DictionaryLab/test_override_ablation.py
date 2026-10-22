@@ -14,7 +14,7 @@ from evaluate_override_ablation import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-OVERRIDES = ROOT / "Resources/Dictionary/overrides.json"
+OVERRIDES = ROOT / "Resources/Plugins/dict-cedict/overrides.json"
 
 
 class OverrideAblationTests(unittest.TestCase):

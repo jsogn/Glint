@@ -265,4 +265,5 @@ public actor PluginManager {
             && !id.contains("\\")
             && !id.hasPrefix(".")
     }
+
 }

@@ -39,7 +39,7 @@ plugin_stamp="$HOME/Library/Application Support/Glint/.dev-plugins-stamp"
 needs_plugins=0
 if [[ "$force_plugins" == "1" || ! -f "$plugin_stamp" ]]; then
   needs_plugins=1
-elif [[ -n "$(find Resources/Plugins Resources/Dictionary PluginAssets \
+elif [[ -n "$(find Resources/Plugins PluginAssets \
     -type f -newer "$plugin_stamp" -print -quit 2>/dev/null)" ]]; then
   needs_plugins=1
 fi

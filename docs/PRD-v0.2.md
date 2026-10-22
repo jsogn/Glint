@@ -6,7 +6,7 @@
 - 英文定位：English beside your words.
 - 平台：macOS 14+，Apple Silicon
 - 产品性质：个人工具 / 小范围验证，不做账号、付费和云同步
-- 关联 Demo：`/Users/alone/code/PinyinLensDemo`
+- 关联 Demo：外部 PinyinLensDemo 原型仓库
 - 一句话定义：在苹果拼音候选栏出现时，对当前蓝色高亮的焦点候选显示一行英文；单词显示英文对应词，短句显示自然翻译。
 
 ## 0. TL;DR
@@ -622,7 +622,7 @@ Glint 除了菜单栏 HUD，还需要一个完整的主窗口。它不是一次�
 
 ## 16. 参考
 
-- Demo：`/Users/alone/code/PinyinLensDemo`
+- Demo：外部 PinyinLensDemo 原型仓库
 - Apple ScreenCaptureKit：https://developer.apple.com/documentation/screencapturekit
 - Apple Vision：https://developer.apple.com/documentation/vision
 - Apple Accessibility：https://developer.apple.com/documentation/applicationservices/axuielement

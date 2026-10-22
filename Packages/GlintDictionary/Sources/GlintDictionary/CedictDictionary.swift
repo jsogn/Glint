@@ -294,14 +294,15 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             return pluginURL
         }
         return Bundle.main.url(forResource: name, withExtension: ext)
-            ?? Bundle.main.url(forResource: name, withExtension: ext, subdirectory: "Dictionary")
             ?? Bundle.main.url(
                 forResource: name,
                 withExtension: ext,
-                subdirectory: "Resources/Dictionary"
+                subdirectory: "dict-cedict"
             )
             ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent("Resources/Dictionary/\(name).\(ext)")
+                .appendingPathComponent(
+                    "Resources/Plugins/dict-cedict/\(name).\(ext)"
+                )
     }
 
     public static let builtin: [String: String] = [

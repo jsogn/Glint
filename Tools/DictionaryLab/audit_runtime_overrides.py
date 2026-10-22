@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_OVERRIDES = ROOT / "Resources/Dictionary/overrides.json"
+DEFAULT_OVERRIDES = ROOT / "Resources/Plugins/dict-cedict/overrides.json"
 DEFAULT_LEXICON = ROOT / "build/dictionary-core/normalized_lexicon.sqlite3"
 DEFAULT_OUTPUT = (
     ROOT / "Tools/DictionaryLab/results/override-classification.json"

@@ -6,7 +6,7 @@ from audit_runtime_overrides import classify
 
 
 ROOT = Path(__file__).resolve().parents[2]
-OVERRIDES = ROOT / "Resources/Dictionary/overrides.json"
+OVERRIDES = ROOT / "Resources/Plugins/dict-cedict/overrides.json"
 LEXICON = ROOT / "build/dictionary-core/normalized_lexicon.sqlite3"
 CLASSIFICATION = (
     ROOT / "Tools/DictionaryLab/results/override-classification.json"

@@ -20,7 +20,7 @@ from benchmark_lexicon import normalize_candidate, normalized_candidates
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CASES = ROOT / "Tools/DictionaryLab/eval/override_stress_cases.json"
-DEFAULT_OVERRIDES = ROOT / "Resources/Dictionary/overrides.json"
+DEFAULT_OVERRIDES = ROOT / "Resources/Plugins/dict-cedict/overrides.json"
 DEFAULT_LEXICON = ROOT / "build/dictionary-core/normalized_lexicon.sqlite3"
 DEFAULT_CURRENT_CHOICES = (
     ROOT / "Tools/DictionaryLab/results/current-route-choices.json"

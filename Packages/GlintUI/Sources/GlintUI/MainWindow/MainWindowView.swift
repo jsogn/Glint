@@ -630,7 +630,7 @@ private struct PluginsPage: View {
                     )
                 }
             }
-            if !isInUse {
+            if !isInUse && plugin.source != .bundled {
                 Button("卸载", role: .destructive) {
                     pluginToRemove = plugin
                 }
@@ -722,6 +722,9 @@ private struct PluginsPage: View {
         )
         if plugin.source == .local || plugin.version == "local" {
             return "本地导入 · \(size)"
+        }
+        if plugin.source == .bundled {
+            return "内置 · 版本 \(plugin.version) · \(plugin.license)"
         }
         return "版本 \(plugin.version) · \(size) · \(plugin.license)"
     }

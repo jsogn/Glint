@@ -1,6 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/plugin_catalog_manifests.zsh
 
 base_url="${1:-http://127.0.0.1:8765}"
 output="build/plugin-catalog"
@@ -15,7 +16,7 @@ build_plugin() {
   local manifest="$3"
   local archive="$output/$id.zip"
 
-  /usr/bin/ditto -c -k --keepParent "$source" "$archive"
+  /usr/bin/ditto -c -k --norsrc --keepParent "$source" "$archive"
   local sha
   sha=$(shasum -a 256 "$archive" | awk '{print $1}')
   local size
@@ -27,31 +28,6 @@ build_plugin() {
     '.sha256 = $sha | .url = $url | .sizeBytes = $size' \
     "$manifest" > "$staging/$id.json"
 }
-
-mkdir -p "$staging/dict-cedict"
-cp Resources/Plugins/dict-cedict/manifest.json "$staging/dict-cedict/"
-cp Resources/Dictionary/cedict.sqlite3 "$staging/dict-cedict/"
-cp Resources/Dictionary/overrides.json "$staging/dict-cedict/"
-build_plugin \
-  "dict-cedict" \
-  "$staging/dict-cedict" \
-  "Resources/Plugins/dict-cedict/manifest.json"
-
-mkdir -p "$staging/dict-ecdict"
-cp Resources/Plugins/dict-ecdict/manifest.json "$staging/dict-ecdict/"
-cp Resources/Plugins/dict-ecdict/ecdict_rank.sqlite3 "$staging/dict-ecdict/"
-build_plugin \
-  "dict-ecdict" \
-  "$staging/dict-ecdict" \
-  "Resources/Plugins/dict-ecdict/manifest.json"
-
-mkdir -p "$staging/dict-wiktionary-zh-en"
-cp Resources/Plugins/dict-wiktionary-zh-en/manifest.json "$staging/dict-wiktionary-zh-en/"
-cp Resources/Plugins/dict-wiktionary-zh-en/dictionary.sqlite3 "$staging/dict-wiktionary-zh-en/"
-build_plugin \
-  "dict-wiktionary-zh-en" \
-  "$staging/dict-wiktionary-zh-en" \
-  "Resources/Plugins/dict-wiktionary-zh-en/manifest.json"
 
 model_source="Tools/ModelLab/models/opus-ct2-int8"
 binary_source="Vendor/ct2"
@@ -71,12 +47,12 @@ if [[ -f "$model_source/model.bin" && -f "$binary_source/libglintct2.dylib" ]]; 
     "Resources/Plugins/mt-opus-zh-en/manifest.json"
 fi
 
-for manifest in \
-  Resources/Plugins/llm-qwen3-*/manifest.json \
-  Resources/Plugins/mt-hy-*/manifest.json \
-  Resources/Plugins/mt-index-*/manifest.json
+for manifest in "${GLINT_CATALOG_MODEL_MANIFESTS[@]}"
 do
-  [[ -f "$manifest" ]] || continue
+  [[ -f "$manifest" ]] || {
+    printf 'missing plugin manifest: %s\n' "$manifest" >&2
+    exit 1
+  }
   id=$(jq -r '.id' "$manifest")
   cp "$manifest" "$staging/$id.json"
 done

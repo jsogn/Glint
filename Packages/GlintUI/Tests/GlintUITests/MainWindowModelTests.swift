@@ -7,6 +7,85 @@ import XCTest
 
 final class MainWindowModelTests: XCTestCase {
     @MainActor
+    func testBuiltInDictionaryIsVisibleAndCannotBeUninstalled() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintBundledPluginTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let suiteName = "GlintBundledPluginTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let manifest = dictionaryManifest()
+        let manager = PluginManager(baseDirectory: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            builtInPlugins: [manifest],
+            catalogURL: nil,
+            defaults: defaults
+        )
+        await model.refreshInstalledPlugins()
+        XCTAssertEqual(model.dictionaryPlugins.map(\.id), [manifest.id])
+
+        var dictionaryRefreshCount = 0
+        model.dictionaryConfigurationChangedAction = {
+            dictionaryRefreshCount += 1
+        }
+        await model.uninstallPlugin(manifest)
+        XCTAssertEqual(dictionaryRefreshCount, 0)
+        let managedPlugins = await manager.installedPlugins()
+        XCTAssertTrue(managedPlugins.isEmpty)
+    }
+
+    @MainActor
+    func testOptionalDictionaryUninstallRefreshesRoutes() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintOptionalDictionaryTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let suiteName = "GlintOptionalDictionaryTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let manifest = dictionaryManifest(
+            id: "dict-optional-test",
+            source: .catalog
+        )
+        try await install(manifest, using: PluginManager(
+            baseDirectory: root
+        ), root: root)
+        let manager = PluginManager(baseDirectory: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil,
+            defaults: defaults
+        )
+        await model.refreshInstalledPlugins()
+
+        var dictionaryRefreshCount = 0
+        model.dictionaryConfigurationChangedAction = {
+            dictionaryRefreshCount += 1
+        }
+        await model.uninstallPlugin(manifest)
+
+        XCTAssertEqual(dictionaryRefreshCount, 1)
+        let managedPlugins = await manager.installedPlugins()
+        XCTAssertTrue(managedPlugins.isEmpty)
+    }
+
+    @MainActor
     func testRequestPermissionsForwardsToAction() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -300,6 +379,30 @@ final class MainWindowModelTests: XCTestCase {
             minRAMBytes: 0,
             quality: "test",
             recommended: false
+        )
+    }
+
+    @MainActor
+    private func dictionaryManifest(
+        id: String = "dict-bundled-test",
+        source: PluginSource = .bundled
+    ) -> PluginManifest {
+        PluginManifest(
+            id: id,
+            type: .dictionary,
+            name: "Bundled Test Dictionary",
+            version: "1.0",
+            runtime: "sqlite-v1",
+            capabilities: ["word"],
+            languages: ["zh-Hans", "en"],
+            sizeBytes: 10,
+            sha256: "test",
+            url: URL(string: "https://example.invalid/dictionary.zip")!,
+            license: "MIT",
+            minRAMBytes: 0,
+            quality: "basic",
+            recommended: true,
+            source: source
         )
     }
 

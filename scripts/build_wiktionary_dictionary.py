@@ -124,7 +124,7 @@ def main() -> None:
         "id": "dict-wiktionary-zh-en",
         "type": "dictionary",
         "name": "Wiktionary Chinese-English",
-        "version": "2026.10",
+        "version": "2026.10.1",
         "runtime": "sqlite-v1",
         "capabilities": ["word", "phrase"],
         "languages": ["zh-Hans", "en"],
@@ -135,6 +135,7 @@ def main() -> None:
         "minRAMBytes": 0,
         "quality": "broad",
         "recommended": False,
+        "source": "bundled",
         "summary": "Wiktionary 开放词典，覆盖大量中文词语和短语；需保留署名与相同方式共享许可。",
     }
     (args.output / "manifest.json").write_text(

@@ -135,10 +135,45 @@ public struct CandidateTranslationPresentation: Sendable, Equatable {
     }
 }
 
+@MainActor
+protocol InputSourceReading: Sendable {
+    func isApplePinyinActive() -> Bool
+}
+
+extension InputSourceMonitor: InputSourceReading {}
+
+protocol FocusReading {
+    func snapshot() -> FocusSnapshot?
+}
+
+extension FocusMonitor: FocusReading {}
+
+protocol AXCandidateReading {
+    func snapshot(
+        processIdentifier: pid_t?,
+        includeVisibleCandidates: Bool
+    ) -> AXCandidateSnapshot?
+}
+
+extension AXCandidateReading {
+    func snapshot(
+        includeVisibleCandidates: Bool
+    ) -> AXCandidateSnapshot? {
+        snapshot(
+            processIdentifier: nil,
+            includeVisibleCandidates: includeVisibleCandidates
+        )
+    }
+}
+
+extension AXCandidateReader: AXCandidateReading {}
+
 public actor MonitoringController {
-    private let inputSource = InputSourceMonitor()
-    private let focus = FocusMonitor()
-    private let axCandidates = AXCandidateReader()
+    private let inputSource: any InputSourceReading
+    private let focus: any FocusReading
+    private let axCandidates: any AXCandidateReading
+    private let accessibilityIsTrusted: @Sendable () -> Bool
+    private let secureInputIsEnabled: @Sendable () -> Bool
     private let router: SmartRouter
     private let stream: AsyncStream<MonitoringEvent>
     private let continuation: AsyncStream<MonitoringEvent>.Continuation
@@ -162,6 +197,33 @@ public actor MonitoringController {
     private var compositionTransitions = CompositionTransitionTracker()
 
     public init(router: SmartRouter) {
+        self.init(
+            router: router,
+            inputSource: InputSourceMonitor(),
+            focus: FocusMonitor(),
+            axCandidates: AXCandidateReader(),
+            accessibilityIsTrusted: {
+                FocusMonitor.isAccessibilityTrusted()
+            },
+            secureInputIsEnabled: {
+                FocusMonitor.isSecureInputEnabled()
+            }
+        )
+    }
+
+    init(
+        router: SmartRouter,
+        inputSource: any InputSourceReading,
+        focus: any FocusReading,
+        axCandidates: any AXCandidateReading,
+        accessibilityIsTrusted: @escaping @Sendable () -> Bool,
+        secureInputIsEnabled: @escaping @Sendable () -> Bool
+    ) {
+        self.inputSource = inputSource
+        self.focus = focus
+        self.axCandidates = axCandidates
+        self.accessibilityIsTrusted = accessibilityIsTrusted
+        self.secureInputIsEnabled = secureInputIsEnabled
         self.router = router
         let pair = AsyncStream.makeStream(of: MonitoringEvent.self)
         self.stream = pair.stream
@@ -227,7 +289,7 @@ public actor MonitoringController {
         }
     }
 
-    private func tick() async -> UInt64 {
+    func tick() async -> UInt64 {
         let permissionCheckTimestamp = DispatchTime.now().uptimeNanoseconds
         let shouldCheckPermissions = lastPermissionCheck == 0
             || permissionCheckTimestamp >= lastPermissionCheck
@@ -235,7 +297,7 @@ public actor MonitoringController {
                     >= 1_000_000_000
         if shouldCheckPermissions {
             lastPermissionCheck = permissionCheckTimestamp
-            guard FocusMonitor.isAccessibilityTrusted() else {
+            guard accessibilityIsTrusted() else {
                 invalidateCandidate(immediate: true)
                 emitStatus("需要辅助功能权限")
                 return 1_000_000_000
@@ -246,7 +308,7 @@ public actor MonitoringController {
             emitStatus("等待苹果拼音")
             return 250_000_000
         }
-        guard !FocusMonitor.isSecureInputEnabled() else {
+        guard !secureInputIsEnabled() else {
             invalidateCandidate(immediate: true)
             emitStatus("安全输入场景已跳过")
             return 500_000_000

@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.environment = environment
         self.windowModel = MainWindowModel(
             pluginManager: environment.pluginManager,
+            builtInPlugins: BundledPluginResources.manifests,
             openAICompatibleStore: environment.openAICompatibleStore
         )
         self.readinessToken = Self.readinessToken(
@@ -50,6 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
+            await environment.removeLegacyBundledDictionaryCopies()
+            await environment.refreshDictionaryRoutes()
             await environment.translationRuntime.prepareSelectedModel()
             startupPreparationTask = nil
             if shouldStartMonitoringAfterPreparation {
@@ -207,6 +210,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         windowModel.translationConfigurationChangedAction = { [weak self] in
             self?.syncTranslationConfiguration()
+        }
+        windowModel.dictionaryConfigurationChangedAction = { [weak self] in
+            await self?.environment.refreshDictionaryRoutes()
         }
     }
 

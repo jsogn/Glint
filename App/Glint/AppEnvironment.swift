@@ -1,12 +1,11 @@
 import GlintCore
-import GlintDictionary
 import GlintInference
 import GlintMac
 import GlintPlugins
 
 @MainActor
 final class AppEnvironment {
-    let dictionary: any DictionaryEngine
+    let dictionary: PluginDictionaryRouter
     let pluginManager: PluginManager
     let openAICompatibleStore: OpenAICompatibleConfigurationStore
     let translationRuntime: TranslationRuntime
@@ -17,13 +16,7 @@ final class AppEnvironment {
     init() {
         let pluginManager = PluginManager()
         let openAICompatibleStore = OpenAICompatibleConfigurationStore()
-        let builtInRoutes = [
-            DictionaryRoute(id: "dict-cedict", priority: 0, engine: CedictDictionary()),
-            DictionaryRoute(id: "dict-ecdict", priority: 1, engine: ECDICTDictionary()),
-        ]
-        let dictionary = DictionaryRouter(
-            routes: builtInRoutes + DictionaryPluginLoader.routes()
-        )
+        let dictionary = PluginDictionaryRouter()
         let translationRuntime = TranslationRuntime { modelID in
             let providerID = TranslationModelSelection.openAIProviderID(
                 fromSelectionID: modelID
@@ -96,4 +89,16 @@ final class AppEnvironment {
         }
     }
 
+    func refreshDictionaryRoutes() async {
+        await dictionary.reload()
+    }
+
+    func removeLegacyBundledDictionaryCopies() async {
+        for id in BundledPluginResources.pluginIDs {
+            guard await pluginManager.installedPlugin(id: id) != nil else {
+                continue
+            }
+            try? await pluginManager.remove(id: id)
+        }
+    }
 }

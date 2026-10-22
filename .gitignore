@@ -16,7 +16,13 @@ Tools/ModelLab/models/
 __pycache__/
 Tools/ModelLab/results/*
 !Tools/ModelLab/results/.gitkeep
-!Tools/ModelLab/results/*.json
+!Tools/ModelLab/results/README.md
+Tools/DictionaryLab/results/*
+!Tools/DictionaryLab/results/.gitkeep
+!Tools/DictionaryLab/results/README.md
+Tools/DictionaryBuilder/cedict.json
+Tools/CT2Probe/ct2probe
 Resources/Models/
 Resources/CT2/
+Resources/ONNXRuntime/
 Vendor/

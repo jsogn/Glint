@@ -62,6 +62,8 @@ public final class MainWindowModel {
     @ObservationIgnored
     private let localImportService: LocalModelImportService
     @ObservationIgnored
+    private let builtInPlugins: [PluginManifest]
+    @ObservationIgnored
     private let openAICompatibleStore: OpenAICompatibleConfigurationStore
     @ObservationIgnored
     private let defaults: UserDefaults
@@ -100,10 +102,14 @@ public final class MainWindowModel {
     public var translationModeAction: @MainActor (TranslationMode) -> Void = { _ in }
     @ObservationIgnored
     public var translationConfigurationChangedAction: @MainActor () -> Void = {}
+    @ObservationIgnored
+    public var dictionaryConfigurationChangedAction:
+        @MainActor () async -> Void = {}
 
     public init(
         displayPreferences: DisplayPreferences? = nil,
         pluginManager: PluginManager = PluginManager(),
+        builtInPlugins: [PluginManifest] = [],
         catalogURL: URL? = nil,
         defaults: UserDefaults = .standard,
         openAICompatibleStore: OpenAICompatibleConfigurationStore? = nil,
@@ -113,6 +119,7 @@ public final class MainWindowModel {
         self.pluginManager = pluginManager
         self.catalogService = PluginCatalogService(manager: pluginManager)
         self.localImportService = LocalModelImportService(manager: pluginManager)
+        self.builtInPlugins = builtInPlugins
         self.catalogURL = catalogURL ?? Self.defaultCatalogURL()
         self.defaults = defaults
         self.now = now
@@ -184,7 +191,12 @@ public final class MainWindowModel {
 
     public func refreshInstalledPlugins() async {
         isLoadingPlugins = true
-        installedPlugins = await pluginManager.installedPlugins()
+        let managedPlugins = await pluginManager.installedPlugins()
+        let builtInIDs = Set(builtInPlugins.map(\.id))
+        installedPlugins = (
+            builtInPlugins
+                + managedPlugins.filter { !builtInIDs.contains($0.id) }
+        ).sorted { $0.name < $1.name }
         reconcileActiveTranslationModel()
         isLoadingPlugins = false
         translationConfigurationChangedAction()
@@ -314,6 +326,9 @@ public final class MainWindowModel {
             }
             let hadPendingUpgrade = await pluginManager.hasPendingUpgrade()
             await refreshInstalledPlugins()
+            if plugin.type == .dictionary {
+                await dictionaryConfigurationChangedAction()
+            }
 
             if wasActiveTranslation {
                 translationModelStatusText = "正在加载新版本…"
@@ -356,6 +371,7 @@ public final class MainWindowModel {
     }
 
     public func uninstallPlugin(_ plugin: PluginManifest) async {
+        guard plugin.source != .bundled else { return }
         guard !isActiveTranslationModel(plugin) else {
             catalogError = "当前翻译模型不可卸载，请先更换。"
             return
@@ -370,6 +386,9 @@ public final class MainWindowModel {
                 translationModelStatusModelID = nil
             }
             await refreshInstalledPlugins()
+            if plugin.type == .dictionary {
+                await dictionaryConfigurationChangedAction()
+            }
         } catch {
             catalogError = error.localizedDescription
         }
@@ -598,6 +617,7 @@ public final class MainWindowModel {
             subdirectory: "Resources"
         ) ?? Bundle.main.url(forResource: "catalog", withExtension: "json")
     }
+
 }
 
 private enum OpenAIProviderError: Error, LocalizedError {

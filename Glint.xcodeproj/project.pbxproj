@@ -7,19 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1DFD7FC772F747CA4584F247 /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = F9D4B122443AB994DF2359AC /* catalog.json */; };
 		21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */; };
 		22E07096AE8DF1D73689097B /* GlintMac in Frameworks */ = {isa = PBXBuildFile; productRef = C82639D2D34337D5A9CD7D0C /* GlintMac */; };
 		30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CE2C298747A802E1589A8C /* main.swift */; };
+		3385AFA47466DF9188B0D14C /* dict-wiktionary-zh-en in Resources */ = {isa = PBXBuildFile; fileRef = B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */; };
 		4062AB589E4FFA4D5BB17A0E /* AppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */; };
+		4D3F18EF382E77CCB4F70956 /* dict-cedict in Resources */ = {isa = PBXBuildFile; fileRef = F082FC2C41A35AF169B0DE24 /* dict-cedict */; };
+		56858DDBBD011680EEE7F0BA /* dict-ecdict in Resources */ = {isa = PBXBuildFile; fileRef = 7A59F9A29CA693ACF1A2526C /* dict-ecdict */; };
 		5DC357A49028867449604E46 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 53183767502EEFE5D0989DD0 /* Assets.xcassets */; };
 		6CA3DD4CAAD9F5753C879E8A /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 45F16D7CFBA31BE54411E4A8 /* GlintCore */; };
 		7762DC1E435AC1E010FEFDAF /* AXCandidateProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */; };
-		7D4092F37EBF48450057228E /* Resources in Resources */ = {isa = PBXBuildFile; fileRef = A89662015EFDEBDACF1DAB11 /* Resources */; };
 		81B6DB94DF1A7331BDA81806 /* GlintPlugins in Frameworks */ = {isa = PBXBuildFile; productRef = 7BA38E357A8135112494378C /* GlintPlugins */; };
 		845A3744D7848AB1E1439B04 /* GlintInference in Frameworks */ = {isa = PBXBuildFile; productRef = 5882BDDE1BB41C62823F7D26 /* GlintInference */; };
 		B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */; };
 		B63A5AEECF778A78BD185434 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */; };
 		B70CAFEBB2416E25B0FFED97 /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2E26ACCA8E4915ED8C4AAE15 /* GlintCore */; };
+		C848E897C79EDE1BC7204972 /* BundledPluginResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */; };
 		D418B3179EEE536BCCF50C9D /* GlintUI in Frameworks */ = {isa = PBXBuildFile; productRef = FBD93326229A8A62F071CD36 /* GlintUI */; };
 		D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */; };
 		F66206E2AF6A12351EC83B1C /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */; };
@@ -37,14 +41,18 @@
 		58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfCheck.swift; sourceTree = "<group>"; };
 		5F675D0EDB2453ADD8136057 /* GlintInference */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintInference; path = Packages/GlintInference; sourceTree = SOURCE_ROOT; };
 		65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		7A59F9A29CA693ACF1A2526C /* dict-ecdict */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-ecdict"; path = "Resources/Plugins/dict-ecdict"; sourceTree = SOURCE_ROOT; };
 		88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A6CE2C298747A802E1589A8C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		A89662015EFDEBDACF1DAB11 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources; sourceTree = SOURCE_ROOT; };
+		B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-wiktionary-zh-en"; path = "Resources/Plugins/dict-wiktionary-zh-en"; sourceTree = SOURCE_ROOT; };
 		D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryPluginLoader.swift; sourceTree = "<group>"; };
+		D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledPluginResources.swift; sourceTree = "<group>"; };
 		D58946C3A8621B011A33D664 /* GlintMac */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintMac; path = Packages/GlintMac; sourceTree = SOURCE_ROOT; };
 		D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		E94AB23640CA1E6007F8B2B4 /* GlintTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlintTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSmokeTests.swift; sourceTree = "<group>"; };
+		F082FC2C41A35AF169B0DE24 /* dict-cedict */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-cedict"; path = "Resources/Plugins/dict-cedict"; sourceTree = SOURCE_ROOT; };
+		F9D4B122443AB994DF2359AC /* catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = catalog.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +118,7 @@
 				D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */,
 				53183767502EEFE5D0989DD0 /* Assets.xcassets */,
 				0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */,
+				D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */,
 				D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */,
 				A6CE2C298747A802E1589A8C /* main.swift */,
 				58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */,
@@ -120,11 +129,21 @@
 		EA6921C9B6CB486D18C07534 = {
 			isa = PBXGroup;
 			children = (
-				A89662015EFDEBDACF1DAB11 /* Resources */,
 				8DAB389B9A53278B341CE590 /* App */,
 				BE94CBFFEC9EC5F38A0B73F1 /* Packages */,
+				FD569EF777D164901CEB4F30 /* Resources */,
 				F0DEBFD467843DF4F582D172 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		EBCD85EAB8D4FDCC0B15BFFD /* Plugins */ = {
+			isa = PBXGroup;
+			children = (
+				F082FC2C41A35AF169B0DE24 /* dict-cedict */,
+				7A59F9A29CA693ACF1A2526C /* dict-ecdict */,
+				B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */,
+			);
+			path = Plugins;
 			sourceTree = "<group>";
 		};
 		F0DEBFD467843DF4F582D172 /* Products */ = {
@@ -134,6 +153,15 @@
 				E94AB23640CA1E6007F8B2B4 /* GlintTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		FD569EF777D164901CEB4F30 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				F9D4B122443AB994DF2359AC /* catalog.json */,
+				EBCD85EAB8D4FDCC0B15BFFD /* Plugins */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -235,7 +263,10 @@
 			files = (
 				F66206E2AF6A12351EC83B1C /* AppIcon.icon in Resources */,
 				5DC357A49028867449604E46 /* Assets.xcassets in Resources */,
-				7D4092F37EBF48450057228E /* Resources in Resources */,
+				1DFD7FC772F747CA4584F247 /* catalog.json in Resources */,
+				4D3F18EF382E77CCB4F70956 /* dict-cedict in Resources */,
+				56858DDBBD011680EEE7F0BA /* dict-ecdict in Resources */,
+				3385AFA47466DF9188B0D14C /* dict-wiktionary-zh-en in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,6 +288,7 @@
 				7762DC1E435AC1E010FEFDAF /* AXCandidateProbe.swift in Sources */,
 				B63A5AEECF778A78BD185434 /* AppDelegate.swift in Sources */,
 				21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */,
+				C848E897C79EDE1BC7204972 /* BundledPluginResources.swift in Sources */,
 				D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */,
 				B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */,
 				30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */,

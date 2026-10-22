@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OVERRIDES = ROOT / "Resources/Dictionary/overrides.json"
+OVERRIDES = ROOT / "Resources/Plugins/dict-cedict/overrides.json"
 OUTPUT = ROOT / "Resources/Evaluation/dictionary-benchmark.json"
 
 GENERAL = {

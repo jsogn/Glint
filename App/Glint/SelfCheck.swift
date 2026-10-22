@@ -1,7 +1,6 @@
 import Darwin
 import Foundation
 import GlintCore
-import GlintDictionary
 import GlintInference
 import GlintMac
 import GlintPlugins
@@ -11,10 +10,8 @@ enum SelfCheck {
         Task {
             print("accessibility=\(FocusMonitor.isAccessibilityTrusted())")
 
-            let dictionary = DictionaryRouter(routes: [
-                DictionaryRoute(id: "dict-cedict", priority: 0, engine: CedictDictionary()),
-                DictionaryRoute(id: "dict-ecdict", priority: 1, engine: ECDICTDictionary()),
-            ])
+            let dictionary = PluginDictionaryRouter()
+            await dictionary.reload()
 
             for word in ["你好", "算法", "程序", "设计", "内卷"] {
                 let result = try? await dictionary.lookup(

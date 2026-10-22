@@ -1,9 +1,9 @@
 {
   "generated_at": "2026-10-22T03:25:38.995687+00:00",
-  "cases": "/Users/alone/code/Glint/Tools/DictionaryLab/eval/override_stress_cases.json",
-  "overrides": "/Users/alone/code/Glint/Resources/Dictionary/overrides.json",
-  "lexicon": "/Users/alone/code/Glint/build/dictionary-core/normalized_lexicon.sqlite3",
-  "current_choices": "/Users/alone/code/Glint/Tools/DictionaryLab/results/current-route-choices.json",
+  "cases": "Tools/DictionaryLab/eval/override_stress_cases.json",
+  "overrides": "Resources/Plugins/dict-cedict/overrides.json",
+  "lexicon": "build/dictionary-core/normalized_lexicon.sqlite3",
+  "current_choices": "Tools/DictionaryLab/results/current-route-choices.json",
   "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
   "warmup_seconds": 0.345,
   "summary": {

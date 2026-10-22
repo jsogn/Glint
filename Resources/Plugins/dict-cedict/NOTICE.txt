@@ -1,0 +1,10 @@
+CC-CEDICT attribution
+
+The dictionary data is derived from CC-CEDICT.
+Source: https://cc-cedict.org/
+License: Creative Commons Attribution-ShareAlike 4.0 International
+License URL: https://creativecommons.org/licenses/by-sa/4.0/
+
+Glint converts the source into a read-only SQLite database and adds curated
+English precedence hints in overrides.json. The converted dictionary data
+remains available under CC BY-SA 4.0.

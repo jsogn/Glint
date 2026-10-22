@@ -19,10 +19,10 @@ final class CedictDictionaryTests: XCTestCase {
     ) -> CedictDictionary {
         CedictDictionary(
             databaseURL: databaseURL ?? rootURL.appendingPathComponent(
-                "Resources/Dictionary/cedict.sqlite3"
+                "Resources/Plugins/dict-cedict/cedict.sqlite3"
             ),
             overridesURL: overridesURL ?? rootURL.appendingPathComponent(
-                "Resources/Dictionary/overrides.json"
+                "Resources/Plugins/dict-cedict/overrides.json"
             ),
             ranker: ECDICTRanker(
                 databaseURL: rootURL.appendingPathComponent(

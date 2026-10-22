@@ -2,8 +2,8 @@
   "id": "dict-ecdict",
   "type": "dictionary",
   "name": "ECDICT Rank Index",
-  "version": "2026.10",
-  "runtime": "sqlite",
+  "version": "2026.10.1",
+  "runtime": "ecdict-rank",
   "capabilities": ["word", "phrase"],
   "languages": ["zh-Hans", "en"],
   "sizeBytes": 15200000,
@@ -12,6 +12,7 @@
   "license": "MIT",
   "minRAMBytes": 0,
   "quality": "ranking",
-  "recommended": false,
+  "recommended": true,
+  "source": "bundled",
   "summary": "补充英语词频和义项排序，让多义词结果更自然。"
 }

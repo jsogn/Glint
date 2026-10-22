@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "reviewed_at": "2026-10-22T03:06:24.113160+00:00",
-  "source": "/Users/alone/code/Glint/Resources/Dictionary/overrides.json",
+  "source": "Resources/Plugins/dict-cedict/overrides.json",
   "rules": {
     "retire_runtime": "remove precedence from runtime; model and preserved senses must decide",
     "fallback_only": "allowed only after model and ranked dictionary paths fail; never receives a forcing score",

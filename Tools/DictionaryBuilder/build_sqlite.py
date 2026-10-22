@@ -11,7 +11,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-DEFAULT_OUTPUT = ROOT / "Resources" / "Dictionary" / "cedict.sqlite3"
+DEFAULT_OUTPUT = (
+    ROOT / "Resources" / "Plugins" / "dict-cedict" / "cedict.sqlite3"
+)
 SCHEMA_VERSION = 2
 ENTRY_PATTERN = re.compile(
     r"^(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+/(.*)/$"
