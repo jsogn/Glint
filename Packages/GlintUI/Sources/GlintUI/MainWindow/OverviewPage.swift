@@ -215,7 +215,7 @@ private struct OverviewPipeline: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            stage(symbol: "keyboard", label: "输入", value: "中文拼音")
+            stage(symbol: "keyboard", label: "输入", value: "拼音输入")
             arrow
             stage(
                 symbol: "text.cursor",
@@ -346,7 +346,7 @@ private enum OverviewRuntimeState {
     var detail: String {
         switch self {
         case .running:
-            "在中文拼音候选栏旁显示单行英文提示。"
+            "在输入法候选栏旁显示单行英文提示。"
         case .paused:
             "开启后，输入中文时会显示单行英文提示。"
         case .permissions(let message):

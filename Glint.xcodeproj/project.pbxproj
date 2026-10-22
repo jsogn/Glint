@@ -18,6 +18,7 @@
 		5DC357A49028867449604E46 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 53183767502EEFE5D0989DD0 /* Assets.xcassets */; };
 		6CA3DD4CAAD9F5753C879E8A /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 45F16D7CFBA31BE54411E4A8 /* GlintCore */; };
 		7762DC1E435AC1E010FEFDAF /* AXCandidateProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */; };
+		7BF97DC43287CFA143A70ED2 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32E9F8EB23E80E0A931F444E /* Diagnostics.swift */; };
 		81B6DB94DF1A7331BDA81806 /* GlintPlugins in Frameworks */ = {isa = PBXBuildFile; productRef = 7BA38E357A8135112494378C /* GlintPlugins */; };
 		845A3744D7848AB1E1439B04 /* GlintInference in Frameworks */ = {isa = PBXBuildFile; productRef = 5882BDDE1BB41C62823F7D26 /* GlintInference */; };
 		A1E6528F9E03F40CC0E343E2 /* mt-opus-zh-en in Resources */ = {isa = PBXBuildFile; fileRef = 7B3EDCB227F6EBFF409729DC /* mt-opus-zh-en */; };
@@ -35,6 +36,7 @@
 		09BDD68C6DB642A313D624CC /* GlintUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintUI; path = Packages/GlintUI; sourceTree = SOURCE_ROOT; };
 		0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXCandidateProbe.swift; sourceTree = "<group>"; };
 		1593095FA119035BCB1CDA9F /* GlintDictionary */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintDictionary; path = Packages/GlintDictionary; sourceTree = SOURCE_ROOT; };
+		32E9F8EB23E80E0A931F444E /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
 		3E2E78BBA22734DD486C760B /* Glint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glint.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4D24D192806595FBAE16FA92 /* GlintPlugins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintPlugins; path = Packages/GlintPlugins; sourceTree = SOURCE_ROOT; };
 		53183767502EEFE5D0989DD0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -121,6 +123,7 @@
 				53183767502EEFE5D0989DD0 /* Assets.xcassets */,
 				0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */,
 				D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */,
+				32E9F8EB23E80E0A931F444E /* Diagnostics.swift */,
 				D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */,
 				A6CE2C298747A802E1589A8C /* main.swift */,
 				58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */,
@@ -293,6 +296,7 @@
 				B63A5AEECF778A78BD185434 /* AppDelegate.swift in Sources */,
 				21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */,
 				C848E897C79EDE1BC7204972 /* BundledPluginResources.swift in Sources */,
+				7BF97DC43287CFA143A70ED2 /* Diagnostics.swift in Sources */,
 				D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */,
 				B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */,
 				30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */,
@@ -392,7 +396,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -488,7 +492,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -1,15 +1,61 @@
 import CoreGraphics
+import Carbon
 import XCTest
 import GlintCore
 import os
 @testable import GlintMac
 
 private struct StubInputSource: InputSourceReading {
-    let active: Bool
+    let source: ActiveInputSource
+
+    nonisolated init(active: Bool) {
+        self.init(kind: active ? .applePinyin : .keyboardLayout)
+    }
+
+    nonisolated init(kind: InputSourceKind) {
+        switch kind {
+        case .applePinyin:
+            source = ActiveInputSource(
+                id: "com.apple.inputmethod.SCIM.ITABC",
+                bundleIdentifier: "com.apple.inputmethod.SCIM",
+                kind: kind
+            )
+        case .otherInputMethod:
+            source = ActiveInputSource(
+                id: "com.example.inputmethod.pinyin",
+                bundleIdentifier: "com.example.inputmethod",
+                kind: kind
+            )
+        case .keyboardLayout:
+            source = ActiveInputSource(
+                id: "com.apple.keylayout.ABC",
+                bundleIdentifier: "com.apple.keyboardlayout.all",
+                kind: kind
+            )
+        case .unknown:
+            source = ActiveInputSource(
+                id: "",
+                bundleIdentifier: "",
+                kind: kind
+            )
+        }
+    }
 
     @MainActor
-    func isApplePinyinActive() -> Bool {
-        active
+    func currentInputSource() -> ActiveInputSource {
+        source
+    }
+}
+
+private final class MutableAccessibilityTrust: Sendable {
+    private let trusted = OSAllocatedUnfairLock(initialState: false)
+
+    var isTrusted: Bool {
+        trusted.withLock { $0 }
+    }
+
+    func grant() {
+        trusted.withLock { $0 = true }
     }
 }
 
@@ -22,7 +68,8 @@ private struct StubFocus: FocusReading {
 private struct StubCandidates: AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool
+        includeVisibleCandidates: Bool,
+        allowGenericCandidates: Bool
     ) -> AXCandidateSnapshot? {
         nil
     }
@@ -40,20 +87,35 @@ private struct VisibleCaretFocus: FocusReading {
 }
 
 private final class RecordingCandidates: AXCandidateReading, Sendable {
-    private let state = OSAllocatedUnfairLock<[Bool]>(initialState: [])
+    private struct Request: Sendable {
+        let includeVisibleCandidates: Bool
+        let allowGenericCandidates: Bool
+    }
+
+    private let state = OSAllocatedUnfairLock<[Request]>(initialState: [])
 
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool
+        includeVisibleCandidates: Bool,
+        allowGenericCandidates: Bool
     ) -> AXCandidateSnapshot? {
         state.withLock {
-            $0.append(includeVisibleCandidates)
+            $0.append(
+                Request(
+                    includeVisibleCandidates: includeVisibleCandidates,
+                    allowGenericCandidates: allowGenericCandidates
+                )
+            )
         }
         return nil
     }
 
     var requestedVisibleCandidates: [Bool] {
-        state.withLock { $0 }
+        state.withLock { $0.map(\.includeVisibleCandidates) }
+    }
+
+    var requestedGenericCandidates: [Bool] {
+        state.withLock { $0.map(\.allowGenericCandidates) }
     }
 }
 
@@ -150,6 +212,32 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(interval, 250_000_000)
     }
 
+    func testMonitoringRechecksAccessibilityAfterInitialDenial() async throws {
+        let accessibility = MutableAccessibilityTrust()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: false),
+            focus: StubFocus(),
+            axCandidates: StubCandidates(),
+            accessibilityIsTrusted: {
+                accessibility.isTrusted
+            },
+            secureInputIsEnabled: { false }
+        )
+
+        let deniedInterval = await controller.tick()
+        XCTAssertEqual(deniedInterval, 1_000_000_000)
+
+        accessibility.grant()
+        try await Task.sleep(for: .seconds(1.05))
+
+        let resumedInterval = await controller.tick()
+        XCTAssertEqual(resumedInterval, 250_000_000)
+    }
+
     func testSelectedScopeRequestsVisibleCandidateLayout() async {
         let candidates = RecordingCandidates()
         let controller = MonitoringController(
@@ -168,6 +256,48 @@ final class GlintMacTests: XCTestCase {
 
         XCTAssertEqual(interval, 60_000_000)
         XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
+    }
+
+    func testOtherInputMethodUsesGenericCandidateFallback() async {
+        let candidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(kind: .otherInputMethod),
+            focus: VisibleCaretFocus(),
+            axCandidates: candidates,
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        let interval = await controller.tick()
+
+        XCTAssertEqual(interval, 60_000_000)
+        XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
+        XCTAssertEqual(candidates.requestedGenericCandidates, [true])
+    }
+
+    func testKeyboardLayoutDoesNotScanCandidates() async {
+        let candidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(kind: .keyboardLayout),
+            focus: VisibleCaretFocus(),
+            axCandidates: candidates,
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        let interval = await controller.tick()
+
+        XCTAssertEqual(interval, 250_000_000)
+        XCTAssertTrue(candidates.requestedVisibleCandidates.isEmpty)
+        XCTAssertTrue(candidates.requestedGenericCandidates.isEmpty)
     }
 
     func testRowTranslationPublishesStableSlotsBeforeRowFinishes() async {
@@ -884,5 +1014,29 @@ final class GlintMacTests: XCTestCase {
     @MainActor
     func testInputSourceReturnsString() async {
         XCTAssertFalse(InputSourceMonitor().currentInputSourceID().contains(" "))
+    }
+
+    func testInputSourceClassificationKeepsAppleAndThirdPartyDistinct() {
+        XCTAssertEqual(
+            InputSourceMonitor.inputSourceKind(
+                identifier: "com.apple.inputmethod.SCIM.ITABC",
+                type: kTISTypeKeyboardInputMode as String
+            ),
+            .applePinyin
+        )
+        XCTAssertEqual(
+            InputSourceMonitor.inputSourceKind(
+                identifier: "com.example.inputmethod.pinyin",
+                type: kTISTypeKeyboardInputMode as String
+            ),
+            .otherInputMethod
+        )
+        XCTAssertEqual(
+            InputSourceMonitor.inputSourceKind(
+                identifier: "com.apple.keylayout.ABC",
+                type: kTISTypeKeyboardLayout as String
+            ),
+            .keyboardLayout
+        )
     }
 }

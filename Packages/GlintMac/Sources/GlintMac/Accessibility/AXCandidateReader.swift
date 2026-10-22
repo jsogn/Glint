@@ -189,12 +189,15 @@ public final class AXCandidateReader {
     private var cachedCandidateListPID: pid_t?
     private var cachedCandidateWindow: AXUIElement?
     private var cachedCandidateList: AXUIElement?
+    private var cachedAllowGenericCandidates = false
+    private var cachedCandidateListIsGeneric = false
 
     public init() {}
 
     public func snapshot(
         processIdentifier: pid_t? = nil,
-        includeVisibleCandidates: Bool = false
+        includeVisibleCandidates: Bool = false,
+        allowGenericCandidates: Bool = false
     ) -> AXCandidateSnapshot? {
         guard let application = applicationElement(
             processIdentifier: processIdentifier
@@ -212,12 +215,17 @@ public final class AXCandidateReader {
             return nil
         }
         if cachedCandidateListPID == applicationPID,
+           cachedAllowGenericCandidates == allowGenericCandidates,
            let cachedCandidateWindow,
            let cachedCandidateList,
            windows.contains(where: {
                CFEqual($0, cachedCandidateWindow)
            }),
-           Self.candidateList(cachedCandidateList, belongsTo: cachedCandidateWindow) {
+           Self.containsCandidateList(
+               cachedCandidateList,
+               in: cachedCandidateWindow,
+               deep: cachedCandidateListIsGeneric
+           ) {
             if let snapshot = Self.snapshot(
                 from: cachedCandidateList,
                 candidateWindow: cachedCandidateWindow,
@@ -228,7 +236,7 @@ public final class AXCandidateReader {
         }
         clearCandidateCache()
         for window in windows {
-            guard let list = Self.candidateList(in: window),
+            guard let list = Self.exactCandidateList(in: window),
                   let snapshot = Self.snapshot(
                       from: list,
                       candidateWindow: window,
@@ -239,6 +247,27 @@ public final class AXCandidateReader {
             cachedCandidateWindow = window
             cachedCandidateList = list
             cachedCandidateListPID = applicationPID
+            cachedAllowGenericCandidates = allowGenericCandidates
+            cachedCandidateListIsGeneric = false
+            return snapshot
+        }
+        guard allowGenericCandidates else {
+            return nil
+        }
+        for window in windows {
+            guard let list = Self.genericCandidateList(in: window),
+                  let snapshot = Self.snapshot(
+                      from: list,
+                      candidateWindow: window,
+                      includeVisibleCandidates: includeVisibleCandidates
+                  ) else {
+                continue
+            }
+            cachedCandidateWindow = window
+            cachedCandidateList = list
+            cachedCandidateListPID = applicationPID
+            cachedAllowGenericCandidates = allowGenericCandidates
+            cachedCandidateListIsGeneric = true
             return snapshot
         }
         return nil
@@ -248,6 +277,8 @@ public final class AXCandidateReader {
         cachedCandidateWindow = nil
         cachedCandidateList = nil
         cachedCandidateListPID = nil
+        cachedAllowGenericCandidates = false
+        cachedCandidateListIsGeneric = false
     }
 
     private func applicationElement(
@@ -314,7 +345,7 @@ public final class AXCandidateReader {
         ) as? String == candidateListIdentifier
     }
 
-    private static func candidateList(
+    private static func exactCandidateList(
         in window: AXUIElement
     ) -> AXUIElement? {
         for child in elementsAttribute(
@@ -334,24 +365,121 @@ public final class AXCandidateReader {
         return nil
     }
 
-    private static func candidateList(
-        _ list: AXUIElement,
-        belongsTo window: AXUIElement
-    ) -> Bool {
+    private static func genericCandidateList(
+        in window: AXUIElement
+    ) -> AXUIElement? {
+        var stack: [(element: AXUIElement, depth: Int)] = []
+        if isGenericCandidateList(window) {
+            return window
+        }
         for child in elementsAttribute(
             window,
             kAXChildrenAttribute
         ) ?? [] {
-            if CFEqual(child, list) {
+            stack.append((child, 1))
+        }
+        var visitedCount = 0
+        while let current = stack.popLast(),
+              visitedCount < 300 {
+            visitedCount += 1
+            if isGenericCandidateList(current.element) {
+                return current.element
+            }
+            guard current.depth < 6 else {
+                continue
+            }
+            for child in elementsAttribute(
+                current.element,
+                kAXChildrenAttribute
+            ) ?? [] {
+                stack.append((child, current.depth + 1))
+            }
+        }
+        return nil
+    }
+
+    private static func isGenericCandidateList(
+        _ element: AXUIElement
+    ) -> Bool {
+        guard attribute(
+            element,
+            kAXRoleAttribute
+        ) as? String == kAXListRole as String else {
+            return false
+        }
+        let selected = elementsAttribute(
+            element,
+            kAXSelectedChildrenAttribute
+        ) ?? []
+        guard selected.count == 1,
+              let selectedItem = candidateItem(of: selected[0]) else {
+            return false
+        }
+        let visible = elementsAttribute(
+            element,
+            kAXVisibleChildrenAttribute
+        ) ?? []
+        let children = elementsAttribute(
+            element,
+            kAXChildrenAttribute
+        ) ?? []
+        let items = (visible.isEmpty ? children : visible)
+            .compactMap(candidateItem)
+        guard !items.isEmpty, items.count <= 20 else {
+            return false
+        }
+        return frame(of: element) != nil || selectedItem.frame != nil
+    }
+
+    private static func containsCandidateList(
+        _ list: AXUIElement,
+        in window: AXUIElement,
+        deep: Bool
+    ) -> Bool {
+        if CFEqual(window, list) {
+            return true
+        }
+        if !deep {
+            for child in elementsAttribute(
+                window,
+                kAXChildrenAttribute
+            ) ?? [] {
+                if CFEqual(child, list) {
+                    return true
+                }
+                if (elementsAttribute(
+                    child,
+                    kAXChildrenAttribute
+                ) ?? []).contains(where: {
+                    CFEqual($0, list)
+                }) {
+                    return true
+                }
+            }
+            return false
+        }
+        var stack: [(element: AXUIElement, depth: Int)] = []
+        for child in elementsAttribute(
+            window,
+            kAXChildrenAttribute
+        ) ?? [] {
+            stack.append((child, 1))
+        }
+        var visitedCount = 0
+        while let current = stack.popLast(),
+              visitedCount < 300 {
+            visitedCount += 1
+            if CFEqual(current.element, list) {
                 return true
             }
-            if (elementsAttribute(
-                child,
+            guard current.depth < 6 else {
+                continue
+            }
+            for child in elementsAttribute(
+                current.element,
                 kAXChildrenAttribute
-            ) ?? []).contains(where: {
-                CFEqual($0, list)
-            }) {
-                return true
+            ) ?? [] {
+                stack.append((child, current.depth + 1))
             }
         }
         return false

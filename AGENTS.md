@@ -14,9 +14,10 @@
 
 ## 产品边界
 
-Glint 是面向中文母语者的 macOS 英文学习工具，不替换苹果输入法。
+Glint 是面向中文母语者的 macOS 英文学习工具，不替换输入法。
 
-- 只支持苹果拼音 `Pinyin - Simplified`，不接管键盘输入。
+- 优先保证苹果拼音 `Pinyin - Simplified`；其他能通过 Accessibility 暴露候选的
+  拼音输入法做 best-effort 支持，不接管键盘输入。
 - 只读取当前蓝色高亮的输入法候选，不读取输入框正文。
 - `AXSelectedTextRange` 非空且不位于 `AXTextInputMarkedRange` 内时，视为鼠标或键盘文字选区并跳过。
 - 对焦点候选显示一行英文，不显示词性、解释、例句或发音。
@@ -28,14 +29,14 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换苹果输�
 
 ## 平台与技术栈
 
-- 最低系统：macOS 14。
+- 最低系统：macOS 26。
 - 第一版仅支持 Apple Silicon。
 - 语言：Swift 6。
 - 应用生命周期：AppKit `NSApplicationDelegate`。
 - 主窗口：AppKit `NSWindow` + SwiftUI `NSHostingController`。
 - HUD：AppKit `NSPanel` + SwiftUI。
 - UI：系统 SwiftUI/AppKit 控件，不引入第三方 UI 组件库。
-- 候选读取：Accessibility `InputMethodCandidateList`。
+- 候选读取：Accessibility `InputMethodCandidateList` 优先，通用 `AXList` 回退。
 - 词典：SQLite 插件，当前包括 CC-CEDICT、ECDICT、Wiktionary。
 - 翻译：本地 CTranslate2 / MLX 模型；另支持多个 OpenAI 兼容接口。
 - 日志：OSLog，默认脱敏。

@@ -3,7 +3,7 @@
 - 状态：现行草案
 - 日期：2026-10-19
 - 最近校准：2026-10-22
-- 平台：macOS 14+，Apple Silicon
+- 平台：macOS 26+，Apple Silicon
 - 语言：Swift 6
 - 关联 PRD：`docs/PRD-v0.2.md`
 - 关联 Demo：外部 PinyinLensDemo 原型仓库
@@ -30,7 +30,7 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 | 主窗口 | AppKit `NSWindow` + SwiftUI `NSHostingController` |
 | HUD | AppKit `NSPanel` + SwiftUI `NSHostingView` |
 | UI | 系统 AppKit/SwiftUI 控件，不引入第三方 UI 组件库 |
-| 候选读取 | Accessibility `InputMethodCandidateList` |
+| 候选读取 | Accessibility `InputMethodCandidateList` + 通用 `AXList` 回退 |
 | 上下文 | 当前不读取输入框正文；如后续启用，必须单独评审隐私边界 |
 | 输入状态 | Carbon TIS + Accessibility API |
 | 词典 | 系统 SQLite3，CC-CEDICT，ECDICT 作为反查/词频辅助 |
@@ -273,7 +273,8 @@ MonitoringController → @Observable AppState → MainWindowView
 ## 8. 并发与状态
 
 - `MonitoringController`：主线程上的轻量调度器；定时/事件触发，单飞（single-flight）。
-- `AXCandidateReader`：候选识别主路径，缓存应用与候选列表节点。
+- `AXCandidateReader`：候选识别主路径；优先识别苹果拼音
+  `InputMethodCandidateList`，其他输入法在组合输入阶段尝试通用 `AXList`。
 - `AXCandidateReader`：候选识别唯一主路径。
 - `TranslationPipeline`：actor，取消旧请求，避免旧结果覆盖新候选。
 - `PluginManager`/`ModelDownloader`：actor；下载状态通过 AsyncStream 发布。

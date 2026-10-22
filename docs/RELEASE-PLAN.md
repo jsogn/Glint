@@ -49,9 +49,25 @@ OCR 和 ONNX Runtime 已从产品移除，主 App 不再携带
 构建前必须运行 `scripts/prepare_opus_model.sh`，按 `model-lock.json` 转换或
 校验内置 OPUS；模型权重和词表不得加入 Git。小体积 CT2 运行时由仓库提供，
 并随主 App 一起签名。
+开发构建完成后必须运行 `scripts/verify_app.sh`，检查 App 与全部嵌套 Mach-O
+的最低系统版本、arm64 架构、必需资源和代码签名。
 
 Release 构建不得使用 `CODE_SIGNING_ALLOWED=NO`。签名顺序应先内层动态库，后主 App，
 全部使用 hardened runtime 和时间戳。
+
+### 无 Developer ID 的内部测试包
+
+当前没有 Developer ID 时，可运行 `scripts/package_test_dmg.sh` 生成 arm64
+内部测试 DMG。脚本会：
+
+- 构建 Release App；
+- 逐个重签嵌套 Mach-O，再稳定重签主 App；
+- 校验最低系统版本、必需资源、arm64 和签名完整性；
+- 打入安装说明与一键诊断命令；
+- 生成 SHA-256 校验文件。
+
+这种包不能被 `spctl` 接受，也不能启用可用的 Hardened Runtime：ad-hoc 签名没有
+Team ID，运行时库校验会拒绝嵌套动态库。它只适用于已知测试者的内部验证。
 
 ### 开发签名与 TCC
 

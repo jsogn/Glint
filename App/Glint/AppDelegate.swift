@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var permissionRequestWasIssued = false
     private var startupPreparationTask: Task<Void, Never>?
     private var shouldStartMonitoringAfterPreparation = false
+    private var shouldRequestPermissionAfterPreparation = false
 
     override init() {
         let environment = AppEnvironment()
@@ -64,7 +65,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             startupPreparationTask = nil
             if shouldStartMonitoringAfterPreparation {
                 shouldStartMonitoringAfterPreparation = false
-                startMonitoring()
+                let shouldRequestPermission =
+                    shouldRequestPermissionAfterPreparation
+                shouldRequestPermissionAfterPreparation = false
+                startMonitoring(
+                    requestPermissionIfNeeded: shouldRequestPermission
+                )
             }
         }
         let permissionsGranted = FocusMonitor.isAccessibilityTrusted()
@@ -78,14 +84,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         }
         windowModel.hasRequestedAccessibilityPermission = alreadyRequested
-        if permissionsGranted {
-            startMonitoring()
-        } else if !alreadyRequested {
+        if !permissionsGranted, !alreadyRequested {
             Task { @MainActor [weak self] in
                 NSApp.activate(ignoringOtherApps: true)
                 self?.beginPermissionRequest()
             }
         }
+        startMonitoring(requestPermissionIfNeeded: false)
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -94,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !wasGranted, windowModel.accessibilityGranted {
             windowModel.statusText = ""
             if !windowModel.isMonitoring {
-                startMonitoring()
+                startMonitoring(requestPermissionIfNeeded: false)
             }
         }
         if permissionRequestPending {
@@ -258,15 +263,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func startMonitoring() {
+        startMonitoring(requestPermissionIfNeeded: true)
+    }
+
+    private func startMonitoring(
+        requestPermissionIfNeeded: Bool
+    ) {
         guard monitoringTask == nil else { return }
         guard startupPreparationTask == nil else {
             shouldStartMonitoringAfterPreparation = true
+            shouldRequestPermissionAfterPreparation =
+                shouldRequestPermissionAfterPreparation
+                || requestPermissionIfNeeded
             return
         }
         refreshPermissionState()
-        guard windowModel.accessibilityGranted else {
+        if !windowModel.accessibilityGranted,
+           requestPermissionIfNeeded {
             beginPermissionRequest()
-            return
         }
         monitoringTask = Task { [weak self] in
             guard let self else { return }
@@ -306,6 +320,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func stopMonitoring() {
         shouldStartMonitoringAfterPreparation = false
+        shouldRequestPermissionAfterPreparation = false
         monitoringTask?.cancel()
         monitoringTask = nil
         clearHUDState()

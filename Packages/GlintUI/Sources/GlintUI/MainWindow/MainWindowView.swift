@@ -1089,7 +1089,7 @@ private struct AboutPage: View {
                         Text("系统要求")
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Text("macOS 14+ · Apple 芯片")
+                        Text("macOS 26+ · Apple 芯片")
                     }
                     .font(.callout)
                 }

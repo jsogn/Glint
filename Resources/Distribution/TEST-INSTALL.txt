@@ -1,0 +1,28 @@
+Glint 测试版
+
+系统要求
+- macOS 26 或更高版本
+- Apple Silicon Mac
+
+安装
+1. 将 Glint 拖入右侧“应用程序”文件夹。
+2. 从“应用程序”中打开 Glint，不要直接从下载目录或 DMG 中运行。
+3. 如果 macOS 提示无法验证开发者，请打开：
+   系统设置 > 隐私与安全性
+   在“安全性”区域点击“仍要打开”。
+4. 按提示授予辅助功能权限。
+5. 切换到苹果拼音 Pinyin - Simplified 并正常输入。
+
+这个测试包使用 ad-hoc 签名，没有 Apple Developer ID，也没有经过 Apple 公证。
+Gatekeeper 的安全提示属于预期行为，不代表 Glint 无法运行。
+
+没有显示英文时
+1. 确认 Glint 已移动到“应用程序”并已授权辅助功能。
+2. 双击“诊断.command”，或在“终端”中运行：
+
+   /Applications/Glint.app/Contents/MacOS/Glint --diagnose
+
+3. 将终端输出提供给开发者。诊断不会输出候选原文或输入内容。
+
+隐私
+Glint 不读取输入框正文，不保存候选或翻译历史。密码框和终端安全输入场景自动跳过。

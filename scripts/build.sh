@@ -43,3 +43,4 @@ codesign \
   "$app_bundle"
 
 codesign --verify --deep --strict "$app_bundle"
+./scripts/verify_app.sh "$app_bundle"

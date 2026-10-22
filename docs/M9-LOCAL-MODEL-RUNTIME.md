@@ -119,7 +119,8 @@ mlx[mt-index-translate-2b] 这个功能什么时候上线
 - 模型选择切换后的首次推理需要模型加载时间；App 启动时会加载当前模型，并用
   固定文本执行一次静默生成来覆盖首次推理路径；
 - K/V cache 和上下文排序尚未用于区分同一中文词的多个英文义项；
-- 候选栏识别依赖 Apple 拼音暴露的 `InputMethodCandidateList` AX 结构；
-- 真实 TextEdit HUD 测试需要目标 App 使用苹果拼音输入源；
+- 候选栏识别优先使用 Apple 拼音暴露的 `InputMethodCandidateList`；其他输入法仅在
+  组合输入阶段命中通用 `AXList` 结构时 best-effort 支持；
+- 苹果拼音的完整 HUD 验收仍以 TextEdit 和真实输入为准；
 - 模型插件尚未做独立签名清单，当前依赖 HTTPS、pinned revision 和 LFS SHA。
 - Index-Translate 当前使用社区 MLX 4-bit 转换；正式发行前应改为项目内可复现转换。

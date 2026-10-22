@@ -138,7 +138,7 @@ public struct CandidateTranslationPresentation: Sendable, Equatable {
 
 @MainActor
 protocol InputSourceReading: Sendable {
-    func isApplePinyinActive() -> Bool
+    func currentInputSource() -> ActiveInputSource
 }
 
 extension InputSourceMonitor: InputSourceReading {}
@@ -152,17 +152,21 @@ extension FocusMonitor: FocusReading {}
 protocol AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool
+        includeVisibleCandidates: Bool,
+        allowGenericCandidates: Bool
     ) -> AXCandidateSnapshot?
 }
 
 extension AXCandidateReading {
     func snapshot(
-        includeVisibleCandidates: Bool
+        processIdentifier: pid_t? = nil,
+        includeVisibleCandidates: Bool = false,
+        allowGenericCandidates: Bool = false
     ) -> AXCandidateSnapshot? {
         snapshot(
-            processIdentifier: nil,
-            includeVisibleCandidates: includeVisibleCandidates
+            processIdentifier: processIdentifier,
+            includeVisibleCandidates: includeVisibleCandidates,
+            allowGenericCandidates: allowGenericCandidates
         )
     }
 }
@@ -322,9 +326,10 @@ public actor MonitoringController {
                 return 1_000_000_000
             }
         }
-        guard await inputSource.isApplePinyinActive() else {
+        let activeInputSource = await inputSource.currentInputSource()
+        if activeInputSource.kind == .keyboardLayout {
             invalidateCandidate(immediate: true)
-            emitStatus("等待中文拼音")
+            emitStatus("等待中文输入")
             return 250_000_000
         }
         guard !secureInputIsEnabled() else {
@@ -364,11 +369,20 @@ public actor MonitoringController {
             )
         }
 
+        let allowGenericCandidates = {
+            switch activeInputSource.kind {
+            case .applePinyin, .keyboardLayout:
+                return false
+            case .otherInputMethod, .unknown:
+                return snapshot.compositionState != .inactive
+            }
+        }()
         let observationStartedAt = ContinuousClock.now
         // Both translation scopes need visible-row evidence so an expanded
         // candidate grid is rejected before translation or HUD presentation.
         guard let axCandidate = axCandidates.snapshot(
-            includeVisibleCandidates: true
+            includeVisibleCandidates: true,
+            allowGenericCandidates: allowGenericCandidates
         ) else {
             return observeCandidateMiss(
                 status: "未检测到候选",
