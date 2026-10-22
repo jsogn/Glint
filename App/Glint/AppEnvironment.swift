@@ -35,6 +35,33 @@ final class AppEnvironment {
                     configuration: configuration
                 )
             }
+            if let manifest = BundledPluginResources.manifest(
+                for: modelID
+            ),
+               let pluginDirectory = BundledPluginResources.directory(
+                   for: modelID
+               ) {
+                let directory = pluginDirectory.appendingPathComponent(
+                    "model",
+                    isDirectory: true
+                )
+                switch manifest.runtime {
+                case "mlx":
+                    return .mlx(
+                        modelID: modelID,
+                        directory: directory,
+                        promptProfile: manifest.promptProfile
+                            ?? .inferred(from: modelID)
+                    )
+                case "ctranslate2":
+                    return .ctranslate2(
+                        modelID: modelID,
+                        directory: directory
+                    )
+                default:
+                    return nil
+                }
+            }
             guard let manifest = await pluginManager.installedPlugin(id: modelID) else {
                 return nil
             }
@@ -93,7 +120,7 @@ final class AppEnvironment {
         await dictionary.reload()
     }
 
-    func removeLegacyBundledDictionaryCopies() async {
+    func removeLegacyBundledPluginCopies() async {
         for id in BundledPluginResources.pluginIDs {
             guard await pluginManager.installedPlugin(id: id) != nil else {
                 continue

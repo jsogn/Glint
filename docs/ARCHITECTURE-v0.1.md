@@ -14,8 +14,9 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 
 1. 原生 macOS 集成：Accessibility、TIS、AppKit；候选识别不截图、不执行 OCR。
 2. 全局默认生效，但只读取当前输入法候选，不读文本正文。
-3. CC-CEDICT、ECDICT 和 Wiktionary 是只读内置词典；其他词典与翻译模型按插件
-   管理，模型不进入安装包。
+3. CC-CEDICT、ECDICT、Wiktionary 和 OPUS-MT 是只读内置核心能力；其他词典与
+   更大的翻译模型按插件管理。OPUS-MT 的模型和运行时在构建时从固定 Release
+   资产下载并校验 SHA256，随后进入 App bundle，不存入 Git 历史。
 4. 翻译运行时可以替换，但插件不执行任意第三方代码。
 5. App 逻辑与模型实验分离，先完成 M1 模型 spike，再把胜出的运行时接进 App。
 6. 默认不保存候选文本、翻译结果或输入历史。
@@ -290,8 +291,9 @@ MonitoringController → @Observable AppState → MainWindowView
   - `ctranslate2` → CTranslate2Bridge；
   - `mlx` → MLX Swift；
   - `apple-translation` → 可选的系统适配器。
-- CC-CEDICT、overrides、ECDICT 和 Wiktionary 作为只读核心词典直接随 App
-  提供，不复制到 Application Support，不参与安装和卸载。
+- CC-CEDICT、overrides、ECDICT、Wiktionary 和 OPUS-MT 作为只读核心资源直接
+  随 App 提供，不复制到 Application Support，不参与安装和卸载。OPUS-MT 源文件
+  由 `scripts/fetch_bundled_assets.sh` 在构建前获取，并校验固定 SHA256。
 - 词典路由由只读内置词典和 Application Support 中的可选插件合并；内置 ID
   优先，插件列表不得重复注册同一词典。
 - 下载目录：
@@ -299,7 +301,7 @@ MonitoringController → @Observable AppState → MainWindowView
 ```text
 ~/Library/Application Support/Glint/
   plugins/
-    mt-opus-zh-en/
+    mt-hy-mt2-1.8b/
   models/
   cache/
   logs/
@@ -307,8 +309,8 @@ MonitoringController → @Observable AppState → MainWindowView
 
 - 安装流程：下载可选插件 → 校验 manifest 和 SHA256 → 原子替换插件目录 →
   更新 registry。
-- 删除流程：先取消推理/卸载模型，再删除目录和 registry 条目。核心词典不提供
-  删除操作。
+- 删除流程：先取消推理/卸载模型，再删除目录和 registry 条目。核心词典和
+  内置 OPUS-MT 不提供删除操作。
 - 不支持任意第三方 dylib、脚本或可执行文件。
 
 ## 10. 持久化与隐私
@@ -327,8 +329,8 @@ MonitoringController → @Observable AppState → MainWindowView
   - MLX Swift（高质量翻译插件）；
   - CTranslate2（通过 `Bridges/CTranslate2Bridge`）。
 - App target 只复制运行时 allowlist：`catalog.json`、`dict-cedict`、
-  `dict-ecdict` 和 `dict-wiktionary-zh-en` 三个只读核心词典。评测数据、可选
-  插件和模型目录不得由 `Resources` 整目录进入 App。
+  `dict-ecdict`、`dict-wiktionary-zh-en` 和 `mt-opus-zh-en` 四个只读核心
+  资源。评测数据、可选插件和模型目录不得由 `Resources` 整目录进入 App。
 - App 第一版不启用 App Sandbox；使用 Developer ID + hardened runtime + 公证。
 - Bundle ID 暂定 `com.local.glint`，正式签名/团队确定后再改。
 - `scripts/build.sh`、`scripts/test.sh` 只封装 `xcodebuild`/`swift test`，不复制 demo 的 `swiftc` 流程。

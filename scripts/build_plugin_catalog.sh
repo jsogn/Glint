@@ -29,24 +29,6 @@ build_plugin() {
     "$manifest" > "$staging/$id.json"
 }
 
-model_source="Tools/ModelLab/models/opus-ct2-int8"
-binary_source="Vendor/ct2"
-if [[ -f "$model_source/model.bin" && -f "$binary_source/libglintct2.dylib" ]]; then
-  mkdir -p "$staging/mt-opus-zh-en"
-  cp Resources/Plugins/mt-opus-zh-en/manifest.json "$staging/mt-opus-zh-en/"
-  cp -R "$model_source" "$staging/mt-opus-zh-en/model"
-  cp -R "$binary_source" "$staging/mt-opus-zh-en/bin"
-  codesign --force --sign - \
-    "$staging/mt-opus-zh-en/bin/libctranslate2.dylib" \
-    "$staging/mt-opus-zh-en/bin/libsentencepiece.0.0.0.dylib" \
-    "$staging/mt-opus-zh-en/bin/libglintct2.dylib" \
-    >/dev/null 2>&1 || true
-  build_plugin \
-    "mt-opus-zh-en" \
-    "$staging/mt-opus-zh-en" \
-    "Resources/Plugins/mt-opus-zh-en/manifest.json"
-fi
-
 for manifest in "${GLINT_CATALOG_MODEL_MANIFESTS[@]}"
 do
   [[ -f "$manifest" ]] || {

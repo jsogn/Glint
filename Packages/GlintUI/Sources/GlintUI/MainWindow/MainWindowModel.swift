@@ -123,6 +123,9 @@ public final class MainWindowModel {
         self.catalogService = PluginCatalogService(manager: pluginManager)
         self.localImportService = LocalModelImportService(manager: pluginManager)
         self.builtInPlugins = builtInPlugins
+        self.installedPlugins = builtInPlugins.sorted {
+            $0.name < $1.name
+        }
         self.catalogURL = catalogURL ?? Self.defaultCatalogURL()
         self.defaults = defaults
         self.now = now
@@ -235,7 +238,10 @@ public final class MainWindowModel {
                 lastModified: catalogLastModified
             )
             if !result.isNotModified {
-                availablePlugins = result.plugins.sorted {
+                let builtInIDs = Set(builtInPlugins.map(\.id))
+                availablePlugins = result.plugins
+                    .filter { !builtInIDs.contains($0.id) }
+                    .sorted {
                     $0.name < $1.name
                 }
             }

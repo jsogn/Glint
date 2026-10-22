@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+./scripts/fetch_bundled_assets.sh
+
 if [[ "${GLINT_SKIP_XCODEGEN:-0}" != "1" ]]; then
   xcodegen generate
 fi

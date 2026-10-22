@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+./scripts/fetch_bundled_assets.sh
+
 xcodegen generate
 test_derived_data="${GLINT_TEST_DERIVED_DATA:-$PWD/build-tests}"
 test_app="$test_derived_data/Build/Products/Debug/Glint.app"

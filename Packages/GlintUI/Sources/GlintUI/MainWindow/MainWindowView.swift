@@ -311,32 +311,9 @@ private struct DisplayPage: View {
             }
             SettingsCard("外观") {
                 VStack(spacing: 0) {
-                    segmentedSetting(
-                        title: "背景",
-                        selection: $preferences.hudBackgroundStyle,
-                        caption: backgroundStyleCaption
-                    ) {
-                        ForEach(HUDBackgroundStyle.allCases, id: \.self) {
-                            style in
-                            Text(style.title).tag(style)
-                        }
-                    }
+                    backgroundSetting
 
                     Divider()
-
-                    if preferences.hudBackgroundStyle == .solid {
-                        colorSetting(
-                            title: "背景颜色",
-                            color: Binding(
-                                get: {
-                                    preferences.hudBackgroundColor.color
-                                },
-                                set: {
-                                    preferences.hudBackgroundColor = HUDColor($0)
-                                }
-                            )
-                        )
-                    }
 
                     colorSetting(
                         title: "文字颜色",
@@ -351,19 +328,17 @@ private struct DisplayPage: View {
                         )
                     )
 
-                    if preferences.hudBackgroundStyle != .systemCandidate {
-                        sliderSetting(
-                            title: "背景不透明度",
-                            value: String(
-                                format: "%.0f%%",
-                                preferences.hudOpacity * 100
-                            ),
-                            binding: $preferences.hudOpacity,
-                            range: 0.4...1.0,
-                            step: 0.02,
-                            caption: "只调整显示背景，不改变文字清晰度。"
-                        )
-                    }
+                    sliderSetting(
+                        title: "背景不透明度",
+                        value: String(
+                            format: "%.0f%%",
+                            preferences.hudOpacity * 100
+                        ),
+                        binding: $preferences.hudOpacity,
+                        range: 0.4...1.0,
+                        step: 0.02,
+                        caption: "只调整显示背景，不改变文字清晰度。"
+                    )
 
                     sliderSetting(
                         title: "文字大小",
@@ -441,6 +416,45 @@ private struct DisplayPage: View {
         }
     }
 
+    private var backgroundSetting: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 12) {
+                Text("背景")
+                Spacer()
+                Picker("背景", selection: $preferences.hudBackgroundStyle) {
+                    ForEach(HUDBackgroundStyle.allCases, id: \.self) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 340, alignment: .trailing)
+            }
+
+            if preferences.hudBackgroundStyle == .solid {
+                HStack {
+                    Spacer()
+                    ColorPicker(
+                        "背景颜色",
+                        selection: Binding(
+                            get: {
+                                preferences.hudBackgroundColor.color
+                            },
+                            set: {
+                                preferences.hudBackgroundColor = HUDColor($0)
+                            }
+                        ),
+                        supportsOpacity: false
+                    )
+                    .labelsHidden()
+                    .frame(width: 64, alignment: .trailing)
+                    .frame(width: 340, alignment: .trailing)
+                }
+            }
+        }
+        .padding(.vertical, 10)
+    }
+
     private func colorSetting(
         title: String,
         color: Binding<Color>
@@ -459,17 +473,6 @@ private struct DisplayPage: View {
         .padding(.vertical, 10)
         .overlay(alignment: .bottom) {
             Divider()
-        }
-    }
-
-    private var backgroundStyleCaption: String? {
-        switch preferences.hudBackgroundStyle {
-        case .darkGlass:
-            return nil
-        case .systemCandidate:
-            return "匹配系统候选栏的浅色材质，透明度由系统控制。"
-        case .solid:
-            return "纯色背景默认黑色、80% 不透明度。"
         }
     }
 
@@ -1057,7 +1060,7 @@ private struct AboutPage: View {
 
     var body: some View {
         PageContainer {
-            SettingsCard("Glint") {
+            SettingsPanel {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(alignment: .top, spacing: 14) {
                         Image(nsImage: NSApplication.shared.applicationIconImage)
@@ -1068,16 +1071,13 @@ private struct AboutPage: View {
                             .accessibilityHidden(true)
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("在输入时显示对应的英文，将学习融入日常。")
+                            Text("Glint")
                                 .font(.title3.weight(.semibold))
+                            Text("在你的输入旁，看到英文翻译，将学习融入日常。")
+                                .foregroundStyle(.secondary)
                             Text("版本 \(version)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Text(
-                                "在中文拼音候选旁显示简洁的英文提示，"
-                                    + "查词不必切换应用，也不会打断思路。"
-                            )
-                            .foregroundStyle(.secondary)
                             Link("查看 GitHub 项目", destination: repositoryURL)
                                 .font(.callout)
                         }
@@ -1094,13 +1094,28 @@ private struct AboutPage: View {
                     .font(.callout)
                 }
             }
-            PrivacyNoticeCard()
         }
     }
 }
 
 private struct HUDPreview: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     let preferences: DisplayPreferences
+
+    private struct Candidate: Identifiable {
+        let id: Int
+        let text: String
+    }
+
+    private let candidates = [
+        Candidate(id: 1, text: "你好"),
+        Candidate(id: 2, text: "👋"),
+        Candidate(id: 3, text: "你好吗"),
+        Candidate(id: 4, text: "尼哈哦"),
+        Candidate(id: 5, text: "你号"),
+        Candidate(id: 6, text: "你"),
+    ]
 
     private var effectivePosition: HUDPosition {
         preferences.position == .above ? .above : .below
@@ -1110,7 +1125,7 @@ private struct HUDPreview: View {
         switch preferences.translationScope {
         case .selected:
             return [
-                HUDItem(id: 0, text: "hello"),
+                HUDItem(id: 0, text: "Hello · hi · ciao"),
             ]
         case .row:
             return [
@@ -1120,8 +1135,11 @@ private struct HUDPreview: View {
                     text: "hello",
                     isSelected: true
                 ),
-                HUDItem(id: 1, number: 2, text: "how are you?"),
-                HUDItem(id: 2, number: 3, text: "you"),
+                HUDItem(id: 1, number: 2, text: "wave"),
+                HUDItem(id: 2, number: 3, text: "how are you?"),
+                HUDItem(id: 3, number: 4, text: "ni hao"),
+                HUDItem(id: 4, number: 5, text: "your number"),
+                HUDItem(id: 5, number: 6, text: "you"),
             ]
         }
     }
@@ -1129,25 +1147,28 @@ private struct HUDPreview: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if effectivePosition == .above {
-                HUDView(
-                    items: previewItems,
-                    appearance: preferences.hudAppearance,
-                    backgroundOpacity: preferences.hudOpacity
-                )
+                hudPreview
                     .padding(.bottom, preferences.candidateSpacing)
             }
 
             candidateBar
 
             if effectivePosition == .below {
-                HUDView(
-                    items: previewItems,
-                    appearance: preferences.hudAppearance,
-                    backgroundOpacity: preferences.hudOpacity
-                )
+                hudPreview
                     .padding(.top, preferences.candidateSpacing)
             }
         }
+        .padding(12)
+        .frame(
+            minHeight: 96,
+            alignment: .topLeading
+        )
+        .background(previewBackground, in: RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(.separator.opacity(0.7), lineWidth: 1)
+        }
+        .environment(\.hudMaterialBlendingMode, .withinWindow)
         .animation(
             .easeInOut(duration: 0.18),
             value: preferences.translationScope
@@ -1158,26 +1179,77 @@ private struct HUDPreview: View {
         .animation(.easeInOut(duration: 0.18), value: preferences.hudAppearance)
     }
 
+    private var hudPreview: some View {
+        HUDView(
+            items: previewItems,
+            appearance: preferences.hudAppearance,
+            backgroundOpacity: preferences.hudOpacity
+        )
+        .padding(.leading, 4)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
     private var candidateBar: some View {
-        HStack(spacing: 10) {
-            Text("你好")
-                .font(.system(size: 14, weight: .semibold))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .foregroundStyle(.white)
-                .background(Color.accentColor, in: Capsule())
-            Text("你好吗")
-            Text("你号")
+        HStack(spacing: 4) {
+            ForEach(candidates) { candidate in
+                candidateView(candidate)
+            }
+
+            Rectangle()
+                .fill(.separator)
+                .frame(width: 1, height: 26)
+                .padding(.horizontal, 9)
+
+            Image(systemName: "chevron.down")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.trailing, 8)
         }
-        .font(.system(size: 14, weight: .medium))
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(3)
         .background {
-            HUDNativeMaterialBackground()
+            HUDNativeMaterialBackground(blendingMode: .withinWindow)
                 .clipShape(Capsule())
         }
         .overlay {
             Capsule().strokeBorder(.separator, lineWidth: 1)
+        }
+        .shadow(
+            color: .black.opacity(colorScheme == .dark ? 0.45 : 0.18),
+            radius: 5,
+            y: 2
+        )
+        .fixedSize()
+    }
+
+    private func candidateView(_ candidate: Candidate) -> some View {
+        let selected = candidate.id == 1
+
+        return HStack(spacing: 3) {
+            Text("\(candidate.id)")
+                .font(.system(size: 10, weight: .medium))
+                .monospacedDigit()
+                .foregroundStyle(
+                    selected ? Color.white.opacity(0.86) : Color.secondary
+                )
+
+            Text(candidate.text)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(selected ? Color.white : Color.primary)
+        }
+        .padding(.horizontal, selected ? 9 : 8)
+        .padding(.vertical, 4)
+        .background {
+            if selected {
+                Capsule().fill(Color.accentColor)
+            }
+        }
+    }
+
+    private var previewBackground: Color {
+        if colorScheme == .dark {
+            Color(red: 0.04, green: 0.04, blue: 0.04)
+        } else {
+            Color(nsColor: .textBackgroundColor)
         }
     }
 }

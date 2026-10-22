@@ -35,30 +35,39 @@ final class TranslationRuntimeTests: XCTestCase {
         }
     }
 
-    func testInstalledOPUSPluginLoadsAndTranslates() async throws {
-        let support = try XCTUnwrap(
-            FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first
+    func testBundledOPUSModelLoadsAndTranslates() async throws {
+        var repositoryRoot = URL(fileURLWithPath: #filePath)
+        for _ in 0..<5 {
+            repositoryRoot.deleteLastPathComponent()
+        }
+        let pluginDirectory = repositoryRoot.appendingPathComponent(
+            "Resources/Plugins/mt-opus-zh-en",
+            isDirectory: true
         )
-        let modelDirectory = support.appendingPathComponent(
-            "Glint/plugins/mt-opus-zh-en/model",
+        let modelDirectory = pluginDirectory.appendingPathComponent(
+            "model",
             isDirectory: true
         )
         guard FileManager.default.fileExists(atPath: modelDirectory.path) else {
-            throw XCTSkip("Development OPUS plugin is not installed")
+            throw XCTSkip(
+                "Run scripts/fetch_bundled_assets.sh before package tests."
+            )
         }
 
-        let engine = try CTranslate2Engine(modelDirectory: modelDirectory)
+        let engine = try CTranslate2Engine(
+            modelDirectory: modelDirectory,
+            libraryURL: pluginDirectory.appendingPathComponent(
+                "bin/libglintct2.dylib"
+            )
+        )
         let result = try await engine.translate(
             Candidate(
-                text: "你好",
-                kind: .word,
+                text: "今天天气不错",
+                kind: .sentence,
                 confidence: 1
             )
         )
 
-        XCTAssertFalse(result?.text.isEmpty ?? true)
+        XCTAssertEqual(result?.text, "It's a nice day.")
     }
 }

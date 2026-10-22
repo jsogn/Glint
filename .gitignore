@@ -26,4 +26,7 @@ Tools/CT2Probe/ct2probe
 Resources/Models/
 Resources/CT2/
 Resources/ONNXRuntime/
+Resources/Plugins/mt-opus-zh-en/bin/
+Resources/Plugins/mt-opus-zh-en/model/
+Resources/Plugins/mt-opus-zh-en/.asset-sha256
 Vendor/

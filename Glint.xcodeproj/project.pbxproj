@@ -20,6 +20,7 @@
 		7762DC1E435AC1E010FEFDAF /* AXCandidateProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */; };
 		81B6DB94DF1A7331BDA81806 /* GlintPlugins in Frameworks */ = {isa = PBXBuildFile; productRef = 7BA38E357A8135112494378C /* GlintPlugins */; };
 		845A3744D7848AB1E1439B04 /* GlintInference in Frameworks */ = {isa = PBXBuildFile; productRef = 5882BDDE1BB41C62823F7D26 /* GlintInference */; };
+		A1E6528F9E03F40CC0E343E2 /* mt-opus-zh-en in Resources */ = {isa = PBXBuildFile; fileRef = 7B3EDCB227F6EBFF409729DC /* mt-opus-zh-en */; };
 		B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */; };
 		B63A5AEECF778A78BD185434 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */; };
 		B70CAFEBB2416E25B0FFED97 /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2E26ACCA8E4915ED8C4AAE15 /* GlintCore */; };
@@ -42,6 +43,7 @@
 		5F675D0EDB2453ADD8136057 /* GlintInference */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintInference; path = Packages/GlintInference; sourceTree = SOURCE_ROOT; };
 		65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		7A59F9A29CA693ACF1A2526C /* dict-ecdict */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-ecdict"; path = "Resources/Plugins/dict-ecdict"; sourceTree = SOURCE_ROOT; };
+		7B3EDCB227F6EBFF409729DC /* mt-opus-zh-en */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "mt-opus-zh-en"; path = "Resources/Plugins/mt-opus-zh-en"; sourceTree = SOURCE_ROOT; };
 		88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A6CE2C298747A802E1589A8C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-wiktionary-zh-en"; path = "Resources/Plugins/dict-wiktionary-zh-en"; sourceTree = SOURCE_ROOT; };
@@ -142,6 +144,7 @@
 				F082FC2C41A35AF169B0DE24 /* dict-cedict */,
 				7A59F9A29CA693ACF1A2526C /* dict-ecdict */,
 				B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */,
+				7B3EDCB227F6EBFF409729DC /* mt-opus-zh-en */,
 			);
 			path = Plugins;
 			sourceTree = "<group>";
@@ -267,6 +270,7 @@
 				4D3F18EF382E77CCB4F70956 /* dict-cedict in Resources */,
 				56858DDBBD011680EEE7F0BA /* dict-ecdict in Resources */,
 				3385AFA47466DF9188B0D14C /* dict-wiktionary-zh-en in Resources */,
+				A1E6528F9E03F40CC0E343E2 /* mt-opus-zh-en in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

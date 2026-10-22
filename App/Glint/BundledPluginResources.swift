@@ -6,29 +6,29 @@ enum BundledPluginResources {
         "dict-cedict",
         "dict-ecdict",
         "dict-wiktionary-zh-en",
+        "mt-opus-zh-en",
     ]
 
     static var directories: [URL] {
-        pluginIDs.compactMap {
-            Bundle.main.url(
-                forResource: $0,
-                withExtension: nil
-            )
-        }
+        pluginIDs.compactMap(directory(for:))
     }
 
     static var manifests: [PluginManifest] {
-        directories.compactMap { directory in
-            let manifestURL = directory.appendingPathComponent(
-                "manifest.json"
-            )
-            guard let data = try? Data(contentsOf: manifestURL) else {
-                return nil
-            }
-            return try? JSONDecoder().decode(
-                PluginManifest.self,
-                from: data
-            )
+        pluginIDs.compactMap(manifest(for:))
+    }
+
+    static func directory(for id: String) -> URL? {
+        Bundle.main.url(forResource: id, withExtension: nil)
+    }
+
+    static func manifest(for id: String) -> PluginManifest? {
+        guard let directory = directory(for: id) else {
+            return nil
         }
+        let manifestURL = directory.appendingPathComponent("manifest.json")
+        guard let data = try? Data(contentsOf: manifestURL) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(PluginManifest.self, from: data)
     }
 }

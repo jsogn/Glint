@@ -51,6 +51,9 @@ targets:
       - path: Resources/Plugins/dict-wiktionary-zh-en
         buildPhase: resources
         type: folder
+      - path: Resources/Plugins/mt-opus-zh-en
+        buildPhase: resources
+        type: folder
     info:
       path: App/Glint/Info.plist
       properties:

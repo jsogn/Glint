@@ -101,7 +101,7 @@ public final class HUDController {
         let contentModel = HUDPresentationModel(
             text: text,
             appearance: .default,
-            backgroundOpacity: 0.92,
+            backgroundOpacity: 0.8,
             animatesTransitions: !NSWorkspace.shared
                 .accessibilityDisplayShouldReduceMotion
         )
@@ -180,7 +180,7 @@ public final class HUDController {
         near screenRect: CGRect,
         position: HUDPosition = .automatic,
         spacing: Double = 8,
-        opacity: Double = 0.92,
+        opacity: Double = 0.8,
         appearance: HUDAppearance = .default,
         revision: UInt64? = nil
     ) {
@@ -202,7 +202,7 @@ public final class HUDController {
         near screenRect: CGRect,
         position: HUDPosition = .automatic,
         spacing: Double = 8,
-        opacity: Double = 0.92,
+        opacity: Double = 0.8,
         appearance: HUDAppearance = .default,
         revision: UInt64? = nil
     ) {

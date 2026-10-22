@@ -152,7 +152,7 @@ final class DisplayPreferencesTests: XCTestCase {
 
         XCTAssertEqual(preferences.hudBackgroundStyle, .darkGlass)
         XCTAssertFalse(preferences.hudUsesCustomTextColor)
-        XCTAssertEqual(preferences.hudOpacity, 0.9, accuracy: 0.001)
+        XCTAssertEqual(preferences.hudOpacity, 0.8, accuracy: 0.001)
         XCTAssertEqual(preferences.hudFontSize, 14)
         XCTAssertEqual(preferences.hudDensity, .standard)
         XCTAssertEqual(preferences.hudAppearance, .default)
@@ -196,7 +196,7 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
-    func testCurrentSchemaHonorsStoredBackgroundStyle() throws {
+    func testStoredLightGlassMigratesToDarkGlass() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -206,11 +206,11 @@ final class DisplayPreferencesTests: XCTestCase {
 
         let preferences = DisplayPreferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.hudBackgroundStyle, .systemCandidate)
+        XCTAssertEqual(preferences.hudBackgroundStyle, .darkGlass)
     }
 
     @MainActor
-    func testIntermediateGlassPreferenceMigratesToBackgroundStyle() throws {
+    func testIntermediateLightGlassPreferenceMigratesToDarkGlass() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -220,7 +220,7 @@ final class DisplayPreferencesTests: XCTestCase {
 
         let preferences = DisplayPreferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.hudBackgroundStyle, .systemCandidate)
+        XCTAssertEqual(preferences.hudBackgroundStyle, .darkGlass)
     }
 
     @MainActor

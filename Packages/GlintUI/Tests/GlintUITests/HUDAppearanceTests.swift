@@ -2,6 +2,13 @@ import XCTest
 @testable import GlintUI
 
 final class HUDAppearanceTests: XCTestCase {
+    func testBackgroundStyleTitlesStaySimple() {
+        XCTAssertEqual(
+            HUDBackgroundStyle.allCases.map(\.title),
+            ["玻璃", "纯色"]
+        )
+    }
+
     func testColorComponentsAreClampedToValidRange() {
         let color = HUDColor(
             red: -1,
@@ -14,19 +21,12 @@ final class HUDAppearanceTests: XCTestCase {
         XCTAssertEqual(color.blue, 0)
     }
 
-    func testAutomaticTextColorMatchesSelectedBackgroundStyle() {
+    func testAutomaticTextColorUsesDefaultTextColor() {
         let darkGlass = HUDAppearance()
-        let systemCandidate = HUDAppearance(
-            backgroundStyle: .systemCandidate
-        )
 
         XCTAssertEqual(
             darkGlass.effectiveTextColor,
             HUDAppearance.defaultTextColor
-        )
-        XCTAssertEqual(
-            systemCandidate.effectiveTextColor,
-            HUDAppearance.defaultLightGlassTextColor
         )
     }
 

@@ -52,13 +52,12 @@ The app delegate delays HUD presentation using the configured stability delay,
 but does not restart the timer while repeated OCR results report the same
 candidate.
 
-HUD background is one direct choice: dark glass, system candidate, or solid.
-Dark glass is the default. Dark glass uses the native AppKit popover material
-behind the window with a dark appearance. The system candidate style uses
-regular Liquid Glass on macOS 26 and falls back to popover material with a white
-tint on earlier supported systems. Its opacity is controlled by the system.
-Solid background defaults to black at 80% opacity. Text color is independent,
-and dark glass and solid backgrounds own separate opacity preferences.
+HUD background is one direct choice: glass or solid.
+Glass is the default. Glass uses the native AppKit popover material behind
+the window with a dark appearance.
+Glass and solid backgrounds default to 80% opacity. Solid defaults to black.
+Text color is independent, and the active background style owns its own opacity
+preference.
 
 ### Window title
 

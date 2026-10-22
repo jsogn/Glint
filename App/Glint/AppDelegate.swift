@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
-            await environment.removeLegacyBundledDictionaryCopies()
+            await environment.removeLegacyBundledPluginCopies()
             await environment.refreshDictionaryRoutes()
             await environment.translationRuntime.prepareSelectedModel()
             startupPreparationTask = nil

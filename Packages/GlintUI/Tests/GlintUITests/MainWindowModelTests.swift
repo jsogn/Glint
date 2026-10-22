@@ -44,6 +44,48 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
+    func testBundledTranslationIsActiveAndExcludedFromCatalog() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintBundledTranslationTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let suiteName = "GlintBundledTranslationTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let manifest = translationManifest(
+            id: TranslationModelSelection.defaultModelID,
+            source: .bundled
+        )
+        let catalogURL = root.appendingPathComponent("catalog.json")
+        try JSONEncoder().encode([manifest]).write(to: catalogURL)
+        let manager = PluginManager(baseDirectory: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            builtInPlugins: [manifest],
+            catalogURL: catalogURL,
+            defaults: defaults
+        )
+
+        await model.refreshPlugins()
+
+        XCTAssertEqual(model.translationPlugins.map(\.id), [manifest.id])
+        XCTAssertEqual(model.activeModelID, manifest.id)
+        XCTAssertEqual(model.translationSummary, manifest.name)
+        XCTAssertTrue(model.availablePlugins.isEmpty)
+
+        await model.uninstallPlugin(manifest)
+        let managedPlugins = await manager.installedPlugins()
+        XCTAssertTrue(managedPlugins.isEmpty)
+    }
+
+    @MainActor
     func testOptionalDictionaryUninstallRefreshesRoutes() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -382,7 +424,8 @@ final class MainWindowModelTests: XCTestCase {
     private func translationManifest(
         id: String,
         version: String = "1.0",
-        runtime: String = "mlx"
+        runtime: String = "mlx",
+        source: PluginSource = .catalog
     ) -> PluginManifest {
         PluginManifest(
             id: id,
@@ -398,7 +441,8 @@ final class MainWindowModelTests: XCTestCase {
             license: "MIT",
             minRAMBytes: 0,
             quality: "test",
-            recommended: false
+            recommended: false,
+            source: source
         )
     }
 

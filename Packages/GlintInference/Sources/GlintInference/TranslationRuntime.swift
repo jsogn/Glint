@@ -145,20 +145,31 @@ public actor TranslationRuntime: TranslationEngine {
             )
         }
 
-        if modelID == TranslationModelSelection.defaultModelID,
-           let support = FileManager.default.urls(
-               for: .applicationSupportDirectory,
-               in: .userDomainMask
-           ).first {
-            let directory = support.appendingPathComponent(
-                "Glint/plugins/mt-opus-zh-en/model",
-                isDirectory: true
-            )
-            if FileManager.default.fileExists(atPath: directory.path) {
+        if modelID == TranslationModelSelection.defaultModelID {
+            if let bundled = Bundle.main.url(
+                forResource: "mt-opus-zh-en",
+                withExtension: nil
+            )?.appendingPathComponent("model", isDirectory: true),
+               FileManager.default.fileExists(atPath: bundled.path) {
                 return .ctranslate2(
                     modelID: modelID,
-                    directory: directory
+                    directory: bundled
                 )
+            }
+            if let support = FileManager.default.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first {
+                let directory = support.appendingPathComponent(
+                    "Glint/plugins/mt-opus-zh-en/model",
+                    isDirectory: true
+                )
+                if FileManager.default.fileExists(atPath: directory.path) {
+                    return .ctranslate2(
+                        modelID: modelID,
+                        directory: directory
+                    )
+                }
             }
         }
 

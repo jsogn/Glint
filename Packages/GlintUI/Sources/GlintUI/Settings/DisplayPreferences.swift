@@ -29,7 +29,6 @@ public final class DisplayPreferences {
             "display.hudAppearanceSchemaVersion"
         static let hudBackgroundStyle = "display.hudBackgroundStyle"
         static let hudUsesGlass = "display.hudUsesGlass"
-        static let hudGlassAppearance = "display.hudGlassAppearance"
         static let hudUsesCustomTextColor = "display.hudUsesCustomTextColor"
         static let hudGlassOpacity = "display.hudGlassOpacity"
         static let hudSolidOpacity = "display.hudSolidOpacity"
@@ -217,22 +216,18 @@ public final class DisplayPreferences {
         let storedUsesGlass = defaults.object(
             forKey: Key.hudUsesGlass
         ) as? Bool
-        let storedGlassAppearance = defaults.string(
-            forKey: Key.hudGlassAppearance
-        )
         let storedBackgroundStyle = defaults.string(
             forKey: Key.hudBackgroundStyle
         )
-        let backgroundStyle: HUDBackgroundStyle = if appearanceSchemaVersion >= 2,
-            let storedBackgroundStyle,
-            let style = HUDBackgroundStyle(rawValue: storedBackgroundStyle) {
-            style
+        let backgroundStyle: HUDBackgroundStyle
+        if appearanceSchemaVersion >= 2 {
+            backgroundStyle = storedBackgroundStyle.flatMap(
+                HUDBackgroundStyle.init(rawValue:)
+            ) ?? .darkGlass
         } else if wasLegacyCustom || storedUsesGlass == false {
-            .solid
-        } else if storedGlassAppearance == "light" {
-            .systemCandidate
+            backgroundStyle = .solid
         } else {
-            .darkGlass
+            backgroundStyle = .darkGlass
         }
         self.hudBackgroundStyle = backgroundStyle
 
@@ -253,7 +248,8 @@ public final class DisplayPreferences {
         ) as? Double
         self.hudGlassOpacity = Self.clampedOpacity(
             storedGlassOpacity
-                ?? (backgroundStyle == .solid ? 0.9 : storedOpacity ?? 0.9)
+                ?? storedOpacity
+                ?? 0.8
         )
         self.hudSolidOpacity = Self.clampedOpacity(
             storedSolidOpacity
@@ -294,10 +290,6 @@ public final class DisplayPreferences {
             forKey: Key.hudUsesGlass
         )
         defaults.set(
-            self.hudBackgroundStyle == .systemCandidate ? "light" : "dark",
-            forKey: Key.hudGlassAppearance
-        )
-        defaults.set(
             self.hudUsesCustomTextColor,
             forKey: Key.hudUsesCustomTextColor
         )
@@ -310,7 +302,7 @@ public final class DisplayPreferences {
         hudUsesCustomTextColor = false
         hudTextColor = HUDAppearance.defaultTextColor
         hudBackgroundColor = HUDAppearance.defaultBackgroundColor
-        hudGlassOpacity = 0.9
+        hudGlassOpacity = 0.8
         hudSolidOpacity = 0.8
         hudFontSize = 14
         hudDensity = .standard
@@ -338,7 +330,7 @@ public final class DisplayPreferences {
     }
 
     private static func clampedOpacity(_ value: Double) -> Double {
-        guard value.isFinite else { return 0.9 }
+        guard value.isFinite else { return 0.8 }
         return min(max(value, 0.4), 1.0)
     }
 }

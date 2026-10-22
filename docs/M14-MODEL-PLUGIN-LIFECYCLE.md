@@ -2,6 +2,9 @@
 
 - 日期：2026-10-21
 - 目标：修复 OPUS 插件加载、选择失败状态和卸载生命周期
+- 2026-10-22 起：OPUS-MT 改为随 App 提供的只读基础模型；以下关于 OPUS
+  插件目录、卸载和 catalog 安装的规则仅保留为历史迁移背景。可选 MLX 模型
+  继续使用插件生命周期。
 
 ## 根因
 
@@ -24,8 +27,10 @@ UI 在模型加载前就提交选择，因此加载失败后仍显示“使用�
 - 删除不存在的插件会明确报错，不再静默成功。
 - 移除隐式 CTranslate2 fallback；当前选择的模型不可用时直接报告错误。
 - CTranslate2 初始化错误包含缺失路径、动态库、桥接符号或模型加载原因。
-- OPUS 模型和 CTranslate2 动态库不进入 App bundle。
-- `run.sh` 不会重新安装用户已经删除的可选 OPUS 插件。
+- OPUS 模型和 CTranslate2 动态库进入 App bundle，并在启动迁移时删除旧
+  Application Support 插件副本。
+- OPUS 资源不进入 Git 历史；构建脚本从固定的 `bundled-assets-v1` Release
+  下载归档、校验 SHA256，再复制进 App bundle。
 - 开发 catalog 会从 `Tools/ModelLab` 和 `Vendor/ct2` 生成离线 OPUS
   归档；归档只用于重新安装，不会自动落成插件目录。
 - OPUS 归档包含 SHA256、实际大小和 `file://` 下载地址，卸载后仍会作为

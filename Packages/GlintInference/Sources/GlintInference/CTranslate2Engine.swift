@@ -168,6 +168,13 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
             let url = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: url.path) { return url }
         }
+        if let bundled = Bundle.main.url(
+            forResource: "mt-opus-zh-en",
+            withExtension: nil
+        )?.appendingPathComponent("model", isDirectory: true),
+           FileManager.default.fileExists(atPath: bundled.path) {
+            return bundled
+        }
         if let support = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
