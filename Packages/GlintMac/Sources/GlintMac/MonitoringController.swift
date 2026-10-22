@@ -199,6 +199,10 @@ public actor MonitoringController {
     private var candidateSessionActive = false
     private var selectedCandidateIndex: Int?
     private var latestCandidateHighlight: CandidateRegion?
+    private var dictionaryPrefetchRevision: UInt64?
+    private var dictionaryPrefetchTasks:
+        [Int: Task<DictionaryPrefetchResult, Never>] = [:]
+    private var cachedPrefetchResults: [Int: TranslationResult] = [:]
     private var candidateMissDebouncer = CandidateMissDebouncer()
     private var compositionTransitions = CompositionTransitionTracker()
 
@@ -248,7 +252,7 @@ public actor MonitoringController {
 
     public func setCandidateDwellDuration(_ seconds: Double) {
         guard seconds.isFinite else { return }
-        let clamped = min(max(seconds, 0.05), 0.3)
+        let clamped = min(max(seconds, 0.08), 0.3)
         candidateDwellNanoseconds = UInt64(clamped * 1_000_000_000)
     }
 
@@ -287,6 +291,13 @@ public actor MonitoringController {
         typingTracker.reset()
         handledRevision = nil
         emitCandidateEnded(immediate: true)
+        let memo = translationMemo
+        Task {
+            let statistics = await memo.statistics()
+            monitoringLogger.notice(
+                "cache stats entries=\(statistics.entries, privacy: .public) max_entries=\(statistics.maximumEntries, privacy: .public) estimated_bytes=\(statistics.estimatedBytes, privacy: .public) max_bytes=\(statistics.maximumEstimatedBytes, privacy: .public) hits=\(statistics.hits, privacy: .public) misses=\(statistics.misses, privacy: .public) in_flight_hits=\(statistics.inFlightHits, privacy: .public) insertions=\(statistics.insertions, privacy: .public) evictions=\(statistics.evictions, privacy: .public) rejected=\(statistics.rejectedEntries, privacy: .public)"
+            )
+        }
     }
 
     private func run() async {
@@ -313,7 +324,7 @@ public actor MonitoringController {
         }
         guard await inputSource.isApplePinyinActive() else {
             invalidateCandidate(immediate: true)
-            emitStatus("等待苹果拼音")
+            emitStatus("等待中文拼音")
             return 250_000_000
         }
         guard !secureInputIsEnabled() else {
@@ -426,6 +437,10 @@ public actor MonitoringController {
         case .observing, .dwelling:
             candidateChanged = false
         }
+        await startCandidatePrefetchIfNeeded(
+            candidates: candidates,
+            revision: typingTracker.revision
+        )
 
         switch activity {
         case .changed(let revision):
@@ -459,7 +474,9 @@ public actor MonitoringController {
                 candidates: candidates,
                 selectedIndex: selectedIndex,
                 highlight: displayAnchor,
-                revision: revision
+                revision: revision,
+                dictionaryPrefetchTasks: dictionaryPrefetchTasks,
+                cachedPrefetchResults: cachedPrefetchResults
             )
         case .observing:
             break
@@ -488,16 +505,81 @@ public actor MonitoringController {
         return min(regularInterval, max(4_000_000, remaining))
     }
 
+    static func shouldPrefetchDictionary(
+        mode: TranslationMode,
+        scope: CandidateTranslationScope
+    ) -> Bool {
+        switch mode {
+        case .dictionaryFirst:
+            return true
+        case .modelFirst:
+            return scope == .selected
+        }
+    }
+
+    private func startCandidatePrefetchIfNeeded(
+        candidates: [Candidate],
+        revision: UInt64
+    ) async {
+        guard dictionaryPrefetchRevision != revision else { return }
+
+        cancelDictionaryPrefetch()
+        dictionaryPrefetchRevision = revision
+        let shouldPrefetchDictionary = Self.shouldPrefetchDictionary(
+            mode: mode,
+            scope: translationScope
+        )
+        let mode = mode
+        let configurationToken = translationConfigurationToken
+        let includesAlternatives =
+            Self.displayOptionLimit(for: translationScope) > 1
+        let memo = translationMemo
+        let router = router
+        for (index, candidate) in candidates.enumerated() {
+            let key = Self.translationMemoKey(
+                candidate: candidate,
+                mode: mode,
+                configurationToken: configurationToken,
+                includesAlternatives: includesAlternatives
+            )
+            if let result = await memo.peek(for: key) {
+                cachedPrefetchResults[index] = result
+            } else if shouldPrefetchDictionary {
+                dictionaryPrefetchTasks[index] = Task.detached(
+                    priority: .utility
+                ) {
+                    await router.prefetchDictionary(candidate)
+                }
+            }
+        }
+    }
+
+    private func cancelDictionaryPrefetch() {
+        for task in dictionaryPrefetchTasks.values {
+            task.cancel()
+        }
+        dictionaryPrefetchTasks.removeAll()
+        cachedPrefetchResults.removeAll()
+        dictionaryPrefetchRevision = nil
+    }
+
     private func startTranslation(
         candidates: [Candidate],
         selectedIndex: Int,
         highlight: CandidateRegion,
-        revision: UInt64
+        revision: UInt64,
+        dictionaryPrefetchTasks: [
+            Int: Task<DictionaryPrefetchResult, Never>
+        ],
+        cachedPrefetchResults: [Int: TranslationResult]
     ) {
         let mode = mode
         let router = router
         let memo = translationMemo
         let configurationToken = translationConfigurationToken
+        let displayOptionLimit = Self.displayOptionLimit(
+            for: translationScope
+        )
         translationAttempts &+= 1
         translationStartedAt = .now
         cancelTranslationTask()
@@ -509,6 +591,8 @@ public actor MonitoringController {
                 candidates,
                 selectedIndex,
                 configurationToken,
+                dictionaryPrefetchTasks,
+                cachedPrefetchResults,
                 highlight,
                 revision,
                 mode,
@@ -521,6 +605,9 @@ public actor MonitoringController {
                 configurationToken: configurationToken,
                 router: router,
                 memo: memo,
+                displayOptionLimit: displayOptionLimit,
+                dictionaryPrefetchTasks: dictionaryPrefetchTasks,
+                cachedPrefetchResults: cachedPrefetchResults,
                 publishProgress: { [weak self] presentations in
                     await self?.publishPartialTranslation(
                         presentations,
@@ -545,6 +632,11 @@ public actor MonitoringController {
         configurationToken: String,
         router: SmartRouter,
         memo: TranslationMemo,
+        displayOptionLimit: Int = 3,
+        dictionaryPrefetchTasks: [
+            Int: Task<DictionaryPrefetchResult, Never>
+        ] = [:],
+        cachedPrefetchResults: [Int: TranslationResult] = [:],
         publishProgress: (
             @Sendable ([CandidateTranslationPresentation]) async -> Void
         )? = nil
@@ -561,13 +653,18 @@ public actor MonitoringController {
                 selectedIndex: selectedIndex
             ) {
                 let candidate = candidates[index]
+                let dictionaryPrefetch = dictionaryPrefetchTasks[index]
+                let cachedResult = cachedPrefetchResults[index]
                 group.addTask {
                     let result = await translateCandidate(
                         candidate,
                         mode: mode,
                         configurationToken: configurationToken,
                         router: router,
-                        memo: memo
+                        memo: memo,
+                        includesAlternatives: displayOptionLimit > 1,
+                        dictionaryPrefetch: dictionaryPrefetch,
+                        cachedResult: cachedResult
                     )
                     return (index, result)
                 }
@@ -584,7 +681,8 @@ public actor MonitoringController {
                             for: $0,
                             candidates: candidates,
                             results: results,
-                            selectedIndex: selectedIndex
+                            selectedIndex: selectedIndex,
+                            displayOptionLimit: displayOptionLimit
                         )
                     }
                     await publishProgress?(partialPresentations)
@@ -596,9 +694,30 @@ public actor MonitoringController {
                 for: $0,
                 candidates: candidates,
                 results: results,
-                selectedIndex: selectedIndex
+                selectedIndex: selectedIndex,
+                displayOptionLimit: displayOptionLimit
             )
         }
+    }
+
+    static func displayOptionLimit(
+        for scope: CandidateTranslationScope
+    ) -> Int {
+        scope == .row ? 1 : 3
+    }
+
+    private static func translationMemoKey(
+        candidate: Candidate,
+        mode: TranslationMode,
+        configurationToken: String,
+        includesAlternatives: Bool
+    ) -> TranslationMemoKey {
+        TranslationMemoKey(
+            text: candidate.text,
+            mode: mode,
+            configuration: configurationToken,
+            includesAlternatives: includesAlternatives
+        )
     }
 
     static func translationTaskOrder(
@@ -619,16 +738,29 @@ public actor MonitoringController {
         mode: TranslationMode,
         configurationToken: String,
         router: SmartRouter,
-        memo: TranslationMemo
+        memo: TranslationMemo,
+        includesAlternatives: Bool,
+        dictionaryPrefetch: Task<DictionaryPrefetchResult, Never>?,
+        cachedResult: TranslationResult?
     ) async -> TranslationResult? {
         guard !Task.isCancelled else { return nil }
-        let key = TranslationMemoKey(
-            text: candidate.text,
+        if let cachedResult {
+            return cachedResult
+        }
+        let key = Self.translationMemoKey(
+            candidate: candidate,
             mode: mode,
-            configuration: configurationToken
+            configurationToken: configurationToken,
+            includesAlternatives: includesAlternatives
         )
         let result = try? await memo.resolve(for: key) {
-            try await router.route(candidate, mode: mode)
+            let routed = try await router.route(
+                candidate,
+                mode: mode,
+                includesAlternatives: includesAlternatives,
+                dictionaryPrefetch: dictionaryPrefetch
+            )
+            return includesAlternatives ? routed : routed?.primaryOnly
         }
         return Task.isCancelled ? nil : result
     }
@@ -637,10 +769,15 @@ public actor MonitoringController {
         for index: Int,
         candidates: [Candidate],
         results: [TranslationResult?],
-        selectedIndex: Int
+        selectedIndex: Int,
+        displayOptionLimit: Int
     ) -> CandidateTranslationPresentation {
-        let translation = results[index].flatMap {
-            isDisplayable($0) ? $0.displayText : nil
+        let translation: String? = results[index].flatMap { result -> String? in
+            guard isDisplayable(result) else { return nil }
+            let text = displayOptionLimit <= 1
+                ? result.text
+                : result.displayText
+            return text.isEmpty ? nil : text
         }
         return CandidateTranslationPresentation(
             index: index,
@@ -756,6 +893,7 @@ public actor MonitoringController {
         compositionTransitions.reset()
         selectedCandidateIndex = nil
         latestCandidateHighlight = nil
+        cancelDictionaryPrefetch()
         handledRevision = nil
         dwellDetectedAt = nil
         translationStartedAt = nil

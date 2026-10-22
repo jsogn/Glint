@@ -43,6 +43,120 @@ final class TranslationMemoTests: XCTestCase {
         XCTAssertEqual(count, 1)
     }
 
+    func testDefaultLimitsAndHitStatistics() async throws {
+        let memo = TranslationMemo()
+        let key = TranslationMemoKey(
+            text: "你好",
+            mode: .dictionaryFirst,
+            configuration: "model-a"
+        )
+        let result = TranslationResult(
+            text: "hello",
+            source: .dictionary,
+            confidence: 0.9
+        )
+
+        _ = try await memo.resolve(for: key) { result }
+        _ = try await memo.resolve(for: key) { nil }
+        let statistics = await memo.statistics()
+
+        XCTAssertEqual(statistics.maximumEntries, 2_048)
+        XCTAssertEqual(
+            statistics.maximumEstimatedBytes,
+            16 * 1_024 * 1_024
+        )
+        XCTAssertEqual(statistics.entries, 1)
+        XCTAssertEqual(statistics.hits, 1)
+        XCTAssertGreaterThan(statistics.estimatedBytes, 0)
+    }
+
+    func testPrefetchMissDoesNotDoubleCountResolutionMiss() async throws {
+        let memo = TranslationMemo()
+        let key = TranslationMemoKey(
+            text: "你好",
+            mode: .dictionaryFirst,
+            configuration: "model-a"
+        )
+
+        let peeked = await memo.peek(for: key)
+        XCTAssertNil(peeked)
+        _ = try await memo.resolve(for: key) {
+            TranslationResult(
+                text: "hello",
+                source: .dictionary,
+                confidence: 0.9
+            )
+        }
+        let statistics = await memo.statistics()
+
+        XCTAssertEqual(statistics.misses, 1)
+    }
+
+    func testOversizedResultIsRejectedAndNotCached() async throws {
+        let memo = TranslationMemo(capacity: 10, maximumCost: 80)
+        let counter = Counter()
+        let key = TranslationMemoKey(
+            text: "你好",
+            mode: .dictionaryFirst,
+            configuration: "model-a"
+        )
+
+        for _ in 0..<2 {
+            _ = try await memo.resolve(for: key) {
+                _ = await counter.increment()
+                return TranslationResult(
+                    options: [
+                        TranslationOption(
+                            text: String(repeating: "x", count: 100),
+                            score: 1
+                        ),
+                    ],
+                    source: .dictionary,
+                    confidence: 1
+                )
+            }
+        }
+
+        let count = await counter.value
+        let statistics = await memo.statistics()
+        XCTAssertEqual(count, 2)
+        XCTAssertEqual(statistics.entries, 0)
+        XCTAssertEqual(statistics.rejectedEntries, 2)
+    }
+
+    func testEstimatedCostIncludesEveryOption() async throws {
+        let memo = TranslationMemo()
+        let key = TranslationMemoKey(
+            text: "方案",
+            mode: .modelFirst,
+            configuration: "configuration-with-version"
+        )
+
+        _ = try await memo.resolve(for: key) {
+            TranslationResult(
+                options: [
+                    TranslationOption(text: "primary", score: 0.9),
+                    TranslationOption(text: "alternative", score: 0.7),
+                    TranslationOption(text: "secondary", score: 0.5),
+                ],
+                source: .translation,
+                confidence: 0.9
+            )
+        }
+
+        let statistics = await memo.statistics()
+        XCTAssertGreaterThanOrEqual(
+            statistics.estimatedBytes,
+            "方案".utf8.count
+                + "configuration-with-version".utf8.count
+                + "primary".utf8.count
+                + "alternative".utf8.count
+                + "secondary".utf8.count
+                + 96
+                + 32 * 3
+        )
+    }
+
     func testConfigurationChangesBypassCachedResult() async throws {
         let memo = TranslationMemo()
         let counter = Counter()
@@ -53,6 +167,32 @@ final class TranslationMemoTests: XCTestCase {
                     text: "你好",
                     mode: .dictionaryFirst,
                     configuration: configuration
+                )
+            ) {
+                let value = await counter.increment()
+                return TranslationResult(
+                    text: "result-\(value)",
+                    source: .translation,
+                    confidence: 0.9
+                )
+            }
+        }
+
+        let count = await counter.value
+        XCTAssertEqual(count, 2)
+    }
+
+    func testAlternativeDetailBypassesPrimaryOnlyCache() async throws {
+        let memo = TranslationMemo()
+        let counter = Counter()
+
+        for includesAlternatives in [false, true] {
+            _ = try await memo.resolve(
+                for: TranslationMemoKey(
+                    text: "方案",
+                    mode: .modelFirst,
+                    configuration: "model-a",
+                    includesAlternatives: includesAlternatives
                 )
             ) {
                 let value = await counter.increment()
@@ -142,5 +282,7 @@ final class TranslationMemoTests: XCTestCase {
 
         let count = await counter.value
         XCTAssertEqual(count, 3)
+        let statistics = await memo.statistics()
+        XCTAssertEqual(statistics.evictions, 2)
     }
 }

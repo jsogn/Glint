@@ -26,7 +26,7 @@ Remote plugin download remains outside M5.
 An `@Observable`, main-actor settings object with:
 
 - `position`: automatic, above, or below.
-- `candidateDwellDuration`: clamped to 0.05...0.3 seconds.
+- `candidateDwellDuration`: clamped to 0.08...0.3 seconds.
 
 Persistence uses `UserDefaults` and can be injected for tests.
 
@@ -52,12 +52,48 @@ The app delegate delays HUD presentation using the configured stability delay,
 but does not restart the timer while repeated OCR results report the same
 candidate.
 
+HUD background is one direct choice: dark glass, light glass, or solid.
+Dark glass is the default. Glass uses the native AppKit popover material behind
+the window, with the selected light or dark appearance forced on the material.
+Solid background defaults to black at 80% opacity. Text color is independent,
+and the active background style owns its own opacity preference.
+
+### Window title
+
+The selected page title lives in the unified toolbar as a capsule. macOS 26
+uses the system Liquid Glass effect; earlier supported systems use the same
+shape with regular material. The title bar and surrounding content remain
+transparent, while the capsule keeps the title legible as settings content
+scrolls underneath.
+
+### About page
+
+Keep the app version in the Glint identity block near the product tagline.
+Present macOS and processor requirements as a separate system-requirements
+row, not as page-level metadata or a current-environment label. Product copy
+describes the benefit to the user rather than the candidate-reading internals.
+
+### Permissions page
+
+A granted accessibility permission renders as read-only status. When permission
+is missing, show one primary action: request access before the first prompt,
+then open System Settings afterward. The app refreshes permission state when it
+becomes active and starts monitoring automatically when access changes from
+missing to granted; do not require a separate refresh or restart.
+
 ## Error handling
 
 - Empty plugin lists render as “未安装”.
 - Plugin refresh has an explicit loading state.
 - HUD preview is clamped to an available screen and does not activate the app.
 - Invalid persisted settings fall back to automatic position and 200 ms delay.
+
+## Responsive width
+
+- The overview column uses one fluid maximum of 1,200 pt and remains centered
+  within the detail area; it does not introduce breakpoint-based rearrangement.
+- Narrow windows shrink to available width, while wide/full-screen windows use
+  the additional space without allowing cards to span an unbounded display.
 
 ## Testing
 

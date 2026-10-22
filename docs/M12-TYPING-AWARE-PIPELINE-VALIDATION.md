@@ -11,7 +11,7 @@
 - 新候选到达时保留 HUD 外壳、取消旧任务、将旧译文降为淡化占位，并通过 revision 丢弃迟到结果。
 - `AppDelegate` 已移除翻译完成后的固定 HUD 等待。
 - “显示延迟”改为“候选停留”，使用新键 `display.candidateDwellDuration`，表示候选稳定多久后触发翻译。
-- 候选停留使用新键 `display.candidateDwellDuration`，默认 120ms，范围 50–300ms；开发阶段不读取旧键。
+- 候选停留使用新键 `display.candidateDwellDuration`，默认 120ms，范围 80–300ms；开发阶段不读取旧键。
 - 权限状态检查从每个轮询周期降为最多每秒一次。
 - 通过 `AXSelectedTextRange` 与 `AXTextInputMarkedRange` 排除真实文字选区，同时保留拼音组合输入。
 - HUD 复用持久 `NSPanel`/`NSHostingView`，使用淡入、淡出、原位文字交叉淡化和动画代次。

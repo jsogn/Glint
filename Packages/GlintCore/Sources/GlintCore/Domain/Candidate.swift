@@ -83,6 +83,15 @@ public struct TranslationResult: Sendable, Equatable {
         return selected.joined(separator: " · ")
     }
 
+    public var primaryOnly: TranslationResult {
+        guard options.count > 1 else { return self }
+        return TranslationResult(
+            options: Array(options.prefix(1)),
+            source: source,
+            confidence: confidence
+        )
+    }
+
     private static func dedupeKey(_ text: String) -> String {
         let allowed = CharacterSet.alphanumerics
         return String(

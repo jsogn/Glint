@@ -115,7 +115,7 @@ public final class HUDController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = false
+        panel.hasShadow = true
         panel.ignoresMouseEvents = true
         panel.isReleasedWhenClosed = false
         panel.alphaValue = 0

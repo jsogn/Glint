@@ -1,5 +1,13 @@
 import Foundation
 
+public struct DictionaryPrefetchResult: Sendable {
+    public let result: TranslationResult?
+
+    public init(result: TranslationResult?) {
+        self.result = result
+    }
+}
+
 public struct SmartRouter: Sendable {
     private let dictionary: any DictionaryEngine
     private let translation: any TranslationEngine
@@ -11,7 +19,9 @@ public struct SmartRouter: Sendable {
 
     public func route(
         _ candidate: Candidate,
-        mode: TranslationMode = .dictionaryFirst
+        mode: TranslationMode = .dictionaryFirst,
+        includesAlternatives: Bool = true,
+        dictionaryPrefetch: Task<DictionaryPrefetchResult, Never>? = nil
     ) async throws -> TranslationResult? {
         try Task.checkCancellation()
         guard !candidate.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -20,7 +30,10 @@ public struct SmartRouter: Sendable {
 
         switch mode {
         case .dictionaryFirst:
-            if let dictionaryResult = try? await dictionary.lookup(candidate) {
+            if let dictionaryResult = await dictionaryResult(
+                for: candidate,
+                prefetch: dictionaryPrefetch
+            ) {
                 return dictionaryResult
             }
             try Task.checkCancellation()
@@ -28,9 +41,11 @@ public struct SmartRouter: Sendable {
         case .modelFirst:
             if let modelResult = try? await translation.translate(candidate),
                !modelResult.options.isEmpty {
-                guard candidate.kind != .sentence,
-                      let dictionaryResult = try? await dictionary.lookup(
-                          candidate
+                guard includesAlternatives,
+                      candidate.kind != .sentence,
+                      let dictionaryResult = await dictionaryResult(
+                          for: candidate,
+                          prefetch: dictionaryPrefetch
                       ),
                       !dictionaryResult.options.isEmpty else {
                     return modelResult
@@ -41,8 +56,33 @@ public struct SmartRouter: Sendable {
                 )
             }
             try Task.checkCancellation()
-            return try await dictionary.lookup(candidate)
+            return await dictionaryResult(
+                for: candidate,
+                prefetch: dictionaryPrefetch
+            )
         }
+    }
+
+    public func prefetchDictionary(
+        _ candidate: Candidate
+    ) async -> DictionaryPrefetchResult {
+        guard !Task.isCancelled else {
+            return DictionaryPrefetchResult(result: nil)
+        }
+        let result = try? await dictionary.lookup(candidate)
+        return DictionaryPrefetchResult(
+            result: Task.isCancelled ? nil : result
+        )
+    }
+
+    private func dictionaryResult(
+        for candidate: Candidate,
+        prefetch: Task<DictionaryPrefetchResult, Never>?
+    ) async -> TranslationResult? {
+        if let prefetch {
+            return await prefetch.value.result
+        }
+        return try? await dictionary.lookup(candidate)
     }
 
     private static func modelFirstMerged(

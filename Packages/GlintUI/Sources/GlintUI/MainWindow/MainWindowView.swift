@@ -23,7 +23,11 @@ public struct MainWindowView: View {
             detailView
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .navigationTitle(pageTitle)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                PageTitleCapsule(title: pageTitle)
+            }
+        }
         .task {
             await model.refreshInstalledPlugins()
         }
@@ -48,6 +52,31 @@ public struct MainWindowView: View {
             PermissionsPage(model: model)
         case .about:
             AboutPage()
+        }
+    }
+}
+
+private struct PageTitleCapsule: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.headline)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .modifier(PageTitleBackground())
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+private struct PageTitleBackground: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            // The toolbar supplies its shared Liquid Glass background.
+            content
+        } else {
+            content.background(.regularMaterial, in: Capsule())
         }
     }
 }
@@ -182,7 +211,7 @@ private struct TranslationSettingsPage: View {
     let model: MainWindowModel
 
     var body: some View {
-        PageContainer(subtitle: "控制词典和翻译模型的优先顺序。") {
+        PageContainer {
             SettingsCard("翻译策略") {
                 VStack(alignment: .leading, spacing: 12) {
                     Grid(
@@ -211,10 +240,8 @@ private struct TranslationSettingsPage: View {
                             .pickerStyle(.segmented)
                             .frame(width: 240, alignment: .trailing)
                             .gridCellAnchor(.trailing)
+                            .accessibilityHint(model.translationMode.explanation)
                         }
-
-                        Divider()
-                            .gridCellColumns(3)
                     }
                     .frame(maxWidth: .infinity)
 
@@ -239,7 +266,7 @@ private struct DisplayPage: View {
     }
 
     var body: some View {
-        PageContainer(subtitle: "控制翻译显示何时出现、出现在哪里。") {
+        PageContainer {
             SettingsCard("位置与触发") {
                 VStack(spacing: 0) {
                     segmentedSetting(
@@ -276,40 +303,30 @@ private struct DisplayPage: View {
                             preferences.candidateDwellDuration * 1000
                         ),
                         binding: $preferences.candidateDwellDuration,
-                        range: 0.05...0.3,
+                        range: 0.08...0.3,
                         step: 0.01,
-                        caption: "连续输入时不翻译；候选停留达到该时长后触发。"
+                        caption: "连续输入时不翻译，候选停留达到该时长后触发。"
                     )
                 }
             }
             SettingsCard("外观") {
                 VStack(spacing: 0) {
                     segmentedSetting(
-                        title: "配色",
-                        selection: $preferences.hudAppearanceMode,
-                        caption: preferences.hudAppearanceMode == .system
-                            ? "跟随 macOS 的浅色和深色外观。"
-                            : "自定义颜色会覆盖当前的系统外观。"
+                        title: "背景",
+                        selection: $preferences.hudBackgroundStyle,
+                        caption: preferences.hudBackgroundStyle == .solid
+                            ? "纯色背景默认黑色、80% 不透明度。"
+                            : nil
                     ) {
-                        ForEach(HUDAppearanceMode.allCases, id: \.self) {
-                            mode in
-                            Text(mode.title).tag(mode)
+                        ForEach(HUDBackgroundStyle.allCases, id: \.self) {
+                            style in
+                            Text(style.title).tag(style)
                         }
                     }
 
-                    if preferences.hudAppearanceMode == .custom {
-                        Divider()
-                        colorSetting(
-                            title: "文字颜色",
-                            color: Binding(
-                                get: {
-                                    preferences.hudTextColor.color
-                                },
-                                set: {
-                                    preferences.hudTextColor = HUDColor($0)
-                                }
-                            )
-                        )
+                    Divider()
+
+                    if preferences.hudBackgroundStyle == .solid {
                         colorSetting(
                             title: "背景颜色",
                             color: Binding(
@@ -321,22 +338,32 @@ private struct DisplayPage: View {
                                 }
                             )
                         )
-                        if preferences.hudAppearance
-                            .customColorsHaveLowContrast {
-                            HStack(alignment: .top, spacing: 6) {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .accessibilityHidden(true)
-                                Text(
-                                    "当前配色对比度低于 4.5:1；半透明背景还会受到下方内容影响。"
-                                )
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .padding(.bottom, 10)
-                        }
                     }
 
-                    Divider()
+                    colorSetting(
+                        title: "文字颜色",
+                        color: Binding(
+                            get: {
+                                preferences.hudAppearance
+                                    .effectiveTextColor.color
+                            },
+                            set: {
+                                preferences.setHUDTextColor(HUDColor($0))
+                            }
+                        )
+                    )
+
+                    sliderSetting(
+                        title: "背景不透明度",
+                        value: String(
+                            format: "%.0f%%",
+                            preferences.hudOpacity * 100
+                        ),
+                        binding: $preferences.hudOpacity,
+                        range: 0.4...1.0,
+                        step: 0.02,
+                        caption: "只调整显示背景，不改变文字清晰度。"
+                    )
 
                     sliderSetting(
                         title: "文字大小",
@@ -368,17 +395,6 @@ private struct DisplayPage: View {
                         binding: $preferences.candidateSpacing,
                         range: 0...24,
                         step: 1
-                    )
-                    sliderSetting(
-                        title: "背景透明度",
-                        value: String(
-                            format: "%.0f%%",
-                            preferences.hudOpacity * 100
-                        ),
-                        binding: $preferences.hudOpacity,
-                        range: 0.4...1.0,
-                        step: 0.02,
-                        caption: "透明度只影响显示背景，文字保持清晰。"
                     )
                     HStack {
                         Spacer()
@@ -886,9 +902,9 @@ extension CandidateTranslationScope {
     var explanation: String {
         switch self {
         case .selected:
-            "只显示当前高亮候选的英文；展开更多候选后隐藏。"
+            "只显示当前高亮候选的英文，展开更多候选后隐藏。"
         case .row:
-            "仅在单行候选栏显示首栏英文；展开更多候选后隐藏。"
+            "仅在单行候选栏显示首栏英文，展开更多候选后隐藏。"
         }
     }
 }
@@ -897,41 +913,42 @@ private struct PermissionsPage: View {
     let model: MainWindowModel
 
     var body: some View {
-        PageContainer(subtitle: "全局生效，只读取系统候选，不读取输入框正文。") {
+        PageContainer {
             SettingsCard("系统权限") {
                 PermissionStatusRow(
                     title: "辅助功能",
                     symbol: "accessibility",
+                    detail: "读取输入法候选，不读取输入框正文。",
                     granted: model.accessibilityGranted
                 )
-                Divider()
-                HStack {
-                    if hasMissingPermissions {
+
+                if hasMissingPermissions {
+                    Divider()
+
+                    HStack(spacing: 12) {
                         Button {
-                            model.requestPermissions()
+                            performPermissionAction()
                         } label: {
-                            Label(permissionRequestTitle, systemImage: "lock.open")
+                            Label(
+                                permissionActionTitle,
+                                systemImage: permissionActionSymbol
+                            )
                         }
                         .buttonStyle(.borderedProminent)
+
+                        if !model.hasRequestedAccessibilityPermission {
+                            Button("直接打开系统设置…") {
+                                model.openAccessibilitySettings()
+                            }
+                            .buttonStyle(.link)
+                        }
+
+                        Spacer()
                     }
-                    Spacer()
-                    Button("重新检查") { model.refreshPermissions() }
-                }
-                if hasMissingPermissions {
-                    Text("点击后会请求系统加入权限列表。授权完成后，如提示未消失，请重新启动 Glint。")
+
+                    Text(permissionGuidance)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Divider()
-                    HStack {
-                        Text("系统未自动显示 Glint 时")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Button("辅助功能设置") {
-                            openPrivacyPane("Privacy_Accessibility")
-                        }
-                    }
-                    .controlSize(.small)
                 }
             }
             PrivacyNoticeCard()
@@ -941,40 +958,63 @@ private struct PermissionsPage: View {
         }
     }
 
-    private func openPrivacyPane(_ anchor: String) {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(anchor)") else {
-            return
+    private func performPermissionAction() {
+        if model.hasRequestedAccessibilityPermission {
+            model.openAccessibilitySettings()
+        } else {
+            model.requestPermissions()
         }
-        NSWorkspace.shared.open(url)
     }
 
     private var hasMissingPermissions: Bool {
         !model.accessibilityGranted
     }
 
-    private var permissionRequestTitle: String {
-        "授权辅助功能"
+    private var permissionActionTitle: String {
+        model.hasRequestedAccessibilityPermission
+            ? "打开辅助功能设置"
+            : "授权辅助功能"
+    }
+
+    private var permissionActionSymbol: String {
+        model.hasRequestedAccessibilityPermission ? "gearshape" : "lock.open"
+    }
+
+    private var permissionGuidance: String {
+        if model.hasRequestedAccessibilityPermission {
+            return "在系统设置中开启 Glint，返回后会自动更新状态。"
+        }
+        return "macOS 会请求你允许 Glint 使用辅助功能。"
     }
 }
 
 private struct PermissionStatusRow: View {
     let title: String
     let symbol: String
+    let detail: String
     let granted: Bool
 
     var body: some View {
         HStack(spacing: 10) {
-            Label {
+            Image(systemName: symbol)
+                .foregroundStyle(.secondary)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-            } icon: {
-                Image(systemName: symbol)
+                Text(detail)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                    .frame(width: 18)
             }
             Spacer()
-            Text(granted ? "已授权" : "待授权")
-                .font(.callout)
+            Label(
+                granted ? "已授权" : "需要授权",
+                systemImage: granted
+                    ? "checkmark.circle.fill"
+                    : "exclamationmark.circle.fill"
+            )
                 .foregroundStyle(granted ? Color.secondary : Color.orange)
+                .labelStyle(.titleAndIcon)
+                .font(.callout)
         }
         .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
@@ -984,10 +1024,10 @@ private struct PermissionStatusRow: View {
 private struct PrivacyNoticeCard: View {
     var body: some View {
         SettingsCard("隐私", systemImage: "lock.shield") {
-            Text("不保存候选文本、翻译结果或输入历史。")
+            Text("Glint 不保存候选文本、翻译结果或输入历史。")
             Text(
-                "候选通过 macOS 辅助功能读取；本地翻译模型不联网。"
-                    + "启用 OpenAI 兼容接口时，候选文本会发送到所配置的服务。"
+                "本地翻译不会联网。只有启用 OpenAI 兼容接口时，"
+                    + "候选文本才会发送到你配置的服务。"
             )
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -1005,27 +1045,42 @@ private struct AboutPage: View {
     }
 
     var body: some View {
-        PageContainer(subtitle: "macOS 14+ · Apple Silicon · \(version)") {
+        PageContainer {
             SettingsCard("Glint") {
-                HStack(alignment: .top, spacing: 14) {
-                    Image(nsImage: NSApplication.shared.applicationIconImage)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
-                        .frame(width: 48, height: 48)
-                        .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top, spacing: 14) {
+                        Image(nsImage: NSApplication.shared.applicationIconImage)
+                            .resizable()
+                            .interpolation(.high)
+                            .scaledToFit()
+                            .frame(width: 48, height: 48)
+                            .accessibilityHidden(true)
 
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("在你的输入旁，看到英文。")
-                            .font(.title3.weight(.semibold))
-                        Text(
-                            "Glint 读取苹果拼音候选中的焦点内容，"
-                                + "在旁边显示一行英文，让日常打字自然成为英语学习。"
-                        )
-                        .foregroundStyle(.secondary)
-                        Link("查看 GitHub 项目", destination: repositoryURL)
-                            .font(.callout)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("在输入时显示对应的英文，将学习融入日常。")
+                                .font(.title3.weight(.semibold))
+                            Text("版本 \(version)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(
+                                "在中文拼音候选旁显示简洁的英文提示，"
+                                    + "查词不必切换应用，也不会打断思路。"
+                            )
+                            .foregroundStyle(.secondary)
+                            Link("查看 GitHub 项目", destination: repositoryURL)
+                                .font(.callout)
+                        }
                     }
+
+                    Divider()
+
+                    HStack {
+                        Text("系统要求")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("macOS 14+ · Apple 芯片")
+                    }
+                    .font(.callout)
                 }
             }
             PrivacyNoticeCard()
@@ -1099,16 +1154,19 @@ private struct HUDPreview: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .foregroundStyle(.white)
-                .background(.blue, in: Capsule())
+                .background(Color.accentColor, in: Capsule())
             Text("你好吗")
             Text("你号")
         }
         .font(.system(size: 14, weight: .medium))
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(.regularMaterial, in: Capsule())
+        .background {
+            HUDNativeMaterialBackground()
+                .clipShape(Capsule())
+        }
         .overlay {
-            Capsule().stroke(.separator, lineWidth: 1)
+            Capsule().strokeBorder(.separator, lineWidth: 1)
         }
     }
 }

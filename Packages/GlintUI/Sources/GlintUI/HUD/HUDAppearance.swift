@@ -1,14 +1,16 @@
 import AppKit
 import SwiftUI
 
-public enum HUDAppearanceMode: String, CaseIterable, Sendable {
-    case system
-    case custom
+public enum HUDBackgroundStyle: String, CaseIterable, Sendable {
+    case darkGlass
+    case lightGlass
+    case solid
 
     public var title: String {
         switch self {
-        case .system: return "跟随系统"
-        case .custom: return "自定义"
+        case .darkGlass: return "深色玻璃"
+        case .lightGlass: return "浅色玻璃"
+        case .solid: return "纯色"
         }
     }
 }
@@ -69,24 +71,6 @@ public struct HUDColor: Codable, Equatable, Sendable {
         )
     }
 
-    public func contrastRatio(with other: HUDColor) -> Double {
-        let lighter = max(relativeLuminance, other.relativeLuminance)
-        let darker = min(relativeLuminance, other.relativeLuminance)
-        return (lighter + 0.05) / (darker + 0.05)
-    }
-
-    private var relativeLuminance: Double {
-        0.2126 * Self.linearized(red)
-            + 0.7152 * Self.linearized(green)
-            + 0.0722 * Self.linearized(blue)
-    }
-
-    private static func linearized(_ component: Double) -> Double {
-        component <= 0.04045
-            ? component / 12.92
-            : pow((component + 0.055) / 1.055, 2.4)
-    }
-
     private static func clamp(_ value: Double) -> Double {
         guard value.isFinite else { return 0 }
         return min(max(value, 0), 1)
@@ -99,6 +83,11 @@ public struct HUDAppearance: Equatable, Sendable {
         green: 0.95,
         blue: 0.97
     )
+    public static let defaultLightGlassTextColor = HUDColor(
+        red: 0.08,
+        green: 0.08,
+        blue: 0.09
+    )
     public static let defaultBackgroundColor = HUDColor(
         red: 0.11,
         green: 0.11,
@@ -107,23 +96,26 @@ public struct HUDAppearance: Equatable, Sendable {
     public static let fontSizeRange = 12.0...18.0
     public static let `default` = HUDAppearance()
 
-    public var mode: HUDAppearanceMode
+    public var backgroundStyle: HUDBackgroundStyle
     public var textColor: HUDColor
     public var backgroundColor: HUDColor
+    public var usesCustomTextColor: Bool
     public var fontSize: Double
     public var density: HUDDensity
 
     public init(
-        mode: HUDAppearanceMode = .system,
+        backgroundStyle: HUDBackgroundStyle = .darkGlass,
         textColor: HUDColor = Self.defaultTextColor,
         backgroundColor: HUDColor = Self.defaultBackgroundColor,
+        usesCustomTextColor: Bool = false,
         fontSize: Double = 14,
         density: HUDDensity = .standard
     ) {
         let validFontSize = fontSize.isFinite ? fontSize : 14
-        self.mode = mode
+        self.backgroundStyle = backgroundStyle
         self.textColor = textColor
         self.backgroundColor = backgroundColor
+        self.usesCustomTextColor = usesCustomTextColor
         self.fontSize = min(
             max(validFontSize, Self.fontSizeRange.lowerBound),
             Self.fontSizeRange.upperBound
@@ -131,24 +123,24 @@ public struct HUDAppearance: Equatable, Sendable {
         self.density = density
     }
 
+    public var effectiveTextColor: HUDColor {
+        if usesCustomTextColor {
+            return textColor
+        }
+        if backgroundStyle == .lightGlass {
+            return Self.defaultLightGlassTextColor
+        }
+        return Self.defaultTextColor
+    }
+
     public var resolvedTextColor: Color {
-        mode == .custom ? textColor.color : Color.primary
+        effectiveTextColor.color
     }
 
     public var resolvedSecondaryTextColor: Color {
-        mode == .custom ? textColor.color.opacity(0.72) : Color.secondary
+        effectiveTextColor.color.opacity(0.72)
     }
 
-    public var resolvedBackgroundColor: Color {
-        mode == .custom
-            ? backgroundColor.color
-            : Color(nsColor: .controlBackgroundColor)
-    }
-
-    public var customColorsHaveLowContrast: Bool {
-        mode == .custom
-            && textColor.contrastRatio(with: backgroundColor) < 4.5
-    }
 }
 
 struct HUDLayoutMetrics: Equatable {

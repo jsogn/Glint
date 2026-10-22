@@ -14,30 +14,18 @@ final class HUDAppearanceTests: XCTestCase {
         XCTAssertEqual(color.blue, 0)
     }
 
-    func testDefaultCustomColorsMeetContrastTarget() {
-        let appearance = HUDAppearance(
-            mode: .custom,
-            textColor: HUDAppearance.defaultTextColor,
-            backgroundColor: HUDAppearance.defaultBackgroundColor
-        )
+    func testAutomaticTextColorMatchesSelectedGlassAppearance() {
+        let darkGlass = HUDAppearance()
+        let lightGlass = HUDAppearance(backgroundStyle: .lightGlass)
 
-        XCTAssertGreaterThanOrEqual(
-            appearance.textColor.contrastRatio(
-                with: appearance.backgroundColor
-            ),
-            4.5
+        XCTAssertEqual(
+            darkGlass.effectiveTextColor,
+            HUDAppearance.defaultTextColor
         )
-        XCTAssertFalse(appearance.customColorsHaveLowContrast)
-    }
-
-    func testLowContrastCustomColorsAreDetected() {
-        let appearance = HUDAppearance(
-            mode: .custom,
-            textColor: HUDColor(red: 0.5, green: 0.5, blue: 0.5),
-            backgroundColor: HUDColor(red: 0.6, green: 0.6, blue: 0.6)
+        XCTAssertEqual(
+            lightGlass.effectiveTextColor,
+            HUDAppearance.defaultLightGlassTextColor
         )
-
-        XCTAssertTrue(appearance.customColorsHaveLowContrast)
     }
 
     func testFontSizeIsClampedToSupportedRange() {

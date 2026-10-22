@@ -18,4 +18,20 @@ final class TranslationResultTests: XCTestCase {
         XCTAssertEqual(result.displayText, "design · layout · plan")
         XCTAssertEqual(result.options.count, 3)
     }
+
+    func testPrimaryOnlyKeepsHighestRankedOption() {
+        let result = TranslationResult(
+            options: [
+                TranslationOption(text: "primary", score: 0.8),
+                TranslationOption(text: "alternative", score: 0.7),
+            ],
+            source: .translation,
+            confidence: 0.8
+        )
+
+        XCTAssertEqual(result.primaryOnly.text, "primary")
+        XCTAssertEqual(result.primaryOnly.options.count, 1)
+        XCTAssertEqual(result.primaryOnly.source, result.source)
+        XCTAssertEqual(result.primaryOnly.confidence, result.confidence)
+    }
 }

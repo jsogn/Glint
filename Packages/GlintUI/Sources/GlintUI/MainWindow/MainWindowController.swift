@@ -17,7 +17,7 @@ public final class MainWindowController: NSWindowController {
             defer: false
         )
         window.title = "Glint"
-        window.titleVisibility = .visible
+        window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.toolbarStyle = .unified
         window.minSize = NSSize(width: 960, height: 640)

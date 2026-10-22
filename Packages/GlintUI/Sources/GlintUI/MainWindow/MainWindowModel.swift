@@ -33,6 +33,7 @@ struct CatalogUpdatePolicy {
 public final class MainWindowModel {
     public var isMonitoring = false
     public var accessibilityGranted = false
+    public var hasRequestedAccessibilityPermission = false
     public var statusText = ""
     public private(set) var installedPlugins: [PluginManifest] = []
     public private(set) var isLoadingPlugins = false
@@ -89,6 +90,8 @@ public final class MainWindowModel {
     public var refreshPermissionsAction: @MainActor () -> Void = {}
     @ObservationIgnored
     public var requestPermissionsAction: @MainActor () -> Void = {}
+    @ObservationIgnored
+    public var openAccessibilitySettingsAction: @MainActor () -> Void = {}
     @ObservationIgnored
     public var activateTranslationModelAction:
         @MainActor (String) async -> String? = { _ in nil }
@@ -187,6 +190,10 @@ public final class MainWindowModel {
 
     public func requestPermissions() {
         requestPermissionsAction()
+    }
+
+    public func openAccessibilitySettings() {
+        openAccessibilitySettingsAction()
     }
 
     public func refreshInstalledPlugins() async {

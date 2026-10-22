@@ -77,6 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 forKey: Self.initialPermissionRequestKey
             )
         }
+        windowModel.hasRequestedAccessibilityPermission = alreadyRequested
         if permissionsGranted {
             startMonitoring()
         } else if !alreadyRequested {
@@ -88,7 +89,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        let wasGranted = windowModel.accessibilityGranted
         refreshPermissionState()
+        if !wasGranted, windowModel.accessibilityGranted {
+            windowModel.statusText = ""
+            if !windowModel.isMonitoring {
+                startMonitoring()
+            }
+        }
         if permissionRequestPending {
             continuePermissionRequest()
         }
@@ -174,6 +182,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         windowModel.requestPermissionsAction = { [weak self] in
             self?.beginPermissionRequest()
+        }
+        windowModel.openAccessibilitySettingsAction = { [weak self] in
+            self?.openAccessibilitySettings()
         }
         windowModel.activateTranslationModelAction = { [weak self] modelID in
             guard let self else { return "翻译运行时不可用" }
@@ -484,6 +495,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             startMonitoring()
             return
         }
+        if windowModel.hasRequestedAccessibilityPermission {
+            openAccessibilitySettings()
+            windowModel.statusText =
+                "请在“系统设置 › 隐私与安全性 › 辅助功能”中开启 Glint。"
+            return
+        }
 
         permissionRequestPending = true
         permissionRequestWasIssued = false
@@ -504,12 +521,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         permissionRequestWasIssued = true
+        windowModel.hasRequestedAccessibilityPermission = true
         windowModel.statusText = "请在系统提示中允许 Glint 使用辅助功能。"
         FocusMonitor.requestAccessibility()
         refreshPermissionState()
         if windowModel.accessibilityGranted {
             continuePermissionRequest()
         }
+    }
+
+    private func openAccessibilitySettings() {
+        guard let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        ) else {
+            return
+        }
+        NSWorkspace.shared.open(url)
     }
 
     @objc private func quit() {

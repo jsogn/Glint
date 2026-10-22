@@ -117,6 +117,26 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(requestCount, 1)
     }
 
+    @MainActor
+    func testOpenAccessibilitySettingsForwardsToAction() throws {
+        let suiteName = "GlintMainWindowModelTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let model = MainWindowModel(
+            catalogURL: nil,
+            defaults: defaults
+        )
+        var openSettingsCount = 0
+        model.openAccessibilitySettingsAction = {
+            openSettingsCount += 1
+        }
+
+        model.openAccessibilitySettings()
+
+        XCTAssertEqual(openSettingsCount, 1)
+    }
+
     func testCatalogUpdatePolicyHonorsSuccessAndFailureCooldowns() {
         let now = Date(timeIntervalSince1970: 1_000_000)
 

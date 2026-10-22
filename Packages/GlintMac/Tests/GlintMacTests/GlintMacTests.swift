@@ -80,6 +80,20 @@ private struct ImmediateTranslation: TranslationEngine {
     }
 }
 
+private struct MultiOptionTranslation: TranslationEngine {
+    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        TranslationResult(
+            options: [
+                TranslationOption(text: "primary", score: 1),
+                TranslationOption(text: "alternative", score: 0.8),
+                TranslationOption(text: "secondary", score: 0.6),
+            ],
+            source: .translation,
+            confidence: 0.9
+        )
+    }
+}
+
 private actor ParallelTranslation: TranslationEngine {
     private var activeCount = 0
     private var peakActiveCount = 0
@@ -192,6 +206,118 @@ final class GlintMacTests: XCTestCase {
         )
         XCTAssertEqual(presentations.map(\.index), [0, 1, 2])
         XCTAssertEqual(presentations[1].isSelected, true)
+    }
+
+    func testRowPresentationUsesPrimaryMeaningOnly() async {
+        let presentations = await MonitoringController.translateCandidates(
+            [
+                Candidate(
+                    text: "方案",
+                    kind: .word,
+                    confidence: 1
+                ),
+            ],
+            selectedIndex: 0,
+            mode: .modelFirst,
+            configurationToken: "model-a",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: MultiOptionTranslation()
+            ),
+            memo: TranslationMemo(),
+            displayOptionLimit: MonitoringController.displayOptionLimit(
+                for: .row
+            )
+        )
+
+        XCTAssertEqual(
+            presentations.first?.translation,
+            "primary"
+        )
+    }
+
+    func testPrefetchDictionaryDependsOnModeAndScope() {
+        XCTAssertTrue(
+            MonitoringController.shouldPrefetchDictionary(
+                mode: .dictionaryFirst,
+                scope: .row
+            )
+        )
+        XCTAssertTrue(
+            MonitoringController.shouldPrefetchDictionary(
+                mode: .dictionaryFirst,
+                scope: .selected
+            )
+        )
+        XCTAssertTrue(
+            MonitoringController.shouldPrefetchDictionary(
+                mode: .modelFirst,
+                scope: .selected
+            )
+        )
+        XCTAssertFalse(
+            MonitoringController.shouldPrefetchDictionary(
+                mode: .modelFirst,
+                scope: .row
+            )
+        )
+    }
+
+    func testCachedPrefetchAvoidsTranslationRouting() async {
+        let cachedResult = TranslationResult(
+            text: "cached",
+            source: .translation,
+            confidence: 1
+        )
+        let presentations = await MonitoringController.translateCandidates(
+            [
+                Candidate(
+                    text: "方案",
+                    kind: .word,
+                    confidence: 1
+                ),
+            ],
+            selectedIndex: 0,
+            mode: .modelFirst,
+            configurationToken: "model-a",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            memo: TranslationMemo(),
+            displayOptionLimit: 1,
+            cachedPrefetchResults: [0: cachedResult]
+        )
+
+        XCTAssertEqual(presentations.first?.translation, "cached")
+    }
+
+    func testSelectedPresentationKeepsMultipleMeanings() async {
+        let presentations = await MonitoringController.translateCandidates(
+            [
+                Candidate(
+                    text: "方案",
+                    kind: .word,
+                    confidence: 1
+                ),
+            ],
+            selectedIndex: 0,
+            mode: .modelFirst,
+            configurationToken: "model-a",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: MultiOptionTranslation()
+            ),
+            memo: TranslationMemo(),
+            displayOptionLimit: MonitoringController.displayOptionLimit(
+                for: .selected
+            )
+        )
+
+        XCTAssertEqual(
+            presentations.first?.translation,
+            "primary · alternative · secondary"
+        )
     }
 
     func testRowTranslationStartsAllCandidatesConcurrently() async {

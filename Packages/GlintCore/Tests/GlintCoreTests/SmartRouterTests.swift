@@ -29,6 +29,24 @@ private struct FailingTranslator: TranslationEngine {
     }
 }
 
+private actor CountingDictionary: DictionaryEngine {
+    let result: TranslationResult?
+    private var count = 0
+
+    init(result: TranslationResult?) {
+        self.result = result
+    }
+
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        count += 1
+        return result
+    }
+
+    func lookupCount() -> Int {
+        count
+    }
+}
+
 final class SmartRouterTests: XCTestCase {
     func testDictionaryFirstUsesDictionaryWhenAvailable() async throws {
         let result = TranslationResult(
@@ -84,6 +102,33 @@ final class SmartRouterTests: XCTestCase {
         XCTAssertEqual(output, result)
     }
 
+    func testDictionaryPrefetchIsReusedByRoute() async throws {
+        let result = TranslationResult(
+            text: "hello",
+            source: .dictionary,
+            confidence: 0.95
+        )
+        let dictionary = CountingDictionary(result: result)
+        let router = SmartRouter(
+            dictionary: dictionary,
+            translation: MockTranslator(result: nil)
+        )
+        let candidate = Candidate(text: "你好", kind: .word)
+        let prefetch = Task {
+            await router.prefetchDictionary(candidate)
+        }
+
+        let output = try await router.route(
+            candidate,
+            mode: .dictionaryFirst,
+            dictionaryPrefetch: prefetch
+        )
+
+        XCTAssertEqual(output, result)
+        let lookupCount = await dictionary.lookupCount()
+        XCTAssertEqual(lookupCount, 1)
+    }
+
     func testModelFirstKeepsModelFirstAndAppendsDictionaryOptions() async throws {
         let dictionaryResult = TranslationResult(
             text: "dictionary result",
@@ -113,6 +158,38 @@ final class SmartRouterTests: XCTestCase {
         )
         XCTAssertEqual(output?.source, .translation)
         XCTAssertEqual(output?.confidence, modelResult.confidence)
+    }
+
+    func testModelFirstPrimaryOnlySkipsDictionaryAlternatives() async throws {
+        let modelResult = TranslationResult(
+            options: [
+                TranslationOption(text: "model result", score: 0.8),
+                TranslationOption(text: "model alternative", score: 0.7),
+            ],
+            source: .translation,
+            confidence: 0.8
+        )
+        let dictionary = CountingDictionary(
+            result: TranslationResult(
+                text: "dictionary result",
+                source: .dictionary,
+                confidence: 0.95
+            )
+        )
+        let router = SmartRouter(
+            dictionary: dictionary,
+            translation: MockTranslator(result: modelResult)
+        )
+
+        let output = try await router.route(
+            Candidate(text: "方案", kind: .word),
+            mode: .modelFirst,
+            includesAlternatives: false
+        )
+
+        XCTAssertEqual(output, modelResult)
+        let lookupCount = await dictionary.lookupCount()
+        XCTAssertEqual(lookupCount, 0)
     }
 
     func testModelFirstSkipsDictionaryForSentence() async throws {

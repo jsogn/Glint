@@ -79,7 +79,7 @@ struct OverviewPage: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
             }
-            .frame(maxWidth: 920, alignment: .leading)
+            .frame(maxWidth: 1_200, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.horizontal, 30)
             .padding(.top, 10)
@@ -172,7 +172,11 @@ private struct OverviewStatusCard: View {
 
     private func primaryAction() {
         if missingPermissionText != nil {
-            model.requestPermissions()
+            if model.hasRequestedAccessibilityPermission {
+                model.openAccessibilitySettings()
+            } else {
+                model.requestPermissions()
+            }
         } else if model.isMonitoring {
             model.stopMonitoring()
         } else {
@@ -182,14 +186,18 @@ private struct OverviewStatusCard: View {
 
     private var actionTitle: String {
         if missingPermissionText != nil {
-            return "继续授权"
+            return model.hasRequestedAccessibilityPermission
+                ? "打开系统设置"
+                : "授权辅助功能"
         }
         return model.isMonitoring ? "关闭翻译显示" : "开启翻译显示"
     }
 
     private var actionSymbol: String {
         if missingPermissionText != nil {
-            return "lock.open"
+            return model.hasRequestedAccessibilityPermission
+                ? "gearshape"
+                : "lock.open"
         }
         return model.isMonitoring ? "stop.circle" : "play.circle"
     }
@@ -207,7 +215,7 @@ private struct OverviewPipeline: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            stage(symbol: "keyboard", label: "输入", value: "苹果拼音")
+            stage(symbol: "keyboard", label: "输入", value: "中文拼音")
             arrow
             stage(
                 symbol: "text.cursor",
@@ -338,9 +346,9 @@ private enum OverviewRuntimeState {
     var detail: String {
         switch self {
         case .running:
-            "在苹果拼音候选栏旁显示单行英文释义。"
+            "在中文拼音候选栏旁显示单行英文提示。"
         case .paused:
-            "开启后，输入中文时会显示单行英文释义。"
+            "开启后，输入中文时会显示单行英文提示。"
         case .permissions(let message):
             message
         case .attention(let message):

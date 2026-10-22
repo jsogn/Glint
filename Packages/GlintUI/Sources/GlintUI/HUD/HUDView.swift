@@ -96,28 +96,13 @@ struct HUDItemRow: View {
                     ? metrics.multiItemVerticalPadding
                     : metrics.singleItemVerticalPadding
             )
-            .background {
-                Capsule()
-                    .fill(
-                        appearance.resolvedBackgroundColor
-                            .opacity(backgroundOpacity)
-                    )
-                    .animation(
-                        animatesBackground
-                            ? .easeOut(duration: 0.1)
-                            : nil,
-                        value: appearance
-                    )
-                    .animation(
-                        animatesBackground
-                            ? .easeOut(duration: 0.1)
-                            : nil,
-                        value: backgroundOpacity
-                    )
-            }
-            .overlay {
-                Capsule().stroke(.separator, lineWidth: 1)
-            }
+            .modifier(
+                HUDSurfaceStyle(
+                    appearance: appearance,
+                    backgroundOpacity: backgroundOpacity,
+                    animatesBackground: animatesBackground
+                )
+            )
     }
 
     static func minimumPanelWidth(
@@ -236,6 +221,86 @@ struct HUDItemRow: View {
             if item.isSelected, items.count > 1 {
                 Capsule().fill(Color.accentColor)
             }
+        }
+    }
+}
+
+private struct HUDSurfaceStyle: ViewModifier {
+    let appearance: HUDAppearance
+    let backgroundOpacity: Double
+    let animatesBackground: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if appearance.backgroundStyle != .solid {
+            content
+                .background {
+                    HUDNativeMaterialBackground(
+                        backgroundStyle: appearance.backgroundStyle
+                    )
+                        .opacity(backgroundOpacity)
+                        .clipShape(Capsule())
+                }
+                .overlay {
+                    Capsule().strokeBorder(.separator, lineWidth: 1)
+                }
+        } else {
+            content
+                .background {
+                    Capsule()
+                        .fill(
+                            appearance.backgroundColor.color
+                                .opacity(backgroundOpacity)
+                        )
+                        .animation(
+                            animatesBackground
+                                ? .easeOut(duration: 0.1)
+                                : nil,
+                            value: appearance
+                        )
+                        .animation(
+                            animatesBackground
+                                ? .easeOut(duration: 0.1)
+                                : nil,
+                            value: backgroundOpacity
+                        )
+                }
+                .overlay {
+                    Capsule().strokeBorder(.separator, lineWidth: 1)
+                }
+        }
+    }
+}
+
+struct HUDNativeMaterialBackground: NSViewRepresentable {
+    let backgroundStyle: HUDBackgroundStyle?
+
+    init(backgroundStyle: HUDBackgroundStyle? = nil) {
+        self.backgroundStyle = backgroundStyle
+    }
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .popover
+        view.blendingMode = .behindWindow
+        view.state = .active
+        view.isEmphasized = false
+        view.appearance = resolvedAppearance
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.appearance = resolvedAppearance
+    }
+
+    private var resolvedAppearance: NSAppearance? {
+        switch backgroundStyle {
+        case .darkGlass:
+            return NSAppearance(named: .darkAqua)
+        case .lightGlass:
+            return NSAppearance(named: .aqua)
+        case .solid, nil:
+            return nil
         }
     }
 }
