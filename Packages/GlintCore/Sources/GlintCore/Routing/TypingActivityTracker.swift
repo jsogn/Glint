@@ -59,7 +59,6 @@ public struct TypingActivityTracker: Sendable {
             )
         }
 
-        self.sample = nextSample
         consecutiveMatches += 1
         let elapsed = timestamp >= changeTimestamp
             ? timestamp - changeTimestamp

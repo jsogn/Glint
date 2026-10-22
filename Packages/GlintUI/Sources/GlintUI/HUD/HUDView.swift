@@ -55,6 +55,10 @@ public struct HUDView: View {
             animatesBackground: false,
             textOpacity: 1
         )
+        .frame(
+            maxWidth: .infinity,
+            alignment: .leading
+        )
     }
 }
 

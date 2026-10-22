@@ -87,6 +87,35 @@ final class TypingActivityTrackerTests: XCTestCase {
         )
     }
 
+    func testSmallHighlightMovementsCannotAccumulateInsideOneRevision() {
+        var tracker = TypingActivityTracker(positionTolerance: 2)
+
+        _ = tracker.observe(
+            text: "你好",
+            highlightRect: rect,
+            timestamp: 0,
+            dwellDurationNanoseconds: 100_000_000
+        )
+        XCTAssertEqual(
+            tracker.observe(
+                text: "你好",
+                highlightRect: rect.offsetBy(dx: 1.5, dy: 0),
+                timestamp: 24_000_000,
+                dwellDurationNanoseconds: 100_000_000
+            ),
+            .observing(revision: 1)
+        )
+        XCTAssertEqual(
+            tracker.observe(
+                text: "你好",
+                highlightRect: rect.offsetBy(dx: 3, dy: 0),
+                timestamp: 48_000_000,
+                dwellDurationNanoseconds: 100_000_000
+            ),
+            .changed(revision: 2)
+        )
+    }
+
     func testNanosecondsUntilDwellTargetsExactDeadline() {
         var tracker = TypingActivityTracker()
         let dwell: UInt64 = 50_000_000

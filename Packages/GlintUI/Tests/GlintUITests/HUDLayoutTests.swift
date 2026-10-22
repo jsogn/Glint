@@ -85,7 +85,7 @@ final class HUDLayoutTests: XCTestCase {
         )
     }
 
-    func testAnchoredPlacementIgnoresCandidateHorizontalJitter() {
+    func testExplicitHorizontalOriginKeepsPlacementStable() {
         let first = HUDLayout.placement(
             near: CGRect(x: 320, y: 400, width: 500, height: 32),
             panelSize: CGSize(width: 440, height: 36),
@@ -105,6 +105,81 @@ final class HUDLayoutTests: XCTestCase {
 
         XCTAssertEqual(first.frame.minX, 300, accuracy: 0.001)
         XCTAssertEqual(second.frame.minX, 300, accuracy: 0.001)
+    }
+
+    func testHUDHorizontalAnchorIgnoresSmallJitter() {
+        let anchor = HUDHorizontalAnchor.initial(
+            screenFrame: visibleFrame,
+            hudOriginX: 300,
+            candidateOriginX: 320
+        )
+
+        XCTAssertEqual(
+            anchor.resolvedHUDOriginX(candidateOriginX: 323),
+            300,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            anchor.following(candidateOriginX: 323),
+            anchor
+        )
+    }
+
+    func testHUDHorizontalAnchorFollowsMeaningfulCandidateMovement() {
+        let anchor = HUDHorizontalAnchor.initial(
+            screenFrame: visibleFrame,
+            hudOriginX: 300,
+            candidateOriginX: 320
+        )
+        let moved = anchor.following(candidateOriginX: 370)
+
+        XCTAssertEqual(
+            moved.resolvedHUDOriginX(candidateOriginX: 370),
+            350,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(moved.candidateOriginX, 370)
+    }
+
+    func testAutomaticPlacementKeepsPreferredSideWhenBothFit() {
+        let above = HUDLayout.placement(
+            near: candidateRect,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .automatic,
+            spacing: 7,
+            preferredPlacesBelow: false
+        )
+        let below = HUDLayout.placement(
+            near: candidateRect,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .automatic,
+            spacing: 7,
+            preferredPlacesBelow: true
+        )
+
+        XCTAssertFalse(above.placesBelow)
+        XCTAssertTrue(below.placesBelow)
+    }
+
+    func testAutomaticPlacementFlipsOnlyWhenPreferredSideDoesNotFit() {
+        let nearBottom = CGRect(
+            x: 300,
+            y: 20,
+            width: 180,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: nearBottom,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .automatic,
+            spacing: 7,
+            preferredPlacesBelow: true
+        )
+
+        XCTAssertFalse(placement.placesBelow)
     }
 
     @MainActor
@@ -389,38 +464,6 @@ final class HUDLayoutTests: XCTestCase {
 
         XCTAssertGreaterThanOrEqual(size.width, widestSingleItem)
         XCTAssertLessThanOrEqual(size.width, 600)
-    }
-
-    @MainActor
-    func testHUDVisibleWidthDoesNotShrinkDuringComposition() {
-        let current = NSSize(width: 500, height: 36)
-        let shorter = NSSize(width: 320, height: 36)
-        let wider = NSSize(width: 620, height: 36)
-
-        XCTAssertEqual(
-            HUDController.resolvedPanelSize(
-                current: current,
-                proposed: shorter,
-                isVisible: true
-            ).width,
-            500
-        )
-        XCTAssertEqual(
-            HUDController.resolvedPanelSize(
-                current: current,
-                proposed: wider,
-                isVisible: true
-            ).width,
-            620
-        )
-        XCTAssertEqual(
-            HUDController.resolvedPanelSize(
-                current: current,
-                proposed: shorter,
-                isVisible: false
-            ).width,
-            320
-        )
     }
 
     @MainActor

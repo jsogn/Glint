@@ -198,6 +198,7 @@ public actor MonitoringController {
     private var lastStatus = ""
     private var candidateSessionActive = false
     private var selectedCandidateIndex: Int?
+    private var latestCandidateHighlight: CandidateRegion?
     private var candidateMissDebouncer = CandidateMissDebouncer()
     private var compositionTransitions = CompositionTransitionTracker()
 
@@ -382,6 +383,7 @@ public actor MonitoringController {
             )
         }
         candidateMissDebouncer.observeCandidate()
+        latestCandidateHighlight = displayAnchor
 
         let candidateTexts = translationScope == .row
             && !axCandidate.visibleTexts.isEmpty
@@ -660,6 +662,7 @@ public actor MonitoringController {
               translations.contains(where: { $0.translation != nil }) else {
             return
         }
+        let presentationHighlight = latestCandidateHighlight ?? highlight
         if let translationStartedAt {
             let now = DispatchTime.now().uptimeNanoseconds
             let total = candidateChangedAtNanoseconds.map {
@@ -676,7 +679,7 @@ public actor MonitoringController {
         continuation.yield(
             .results(
                 translations,
-                highlight,
+                presentationHighlight,
                 revision: revision,
                 isProgressive: true
             )
@@ -692,6 +695,7 @@ public actor MonitoringController {
               typingTracker.isDwelling else {
             return
         }
+        let presentationHighlight = latestCandidateHighlight ?? highlight
         translationTask = nil
         let finishedAt = ContinuousClock.now
         if let translationStartedAt {
@@ -741,7 +745,7 @@ public actor MonitoringController {
         continuation.yield(
             .results(
                 presentations,
-                highlight,
+                presentationHighlight,
                 revision: revision,
                 isProgressive: false
             )
@@ -753,6 +757,7 @@ public actor MonitoringController {
         candidateMissDebouncer.reset()
         compositionTransitions.reset()
         selectedCandidateIndex = nil
+        latestCandidateHighlight = nil
         handledRevision = nil
         dwellDetectedAt = nil
         translationStartedAt = nil
@@ -767,10 +772,6 @@ public actor MonitoringController {
         pollInterval: UInt64
     ) -> UInt64 {
         emitStatus(status)
-        if candidateSessionActive {
-            invalidateCandidate(immediate: true)
-            return pollInterval
-        }
         if candidateMissDebouncer.observeMiss() {
             invalidateCandidate(immediate: true)
         }
@@ -890,7 +891,7 @@ public actor MonitoringController {
                 listFrame: listFrame
             )
         }
-        let widthFrame = [windowFrame, listFrame].compactMap { $0 }.first {
+        let widthFrame = [listFrame, windowFrame].compactMap { $0 }.first {
             $0.width > 0
         }
         let width = max(rowFrame.width, widthFrame?.width ?? 0)

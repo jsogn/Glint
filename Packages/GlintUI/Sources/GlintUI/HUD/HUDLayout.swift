@@ -14,7 +14,8 @@ enum HUDLayout {
         visibleFrame: CGRect,
         position: HUDPosition,
         spacing: Double,
-        horizontalOrigin: CGFloat? = nil
+        horizontalOrigin: CGFloat? = nil,
+        preferredPlacesBelow: Bool? = nil
     ) -> HUDLayoutResult {
         let gap = CGFloat(max(0, spacing))
         let minimumX = visibleFrame.minX + screenEdgeInset
@@ -34,7 +35,21 @@ enum HUDLayout {
         let proposedY: CGFloat
         switch position {
         case .automatic:
-            placesBelow = below >= visibleFrame.minY + screenEdgeInset
+            let belowFits = below >= visibleFrame.minY + screenEdgeInset
+            let aboveFits =
+                above + panelSize.height
+                    <= visibleFrame.maxY - screenEdgeInset
+            if let preferredPlacesBelow {
+                if preferredPlacesBelow, belowFits {
+                    placesBelow = true
+                } else if !preferredPlacesBelow, aboveFits {
+                    placesBelow = false
+                } else {
+                    placesBelow = belowFits
+                }
+            } else {
+                placesBelow = belowFits
+            }
             proposedY = placesBelow ? below : above
         case .above:
             placesBelow = false

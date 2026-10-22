@@ -38,6 +38,10 @@ struct HUDLiveView: View {
             animatesBackground: model.animatesTransitions,
             textOpacity: model.textOpacity
         )
+        .frame(
+            maxWidth: .infinity,
+            alignment: .leading
+        )
     }
 
     private var displayedItems: [HUDItem] {

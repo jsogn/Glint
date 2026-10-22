@@ -300,7 +300,35 @@ final class GlintMacTests: XCTestCase {
 
         XCTAssertEqual(
             frame,
-            CGRect(x: 10, y: 170, width: 540, height: 28)
+            CGRect(x: 20, y: 170, width: 500, height: 28)
+        )
+    }
+
+    func testRowModePrefersVisibleListOriginOverWindowOrigin() throws {
+        let frame = try XCTUnwrap(
+            MonitoringController.candidateDisplayFrame(
+                scope: .row,
+                selectedFrame: CGRect(x: 420, y: 80, width: 80, height: 28),
+                options: [
+                    AXCandidateOption(
+                        text: "接下来做什么",
+                        frame: CGRect(
+                            x: 400,
+                            y: 80,
+                            width: 100,
+                            height: 28
+                        ),
+                        isSelected: true
+                    ),
+                ],
+                windowFrame: CGRect(x: 90, y: 20, width: 1_200, height: 100),
+                listFrame: CGRect(x: 380, y: 80, width: 800, height: 28)
+            )
+        )
+
+        XCTAssertEqual(
+            frame,
+            CGRect(x: 380, y: 80, width: 800, height: 28)
         )
     }
 
