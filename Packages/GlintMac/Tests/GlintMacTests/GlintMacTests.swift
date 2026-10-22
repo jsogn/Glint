@@ -300,7 +300,7 @@ final class GlintMacTests: XCTestCase {
             )
         }
 
-        let presentations = await MonitoringController.translateCandidates(
+        let presentations = await CandidateTranslationPipeline.translate(
             candidates,
             selectedIndex: 1,
             mode: .modelFirst,
@@ -329,7 +329,7 @@ final class GlintMacTests: XCTestCase {
     }
 
     func testRowPresentationUsesPrimaryMeaningOnly() async {
-        let presentations = await MonitoringController.translateCandidates(
+        let presentations = await CandidateTranslationPipeline.translate(
             [
                 Candidate(
                     text: "方案",
@@ -345,7 +345,7 @@ final class GlintMacTests: XCTestCase {
                 translation: MultiOptionTranslation()
             ),
             memo: TranslationMemo(),
-            displayOptionLimit: MonitoringController.displayOptionLimit(
+            displayOptionLimit: CandidateTranslationPipeline.displayOptionLimit(
                 for: .row
             )
         )
@@ -389,7 +389,7 @@ final class GlintMacTests: XCTestCase {
             source: .translation,
             confidence: 1
         )
-        let presentations = await MonitoringController.translateCandidates(
+        let presentations = await CandidateTranslationPipeline.translate(
             [
                 Candidate(
                     text: "方案",
@@ -413,7 +413,7 @@ final class GlintMacTests: XCTestCase {
     }
 
     func testSelectedPresentationKeepsMultipleMeanings() async {
-        let presentations = await MonitoringController.translateCandidates(
+        let presentations = await CandidateTranslationPipeline.translate(
             [
                 Candidate(
                     text: "方案",
@@ -429,7 +429,7 @@ final class GlintMacTests: XCTestCase {
                 translation: MultiOptionTranslation()
             ),
             memo: TranslationMemo(),
-            displayOptionLimit: MonitoringController.displayOptionLimit(
+            displayOptionLimit: CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected
             )
         )
@@ -450,7 +450,7 @@ final class GlintMacTests: XCTestCase {
             )
         }
 
-        _ = await MonitoringController.translateCandidates(
+        _ = await CandidateTranslationPipeline.translate(
             candidates,
             selectedIndex: 1,
             mode: .modelFirst,
@@ -468,7 +468,7 @@ final class GlintMacTests: XCTestCase {
 
     func testRowTranslationSubmitsSelectedCandidateFirst() {
         XCTAssertEqual(
-            MonitoringController.translationTaskOrder(
+            CandidateTranslationPipeline.taskOrder(
                 candidateCount: 5,
                 selectedIndex: 3
             ),

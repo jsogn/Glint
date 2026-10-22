@@ -1,14 +1,7 @@
 import AppKit
-import CoreGraphics
 import GlintMac
 import GlintPlugins
 import GlintUI
-import OSLog
-
-private let hudLatencyLogger = Logger(
-    subsystem: "com.local.glint",
-    category: "HUD"
-)
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -19,12 +12,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var monitoringMenuItem: NSMenuItem!
     private var mainWindowController: MainWindowController!
-    private let hud = HUDController()
+    private let hudEventCoordinator: HUDEventCoordinator
     private let environment: AppEnvironment
     private let windowModel: MainWindowModel
     private var monitoringTask: Task<Void, Never>?
-    private var displayedCandidateRevision: UInt64?
-    private var candidateChangedEventAt: ContinuousClock.Instant?
     private var permissionRequestPending = false
     private var permissionRequestWasIssued = false
     private var startupPreparationTask: Task<Void, Never>?
@@ -33,11 +24,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         let environment = AppEnvironment()
-        self.environment = environment
-        self.windowModel = MainWindowModel(
+        let windowModel = MainWindowModel(
             pluginManager: environment.pluginManager,
             builtInPlugins: BundledPluginResources.manifests,
             openAICompatibleStore: environment.openAICompatibleStore
+        )
+        self.environment = environment
+        self.windowModel = windowModel
+        self.hudEventCoordinator = HUDEventCoordinator(
+            hud: HUDController(),
+            model: windowModel
         )
         self.readinessToken = Self.readinessToken(
             from: CommandLine.arguments
@@ -323,8 +319,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         shouldRequestPermissionAfterPreparation = false
         monitoringTask?.cancel()
         monitoringTask = nil
-        clearHUDState()
-        hud.hide(animated: false)
+        hudEventCoordinator.hide(animated: false)
         updateStatusItem(isMonitoring: false)
         windowModel.isMonitoring = false
         windowModel.statusText = ""
@@ -340,36 +335,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             windowModel.statusText = isActionableStatus(status) ? status : ""
             NSLog("Glint: %@", status)
         case .candidateChanged:
-            candidateChangedEventAt = .now
-            hud.beginUpdate()
+            hudEventCoordinator.candidateChanged()
         case .selectionChanged(let index, let revision):
-            guard displayedCandidateRevision == revision else { return }
-            hud.updateSelection(itemID: index)
+            hudEventCoordinator.updateSelection(
+                index: index,
+                revision: revision
+            )
         case .candidateEnded(let immediate):
-            clearHUDState()
-            hud.hide(animated: !immediate)
+            hudEventCoordinator.candidateEnded(immediate: immediate)
         case .results(
             let translations,
             let highlight,
             let revision,
             let isProgressive
         ):
-            windowModel.statusText = ""
-            let showsNumbers =
-                windowModel.displayPreferences.translationScope == .row
-            let items = translations.map {
-                HUDItem(
-                    id: $0.index,
-                    number: showsNumbers ? $0.index + 1 : nil,
-                    text: $0.translation ?? "…",
-                    isSelected: $0.isSelected
-                )
-            }
-            showHUD(
+            hudEventCoordinator.show(
+                translations: translations,
+                highlight: highlight,
                 revision: revision,
-                items: items,
-                near: highlight.cgRect,
-                isProgressive: isProgressive
+                isProgressive: isProgressive,
+                isMonitoring: monitoringTask != nil
             )
         }
     }
@@ -378,55 +363,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         status == "需要屏幕录制权限"
             || status == "需要辅助功能权限"
             || status.hasPrefix("截取失败：")
-    }
-
-    private func showHUD(
-        revision: UInt64,
-        items: [HUDItem],
-        near rect: CGRect,
-        isProgressive: Bool
-    ) {
-        guard monitoringTask != nil else { return }
-        // Progressive row results share one revision. Reject only results
-        // older than the revision already on screen.
-        if let displayedCandidateRevision,
-           revision < displayedCandidateRevision {
-            return
-        }
-        displayedCandidateRevision = revision
-        hud.show(
-            items: items,
-            near: rect,
-            position: windowModel.displayPreferences.position,
-            spacing: windowModel.displayPreferences.candidateSpacing,
-            opacity: windowModel.displayPreferences.hudOpacity,
-            appearance: windowModel.displayPreferences.hudAppearance,
-            revision: revision
-        )
-        let phase: String
-        if windowModel.displayPreferences.translationScope == .row,
-           items.count > 1,
-           !isProgressive {
-            phase = "row_visible"
-        } else {
-            phase = "selected_visible"
-        }
-        let eventToVisible = candidateChangedEventAt.map {
-            Self.elapsedMilliseconds($0.duration(to: .now))
-        } ?? 0
-        hudLatencyLogger.notice(
-            "perf latency phase=\(phase, privacy: .public) revision=\(revision, privacy: .public) visible_items=\(items.count, privacy: .public) event_to_visible_ms=\(eventToVisible, privacy: .public)"
-        )
-    }
-
-    private func clearHUDState() {
-        displayedCandidateRevision = nil
-        candidateChangedEventAt = nil
-    }
-
-    private static func elapsedMilliseconds(_ duration: Duration) -> Double {
-        Double(duration.components.seconds) * 1_000
-            + Double(duration.components.attoseconds) / 1_000_000_000_000_000
     }
 
     private func syncTranslationConfiguration() {

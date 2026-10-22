@@ -57,11 +57,7 @@ public final class MainWindowModel {
     private let catalogURL: URL?
 
     @ObservationIgnored
-    private let pluginManager: PluginManager
-    @ObservationIgnored
-    private let catalogService: PluginCatalogService
-    @ObservationIgnored
-    private let localImportService: LocalModelImportService
+    private let pluginLifecycle: PluginLifecycleService
     @ObservationIgnored
     private let builtInPlugins: [PluginManifest]
     @ObservationIgnored
@@ -119,9 +115,7 @@ public final class MainWindowModel {
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.displayPreferences = displayPreferences ?? DisplayPreferences()
-        self.pluginManager = pluginManager
-        self.catalogService = PluginCatalogService(manager: pluginManager)
-        self.localImportService = LocalModelImportService(manager: pluginManager)
+        self.pluginLifecycle = PluginLifecycleService(manager: pluginManager)
         self.builtInPlugins = builtInPlugins
         self.installedPlugins = builtInPlugins.sorted {
             $0.name < $1.name
@@ -201,7 +195,7 @@ public final class MainWindowModel {
 
     public func refreshInstalledPlugins() async {
         isLoadingPlugins = true
-        let managedPlugins = await pluginManager.installedPlugins()
+        let managedPlugins = await pluginLifecycle.installedPlugins()
         let builtInIDs = Set(builtInPlugins.map(\.id))
         installedPlugins = (
             builtInPlugins
@@ -232,7 +226,7 @@ public final class MainWindowModel {
         isLoadingCatalog = true
         defer { isLoadingCatalog = false }
         do {
-            let result = try await catalogService.fetchCatalogResult(
+            let result = try await pluginLifecycle.catalogUpdates(
                 from: catalogURL,
                 etag: catalogETag,
                 lastModified: catalogLastModified
@@ -299,14 +293,14 @@ public final class MainWindowModel {
                 localImportTask = nil
             }
             do {
-                let manifest = try await localImportService.importModel(
+                let manifest = try await pluginLifecycle.importLocalModel(
                     from: directory
                 ) { [weak self] value in
                     Task { @MainActor [weak self] in
                         self?.localImportProgress = value
                     }
                 }
-                installedPlugins = await pluginManager.installedPlugins()
+                installedPlugins = await pluginLifecycle.installedPlugins()
                 reconcileActiveTranslationModel()
                 activateTranslationModel(manifest)
                 localImportProgress = 1
@@ -332,12 +326,12 @@ public final class MainWindowModel {
         }
 
         do {
-            _ = try await catalogService.install(plugin) { [weak self] value in
+            _ = try await pluginLifecycle.install(plugin) { [weak self] value in
                 Task { @MainActor [weak self] in
                     self?.installProgress[plugin.id] = value
                 }
             }
-            let hadPendingUpgrade = await pluginManager.hasPendingUpgrade()
+            let hadPendingUpgrade = await pluginLifecycle.hasPendingUpgrade()
             await refreshInstalledPlugins()
             if plugin.type == .dictionary {
                 await dictionaryConfigurationChangedAction()
@@ -350,32 +344,32 @@ public final class MainWindowModel {
                 let error = await activateTranslationModelAction(plugin.id)
                 if let error {
                     if hadPendingUpgrade {
-                        try await pluginManager.rollbackPendingUpgrade()
+                        try await pluginLifecycle.rollbackPendingUpgrade()
                         await refreshInstalledPlugins()
                         _ = await activateTranslationModelAction(plugin.id)
                         translationModelStatusText =
                             "更新失败，已恢复旧版本：\(error)"
                     } else {
                         await releaseTranslationModelAction(plugin.id)
-                        try await catalogService.uninstall(id: plugin.id)
+                        try await pluginLifecycle.uninstall(id: plugin.id)
                         await refreshInstalledPlugins()
                         translationModelStatusText = "模型加载失败：\(error)"
                     }
                     translationModelStatusIsError = true
                     translationModelStatusModelID = plugin.id
                 } else {
-                    try await pluginManager.commitPendingUpgrade()
+                    try await pluginLifecycle.commitPendingUpgrade()
                     translationModelStatusText = nil
                     translationModelStatusIsError = false
                     translationModelStatusModelID = nil
                 }
                 translationConfigurationChangedAction()
             } else {
-                try await pluginManager.commitPendingUpgrade()
+                try await pluginLifecycle.commitPendingUpgrade()
             }
             installProgress[plugin.id] = 1
         } catch {
-            try? await pluginManager.rollbackPendingUpgrade()
+            try? await pluginLifecycle.rollbackPendingUpgrade()
             if !Self.isCancellation(error) {
                 catalogError = error.localizedDescription
             }
@@ -392,7 +386,7 @@ public final class MainWindowModel {
         catalogError = nil
         do {
             await releaseTranslationModelAction(plugin.id)
-            try await catalogService.uninstall(id: plugin.id)
+            try await pluginLifecycle.uninstall(id: plugin.id)
             if translationModelStatusModelID == plugin.id {
                 translationModelStatusText = nil
                 translationModelStatusIsError = false

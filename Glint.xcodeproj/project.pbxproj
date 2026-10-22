@@ -14,6 +14,7 @@
 		3385AFA47466DF9188B0D14C /* dict-wiktionary-zh-en in Resources */ = {isa = PBXBuildFile; fileRef = B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */; };
 		4062AB589E4FFA4D5BB17A0E /* AppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */; };
 		4D3F18EF382E77CCB4F70956 /* dict-cedict in Resources */ = {isa = PBXBuildFile; fileRef = F082FC2C41A35AF169B0DE24 /* dict-cedict */; };
+		509EF10E6771101ED85B0DAC /* HUDEventCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */; };
 		56858DDBBD011680EEE7F0BA /* dict-ecdict in Resources */ = {isa = PBXBuildFile; fileRef = 7A59F9A29CA693ACF1A2526C /* dict-ecdict */; };
 		5DC357A49028867449604E46 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 53183767502EEFE5D0989DD0 /* Assets.xcassets */; };
 		6CA3DD4CAAD9F5753C879E8A /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 45F16D7CFBA31BE54411E4A8 /* GlintCore */; };
@@ -36,6 +37,7 @@
 		09BDD68C6DB642A313D624CC /* GlintUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintUI; path = Packages/GlintUI; sourceTree = SOURCE_ROOT; };
 		0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXCandidateProbe.swift; sourceTree = "<group>"; };
 		1593095FA119035BCB1CDA9F /* GlintDictionary */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintDictionary; path = Packages/GlintDictionary; sourceTree = SOURCE_ROOT; };
+		26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDEventCoordinator.swift; sourceTree = "<group>"; };
 		32E9F8EB23E80E0A931F444E /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
 		3E2E78BBA22734DD486C760B /* Glint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glint.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4D24D192806595FBAE16FA92 /* GlintPlugins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintPlugins; path = Packages/GlintPlugins; sourceTree = SOURCE_ROOT; };
@@ -125,6 +127,7 @@
 				D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */,
 				32E9F8EB23E80E0A931F444E /* Diagnostics.swift */,
 				D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */,
+				26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */,
 				A6CE2C298747A802E1589A8C /* main.swift */,
 				58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */,
 			);
@@ -298,6 +301,7 @@
 				C848E897C79EDE1BC7204972 /* BundledPluginResources.swift in Sources */,
 				7BF97DC43287CFA143A70ED2 /* Diagnostics.swift in Sources */,
 				D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */,
+				509EF10E6771101ED85B0DAC /* HUDEventCoordinator.swift in Sources */,
 				B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */,
 				30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */,
 			);

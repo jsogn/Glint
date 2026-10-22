@@ -534,11 +534,13 @@ public actor MonitoringController {
         let mode = mode
         let configurationToken = translationConfigurationToken
         let includesAlternatives =
-            Self.displayOptionLimit(for: translationScope) > 1
+            CandidateTranslationPipeline.displayOptionLimit(
+                for: translationScope
+            ) > 1
         let memo = translationMemo
         let router = router
         for (index, candidate) in candidates.enumerated() {
-            let key = Self.translationMemoKey(
+            let key = CandidateTranslationPipeline.memoKey(
                 candidate: candidate,
                 mode: mode,
                 configurationToken: configurationToken,
@@ -579,9 +581,10 @@ public actor MonitoringController {
         let router = router
         let memo = translationMemo
         let configurationToken = translationConfigurationToken
-        let displayOptionLimit = Self.displayOptionLimit(
-            for: translationScope
-        )
+        let displayOptionLimit =
+            CandidateTranslationPipeline.displayOptionLimit(
+                for: translationScope
+            )
         translationAttempts &+= 1
         translationStartedAt = .now
         cancelTranslationTask()
@@ -600,7 +603,7 @@ public actor MonitoringController {
                 mode,
             ] in
             guard !Task.isCancelled else { return }
-            let presentations = await Self.translateCandidates(
+            let presentations = await CandidateTranslationPipeline.translate(
                 candidates,
                 selectedIndex: selectedIndex,
                 mode: mode,
@@ -625,168 +628,6 @@ public actor MonitoringController {
                 revision: revision
             )
         }
-    }
-
-    static func translateCandidates(
-        _ candidates: [Candidate],
-        selectedIndex: Int,
-        mode: TranslationMode,
-        configurationToken: String,
-        router: SmartRouter,
-        memo: TranslationMemo,
-        displayOptionLimit: Int = 3,
-        dictionaryPrefetchTasks: [
-            Int: Task<DictionaryPrefetchResult, Never>
-        ] = [:],
-        cachedPrefetchResults: [Int: TranslationResult] = [:],
-        publishProgress: (
-            @Sendable ([CandidateTranslationPresentation]) async -> Void
-        )? = nil
-    ) async -> [CandidateTranslationPresentation] {
-        guard candidates.indices.contains(selectedIndex) else { return [] }
-        var results = [TranslationResult?](
-            repeating: nil,
-            count: candidates.count
-        )
-        var selectedWasPublished = false
-        await withTaskGroup(of: (Int, TranslationResult?).self) { group in
-            for index in translationTaskOrder(
-                candidateCount: candidates.count,
-                selectedIndex: selectedIndex
-            ) {
-                let candidate = candidates[index]
-                let dictionaryPrefetch = dictionaryPrefetchTasks[index]
-                let cachedResult = cachedPrefetchResults[index]
-                group.addTask {
-                    let result = await translateCandidate(
-                        candidate,
-                        mode: mode,
-                        configurationToken: configurationToken,
-                        router: router,
-                        memo: memo,
-                        includesAlternatives: displayOptionLimit > 1,
-                        dictionaryPrefetch: dictionaryPrefetch,
-                        cachedResult: cachedResult
-                    )
-                    return (index, result)
-                }
-            }
-            for await (index, result) in group {
-                results[index] = result
-                if candidates.count > 1,
-                   index == selectedIndex,
-                   !selectedWasPublished,
-                   result != nil {
-                    selectedWasPublished = true
-                    let partialPresentations = candidates.indices.map {
-                        presentation(
-                            for: $0,
-                            candidates: candidates,
-                            results: results,
-                            selectedIndex: selectedIndex,
-                            displayOptionLimit: displayOptionLimit
-                        )
-                    }
-                    await publishProgress?(partialPresentations)
-                }
-            }
-        }
-        return candidates.indices.map {
-            presentation(
-                for: $0,
-                candidates: candidates,
-                results: results,
-                selectedIndex: selectedIndex,
-                displayOptionLimit: displayOptionLimit
-            )
-        }
-    }
-
-    static func displayOptionLimit(
-        for scope: CandidateTranslationScope
-    ) -> Int {
-        scope == .row ? 1 : 3
-    }
-
-    private static func translationMemoKey(
-        candidate: Candidate,
-        mode: TranslationMode,
-        configurationToken: String,
-        includesAlternatives: Bool
-    ) -> TranslationMemoKey {
-        TranslationMemoKey(
-            text: candidate.text,
-            mode: mode,
-            configuration: configurationToken,
-            includesAlternatives: includesAlternatives
-        )
-    }
-
-    static func translationTaskOrder(
-        candidateCount: Int,
-        selectedIndex: Int
-    ) -> [Int] {
-        guard candidateCount > 0,
-              (0..<candidateCount).contains(selectedIndex) else {
-            return []
-        }
-        return [selectedIndex] + (0..<candidateCount).filter {
-            $0 != selectedIndex
-        }
-    }
-
-    private static func translateCandidate(
-        _ candidate: Candidate,
-        mode: TranslationMode,
-        configurationToken: String,
-        router: SmartRouter,
-        memo: TranslationMemo,
-        includesAlternatives: Bool,
-        dictionaryPrefetch: Task<DictionaryPrefetchResult, Never>?,
-        cachedResult: TranslationResult?
-    ) async -> TranslationResult? {
-        guard !Task.isCancelled else { return nil }
-        if let cachedResult {
-            return cachedResult
-        }
-        let key = Self.translationMemoKey(
-            candidate: candidate,
-            mode: mode,
-            configurationToken: configurationToken,
-            includesAlternatives: includesAlternatives
-        )
-        let result = try? await memo.resolve(for: key) {
-            let routed = try await router.route(
-                candidate,
-                mode: mode,
-                includesAlternatives: includesAlternatives,
-                dictionaryPrefetch: dictionaryPrefetch
-            )
-            return includesAlternatives ? routed : routed?.primaryOnly
-        }
-        return Task.isCancelled ? nil : result
-    }
-
-    private static func presentation(
-        for index: Int,
-        candidates: [Candidate],
-        results: [TranslationResult?],
-        selectedIndex: Int,
-        displayOptionLimit: Int
-    ) -> CandidateTranslationPresentation {
-        let translation: String? = results[index].flatMap { result -> String? in
-            guard isDisplayable(result) else { return nil }
-            let text = displayOptionLimit <= 1
-                ? result.text
-                : result.displayText
-            return text.isEmpty ? nil : text
-        }
-        return CandidateTranslationPresentation(
-            index: index,
-            candidateText: candidates[index].text,
-            translation: translation,
-            isSelected: index == selectedIndex
-        )
     }
 
     private func publishPartialTranslation(
@@ -914,19 +755,6 @@ public actor MonitoringController {
             invalidateCandidate(immediate: true)
         }
         return pollInterval
-    }
-
-    private static func isDisplayable(_ result: TranslationResult) -> Bool {
-        let text = result.displayText.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        )
-        guard !text.isEmpty, !text.contains(where: \.isNewline) else {
-            return false
-        }
-        let hanCount = text.unicodeScalars.filter {
-            (0x4E00...0x9FFF).contains($0.value)
-        }.count
-        return hanCount <= max(1, text.count / 5)
     }
 
     private static func elapsedMilliseconds(_ duration: Duration) -> Double {
