@@ -5,6 +5,7 @@ import SwiftUI
 @Observable
 final class HUDPresentationModel {
     var items: [HUDItem]
+    var appearance: HUDAppearance
     var backgroundOpacity: Double
     var textOpacity: Double
     var animatesTransitions: Bool
@@ -12,11 +13,13 @@ final class HUDPresentationModel {
 
     init(
         text: String,
+        appearance: HUDAppearance,
         backgroundOpacity: Double,
         textOpacity: Double = 1,
         animatesTransitions: Bool
     ) {
         self.items = [HUDItem(id: 0, text: text)]
+        self.appearance = appearance
         self.backgroundOpacity = backgroundOpacity
         self.textOpacity = textOpacity
         self.animatesTransitions = animatesTransitions
@@ -30,6 +33,7 @@ struct HUDLiveView: View {
     var body: some View {
         HUDItemRow(
             items: displayedItems,
+            appearance: model.appearance,
             backgroundOpacity: model.backgroundOpacity,
             animatesBackground: model.animatesTransitions,
             textOpacity: model.textOpacity

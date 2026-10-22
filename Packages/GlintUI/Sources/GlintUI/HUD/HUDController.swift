@@ -13,6 +13,7 @@ public final class HUDController {
         static let enter = 0.06
         static let leave = 0.06
         static let textTransition = 0.06
+        static let presentationCoalescingNanoseconds: UInt64 = 8_000_000
         static let staleDimNanoseconds: UInt64 = 80_000_000
         static let staleOpacity = 0.3
     }
@@ -20,6 +21,7 @@ public final class HUDController {
     private struct PresentationRequest {
         let revision: UInt64?
         let items: [HUDItem]
+        let appearance: HUDAppearance
         let screenRect: CGRect
         let position: HUDPosition
         let spacing: Double
@@ -32,6 +34,12 @@ public final class HUDController {
         let panelSize: NSSize
         let targetFrame: NSRect
         let placesBelow: Bool
+        let screenFrame: NSRect
+    }
+
+    private struct HorizontalAnchor {
+        let screenFrame: NSRect
+        let originX: CGFloat
     }
 
     private let panel: NSPanel
@@ -39,6 +47,9 @@ public final class HUDController {
     private var panelSize = NSSize(width: 440, height: 36)
     private var displayedRevision: UInt64?
     private var pendingPresentation: PresentationRequest?
+    private var coalescedPresentation: PresentationRequest?
+    private var presentationCoalescingTask: Task<Void, Never>?
+    private var horizontalAnchor: HorizontalAnchor?
     private var entryAnimationIsActive = false
     private var entryAnimationGeneration = 0
     private var transitionGeneration = 0
@@ -48,6 +59,7 @@ public final class HUDController {
     public init(text: String = "hello") {
         let contentModel = HUDPresentationModel(
             text: text,
+            appearance: .default,
             backgroundOpacity: 0.92,
             animatesTransitions: !NSWorkspace.shared
                 .accessibilityDisplayShouldReduceMotion
@@ -66,9 +78,14 @@ public final class HUDController {
         panel.ignoresMouseEvents = true
         panel.isReleasedWhenClosed = false
         panel.alphaValue = 0
-        panel.contentView = NSHostingView(
+        let hostingView = NSHostingView(
             rootView: HUDLiveView(model: contentModel)
         )
+        hostingView.wantsLayer = true
+        hostingView.layer?.cornerCurve = .continuous
+        hostingView.layer?.cornerRadius = panelSize.height / 2
+        hostingView.layer?.masksToBounds = true
+        panel.contentView = hostingView
         self.contentModel = contentModel
         self.panel = panel
     }
@@ -82,8 +99,9 @@ public final class HUDController {
     }
 
     public func beginUpdate() {
-        guard panel.isVisible else { return }
+        cancelCoalescedPresentation()
         pendingPresentation = nil
+        guard panel.isVisible else { return }
         transitionGeneration &+= 1
         let reduceMotion =
             NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
@@ -126,12 +144,14 @@ public final class HUDController {
         position: HUDPosition = .automatic,
         spacing: Double = 8,
         opacity: Double = 0.92,
+        appearance: HUDAppearance = .default,
         revision: UInt64? = nil
     ) {
-        present(
+        enqueuePresentation(
             PresentationRequest(
                 revision: revision,
                 items: [HUDItem(id: 0, text: text)],
+                appearance: appearance,
                 screenRect: screenRect,
                 position: position,
                 spacing: spacing,
@@ -146,18 +166,42 @@ public final class HUDController {
         position: HUDPosition = .automatic,
         spacing: Double = 8,
         opacity: Double = 0.92,
+        appearance: HUDAppearance = .default,
         revision: UInt64? = nil
     ) {
-        present(
+        enqueuePresentation(
             PresentationRequest(
                 revision: revision,
                 items: items,
+                appearance: appearance,
                 screenRect: screenRect,
                 position: position,
                 spacing: spacing,
                 opacity: opacity
             )
         )
+    }
+
+    private func enqueuePresentation(_ request: PresentationRequest) {
+        coalescedPresentation = request
+        guard presentationCoalescingTask == nil else { return }
+
+        presentationCoalescingTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(
+                    nanoseconds: Timing.presentationCoalescingNanoseconds
+                )
+                guard let self else { return }
+                self.presentationCoalescingTask = nil
+                guard let request = self.coalescedPresentation else {
+                    return
+                }
+                self.coalescedPresentation = nil
+                self.present(request)
+            } catch {
+                return
+            }
+        }
     }
 
     private func present(_ request: PresentationRequest) {
@@ -217,15 +261,32 @@ public final class HUDController {
         let targetScreen = NSScreen.screens.first {
             $0.frame.contains(NSPoint(x: appKitRect.midX, y: appKitRect.midY))
         } ?? mainScreen
-        let maximumWidth = targetScreen.visibleFrame.width - 16
+        // A visible composition keeps one left edge so IME window jitter
+        // cannot move the HUD back and forth.
+        let fixedOriginX = horizontalAnchor.flatMap { anchor -> CGFloat? in
+            guard anchor.screenFrame == targetScreen.frame else {
+                return nil
+            }
+            let availableWidth =
+                targetScreen.visibleFrame.maxX
+                    - HUDLayout.screenEdgeInset
+                    - anchor.originX
+            return availableWidth >= 120 ? anchor.originX : nil
+        }
+        let maximumWidth = Self.maximumPanelWidth(
+            in: targetScreen.visibleFrame,
+            fixedOriginX: fixedOriginX
+        )
         let showsOnlySelectedItem = HUDItemRow.requiresSelectedOnly(
             for: request.items,
-            maximumWidth: maximumWidth
+            maximumWidth: maximumWidth,
+            appearance: request.appearance
         )
         let proposedPanelSize = Self.panelSize(
             for: request.items,
             maximumWidth: maximumWidth,
-            selectedOnly: showsOnlySelectedItem
+            selectedOnly: showsOnlySelectedItem,
+            appearance: request.appearance
         )
         let resolvedPanelSize = Self.resolvedPanelSize(
             current: panelSize,
@@ -237,14 +298,16 @@ public final class HUDController {
             panelSize: resolvedPanelSize,
             visibleFrame: targetScreen.visibleFrame,
             position: request.position,
-            spacing: request.spacing
+            spacing: request.spacing,
+            horizontalOrigin: fixedOriginX
         )
         return PresentationLayout(
             request: request,
             showsOnlySelectedItem: showsOnlySelectedItem,
             panelSize: resolvedPanelSize,
             targetFrame: layout.frame,
-            placesBelow: layout.placesBelow
+            placesBelow: layout.placesBelow,
+            screenFrame: targetScreen.frame
         )
     }
 
@@ -253,6 +316,7 @@ public final class HUDController {
         reduceMotion: Bool
     ) {
         panelSize = layout.panelSize
+        updatePanelCornerRadius(for: layout.panelSize)
         applyContent(
             layout.request,
             showsOnlySelectedItem: layout.showsOnlySelectedItem,
@@ -267,6 +331,10 @@ public final class HUDController {
         panel.alphaValue = reduceMotion ? 1 : 0
         panel.orderFrontRegardless()
         displayedRevision = layout.request.revision
+        horizontalAnchor = HorizontalAnchor(
+            screenFrame: layout.screenFrame,
+            originX: layout.targetFrame.minX
+        )
         guard !reduceMotion else { return }
 
         entryAnimationGeneration &+= 1
@@ -303,11 +371,7 @@ public final class HUDController {
         reduceMotion: Bool
     ) {
         panelSize = layout.panelSize
-        if panel.frame != layout.targetFrame {
-            panel.setFrame(layout.targetFrame, display: false)
-            panel.contentView?.layoutSubtreeIfNeeded()
-        }
-
+        updatePanelCornerRadius(for: layout.panelSize)
         if reduceMotion {
             panel.alphaValue = 1
         } else if !entryAnimationIsActive,
@@ -328,11 +392,26 @@ public final class HUDController {
             textOpacity: 1,
             animatesText: animatesText
         )
+        // Commit content and geometry in one display pass so the old capsule
+        // cannot appear clipped by the resized panel for a frame.
+        panel.contentView?.layoutSubtreeIfNeeded()
+        if panel.frame != layout.targetFrame {
+            panel.setFrame(layout.targetFrame, display: true)
+        } else {
+            panel.displayIfNeeded()
+        }
+        if horizontalAnchor?.screenFrame != layout.screenFrame {
+            horizontalAnchor = HorizontalAnchor(
+                screenFrame: layout.screenFrame,
+                originX: layout.targetFrame.minX
+            )
+        }
         displayedRevision = layout.request.revision
     }
 
     public func hide(animated: Bool = true) {
         cancelStalePresentation()
+        cancelCoalescedPresentation()
         pendingPresentation = nil
         entryAnimationGeneration &+= 1
         entryAnimationIsActive = false
@@ -340,6 +419,7 @@ public final class HUDController {
         let generation = transitionGeneration
         guard panel.isVisible else {
             panel.alphaValue = 0
+            horizontalAnchor = nil
             return
         }
         let reduceMotion =
@@ -380,6 +460,7 @@ public final class HUDController {
         panel.orderOut(nil)
         panel.alphaValue = 0
         displayedRevision = nil
+        horizontalAnchor = nil
     }
 
     private func beginStalePresentation() {
@@ -410,6 +491,12 @@ public final class HUDController {
         stalePresentationTask = nil
     }
 
+    private func cancelCoalescedPresentation() {
+        presentationCoalescingTask?.cancel()
+        presentationCoalescingTask = nil
+        coalescedPresentation = nil
+    }
+
     private func applyContent(
         _ request: PresentationRequest,
         showsOnlySelectedItem: Bool? = nil,
@@ -418,6 +505,7 @@ public final class HUDController {
     ) {
         let changes = {
             self.contentModel.items = request.items
+            self.contentModel.appearance = request.appearance
             self.contentModel.backgroundOpacity = request.opacity
             if let showsOnlySelectedItem {
                 self.contentModel.showsOnlySelectedItem =
@@ -434,6 +522,10 @@ public final class HUDController {
         } else {
             withoutAnimation(changes)
         }
+    }
+
+    private func updatePanelCornerRadius(for size: NSSize) {
+        panel.contentView?.layer?.cornerRadius = size.height / 2
     }
 
     private func animateTextOpacity(_ opacity: Double) {
@@ -470,20 +562,40 @@ public final class HUDController {
         return .patch
     }
 
+    static func maximumPanelWidth(
+        in visibleFrame: CGRect,
+        fixedOriginX: CGFloat?
+    ) -> CGFloat {
+        let fullWidth =
+            visibleFrame.width - HUDLayout.screenEdgeInset * 2
+        guard let fixedOriginX else { return max(120, fullWidth) }
+        let availableWidth =
+            visibleFrame.maxX - HUDLayout.screenEdgeInset - fixedOriginX
+        return max(120, min(fullWidth, availableWidth))
+    }
+
     static func panelSize(
         for items: [HUDItem],
         maximumWidth: CGFloat,
-        selectedOnly: Bool = false
+        selectedOnly: Bool = false,
+        appearance: HUDAppearance = .default
     ) -> NSSize {
-        let height: CGFloat = 36
+        let metrics = HUDLayoutMetrics(appearance: appearance)
+        let height = metrics.panelHeight
         let widthLimit = max(120, maximumWidth)
         let width: CGFloat
         if selectedOnly {
             width = items.map {
-                HUDItemRow.naturalPanelWidth(for: [$0])
+                HUDItemRow.naturalPanelWidth(
+                    for: [$0],
+                    appearance: appearance
+                )
             }.max() ?? 120
         } else {
-            width = HUDItemRow.naturalPanelWidth(for: items)
+            width = HUDItemRow.naturalPanelWidth(
+                for: items,
+                appearance: appearance
+            )
         }
         let minimumWidth: CGFloat
         if selectedOnly || items.count <= 1 {
@@ -491,7 +603,10 @@ public final class HUDController {
         } else {
             minimumWidth = max(
                 220,
-                HUDItemRow.minimumPanelWidth(for: items.count)
+                HUDItemRow.minimumPanelWidth(
+                    for: items.count,
+                    appearance: appearance
+                )
             )
         }
         return NSSize(

@@ -13,7 +13,8 @@ enum HUDLayout {
         panelSize: CGSize,
         visibleFrame: CGRect,
         position: HUDPosition,
-        spacing: Double
+        spacing: Double,
+        horizontalOrigin: CGFloat? = nil
     ) -> HUDLayoutResult {
         let gap = CGFloat(max(0, spacing))
         let minimumX = visibleFrame.minX + screenEdgeInset
@@ -21,9 +22,10 @@ enum HUDLayout {
             minimumX,
             visibleFrame.maxX - panelSize.width - screenEdgeInset
         )
+        let preferredX = horizontalOrigin ?? candidateRect.minX
         let x = max(
             minimumX,
-            min(candidateRect.minX, maximumX)
+            min(preferredX, maximumX)
         )
         let below = candidateRect.minY - panelSize.height - gap
         let above = candidateRect.maxY + gap

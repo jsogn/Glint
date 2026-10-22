@@ -85,18 +85,61 @@ final class HUDLayoutTests: XCTestCase {
         )
     }
 
+    func testAnchoredPlacementIgnoresCandidateHorizontalJitter() {
+        let first = HUDLayout.placement(
+            near: CGRect(x: 320, y: 400, width: 500, height: 32),
+            panelSize: CGSize(width: 440, height: 36),
+            visibleFrame: visibleFrame,
+            position: .above,
+            spacing: 7,
+            horizontalOrigin: 300
+        )
+        let second = HUDLayout.placement(
+            near: CGRect(x: 270, y: 400, width: 600, height: 32),
+            panelSize: CGSize(width: 520, height: 36),
+            visibleFrame: visibleFrame,
+            position: .above,
+            spacing: 7,
+            horizontalOrigin: 300
+        )
+
+        XCTAssertEqual(first.frame.minX, 300, accuracy: 0.001)
+        XCTAssertEqual(second.frame.minX, 300, accuracy: 0.001)
+    }
+
+    @MainActor
+    func testAnchoredPanelWidthIsLimitedToRemainingScreenSpace() {
+        XCTAssertEqual(
+            HUDController.maximumPanelWidth(
+                in: visibleFrame,
+                fixedOriginX: 1_000
+            ),
+            432,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            HUDController.maximumPanelWidth(
+                in: visibleFrame,
+                fixedOriginX: nil
+            ),
+            1_424,
+            accuracy: 0.001
+        )
+    }
+
     @MainActor
     func testHUDMinimumWidthReservesSlotForEveryItem() {
+        let metrics = HUDLayoutMetrics()
         let sixItems = HUDItemRow.minimumPanelWidth(for: 6)
         let nineItems = HUDItemRow.minimumPanelWidth(for: 9)
         let sixMinimum =
-            HUDLayoutMetrics.multiItemHorizontalPadding * 2
-                + 6 * HUDItemRow.minimumItemWidth
-                + 5 * HUDLayoutMetrics.itemSpacing
+            metrics.multiItemHorizontalPadding * 2
+                + 6 * metrics.minimumItemWidth
+                + 5 * metrics.itemSpacing
         let nineMinimum =
-            HUDLayoutMetrics.multiItemHorizontalPadding * 2
-                + 9 * HUDItemRow.minimumItemWidth
-                + 8 * HUDLayoutMetrics.itemSpacing
+            metrics.multiItemHorizontalPadding * 2
+                + 9 * metrics.minimumItemWidth
+                + 8 * metrics.itemSpacing
 
         XCTAssertGreaterThanOrEqual(
             sixItems,
@@ -111,9 +154,66 @@ final class HUDLayoutTests: XCTestCase {
     @MainActor
     func testHUDUsesCompactOuterInsetMatchingCandidateBar() {
         XCTAssertEqual(
-            HUDLayoutMetrics.multiItemHorizontalPadding,
+            HUDLayoutMetrics().multiItemHorizontalPadding,
             3
         )
+    }
+
+    @MainActor
+    func testDefaultAppearancePreservesCurrentHUDGeometry() {
+        let metrics = HUDLayoutMetrics(appearance: .default)
+
+        XCTAssertEqual(metrics.textFontSize, 14)
+        XCTAssertEqual(metrics.numberFontSize, 10)
+        XCTAssertEqual(metrics.minimumItemWidth, 44)
+        XCTAssertEqual(metrics.itemSpacing, 4)
+        XCTAssertEqual(metrics.multiItemHorizontalPadding, 3)
+        XCTAssertEqual(metrics.singleItemHorizontalPadding, 12)
+        XCTAssertEqual(metrics.itemHorizontalPadding, 5)
+        XCTAssertEqual(metrics.numberSpacing, 2)
+        XCTAssertEqual(metrics.panelHeight, 36)
+    }
+
+    @MainActor
+    func testAppearanceUpdatesHUDHeightAndTextMeasurementWidth() {
+        let items = [
+            HUDItem(id: 0, text: "a complete sentence for measurement"),
+        ]
+        let standard = HUDAppearance()
+        let enlarged = HUDAppearance(
+            fontSize: 18,
+            density: .spacious
+        )
+
+        let standardSize = HUDController.panelSize(
+            for: items,
+            maximumWidth: 1_400,
+            appearance: standard
+        )
+        let enlargedSize = HUDController.panelSize(
+            for: items,
+            maximumWidth: 1_400,
+            appearance: enlarged
+        )
+
+        XCTAssertGreaterThan(enlargedSize.height, standardSize.height)
+        XCTAssertGreaterThan(enlargedSize.width, standardSize.width)
+    }
+
+    @MainActor
+    func testCompactDensityUsesLessVerticalSpace() {
+        let compact = HUDLayoutMetrics(
+            appearance: HUDAppearance(density: .compact)
+        )
+        let standard = HUDLayoutMetrics(
+            appearance: HUDAppearance(density: .standard)
+        )
+        let spacious = HUDLayoutMetrics(
+            appearance: HUDAppearance(density: .spacious)
+        )
+
+        XCTAssertLessThan(compact.panelHeight, standard.panelHeight)
+        XCTAssertLessThan(standard.panelHeight, spacious.panelHeight)
     }
 
     @MainActor
@@ -148,12 +248,13 @@ final class HUDLayoutTests: XCTestCase {
             HUDItem(id: 4, number: 5, text: "Wing rice"),
             HUDItem(id: 5, number: 6, text: "Red rice"),
         ]
+        let metrics = HUDLayoutMetrics()
         let textFont = NSFont.systemFont(
-            ofSize: HUDLayoutMetrics.textFontSize,
+            ofSize: metrics.textFontSize,
             weight: .medium
         )
         let numberFont = NSFont.systemFont(
-            ofSize: HUDLayoutMetrics.numberFontSize,
+            ofSize: metrics.numberFontSize,
             weight: .medium
         )
         let expectedItemWidths = items.map { item -> CGFloat in
@@ -167,16 +268,17 @@ final class HUDLayoutTests: XCTestCase {
                     ("\(number)" as NSString).size(
                         withAttributes: [.font: numberFont]
                     ).width
-                ) + HUDLayoutMetrics.numberSpacing
+                ) + metrics.numberSpacing
             }
-            width += HUDLayoutMetrics.itemHorizontalPadding * 2
-            return max(width, HUDLayoutMetrics.minimumItemWidth)
+            width += metrics.itemHorizontalPadding * 2
+            return max(width, metrics.minimumItemWidth)
         }
         let expectedWidth = ceil(
-            HUDLayoutMetrics.multiItemHorizontalPadding * 2
+            metrics.multiItemHorizontalPadding * 2
                 + expectedItemWidths.reduce(0, +)
                 + CGFloat(items.count - 1)
-                    * HUDLayoutMetrics.itemSpacing
+                    * metrics.itemSpacing
+                + metrics.measurementSafetyPadding
         )
 
         let size = HUDController.panelSize(
@@ -208,6 +310,55 @@ final class HUDLayoutTests: XCTestCase {
             HUDItemRow.naturalPanelWidth(for: items),
             fittingWidth
         )
+    }
+
+    @MainActor
+    func testHUDMeasurementMarginAcrossAppearanceMatrix() {
+        let items = [
+            HUDItem(id: 0, number: 1, text: "hello", isSelected: true),
+            HUDItem(id: 1, number: 2, text: "how are you?"),
+            HUDItem(id: 2, number: 3, text: "you"),
+        ]
+
+        for fontSize in stride(from: 12.0, through: 18.0, by: 1) {
+            for density in HUDDensity.allCases {
+                let appearance = HUDAppearance(
+                    fontSize: fontSize,
+                    density: density
+                )
+                let hostingView = NSHostingView(
+                    rootView: HUDView(
+                        items: items,
+                        appearance: appearance
+                    )
+                )
+                hostingView.layoutSubtreeIfNeeded()
+                let natural = HUDItemRow.naturalPanelWidth(
+                    for: items,
+                    appearance: appearance
+                )
+                let panelSize = HUDController.panelSize(
+                    for: items,
+                    maximumWidth: 1_400,
+                    appearance: appearance
+                )
+                XCTAssertGreaterThanOrEqual(
+                    natural,
+                    hostingView.fittingSize.width,
+                    "\(fontSize)pt \(density.rawValue)"
+                )
+                XCTAssertGreaterThanOrEqual(
+                    panelSize.width,
+                    hostingView.fittingSize.width,
+                    "\(fontSize)pt \(density.rawValue)"
+                )
+                XCTAssertGreaterThanOrEqual(
+                    panelSize.height,
+                    hostingView.fittingSize.height,
+                    "\(fontSize)pt \(density.rawValue)"
+                )
+            }
+        }
     }
 
     @MainActor

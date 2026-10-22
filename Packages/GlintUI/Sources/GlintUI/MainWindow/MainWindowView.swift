@@ -284,6 +284,81 @@ private struct DisplayPage: View {
             }
             SettingsCard("外观") {
                 VStack(spacing: 0) {
+                    segmentedSetting(
+                        title: "配色",
+                        selection: $preferences.hudAppearanceMode,
+                        caption: preferences.hudAppearanceMode == .system
+                            ? "跟随 macOS 的浅色和深色外观。"
+                            : "自定义颜色会覆盖当前的系统外观。"
+                    ) {
+                        ForEach(HUDAppearanceMode.allCases, id: \.self) {
+                            mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+
+                    if preferences.hudAppearanceMode == .custom {
+                        Divider()
+                        colorSetting(
+                            title: "文字颜色",
+                            color: Binding(
+                                get: {
+                                    preferences.hudTextColor.color
+                                },
+                                set: {
+                                    preferences.hudTextColor = HUDColor($0)
+                                }
+                            )
+                        )
+                        colorSetting(
+                            title: "背景颜色",
+                            color: Binding(
+                                get: {
+                                    preferences.hudBackgroundColor.color
+                                },
+                                set: {
+                                    preferences.hudBackgroundColor = HUDColor($0)
+                                }
+                            )
+                        )
+                        if preferences.hudAppearance
+                            .customColorsHaveLowContrast {
+                            HStack(alignment: .top, spacing: 6) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .accessibilityHidden(true)
+                                Text(
+                                    "当前配色对比度低于 4.5:1；半透明背景还会受到下方内容影响。"
+                                )
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .padding(.bottom, 10)
+                        }
+                    }
+
+                    Divider()
+
+                    sliderSetting(
+                        title: "文字大小",
+                        value: String(
+                            format: "%.0f pt",
+                            preferences.hudFontSize
+                        ),
+                        binding: $preferences.hudFontSize,
+                        range: HUDAppearance.fontSizeRange,
+                        step: 1,
+                        caption: "字号会同步调整背景高度和候选槽位。"
+                    )
+                    segmentedSetting(
+                        title: "栏内留白",
+                        selection: $preferences.hudDensity
+                    ) {
+                        ForEach(HUDDensity.allCases, id: \.self) {
+                            density in
+                            Text(density.title).tag(density)
+                        }
+                    }
+                    Divider()
                     sliderSetting(
                         title: "与候选栏间距",
                         value: String(
@@ -305,6 +380,14 @@ private struct DisplayPage: View {
                         step: 0.02,
                         caption: "透明度只影响显示背景，文字保持清晰。"
                     )
+                    HStack {
+                        Spacer()
+                        Button("恢复默认外观") {
+                            preferences.resetHUDAppearance()
+                        }
+                        .buttonStyle(.link)
+                    }
+                    .padding(.top, 8)
                 }
             }
             SettingsCard("预览") {
@@ -335,6 +418,27 @@ private struct DisplayPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        }
+        .padding(.vertical, 10)
+        .overlay(alignment: .bottom) {
+            Divider()
+        }
+    }
+
+    private func colorSetting(
+        title: String,
+        color: Binding<Color>
+    ) -> some View {
+        HStack(spacing: 24) {
+            Text(title)
+            Spacer()
+            ColorPicker(
+                title,
+                selection: color,
+                supportsOpacity: false
+            )
+            .labelsHidden()
+            .frame(width: 64, alignment: .trailing)
         }
         .padding(.vertical, 10)
         .overlay(alignment: .bottom) {
@@ -961,6 +1065,7 @@ private struct HUDPreview: View {
             if effectivePosition == .above {
                 HUDView(
                     items: previewItems,
+                    appearance: preferences.hudAppearance,
                     backgroundOpacity: preferences.hudOpacity
                 )
                     .padding(.bottom, preferences.candidateSpacing)
@@ -971,6 +1076,7 @@ private struct HUDPreview: View {
             if effectivePosition == .below {
                 HUDView(
                     items: previewItems,
+                    appearance: preferences.hudAppearance,
                     backgroundOpacity: preferences.hudOpacity
                 )
                     .padding(.top, preferences.candidateSpacing)
@@ -983,6 +1089,7 @@ private struct HUDPreview: View {
         .animation(.easeInOut(duration: 0.18), value: preferences.position)
         .animation(.easeInOut(duration: 0.18), value: preferences.candidateSpacing)
         .animation(.easeInOut(duration: 0.18), value: preferences.hudOpacity)
+        .animation(.easeInOut(duration: 0.18), value: preferences.hudAppearance)
     }
 
     private var candidateBar: some View {

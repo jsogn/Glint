@@ -15,6 +15,15 @@ final class DisplayPreferencesTests: XCTestCase {
         first.candidateDwellDuration = 0.24
         first.candidateSpacing = 14
         first.hudOpacity = 0.72
+        first.hudAppearanceMode = .custom
+        first.hudTextColor = HUDColor(red: 1, green: 0.8, blue: 0.2)
+        first.hudBackgroundColor = HUDColor(
+            red: 0.08,
+            green: 0.12,
+            blue: 0.2
+        )
+        first.hudFontSize = 17
+        first.hudDensity = .spacious
         first.translationScope = .row
 
         let second = DisplayPreferences(defaults: defaults)
@@ -22,6 +31,17 @@ final class DisplayPreferencesTests: XCTestCase {
         XCTAssertEqual(second.candidateDwellDuration, 0.24)
         XCTAssertEqual(second.candidateSpacing, 14)
         XCTAssertEqual(second.hudOpacity, 0.72)
+        XCTAssertEqual(second.hudAppearanceMode, .custom)
+        XCTAssertEqual(
+            second.hudTextColor,
+            HUDColor(red: 1, green: 0.8, blue: 0.2)
+        )
+        XCTAssertEqual(
+            second.hudBackgroundColor,
+            HUDColor(red: 0.08, green: 0.12, blue: 0.2)
+        )
+        XCTAssertEqual(second.hudFontSize, 17)
+        XCTAssertEqual(second.hudDensity, .spacious)
         XCTAssertEqual(second.translationScope, .row)
         XCTAssertEqual(
             defaults.object(
@@ -54,6 +74,13 @@ final class DisplayPreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.hudOpacity, 1)
         preferences.hudOpacity = 0
         XCTAssertEqual(preferences.hudOpacity, 0.4)
+
+        preferences.hudFontSize = 30
+        XCTAssertEqual(preferences.hudFontSize, 18)
+        preferences.hudFontSize = 8
+        XCTAssertEqual(preferences.hudFontSize, 12)
+        preferences.hudFontSize = .nan
+        XCTAssertEqual(preferences.hudFontSize, 14)
     }
 
     @MainActor
@@ -94,6 +121,42 @@ final class DisplayPreferencesTests: XCTestCase {
         preferences.translationScope = .row
 
         XCTAssertEqual(observed, [.row])
+    }
+
+    @MainActor
+    func testHUDAppearanceDefaultsMatchExistingVisuals() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = DisplayPreferences(defaults: defaults)
+
+        XCTAssertEqual(preferences.hudAppearanceMode, .system)
+        XCTAssertEqual(preferences.hudFontSize, 14)
+        XCTAssertEqual(preferences.hudDensity, .standard)
+        XCTAssertEqual(preferences.hudAppearance, .default)
+    }
+
+    @MainActor
+    func testResetHUDAppearanceRestoresDefaults() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = DisplayPreferences(defaults: defaults)
+        preferences.hudAppearanceMode = .custom
+        preferences.hudTextColor = HUDColor(red: 1, green: 0, blue: 0)
+        preferences.hudBackgroundColor = HUDColor(
+            red: 0,
+            green: 0,
+            blue: 1
+        )
+        preferences.hudFontSize = 18
+        preferences.hudDensity = .spacious
+
+        preferences.resetHUDAppearance()
+
+        XCTAssertEqual(preferences.hudAppearance, .default)
     }
 
 }

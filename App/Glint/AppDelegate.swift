@@ -374,6 +374,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             position: windowModel.displayPreferences.position,
             spacing: windowModel.displayPreferences.candidateSpacing,
             opacity: windowModel.displayPreferences.hudOpacity,
+            appearance: windowModel.displayPreferences.hudAppearance,
             revision: revision
         )
         let phase: String
