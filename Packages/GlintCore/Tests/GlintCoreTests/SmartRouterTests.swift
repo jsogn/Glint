@@ -84,14 +84,45 @@ final class SmartRouterTests: XCTestCase {
         XCTAssertEqual(output, result)
     }
 
-    func testModelFirstUsesModelEvenWhenDictionaryHasResult() async throws {
+    func testModelFirstKeepsModelFirstAndAppendsDictionaryOptions() async throws {
         let dictionaryResult = TranslationResult(
             text: "dictionary result",
             source: .dictionary,
             confidence: 0.95
         )
         let modelResult = TranslationResult(
-            text: "model result",
+            options: [
+                TranslationOption(text: "model result", score: 0.8),
+                TranslationOption(text: "model alternative", score: 0.7),
+            ],
+            source: .translation,
+            confidence: 0.8
+        )
+        let router = SmartRouter(
+            dictionary: MockDictionary(result: dictionaryResult),
+            translation: MockTranslator(result: modelResult)
+        )
+
+        let output = try await router.route(
+            Candidate(text: "方案", kind: .word),
+            mode: .modelFirst
+        )
+        XCTAssertEqual(
+            output?.options.map(\.text),
+            ["model result", "model alternative", "dictionary result"]
+        )
+        XCTAssertEqual(output?.source, .translation)
+        XCTAssertEqual(output?.confidence, modelResult.confidence)
+    }
+
+    func testModelFirstSkipsDictionaryForSentence() async throws {
+        let dictionaryResult = TranslationResult(
+            text: "dictionary result",
+            source: .dictionary,
+            confidence: 0.95
+        )
+        let modelResult = TranslationResult(
+            text: "sentence result",
             source: .translation,
             confidence: 0.8
         )
@@ -104,7 +135,51 @@ final class SmartRouterTests: XCTestCase {
             Candidate(text: "这个方案需要再讨论", kind: .sentence),
             mode: .modelFirst
         )
+
         XCTAssertEqual(output, modelResult)
+    }
+
+    func testModelFirstKeepsModelWhenDictionaryFails() async throws {
+        let modelResult = TranslationResult(
+            text: "model result",
+            source: .translation,
+            confidence: 0.8
+        )
+        let router = SmartRouter(
+            dictionary: FailingDictionary(),
+            translation: MockTranslator(result: modelResult)
+        )
+
+        let output = try await router.route(
+            Candidate(text: "方案", kind: .word),
+            mode: .modelFirst
+        )
+
+        XCTAssertEqual(output, modelResult)
+    }
+
+    func testModelFirstTreatsEmptyModelResultAsMiss() async throws {
+        let dictionaryResult = TranslationResult(
+            text: "dictionary result",
+            source: .dictionary,
+            confidence: 0.95
+        )
+        let emptyModelResult = TranslationResult(
+            options: [],
+            source: .translation,
+            confidence: 0.8
+        )
+        let router = SmartRouter(
+            dictionary: MockDictionary(result: dictionaryResult),
+            translation: MockTranslator(result: emptyModelResult)
+        )
+
+        let output = try await router.route(
+            Candidate(text: "方案", kind: .word),
+            mode: .modelFirst
+        )
+
+        XCTAssertEqual(output, dictionaryResult)
     }
 
     func testModelFirstFallsBackToDictionaryWhenModelHasNoResult() async throws {

@@ -84,4 +84,24 @@ final class DictionaryRouterTests: XCTestCase {
         let result = try await router.lookup(Candidate(text: "打", kind: .word))
         XCTAssertNil(result)
     }
+
+    func testDefaultPolicyKeepsLegitimateWordsAndBlocksInvalidFragment() async throws {
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "example",
+                priority: 0,
+                engine: OrderedDictionary(value: "result")
+            ),
+        ])
+
+        let legitimate = try await router.lookup(
+            Candidate(text: "打", kind: .word)
+        )
+        let invalidFragment = try await router.lookup(
+            Candidate(text: "你号", kind: .word)
+        )
+
+        XCTAssertEqual(legitimate?.text, "result")
+        XCTAssertNil(invalidFragment)
+    }
 }

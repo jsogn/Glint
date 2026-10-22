@@ -11,6 +11,9 @@
 > 新增 Hy-MT2 1.8B 与 Index-Translate 2B 专用翻译模型；同测试集下 Hy-MT2
 > p50 49ms、Index p50 53ms，Qwen3 1.7B 为 141ms。Qwen 系列仍保留用于多语言扩展。
 > 运行时和安装验证详见 `docs/M9-LOCAL-MODEL-RUNTIME.md`。
+>
+> 2026-10-22 更新：默认保持词典优先；模型优先可选，并在成功时把模型结果
+> 放在首位、词典作为后续候选。决策依据见 `docs/M20-OVERRIDE-ABLATION.md`。
 
 ## 1. 结论
 

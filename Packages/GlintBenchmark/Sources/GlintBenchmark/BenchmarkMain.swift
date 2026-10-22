@@ -81,10 +81,7 @@ struct BenchmarkMain {
                 )
             )
         }
-        let router = DictionaryRouter(
-            routes: routes,
-            blocked: ["打", "尼", "你号"]
-        )
+        let router = DictionaryRouter(routes: routes)
 
         var results: [CaseResult] = []
         var latencies: [Double] = []

@@ -1,0 +1,2900 @@
+{
+  "schema_version": 1,
+  "source": "codex/context-heldout-validation",
+  "source_commit": "96edcfd",
+  "excluded_targets": [
+    "学生",
+    "苹果",
+    "谢谢",
+    "里程碑"
+  ],
+  "cases": [
+    {
+      "id": "hold-pol-001-a",
+      "pair_id": "hold-pol-001",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "包袱",
+      "before": "她打开",
+      "after": "拿出衣服",
+      "references": [
+        "bundle",
+        "cloth bundle"
+      ],
+      "unacceptable": [
+        "burden",
+        "load"
+      ]
+    },
+    {
+      "id": "hold-pol-001-b",
+      "pair_id": "hold-pol-001",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "包袱",
+      "before": "孩子成了他的",
+      "after": "",
+      "references": [
+        "burden",
+        "load",
+        "emotional baggage"
+      ],
+      "unacceptable": [
+        "bundle"
+      ]
+    },
+    {
+      "id": "hold-pol-002-a",
+      "pair_id": "hold-pol-002",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "水分",
+      "before": "这个西瓜",
+      "after": "很足",
+      "references": [
+        "moisture",
+        "water content"
+      ],
+      "unacceptable": [
+        "exaggeration",
+        "padding"
+      ]
+    },
+    {
+      "id": "hold-pol-002-b",
+      "pair_id": "hold-pol-002",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "水分",
+      "before": "这份报告有",
+      "after": "",
+      "references": [
+        "exaggeration",
+        "padding",
+        "inflated figures"
+      ],
+      "unacceptable": [
+        "moisture",
+        "water content"
+      ]
+    },
+    {
+      "id": "hold-pol-003-a",
+      "pair_id": "hold-pol-003",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "骄傲",
+      "before": "父母为他感到",
+      "after": "",
+      "references": [
+        "proud"
+      ],
+      "unacceptable": [
+        "arrogant",
+        "conceited"
+      ]
+    },
+    {
+      "id": "hold-pol-003-b",
+      "pair_id": "hold-pol-003",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "骄傲",
+      "before": "他因为成绩变得",
+      "after": "",
+      "references": [
+        "arrogant",
+        "conceited",
+        "full of oneself"
+      ],
+      "unacceptable": [
+        "proud"
+      ]
+    },
+    {
+      "id": "hold-pol-004-a",
+      "pair_id": "hold-pol-004",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "机关",
+      "before": "他在政府",
+      "after": "工作",
+      "references": [
+        "government office",
+        "government agency",
+        "organization"
+      ],
+      "unacceptable": [
+        "mechanism",
+        "trap"
+      ]
+    },
+    {
+      "id": "hold-pol-004-b",
+      "pair_id": "hold-pol-004",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "机关",
+      "before": "墙上有个隐藏",
+      "after": "",
+      "references": [
+        "mechanism",
+        "device",
+        "trap"
+      ],
+      "unacceptable": [
+        "government office",
+        "government agency"
+      ]
+    },
+    {
+      "id": "hold-pol-005-a",
+      "pair_id": "hold-pol-005",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "出口",
+      "before": "请从右边的",
+      "after": "离开",
+      "references": [
+        "exit",
+        "way out"
+      ],
+      "unacceptable": [
+        "export"
+      ]
+    },
+    {
+      "id": "hold-pol-005-b",
+      "pair_id": "hold-pol-005",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "出口",
+      "before": "这个国家主要",
+      "after": "咖啡",
+      "references": [
+        "export",
+        "exports"
+      ],
+      "unacceptable": [
+        "exit",
+        "way out"
+      ]
+    },
+    {
+      "id": "hold-pol-006-a",
+      "pair_id": "hold-pol-006",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "进口",
+      "before": "商场的",
+      "after": "在正门",
+      "references": [
+        "entrance",
+        "entry"
+      ],
+      "unacceptable": [
+        "import",
+        "imports"
+      ]
+    },
+    {
+      "id": "hold-pol-006-b",
+      "pair_id": "hold-pol-006",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "进口",
+      "before": "这个国家需要",
+      "after": "石油",
+      "references": [
+        "import",
+        "imports"
+      ],
+      "unacceptable": [
+        "entrance",
+        "entry"
+      ]
+    },
+    {
+      "id": "hold-pol-007-a",
+      "pair_id": "hold-pol-007",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "米",
+      "before": "碗里还有很多",
+      "after": "",
+      "references": [
+        "rice"
+      ],
+      "unacceptable": [
+        "meter",
+        "metre"
+      ]
+    },
+    {
+      "id": "hold-pol-007-b",
+      "pair_id": "hold-pol-007",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "米",
+      "before": "房间长三",
+      "after": "",
+      "references": [
+        "meter",
+        "metre"
+      ],
+      "unacceptable": [
+        "rice"
+      ]
+    },
+    {
+      "id": "hold-pol-008-a",
+      "pair_id": "hold-pol-008",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "站",
+      "before": "别一直",
+      "after": "着说话",
+      "references": [
+        "stand",
+        "standing"
+      ],
+      "unacceptable": [
+        "station",
+        "stop"
+      ]
+    },
+    {
+      "id": "hold-pol-008-b",
+      "pair_id": "hold-pol-008",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "站",
+      "before": "下一",
+      "after": "是人民广场",
+      "references": [
+        "station",
+        "stop"
+      ],
+      "unacceptable": [
+        "stand",
+        "standing"
+      ]
+    },
+    {
+      "id": "hold-pol-009-a",
+      "pair_id": "hold-pol-009",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "生",
+      "before": "日本人喜欢",
+      "after": "鱼",
+      "references": [
+        "raw",
+        "uncooked"
+      ],
+      "unacceptable": [
+        "give birth",
+        "gave birth"
+      ]
+    },
+    {
+      "id": "hold-pol-009-b",
+      "pair_id": "hold-pol-009",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "生",
+      "before": "她去年",
+      "after": "了一个女儿",
+      "references": [
+        "give birth",
+        "gave birth",
+        "had a baby"
+      ],
+      "unacceptable": [
+        "raw",
+        "uncooked"
+      ]
+    },
+    {
+      "id": "hold-pol-010-a",
+      "pair_id": "hold-pol-010",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "熟",
+      "before": "这块肉还没",
+      "after": "",
+      "references": [
+        "cooked",
+        "done"
+      ],
+      "unacceptable": [
+        "familiar",
+        "close"
+      ]
+    },
+    {
+      "id": "hold-pol-010-b",
+      "pair_id": "hold-pol-010",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "熟",
+      "before": "我们俩很",
+      "after": "",
+      "references": [
+        "familiar",
+        "close"
+      ],
+      "unacceptable": [
+        "cooked",
+        "done"
+      ]
+    },
+    {
+      "id": "hold-pol-011-a",
+      "pair_id": "hold-pol-011",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "冷淡",
+      "before": "他对客人很",
+      "after": "",
+      "references": [
+        "cold",
+        "indifferent",
+        "aloof"
+      ],
+      "unacceptable": [
+        "sluggish",
+        "slow"
+      ]
+    },
+    {
+      "id": "hold-pol-011-b",
+      "pair_id": "hold-pol-011",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "冷淡",
+      "before": "最近的生意很",
+      "after": "",
+      "references": [
+        "sluggish",
+        "slow",
+        "quiet"
+      ],
+      "unacceptable": [
+        "cold",
+        "indifferent",
+        "aloof"
+      ]
+    },
+    {
+      "id": "hold-pol-012-a",
+      "pair_id": "hold-pol-012",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "热",
+      "before": "这碗汤还很",
+      "after": "",
+      "references": [
+        "hot"
+      ],
+      "unacceptable": [
+        "popular",
+        "trending"
+      ]
+    },
+    {
+      "id": "hold-pol-012-b",
+      "pair_id": "hold-pol-012",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "热",
+      "before": "这首歌最近很",
+      "after": "",
+      "references": [
+        "popular",
+        "trending",
+        "hot"
+      ],
+      "unacceptable": [
+        "hot temperature",
+        "piping hot"
+      ]
+    },
+    {
+      "id": "hold-pol-013-a",
+      "pair_id": "hold-pol-013",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "火",
+      "before": "森林里发生大",
+      "after": "",
+      "references": [
+        "fire",
+        "blaze"
+      ],
+      "unacceptable": [
+        "popular",
+        "trending"
+      ]
+    },
+    {
+      "id": "hold-pol-013-b",
+      "pair_id": "hold-pol-013",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "火",
+      "before": "这家店最近很",
+      "after": "",
+      "references": [
+        "popular",
+        "trending",
+        "hot"
+      ],
+      "unacceptable": [
+        "fire",
+        "blaze"
+      ]
+    },
+    {
+      "id": "hold-pol-014-a",
+      "pair_id": "hold-pol-014",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "白",
+      "before": "她穿了一条",
+      "after": "裙子",
+      "references": [
+        "white"
+      ],
+      "unacceptable": [
+        "in vain",
+        "for nothing"
+      ]
+    },
+    {
+      "id": "hold-pol-014-b",
+      "pair_id": "hold-pol-014",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "白",
+      "before": "今天",
+      "after": "跑了一趟",
+      "references": [
+        "in vain",
+        "for nothing"
+      ],
+      "unacceptable": [
+        "white"
+      ]
+    },
+    {
+      "id": "hold-pol-015-a",
+      "pair_id": "hold-pol-015",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "黑",
+      "before": "他买了一件",
+      "after": "外套",
+      "references": [
+        "black"
+      ],
+      "unacceptable": [
+        "illegal",
+        "underground"
+      ]
+    },
+    {
+      "id": "hold-pol-015-b",
+      "pair_id": "hold-pol-015",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "黑",
+      "before": "这是一家",
+      "after": "作坊",
+      "references": [
+        "illegal",
+        "underground",
+        "unlicensed"
+      ],
+      "unacceptable": [
+        "black"
+      ]
+    },
+    {
+      "id": "hold-pol-016-a",
+      "pair_id": "hold-pol-016",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "干",
+      "before": "衣服已经",
+      "after": "了",
+      "references": [
+        "dry",
+        "dried"
+      ],
+      "unacceptable": [
+        "do",
+        "doing"
+      ]
+    },
+    {
+      "id": "hold-pol-016-b",
+      "pair_id": "hold-pol-016",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "干",
+      "before": "你在",
+      "after": "什么",
+      "references": [
+        "do",
+        "doing",
+        "work"
+      ],
+      "unacceptable": [
+        "dry",
+        "dried"
+      ]
+    },
+    {
+      "id": "hold-pol-017-a",
+      "pair_id": "hold-pol-017",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "空",
+      "before": "房间里是",
+      "after": "的",
+      "references": [
+        "empty",
+        "vacant"
+      ],
+      "unacceptable": [
+        "free",
+        "available"
+      ]
+    },
+    {
+      "id": "hold-pol-017-b",
+      "pair_id": "hold-pol-017",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "空",
+      "before": "你明天有",
+      "after": "吗",
+      "references": [
+        "free",
+        "available"
+      ],
+      "unacceptable": [
+        "empty",
+        "vacant"
+      ]
+    },
+    {
+      "id": "hold-pol-018-a",
+      "pair_id": "hold-pol-018",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "满",
+      "before": "杯子已经",
+      "after": "了",
+      "references": [
+        "full"
+      ],
+      "unacceptable": [
+        "satisfied",
+        "pleased"
+      ]
+    },
+    {
+      "id": "hold-pol-018-b",
+      "pair_id": "hold-pol-018",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "满",
+      "before": "他对结果很",
+      "after": "意",
+      "references": [
+        "satisfied",
+        "pleased",
+        "content"
+      ],
+      "unacceptable": [
+        "full"
+      ]
+    },
+    {
+      "id": "hold-pol-019-a",
+      "pair_id": "hold-pol-019",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "算",
+      "before": "请帮我",
+      "after": "一下价格",
+      "references": [
+        "calculate",
+        "compute"
+      ],
+      "unacceptable": [
+        "count as",
+        "considered"
+      ]
+    },
+    {
+      "id": "hold-pol-019-b",
+      "pair_id": "hold-pol-019",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "算",
+      "before": "这",
+      "after": "成功了",
+      "references": [
+        "count as",
+        "considered",
+        "counted"
+      ],
+      "unacceptable": [
+        "calculate",
+        "compute"
+      ]
+    },
+    {
+      "id": "hold-pol-020-a",
+      "pair_id": "hold-pol-020",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "对",
+      "before": "你的答案很",
+      "after": "",
+      "references": [
+        "correct",
+        "right"
+      ],
+      "unacceptable": [
+        "to",
+        "toward"
+      ]
+    },
+    {
+      "id": "hold-pol-020-b",
+      "pair_id": "hold-pol-020",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "对",
+      "before": "他",
+      "after": "我笑了",
+      "references": [
+        "to",
+        "toward",
+        "at"
+      ],
+      "unacceptable": [
+        "correct",
+        "right"
+      ]
+    },
+    {
+      "id": "hold-pol-021-a",
+      "pair_id": "hold-pol-021",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "关",
+      "before": "请",
+      "after": "上门",
+      "references": [
+        "close",
+        "shut"
+      ],
+      "unacceptable": [
+        "concern",
+        "involve"
+      ]
+    },
+    {
+      "id": "hold-pol-021-b",
+      "pair_id": "hold-pol-021",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "关",
+      "before": "这件事不",
+      "after": "我的事",
+      "references": [
+        "concern",
+        "involve",
+        "relate to"
+      ],
+      "unacceptable": [
+        "close",
+        "shut"
+      ]
+    },
+    {
+      "id": "hold-pol-022-a",
+      "pair_id": "hold-pol-022",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "送",
+      "before": "我",
+      "after": "你一本书",
+      "references": [
+        "give",
+        "gift"
+      ],
+      "unacceptable": [
+        "see off"
+      ]
+    },
+    {
+      "id": "hold-pol-022-b",
+      "pair_id": "hold-pol-022",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "送",
+      "before": "我去机场",
+      "after": "朋友",
+      "references": [
+        "see off",
+        "escort"
+      ],
+      "unacceptable": [
+        "give",
+        "gift"
+      ]
+    },
+    {
+      "id": "hold-pol-023-a",
+      "pair_id": "hold-pol-023",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "转",
+      "before": "请",
+      "after": "身看后面",
+      "references": [
+        "turn",
+        "rotate"
+      ],
+      "unacceptable": [
+        "forward",
+        "transfer"
+      ]
+    },
+    {
+      "id": "hold-pol-023-b",
+      "pair_id": "hold-pol-023",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "转",
+      "before": "请把文件",
+      "after": "给财务",
+      "references": [
+        "forward",
+        "transfer",
+        "send"
+      ],
+      "unacceptable": [
+        "turn",
+        "rotate"
+      ]
+    },
+    {
+      "id": "hold-pol-024-a",
+      "pair_id": "hold-pol-024",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "推",
+      "before": "请帮我",
+      "after": "一下车",
+      "references": [
+        "push"
+      ],
+      "unacceptable": [
+        "recommend",
+        "promote"
+      ]
+    },
+    {
+      "id": "hold-pol-024-b",
+      "pair_id": "hold-pol-024",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "推",
+      "before": "店员向我",
+      "after": "了一款产品",
+      "references": [
+        "recommend",
+        "promote"
+      ],
+      "unacceptable": [
+        "push"
+      ]
+    },
+    {
+      "id": "hold-pol-025-a",
+      "pair_id": "hold-pol-025",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "拉",
+      "before": "请",
+      "after": "开门",
+      "references": [
+        "pull"
+      ],
+      "unacceptable": [
+        "solicit",
+        "attract"
+      ]
+    },
+    {
+      "id": "hold-pol-025-b",
+      "pair_id": "hold-pol-025",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "拉",
+      "before": "销售每天要",
+      "after": "客户",
+      "references": [
+        "solicit",
+        "attract",
+        "recruit"
+      ],
+      "unacceptable": [
+        "pull"
+      ]
+    },
+    {
+      "id": "hold-pol-026-a",
+      "pair_id": "hold-pol-026",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "提",
+      "before": "请帮我",
+      "after": "起箱子",
+      "references": [
+        "lift",
+        "carry",
+        "pick up"
+      ],
+      "unacceptable": [
+        "mention",
+        "raise"
+      ]
+    },
+    {
+      "id": "hold-pol-026-b",
+      "pair_id": "hold-pol-026",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "提",
+      "before": "他在会上",
+      "after": "了这个问题",
+      "references": [
+        "mention",
+        "raise",
+        "bring up"
+      ],
+      "unacceptable": [
+        "lift",
+        "carry"
+      ]
+    },
+    {
+      "id": "hold-pol-027-a",
+      "pair_id": "hold-pol-027",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "挂",
+      "before": "请把画",
+      "after": "在墙上",
+      "references": [
+        "hang"
+      ],
+      "unacceptable": [
+        "register",
+        "make an appointment"
+      ]
+    },
+    {
+      "id": "hold-pol-027-b",
+      "pair_id": "hold-pol-027",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "挂",
+      "before": "我要去医院",
+      "after": "号",
+      "references": [
+        "register",
+        "make an appointment"
+      ],
+      "unacceptable": [
+        "hang"
+      ]
+    },
+    {
+      "id": "hold-pol-028-a",
+      "pair_id": "hold-pol-028",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "包",
+      "before": "她背着一个红",
+      "after": "",
+      "references": [
+        "bag",
+        "handbag"
+      ],
+      "unacceptable": [
+        "include",
+        "cover"
+      ]
+    },
+    {
+      "id": "hold-pol-028-b",
+      "pair_id": "hold-pol-028",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "包",
+      "before": "住宿费",
+      "after": "早餐",
+      "references": [
+        "include",
+        "cover"
+      ],
+      "unacceptable": [
+        "bag",
+        "handbag"
+      ]
+    },
+    {
+      "id": "hold-pol-029-a",
+      "pair_id": "hold-pol-029",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "套",
+      "before": "请给手机加个保护",
+      "after": "",
+      "references": [
+        "case",
+        "cover"
+      ],
+      "unacceptable": [
+        "set"
+      ]
+    },
+    {
+      "id": "hold-pol-029-b",
+      "pair_id": "hold-pol-029",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "套",
+      "before": "他买了一",
+      "after": "新家具",
+      "references": [
+        "set",
+        "suite"
+      ],
+      "unacceptable": [
+        "case",
+        "cover"
+      ]
+    },
+    {
+      "id": "hold-pol-030-a",
+      "pair_id": "hold-pol-030",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "会",
+      "before": "今天下午的",
+      "after": "很重要",
+      "references": [
+        "meeting",
+        "conference"
+      ],
+      "unacceptable": [
+        "can",
+        "know how"
+      ]
+    },
+    {
+      "id": "hold-pol-030-b",
+      "pair_id": "hold-pol-030",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "会",
+      "before": "他很",
+      "after": "游泳",
+      "references": [
+        "can",
+        "know how to"
+      ],
+      "unacceptable": [
+        "meeting",
+        "conference"
+      ]
+    },
+    {
+      "id": "hold-pol-031-a",
+      "pair_id": "hold-pol-031",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "要",
+      "before": "服务员，我",
+      "after": "一杯咖啡",
+      "references": [
+        "want",
+        "would like",
+        "order"
+      ],
+      "unacceptable": [
+        "important",
+        "critical"
+      ]
+    },
+    {
+      "id": "hold-pol-031-b",
+      "pair_id": "hold-pol-031",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "要",
+      "before": "这件事很",
+      "after": "紧",
+      "references": [
+        "important",
+        "critical",
+        "urgent"
+      ],
+      "unacceptable": [
+        "want",
+        "would like"
+      ]
+    },
+    {
+      "id": "hold-pol-032-a",
+      "pair_id": "hold-pol-032",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "让",
+      "before": "请",
+      "after": "我进去",
+      "references": [
+        "let",
+        "allow"
+      ],
+      "unacceptable": [
+        "make",
+        "cause"
+      ]
+    },
+    {
+      "id": "hold-pol-032-b",
+      "pair_id": "hold-pol-032",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "让",
+      "before": "这消息",
+      "after": "大家很担心",
+      "references": [
+        "make",
+        "cause",
+        "made"
+      ],
+      "unacceptable": [
+        "let",
+        "allow"
+      ]
+    },
+    {
+      "id": "hold-pol-033-a",
+      "pair_id": "hold-pol-033",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "给",
+      "before": "我",
+      "after": "你一份礼物",
+      "references": [
+        "give",
+        "gave"
+      ],
+      "unacceptable": [
+        "for",
+        "to"
+      ]
+    },
+    {
+      "id": "hold-pol-033-b",
+      "pair_id": "hold-pol-033",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "给",
+      "before": "他",
+      "after": "学生讲课",
+      "references": [
+        "for",
+        "to"
+      ],
+      "unacceptable": [
+        "give",
+        "gave"
+      ]
+    },
+    {
+      "id": "hold-pol-034-a",
+      "pair_id": "hold-pol-034",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "跟",
+      "before": "小狗一直",
+      "after": "着我",
+      "references": [
+        "follow",
+        "following"
+      ],
+      "unacceptable": [
+        "with"
+      ]
+    },
+    {
+      "id": "hold-pol-034-b",
+      "pair_id": "hold-pol-034",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "跟",
+      "before": "我",
+      "after": "朋友一起吃饭",
+      "references": [
+        "with"
+      ],
+      "unacceptable": [
+        "follow",
+        "following"
+      ]
+    },
+    {
+      "id": "hold-pol-035-a",
+      "pair_id": "hold-pol-035",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "向",
+      "before": "他一直",
+      "after": "前走",
+      "references": [
+        "toward",
+        "forward"
+      ],
+      "unacceptable": [
+        "direction"
+      ]
+    },
+    {
+      "id": "hold-pol-035-b",
+      "pair_id": "hold-pol-035",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "向",
+      "before": "风",
+      "after": "变了",
+      "references": [
+        "direction"
+      ],
+      "unacceptable": [
+        "toward",
+        "forward"
+      ]
+    },
+    {
+      "id": "hold-pol-036-a",
+      "pair_id": "hold-pol-036",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "叫",
+      "before": "外面有人",
+      "after": "你",
+      "references": [
+        "call",
+        "shout"
+      ],
+      "unacceptable": [
+        "be called",
+        "named"
+      ]
+    },
+    {
+      "id": "hold-pol-036-b",
+      "pair_id": "hold-pol-036",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "叫",
+      "before": "这个字",
+      "after": "什么",
+      "references": [
+        "be called",
+        "named"
+      ],
+      "unacceptable": [
+        "call",
+        "shout"
+      ]
+    },
+    {
+      "id": "hold-pol-037-a",
+      "pair_id": "hold-pol-037",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "望",
+      "before": "他抬头",
+      "after": "着天空",
+      "references": [
+        "look",
+        "gaze",
+        "looking"
+      ],
+      "unacceptable": [
+        "hope"
+      ]
+    },
+    {
+      "id": "hold-pol-037-b",
+      "pair_id": "hold-pol-037",
+      "kind": "word",
+      "category": "polysemy",
+      "target": "望",
+      "before": "我",
+      "after": "你早点回来",
+      "references": [
+        "hope",
+        "wish"
+      ],
+      "unacceptable": [
+        "look",
+        "gaze"
+      ]
+    },
+    {
+      "id": "hold-pol-038-a",
+      "pair_id": "hold-pol-038",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "应付",
+      "before": "先想办法",
+      "after": "这次检查",
+      "references": [
+        "deal with",
+        "handle",
+        "cope with"
+      ],
+      "unacceptable": [
+        "perfunctory",
+        "go through the motions"
+      ]
+    },
+    {
+      "id": "hold-pol-038-b",
+      "pair_id": "hold-pol-038",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "应付",
+      "before": "他对工作只是随便",
+      "after": "",
+      "references": [
+        "perfunctory",
+        "go through the motions",
+        "half-hearted"
+      ],
+      "unacceptable": [
+        "deal with",
+        "handle"
+      ]
+    },
+    {
+      "id": "hold-pol-039-a",
+      "pair_id": "hold-pol-039",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "东西",
+      "before": "你把",
+      "after": "放哪了",
+      "references": [
+        "thing",
+        "stuff"
+      ],
+      "unacceptable": [
+        "east and west"
+      ]
+    },
+    {
+      "id": "hold-pol-039-b",
+      "pair_id": "hold-pol-039",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "东西",
+      "before": "这条路通向",
+      "after": "两个方向",
+      "references": [
+        "east and west"
+      ],
+      "unacceptable": [
+        "thing",
+        "stuff"
+      ]
+    },
+    {
+      "id": "hold-pol-040-a",
+      "pair_id": "hold-pol-040",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "地方",
+      "before": "这里是个安静的",
+      "after": "",
+      "references": [
+        "place",
+        "location"
+      ],
+      "unacceptable": [
+        "local"
+      ]
+    },
+    {
+      "id": "hold-pol-040-b",
+      "pair_id": "hold-pol-040",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "地方",
+      "before": "我们需要了解",
+      "after": "政策",
+      "references": [
+        "local"
+      ],
+      "unacceptable": [
+        "place",
+        "location"
+      ]
+    },
+    {
+      "id": "hold-pol-041-a",
+      "pair_id": "hold-pol-041",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "人家",
+      "before": "村里只有几户",
+      "after": "",
+      "references": [
+        "household",
+        "family"
+      ],
+      "unacceptable": [
+        "others",
+        "they"
+      ]
+    },
+    {
+      "id": "hold-pol-041-b",
+      "pair_id": "hold-pol-041",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "人家",
+      "before": "",
+      "after": "早就知道了",
+      "references": [
+        "others",
+        "they",
+        "people"
+      ],
+      "unacceptable": [
+        "household",
+        "family"
+      ]
+    },
+    {
+      "id": "hold-pol-042-a",
+      "pair_id": "hold-pol-042",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "长短",
+      "before": "请量一下袖子的",
+      "after": "",
+      "references": [
+        "length"
+      ],
+      "unacceptable": [
+        "pros and cons",
+        "strengths and weaknesses"
+      ]
+    },
+    {
+      "id": "hold-pol-042-b",
+      "pair_id": "hold-pol-042",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "长短",
+      "before": "请分析方案的",
+      "after": "",
+      "references": [
+        "pros and cons",
+        "strengths and weaknesses"
+      ],
+      "unacceptable": [
+        "length"
+      ]
+    },
+    {
+      "id": "hold-pol-043-a",
+      "pair_id": "hold-pol-043",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "左右",
+      "before": "我们八点",
+      "after": "到",
+      "references": [
+        "around",
+        "approximately"
+      ],
+      "unacceptable": [
+        "influence",
+        "control"
+      ]
+    },
+    {
+      "id": "hold-pol-043-b",
+      "pair_id": "hold-pol-043",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "左右",
+      "before": "他能",
+      "after": "会议结果",
+      "references": [
+        "influence",
+        "control"
+      ],
+      "unacceptable": [
+        "around",
+        "approximately"
+      ]
+    },
+    {
+      "id": "hold-pol-044-a",
+      "pair_id": "hold-pol-044",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "高低",
+      "before": "他测了桌子的",
+      "after": "",
+      "references": [
+        "height"
+      ],
+      "unacceptable": [
+        "quality",
+        "level"
+      ]
+    },
+    {
+      "id": "hold-pol-044-b",
+      "pair_id": "hold-pol-044",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "高低",
+      "before": "员工水平有",
+      "after": "",
+      "references": [
+        "quality",
+        "level",
+        "differences in quality"
+      ],
+      "unacceptable": [
+        "height"
+      ]
+    },
+    {
+      "id": "hold-pol-045-a",
+      "pair_id": "hold-pol-045",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "是非",
+      "before": "孩子要分清",
+      "after": "",
+      "references": [
+        "right and wrong",
+        "right from wrong"
+      ],
+      "unacceptable": [
+        "gossip",
+        "dispute"
+      ]
+    },
+    {
+      "id": "hold-pol-045-b",
+      "pair_id": "hold-pol-045",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "是非",
+      "before": "不要制造",
+      "after": "",
+      "references": [
+        "gossip",
+        "dispute",
+        "trouble"
+      ],
+      "unacceptable": [
+        "right and wrong"
+      ]
+    },
+    {
+      "id": "hold-pol-046-a",
+      "pair_id": "hold-pol-046",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "手脚",
+      "before": "天冷冻得",
+      "after": "发麻",
+      "references": [
+        "hands and feet"
+      ],
+      "unacceptable": [
+        "tricks",
+        "dirty work"
+      ]
+    },
+    {
+      "id": "hold-pol-046-b",
+      "pair_id": "hold-pol-046",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "手脚",
+      "before": "这个人在账目上动了",
+      "after": "",
+      "references": [
+        "tricks",
+        "dirty work",
+        "fiddle"
+      ],
+      "unacceptable": [
+        "hands and feet"
+      ]
+    },
+    {
+      "id": "hold-pol-047-a",
+      "pair_id": "hold-pol-047",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "空气",
+      "before": "山里的",
+      "after": "很好",
+      "references": [
+        "air"
+      ],
+      "unacceptable": [
+        "atmosphere",
+        "mood"
+      ]
+    },
+    {
+      "id": "hold-pol-047-b",
+      "pair_id": "hold-pol-047",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "空气",
+      "before": "会议室的",
+      "after": "很紧张",
+      "references": [
+        "atmosphere",
+        "mood"
+      ],
+      "unacceptable": [
+        "air"
+      ]
+    },
+    {
+      "id": "hold-pol-048-a",
+      "pair_id": "hold-pol-048",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "味道",
+      "before": "这道菜的",
+      "after": "很好",
+      "references": [
+        "taste",
+        "flavor"
+      ],
+      "unacceptable": [
+        "tone",
+        "hint"
+      ]
+    },
+    {
+      "id": "hold-pol-048-b",
+      "pair_id": "hold-pol-048",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "味道",
+      "before": "她的话里有责备的",
+      "after": "",
+      "references": [
+        "tone",
+        "hint",
+        "feel"
+      ],
+      "unacceptable": [
+        "taste",
+        "flavor"
+      ]
+    },
+    {
+      "id": "hold-pol-049-a",
+      "pair_id": "hold-pol-049",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "颜色",
+      "before": "你喜欢什么",
+      "after": "",
+      "references": [
+        "color"
+      ],
+      "unacceptable": [
+        "expression",
+        "mood"
+      ]
+    },
+    {
+      "id": "hold-pol-049-b",
+      "pair_id": "hold-pol-049",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "颜色",
+      "before": "看他的",
+      "after": "行事",
+      "references": [
+        "expression",
+        "mood",
+        "reaction"
+      ],
+      "unacceptable": [
+        "color"
+      ]
+    },
+    {
+      "id": "hold-pol-050-a",
+      "pair_id": "hold-pol-050",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "背景",
+      "before": "照片的",
+      "after": "很乱",
+      "references": [
+        "background"
+      ],
+      "unacceptable": [
+        "backing",
+        "connections"
+      ]
+    },
+    {
+      "id": "hold-pol-050-b",
+      "pair_id": "hold-pol-050",
+      "kind": "phrase",
+      "category": "polysemy",
+      "target": "背景",
+      "before": "他在这家公司有",
+      "after": "",
+      "references": [
+        "backing",
+        "connections",
+        "influence"
+      ],
+      "unacceptable": [
+        "background"
+      ]
+    },
+    {
+      "id": "hold-biz-001",
+      "kind": "phrase",
+      "category": "business",
+      "target": "AB测试",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "A/B test"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-002",
+      "kind": "phrase",
+      "category": "business",
+      "target": "服务降级",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "service degradation",
+        "degrade service"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-003",
+      "kind": "phrase",
+      "category": "business",
+      "target": "限流",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "rate limiting",
+        "throttling"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-004",
+      "kind": "phrase",
+      "category": "business",
+      "target": "熔断",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "circuit breaking",
+        "circuit breaker"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-005",
+      "kind": "phrase",
+      "category": "business",
+      "target": "可观测性",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "observability"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-006",
+      "kind": "phrase",
+      "category": "business",
+      "target": "数据血缘",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "data lineage"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-007",
+      "kind": "phrase",
+      "category": "business",
+      "target": "数据脱敏",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "data masking",
+        "data anonymization"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-008",
+      "kind": "phrase",
+      "category": "business",
+      "target": "特征工程",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "feature engineering"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-009",
+      "kind": "phrase",
+      "category": "business",
+      "target": "模型漂移",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "model drift"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-010",
+      "kind": "phrase",
+      "category": "business",
+      "target": "提示词",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "prompt",
+        "prompt text"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-011",
+      "kind": "phrase",
+      "category": "business",
+      "target": "检索增强",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "retrieval augmentation",
+        "retrieval-augmented generation"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-012",
+      "kind": "phrase",
+      "category": "business",
+      "target": "向量检索",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "vector search",
+        "vector retrieval"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-013",
+      "kind": "phrase",
+      "category": "business",
+      "target": "知识库",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "knowledge base"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-014",
+      "kind": "phrase",
+      "category": "business",
+      "target": "上下文窗口",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "context window"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-015",
+      "kind": "phrase",
+      "category": "business",
+      "target": "评估集",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "evaluation set"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-016",
+      "kind": "phrase",
+      "category": "business",
+      "target": "回归测试",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "regression test",
+        "regression testing"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-017",
+      "kind": "phrase",
+      "category": "business",
+      "target": "单元测试",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "unit test",
+        "unit testing"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-018",
+      "kind": "phrase",
+      "category": "business",
+      "target": "集成测试",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "integration test",
+        "integration testing"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-019",
+      "kind": "phrase",
+      "category": "business",
+      "target": "端到端测试",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "end-to-end test",
+        "end-to-end testing"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-020",
+      "kind": "phrase",
+      "category": "business",
+      "target": "性能基线",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "performance baseline"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-021",
+      "kind": "phrase",
+      "category": "business",
+      "target": "延迟预算",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "latency budget"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-022",
+      "kind": "phrase",
+      "category": "business",
+      "target": "吞吐量",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "throughput"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-023",
+      "kind": "phrase",
+      "category": "business",
+      "target": "内存占用",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "memory usage",
+        "memory footprint"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-024",
+      "kind": "phrase",
+      "category": "business",
+      "target": "灰度流量",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "canary traffic",
+        "gradual rollout traffic"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-025",
+      "kind": "phrase",
+      "category": "business",
+      "target": "蓝绿部署",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "blue-green deployment"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-026",
+      "kind": "phrase",
+      "category": "business",
+      "target": "金丝雀发布",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "canary release"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-027",
+      "kind": "phrase",
+      "category": "business",
+      "target": "版本回退",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "version rollback",
+        "rollback"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-028",
+      "kind": "phrase",
+      "category": "business",
+      "target": "配置中心",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "configuration center",
+        "config service"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-029",
+      "kind": "phrase",
+      "category": "business",
+      "target": "服务网格",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "service mesh"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-030",
+      "kind": "phrase",
+      "category": "business",
+      "target": "API网关",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "API gateway"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-031",
+      "kind": "phrase",
+      "category": "business",
+      "target": "登录态",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "login session",
+        "authentication session"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-032",
+      "kind": "phrase",
+      "category": "business",
+      "target": "权限校验",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "permission check",
+        "authorization check"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-033",
+      "kind": "phrase",
+      "category": "business",
+      "target": "审计日志",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "audit log",
+        "audit logging"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-034",
+      "kind": "phrase",
+      "category": "business",
+      "target": "幂等性",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "idempotency"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-035",
+      "kind": "phrase",
+      "category": "business",
+      "target": "事务一致性",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "transactional consistency",
+        "transaction consistency"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-036",
+      "kind": "phrase",
+      "category": "business",
+      "target": "缓存命中率",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "cache hit rate"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-037",
+      "kind": "phrase",
+      "category": "business",
+      "target": "缓存穿透",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "cache penetration",
+        "cache bypass"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-038",
+      "kind": "phrase",
+      "category": "business",
+      "target": "消息队列",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "message queue"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-039",
+      "kind": "phrase",
+      "category": "business",
+      "target": "事件驱动",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "event-driven"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-040",
+      "kind": "phrase",
+      "category": "business",
+      "target": "分布式锁",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "distributed lock"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-041",
+      "kind": "phrase",
+      "category": "business",
+      "target": "故障注入",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "fault injection"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-042",
+      "kind": "phrase",
+      "category": "business",
+      "target": "根因分析",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "root cause analysis"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-043",
+      "kind": "phrase",
+      "category": "business",
+      "target": "告警收敛",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "alert aggregation",
+        "alert deduplication"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-044",
+      "kind": "phrase",
+      "category": "business",
+      "target": "用户留存",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "user retention"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-045",
+      "kind": "phrase",
+      "category": "business",
+      "target": "转化率",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "conversion rate"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-046",
+      "kind": "phrase",
+      "category": "business",
+      "target": "漏斗分析",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "funnel analysis"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-047",
+      "kind": "phrase",
+      "category": "business",
+      "target": "北极星指标",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "north star metric"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-048",
+      "kind": "phrase",
+      "category": "business",
+      "target": "产品路线图",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "product roadmap"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-049",
+      "kind": "phrase",
+      "category": "business",
+      "target": "用户旅程",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "user journey"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-050",
+      "kind": "phrase",
+      "category": "business",
+      "target": "需求变更",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "requirement change",
+        "scope change"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-051",
+      "kind": "phrase",
+      "category": "business",
+      "target": "验收标准",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "acceptance criteria"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-053",
+      "kind": "phrase",
+      "category": "business",
+      "target": "技术方案",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "technical proposal",
+        "technical design"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-054",
+      "kind": "phrase",
+      "category": "business",
+      "target": "风险清单",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "risk register",
+        "risk list"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-055",
+      "kind": "phrase",
+      "category": "business",
+      "target": "依赖关系",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "dependency relationship",
+        "dependencies"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-056",
+      "kind": "phrase",
+      "category": "business",
+      "target": "资源排期",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "resource schedule",
+        "resource scheduling"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-057",
+      "kind": "phrase",
+      "category": "business",
+      "target": "发布窗口",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "release window"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-058",
+      "kind": "phrase",
+      "category": "business",
+      "target": "数据回填",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "data backfill",
+        "backfill"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-059",
+      "kind": "phrase",
+      "category": "business",
+      "target": "功能开关",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "feature flag",
+        "feature toggle"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-biz-060",
+      "kind": "phrase",
+      "category": "business",
+      "target": "复盘行动项",
+      "before": "项目说明中提到",
+      "after": "",
+      "references": [
+        "retrospective action items",
+        "action items"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-001",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "我先确认一下",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "let me confirm",
+        "I'll check first"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-002",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "这个方案可以落地",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "this plan can be implemented",
+        "this proposal is actionable"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-003",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "明天我们再同步",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "let's sync again tomorrow",
+        "we'll sync tomorrow"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-004",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "目前还没定",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "it's not decided yet",
+        "nothing is final yet"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-005",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "我会尽快回复",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "I'll reply as soon as possible",
+        "I'll get back to you soon"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-006",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "这个问题需要排查",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "this issue needs investigation",
+        "this problem needs troubleshooting"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-007",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "已经和相关同学确认",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "I've confirmed with the relevant colleagues"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-008",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "请把日志发我",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "please send me the logs"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-009",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "预计今晚完成",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "expected to finish tonight",
+        "should be done tonight"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-010",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "上线前再检查一遍",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "check again before launch",
+        "review one more time before launch"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-011",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "暂时先不处理",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "leave it for now",
+        "don't handle it for now"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-012",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "这条需求优先级不高",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "this requirement is low priority"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-013",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "我先走一步",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "I'll go first",
+        "I'm heading out first"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-014",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "等一下我马上到",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "wait a moment, I'll be right there"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-015",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "我们换个时间吧",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "let's change the time",
+        "let's pick another time"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-016",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "你方便接电话吗",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "is it convenient for you to take a call"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-017",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "这个结果不太理想",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "the result isn't ideal"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-018",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "我觉得可以试试",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "I think we can try",
+        "I think it's worth a try"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-019",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "先按这个方案推进",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "let's proceed with this plan first"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-020",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "有问题随时联系我",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "contact me anytime if there are issues"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-021",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "现在已经来不及了",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "it's too late now"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-022",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "请稍等一下",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "please wait a moment"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-023",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "我晚点再确认",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "I'll confirm later"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-024",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "这个改动影响不大",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "this change has little impact"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-025",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "先把风险列出来",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "list the risks first"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-026",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "我们保持同步",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "let's keep in sync"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-027",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "目前进展顺利",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "progress is going smoothly",
+        "everything is on track"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-028",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "需要更多信息",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "more information is needed",
+        "we need more information"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-029",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "这个问题很重要",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "this issue is important"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-sen-030",
+      "kind": "sentence",
+      "category": "sentence",
+      "target": "感谢你的反馈",
+      "before": "同事发来消息：",
+      "after": "",
+      "references": [
+        "thank you for your feedback"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-ctl-002",
+      "kind": "word",
+      "category": "control",
+      "target": "电脑",
+      "before": "",
+      "after": "",
+      "references": [
+        "computer"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-ctl-003",
+      "kind": "word",
+      "category": "control",
+      "target": "桌子",
+      "before": "",
+      "after": "",
+      "references": [
+        "table"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-ctl-004",
+      "kind": "word",
+      "category": "control",
+      "target": "窗户",
+      "before": "",
+      "after": "",
+      "references": [
+        "window"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-ctl-006",
+      "kind": "word",
+      "category": "control",
+      "target": "北京",
+      "before": "",
+      "after": "",
+      "references": [
+        "Beijing"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-ctl-007",
+      "kind": "word",
+      "category": "control",
+      "target": "星期二",
+      "before": "",
+      "after": "",
+      "references": [
+        "Tuesday"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-ctl-009",
+      "kind": "word",
+      "category": "control",
+      "target": "对不起",
+      "before": "",
+      "after": "",
+      "references": [
+        "sorry",
+        "I'm sorry"
+      ],
+      "unacceptable": []
+    },
+    {
+      "id": "hold-ctl-010",
+      "kind": "word",
+      "category": "control",
+      "target": "早上好",
+      "before": "",
+      "after": "",
+      "references": [
+        "good morning"
+      ],
+      "unacceptable": []
+    }
+  ]
+}

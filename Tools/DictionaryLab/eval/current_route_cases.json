@@ -1,0 +1,22 @@
+[
+  {"id": "处理", "target": "处理", "kind": "word"},
+  {"id": "发布", "target": "发布", "kind": "word"},
+  {"id": "落地", "target": "落地", "kind": "word"},
+  {"id": "开发", "target": "开发", "kind": "word"},
+  {"id": "问题", "target": "问题", "kind": "word"},
+  {"id": "结果", "target": "结果", "kind": "word"},
+  {"id": "配置", "target": "配置", "kind": "word"},
+  {"id": "安全", "target": "安全", "kind": "word"},
+  {"id": "接口", "target": "接口", "kind": "word"},
+  {"id": "灰度", "target": "灰度", "kind": "word"},
+  {"id": "需求", "target": "需求", "kind": "word"},
+  {"id": "场景", "target": "场景", "kind": "word"},
+  {"id": "复盘", "target": "复盘", "kind": "word"},
+  {"id": "拆分", "target": "拆分", "kind": "word"},
+  {"id": "目标", "target": "目标", "kind": "word"},
+  {"id": "计算", "target": "计算", "kind": "word"},
+  {"id": "依赖", "target": "依赖", "kind": "word"},
+  {"id": "验收", "target": "验收", "kind": "word"},
+  {"id": "权衡", "target": "权衡", "kind": "word"},
+  {"id": "推理", "target": "推理", "kind": "word"}
+]

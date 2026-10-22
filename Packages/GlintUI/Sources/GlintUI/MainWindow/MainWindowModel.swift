@@ -121,15 +121,7 @@ public final class MainWindowModel {
         self.openAICompatibleStore = openAICompatibleStore
         let providers = openAICompatibleStore.loadProviders()
         self.openAIProviders = providers
-        var activeModelID = TranslationModelSelection.selected(in: defaults)
-        if activeModelID == TranslationModelSelection.openAICompatibleModelID,
-           let firstProvider = providers.first {
-            activeModelID = TranslationModelSelection.openAICompatibleSelectionID(
-                for: firstProvider.id
-            )
-            TranslationModelSelection.select(activeModelID, in: defaults)
-        }
-        self.activeModelID = activeModelID
+        self.activeModelID = TranslationModelSelection.selected(in: defaults)
         self.translationMode = TranslationModeSelection.selected(in: defaults)
     }
 
@@ -163,7 +155,6 @@ public final class MainWindowModel {
 
     public var isOpenAICompatibleActive: Bool {
         activeOpenAIProvider != nil
-            || activeModelID == TranslationModelSelection.openAICompatibleModelID
     }
 
     public var activeOpenAIProvider: OpenAICompatibleProvider? {
@@ -538,11 +529,6 @@ public final class MainWindowModel {
     private func reconcileActiveTranslationModel() {
         if let provider = activeOpenAIProvider,
            openAICompatibleStore.configuration(for: provider.id)?.isConfigured == true {
-            return
-        }
-        if activeModelID == TranslationModelSelection.openAICompatibleModelID,
-           let firstProvider = openAIProviders.first {
-            activateOpenAICompatibleProvider(firstProvider)
             return
         }
         let models = installedPlugins.filter { $0.type == .translation }

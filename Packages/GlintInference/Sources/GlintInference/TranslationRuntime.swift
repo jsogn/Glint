@@ -131,9 +131,7 @@ public actor TranslationRuntime: TranslationEngine {
         let store = OpenAICompatibleConfigurationStore()
         let providerID = TranslationModelSelection.openAIProviderID(
             fromSelectionID: modelID
-        ) ?? (modelID == TranslationModelSelection.openAICompatibleModelID
-            ? store.loadProviders().first?.id
-            : nil)
+        )
         if let providerID,
            let configuration = store.configuration(for: providerID) {
             guard configuration.isConfigured else { return nil }

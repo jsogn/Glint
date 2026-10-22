@@ -38,21 +38,39 @@ struct DictionaryChoices {
         let outputURL = URL(fileURLWithPath: arguments[outputIndex + 1])
         let data = try Data(contentsOf: casesURL)
         let cases = try JSONDecoder().decode([InputCase].self, from: data)
-        let dictionary = DictionaryRouter(
-            routes: [
-                DictionaryRoute(
-                    id: "dict-cedict",
-                    priority: 0,
-                    engine: CedictDictionary()
-                ),
-                DictionaryRoute(
-                    id: "dict-ecdict",
-                    priority: 1,
-                    engine: ECDICTDictionary()
-                ),
-            ],
-            blocked: ["打", "尼", "你号"]
-        )
+        var routes = [
+            DictionaryRoute(
+                id: "dict-cedict",
+                priority: 0,
+                engine: CedictDictionary()
+            ),
+            DictionaryRoute(
+                id: "dict-ecdict",
+                priority: 1,
+                engine: ECDICTDictionary()
+            ),
+        ]
+        if let wiktionaryIndex = arguments.firstIndex(
+            of: "--wiktionary-db"
+        ), arguments.indices.contains(wiktionaryIndex + 1) {
+            let databaseURL = URL(
+                fileURLWithPath: arguments[wiktionaryIndex + 1]
+            )
+            if let engine = GenericSQLiteDictionary(
+                databaseURL: databaseURL,
+                sourceLanguage: "zh-Hans",
+                targetLanguage: "en"
+            ) {
+                routes.append(
+                    DictionaryRoute(
+                        id: "dict-wiktionary-zh-en",
+                        priority: 10,
+                        engine: engine
+                    )
+                )
+            }
+        }
+        let dictionary = DictionaryRouter(routes: routes)
 
         var entries: [String: ChoicesOutput.Entry] = [:]
         for item in cases {

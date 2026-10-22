@@ -3,7 +3,6 @@ import Foundation
 public enum TranslationModelSelection {
     public static let defaultsKey = "translation.modelID"
     public static let defaultModelID = "mt-opus-zh-en"
-    public static let openAICompatibleModelID = "external-openai-compatible"
     public static let openAICompatibleModelPrefix =
         "external-openai-compatible:"
     public static let mlxModelPrefix = "llm-qwen3-"

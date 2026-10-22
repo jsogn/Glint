@@ -3,14 +3,14 @@ import GlintCore
 
 public final class ECDICTDictionary: DictionaryEngine, @unchecked Sendable {
     private let ranker: ECDICTRanker?
-    private let blocked: Set<String> = ["打", "尼", "你号"]
 
     public init(databaseURL: URL? = nil) {
         self.ranker = ECDICTRanker(databaseURL: databaseURL)
     }
 
     public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
-        guard !candidate.text.isEmpty, !blocked.contains(candidate.text) else {
+        guard !candidate.text.isEmpty,
+              !DictionaryPolicy.blockedTerms.contains(candidate.text) else {
             return nil
         }
         guard let values = ranker?.fallbackCandidates(

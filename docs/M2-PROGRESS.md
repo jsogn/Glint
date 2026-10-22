@@ -19,7 +19,7 @@
 
 - 已生成只读 SQLite：`Resources/Dictionary/cedict.sqlite3`（183,662 条）；
 - 已加入 98 条业务/技术 override；
-- 已加入 `打 / 尼 / 你号` 等歧义 blocklist；
+- 已加入 `打 / 尼 / 你号` 等歧义 blocklist（M20 已只保留 `你号`）；
 - `CedictDictionary` 已从内存占位改为 SQLite 查询；
 - CLI 验证：
 

@@ -5,6 +5,12 @@ import SQLite3
 public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
     private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
+    private struct DictionarySense {
+        let gloss: String
+        let lineOrder: Int
+        let senseOrder: Int
+    }
+
     private enum OverrideValue: Decodable {
         case single(String)
         case multiple([String])
@@ -28,15 +34,15 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
 
     private struct Overrides: Decodable {
         let overrides: [String: OverrideValue]
-        let blocked: [String]
+        let retiredOverrides: [String: OverrideValue]?
     }
 
     private var database: OpaquePointer?
-    private var statement: OpaquePointer?
+    private var senseStatement: OpaquePointer?
     private let lock = NSLock()
     private let ranker: ECDICTRanker?
     private let overrides: [String: [String]]
-    private let blocked: Set<String>
+    private let retiredOverrides: [String: [String]]
     private let builtin: [String: String]
 
     public init(
@@ -61,10 +67,11 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
            let data = try? Data(contentsOf: resolvedOverrides),
            let decoded = try? JSONDecoder().decode(Overrides.self, from: data) {
             self.overrides = decoded.overrides.mapValues { $0.values }
-            self.blocked = Set(decoded.blocked)
+            self.retiredOverrides = decoded.retiredOverrides?
+                .mapValues { $0.values } ?? [:]
         } else {
-            self.overrides = Self.defaultOverrides.mapValues { [$0] }
-            self.blocked = ["打", "尼", "你号"]
+            self.overrides = [:]
+            self.retiredOverrides = [:]
         }
 
         if let resolvedDatabase {
@@ -77,9 +84,15 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             if database != nil {
                 sqlite3_prepare_v2(
                     database,
-                    "SELECT gloss FROM entries WHERE word = ? LIMIT 1",
+                    """
+                    SELECT gloss, line_order, sense_order
+                    FROM entries
+                    WHERE simplified = ? OR traditional = ?
+                    ORDER BY line_order, sense_order
+                    LIMIT 64
+                    """,
                     -1,
-                    &statement,
+                    &senseStatement,
                     nil
                 )
             }
@@ -87,36 +100,38 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
     }
 
     deinit {
-        sqlite3_finalize(statement)
+        sqlite3_finalize(senseStatement)
         sqlite3_close(database)
     }
 
     public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
         let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !blocked.contains(text) else { return nil }
+        guard !text.isEmpty,
+              !DictionaryPolicy.blockedTerms.contains(text) else {
+            return nil
+        }
 
-        let preferred = overrides[text]?.enumerated().map { index, value in
-            TranslationOption(
-                text: value,
-                score: 2.0 - Double(index) * 0.04
+        let senses = querySenses(text)
+        if !senses.isEmpty {
+            let dictionaryOptions = rankedSenseOptions(
+                term: text,
+                senses: senses
             )
-        } ?? []
-
-        if let gloss = queryDatabase(text) {
-            let dictionaryOptions = rankedGlossOptions(term: text, gloss: gloss)
-            let options = preferred + dictionaryOptions
+            let options = dictionaryOptions
+                + fallbackOptions(for: text, after: dictionaryOptions)
             guard !options.isEmpty else { return nil }
             return TranslationResult(
                 options: options,
                 source: .dictionary,
-                confidence: preferred.isEmpty ? 0.85 : 0.99
+                confidence: 0.85
             )
         }
-        if !preferred.isEmpty {
+        let fallback = fallbackOptions(for: text)
+        if !fallback.isEmpty {
             return TranslationResult(
-                options: preferred,
+                options: fallback,
                 source: .dictionary,
-                confidence: 0.99
+                confidence: 0.75
             )
         }
         if let value = builtin[text] {
@@ -125,20 +140,53 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         return nil
     }
 
-    private func queryDatabase(_ text: String) -> String? {
+    private func fallbackOptions(
+        for text: String,
+        after dictionaryOptions: [TranslationOption] = []
+    ) -> [TranslationOption] {
+        let values = (overrides[text] ?? []) + (retiredOverrides[text] ?? [])
+        guard !values.isEmpty else {
+            return []
+        }
+        let ceiling = dictionaryOptions.isEmpty
+            ? 0.75
+            : (dictionaryOptions.map(\.score).min() ?? 0.75) - 0.0001
+        return values.enumerated().map { index, value in
+            TranslationOption(
+                text: value,
+                score: ceiling - Double(index) * 0.000001
+            )
+        }
+    }
+
+    private func querySenses(_ text: String) -> [DictionarySense] {
         lock.lock()
         defer { lock.unlock() }
-        guard let statement else { return nil }
+
+        guard let statement = senseStatement else { return [] }
         sqlite3_reset(statement)
         sqlite3_clear_bindings(statement)
         sqlite3_bind_text(statement, 1, text, -1, sqliteTransient)
-        guard sqlite3_step(statement) == SQLITE_ROW,
-              let cString = sqlite3_column_text(statement, 0) else {
-            return nil
+        sqlite3_bind_text(statement, 2, text, -1, sqliteTransient)
+
+        var result: [DictionarySense] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let gloss = Self.columnText(statement, 0) else {
+                continue
+            }
+            result.append(
+                DictionarySense(
+                    gloss: gloss,
+                    lineOrder: Int(
+                        sqlite3_column_int(statement, 1)
+                    ),
+                    senseOrder: Int(
+                        sqlite3_column_int(statement, 2)
+                    )
+                )
+            )
         }
-        return String(
-            cString: UnsafeRawPointer(cString).assumingMemoryBound(to: CChar.self)
-        )
+        return result
     }
 
     /// Turn a CC-CEDICT gloss into compact English candidates.
@@ -150,9 +198,9 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             .filter { !$0.isEmpty && !$0.hasPrefix("CL:") }
     }
 
-    private func rankedGlossOptions(
+    private func rankedSenseOptions(
         term: String,
-        gloss: String
+        senses: [DictionarySense]
     ) -> [TranslationOption] {
         var rankingByEnglish: [String: EnglishRanking] = [:]
         for ranking in ranker?.rankings(for: term) ?? [] {
@@ -161,41 +209,49 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 rankingByEnglish[key] = ranking
             }
         }
-
-        return glossCandidates(from: gloss).enumerated().compactMap { index, value in
-            let compact = compactEquivalent(value)
-            let key = Self.normalize(compact)
-            guard !key.isEmpty else { return nil }
-
-            var score = 1.0 - Double(index) * 0.06
-            if let ranking = rankingByEnglish[key] {
-                let frequency = Double(max(1, ranking.frequency))
-                score += max(0, 0.25 - log10(frequency) * 0.04)
-                score += Double(ranking.collins) * 0.012
-                score += Double(ranking.oxford) * 0.008
-            }
-            if compact.contains(" ") {
-                score -= 0.05
-            }
-            return TranslationOption(text: compact, score: score)
+        var preferredBoosts: [String: Double] = [:]
+        for (index, value) in (overrides[term] ?? []).enumerated() {
+            let key = Self.normalize(value)
+            preferredBoosts[key] = max(
+                preferredBoosts[key] ?? 0,
+                index == 0 ? 0.18 : 0.02
+            )
         }
-    }
 
-    private func compactEquivalent(_ value: String) -> String {
-        var result = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        while result.hasPrefix("("), let closing = result.firstIndex(of: ")") {
-            result = String(result[result.index(after: closing)...])
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        for prefix in ["to ", "the ", "a ", "an ", "be ", "of "] {
-            if result.lowercased().hasPrefix(prefix) {
-                result = String(result.dropFirst(prefix.count))
-                break
+        var options: [TranslationOption] = []
+        for sense in senses {
+            let orderPenalty = Double(sense.lineOrder) * 0.00000001
+                + Double(sense.senseOrder) * 0.000000001
+            for (index, value) in glossCandidates(
+                from: sense.gloss
+            ).enumerated() {
+                guard let compact = DictionarySurface.normalize(value) else {
+                    continue
+                }
+                let key = Self.normalize(compact)
+                guard !key.isEmpty else {
+                    continue
+                }
+
+                var score = 1.0 - Double(index) * 0.06 - orderPenalty
+                if let ranking = rankingByEnglish[key] {
+                    let frequency = Double(max(1, ranking.frequency))
+                    score += max(0, 0.25 - log10(frequency) * 0.04)
+                    score += Double(ranking.collins) * 0.012
+                    score += Double(ranking.oxford) * 0.008
+                }
+                if compact.contains(" ") {
+                    score -= 0.05
+                }
+                if let boost = preferredBoosts[key] {
+                    score += boost
+                }
+                options.append(
+                    TranslationOption(text: compact, score: score)
+                )
             }
         }
-        return result.trimmingCharacters(
-            in: .whitespacesAndNewlines.union(.punctuationCharacters)
-        )
+        return options
     }
 
     private static func normalize(_ text: String) -> String {
@@ -212,6 +268,19 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             value = String(value.dropLast())
         }
         return value.trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func columnText(
+        _ statement: OpaquePointer,
+        _ index: Int32
+    ) -> String? {
+        guard let value = sqlite3_column_text(statement, index) else {
+            return nil
+        }
+        return String(
+            cString: UnsafeRawPointer(value)
+                .assumingMemoryBound(to: CChar.self)
+        )
     }
 
     private static func locateResource(name: String, extension ext: String) -> URL? {
@@ -239,31 +308,6 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         "你好": "hello",
         "你好吗": "How are you?",
         "算法": "algorithm",
-        "计算": "calculate",
-        "复盘": "retrospective",
         "中国": "China",
-    ]
-
-    private static let defaultOverrides: [String: String] = [
-        "你好": "hello",
-        "算法": "algorithm",
-        "计算": "calculate",
-        "复盘": "retrospective",
-        "对齐": "align",
-        "输入法": "input method",
-        "迭代": "iterate",
-        "需求": "requirement",
-        "场景": "scenario",
-        "指标": "metric",
-        "落地": "implement",
-        "拆分": "break down",
-        "收敛": "converge",
-        "兜底": "fallback",
-        "权衡": "trade-off",
-        "里程碑": "milestone",
-        "语义": "semantics",
-        "推理": "reasoning",
-        "上下文": "context",
-        "颗粒度": "granularity",
     ]
 }

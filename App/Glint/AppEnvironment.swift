@@ -22,15 +22,12 @@ final class AppEnvironment {
             DictionaryRoute(id: "dict-ecdict", priority: 1, engine: ECDICTDictionary()),
         ]
         let dictionary = DictionaryRouter(
-            routes: builtInRoutes + DictionaryPluginLoader.routes(),
-            blocked: ["打", "尼", "你号"]
+            routes: builtInRoutes + DictionaryPluginLoader.routes()
         )
         let translationRuntime = TranslationRuntime { modelID in
             let providerID = TranslationModelSelection.openAIProviderID(
                 fromSelectionID: modelID
-            ) ?? (modelID == TranslationModelSelection.openAICompatibleModelID
-                ? openAICompatibleStore.loadProviders().first?.id
-                : nil)
+            )
             if let providerID {
                 let configuration = openAICompatibleStore.configuration(
                     for: providerID

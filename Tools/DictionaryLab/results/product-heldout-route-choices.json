@@ -1,0 +1,1907 @@
+{
+  "entries" : {
+    "hold-biz-001" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "AB测试"
+    },
+    "hold-biz-002" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "服务降级"
+    },
+    "hold-biz-003" : {
+      "choices" : [
+        "current limiting",
+        "rate limiting",
+        "shadowban",
+        "limit the spread of sensitive content",
+        "conduct a rate limit",
+        "limit the flow of passengers, customers or vehicles"
+      ],
+      "kind" : "phrase",
+      "target" : "限流"
+    },
+    "hold-biz-004" : {
+      "choices" : [
+        "melt",
+        "halt stock trading",
+        "blow",
+        "trigger a circuit breaker",
+        "activate a trading curb",
+        "fusing"
+      ],
+      "kind" : "phrase",
+      "target" : "熔断"
+    },
+    "hold-biz-005" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "可观测性"
+    },
+    "hold-biz-006" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "数据血缘"
+    },
+    "hold-biz-007" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "数据脱敏"
+    },
+    "hold-biz-008" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "特征工程"
+    },
+    "hold-biz-009" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "模型漂移"
+    },
+    "hold-biz-010" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "提示词"
+    },
+    "hold-biz-011" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "检索增强"
+    },
+    "hold-biz-012" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "向量检索"
+    },
+    "hold-biz-013" : {
+      "choices" : [
+        "knowledge base",
+        "KB"
+      ],
+      "kind" : "phrase",
+      "target" : "知识库"
+    },
+    "hold-biz-014" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "上下文窗口"
+    },
+    "hold-biz-015" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "评估集"
+    },
+    "hold-biz-016" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "回归测试"
+    },
+    "hold-biz-017" : {
+      "choices" : [
+        "unit testing",
+        "unit test"
+      ],
+      "kind" : "phrase",
+      "target" : "单元测试"
+    },
+    "hold-biz-018" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "集成测试"
+    },
+    "hold-biz-019" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "端到端测试"
+    },
+    "hold-biz-020" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "性能基线"
+    },
+    "hold-biz-021" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "延迟预算"
+    },
+    "hold-biz-022" : {
+      "choices" : [
+        "throughput",
+        "cargo-handling capacity",
+        "throughout"
+      ],
+      "kind" : "phrase",
+      "target" : "吞吐量"
+    },
+    "hold-biz-023" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "内存占用"
+    },
+    "hold-biz-024" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "灰度流量"
+    },
+    "hold-biz-025" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "蓝绿部署"
+    },
+    "hold-biz-026" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "金丝雀发布"
+    },
+    "hold-biz-027" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "版本回退"
+    },
+    "hold-biz-028" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "配置中心"
+    },
+    "hold-biz-029" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "服务网格"
+    },
+    "hold-biz-030" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "API网关"
+    },
+    "hold-biz-031" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "登录态"
+    },
+    "hold-biz-032" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "权限校验"
+    },
+    "hold-biz-033" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "审计日志"
+    },
+    "hold-biz-034" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "幂等性"
+    },
+    "hold-biz-035" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "事务一致性"
+    },
+    "hold-biz-036" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "缓存命中率"
+    },
+    "hold-biz-037" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "缓存穿透"
+    },
+    "hold-biz-038" : {
+      "choices" : [
+        "message queue"
+      ],
+      "kind" : "phrase",
+      "target" : "消息队列"
+    },
+    "hold-biz-039" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "事件驱动"
+    },
+    "hold-biz-040" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "分布式锁"
+    },
+    "hold-biz-041" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "故障注入"
+    },
+    "hold-biz-042" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "根因分析"
+    },
+    "hold-biz-043" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "告警收敛"
+    },
+    "hold-biz-044" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "用户留存"
+    },
+    "hold-biz-045" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "转化率"
+    },
+    "hold-biz-046" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "漏斗分析"
+    },
+    "hold-biz-047" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "北极星指标"
+    },
+    "hold-biz-048" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "产品路线图"
+    },
+    "hold-biz-049" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "用户旅程"
+    },
+    "hold-biz-050" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "需求变更"
+    },
+    "hold-biz-051" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "验收标准"
+    },
+    "hold-biz-053" : {
+      "choices" : [
+        "technology program",
+        "technical solution"
+      ],
+      "kind" : "phrase",
+      "target" : "技术方案"
+    },
+    "hold-biz-054" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "风险清单"
+    },
+    "hold-biz-055" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "依赖关系"
+    },
+    "hold-biz-056" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "资源排期"
+    },
+    "hold-biz-057" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "发布窗口"
+    },
+    "hold-biz-058" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "数据回填"
+    },
+    "hold-biz-059" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "功能开关"
+    },
+    "hold-biz-060" : {
+      "choices" : [
+
+      ],
+      "kind" : "phrase",
+      "target" : "复盘行动项"
+    },
+    "hold-ctl-002" : {
+      "choices" : [
+        "computer",
+        "logon",
+        "dsp"
+      ],
+      "kind" : "word",
+      "target" : "电脑"
+    },
+    "hold-ctl-003" : {
+      "choices" : [
+        "table",
+        "desk"
+      ],
+      "kind" : "word",
+      "target" : "桌子"
+    },
+    "hold-ctl-004" : {
+      "choices" : [
+        "window"
+      ],
+      "kind" : "word",
+      "target" : "窗户"
+    },
+    "hold-ctl-006" : {
+      "choices" : [
+        "Beijing",
+        "northern capital",
+        "Peking",
+        "Beijing municipality, capital of the People's Republic of China",
+        "Jiankang —in modern-day Nanjing, Jiangsu province",
+        "Jingkou —in modern-day Zhenjiang, Jiangsu province"
+      ],
+      "kind" : "word",
+      "target" : "北京"
+    },
+    "hold-ctl-007" : {
+      "choices" : [
+        "Tuesday",
+        "tue",
+        "Tues"
+      ],
+      "kind" : "word",
+      "target" : "星期二"
+    },
+    "hold-ctl-009" : {
+      "choices" : [
+        "I'm sorry",
+        "let down",
+        "disappoint",
+        "excuse me",
+        "sorry",
+        "I beg your pardon"
+      ],
+      "kind" : "word",
+      "target" : "对不起"
+    },
+    "hold-ctl-010" : {
+      "choices" : [
+        "Good morning"
+      ],
+      "kind" : "word",
+      "target" : "早上好"
+    },
+    "hold-pol-001-a" : {
+      "choices" : [
+        "load",
+        "weight",
+        "burden",
+        "punchline",
+        "wrapping cloth",
+        "funny part"
+      ],
+      "kind" : "phrase",
+      "target" : "包袱"
+    },
+    "hold-pol-001-b" : {
+      "choices" : [
+        "load",
+        "weight",
+        "burden",
+        "punchline",
+        "wrapping cloth",
+        "funny part"
+      ],
+      "kind" : "phrase",
+      "target" : "包袱"
+    },
+    "hold-pol-002-a" : {
+      "choices" : [
+        "overstatement",
+        "moisture content",
+        "padding",
+        "exaggeration",
+        "wet",
+        "moisture"
+      ],
+      "kind" : "phrase",
+      "target" : "水分"
+    },
+    "hold-pol-002-b" : {
+      "choices" : [
+        "overstatement",
+        "moisture content",
+        "padding",
+        "exaggeration",
+        "wet",
+        "moisture"
+      ],
+      "kind" : "phrase",
+      "target" : "水分"
+    },
+    "hold-pol-003-a" : {
+      "choices" : [
+        "pride",
+        "arrogance",
+        "conceited",
+        "proud of sth",
+        "arrogant",
+        "proud"
+      ],
+      "kind" : "phrase",
+      "target" : "骄傲"
+    },
+    "hold-pol-003-b" : {
+      "choices" : [
+        "pride",
+        "arrogance",
+        "conceited",
+        "proud of sth",
+        "arrogant",
+        "proud"
+      ],
+      "kind" : "phrase",
+      "target" : "骄傲"
+    },
+    "hold-pol-004-a" : {
+      "choices" : [
+        "organ",
+        "mechanism",
+        "machine-operated",
+        "office",
+        "stratagem",
+        "gear"
+      ],
+      "kind" : "phrase",
+      "target" : "机关"
+    },
+    "hold-pol-004-b" : {
+      "choices" : [
+        "organ",
+        "mechanism",
+        "machine-operated",
+        "office",
+        "stratagem",
+        "gear"
+      ],
+      "kind" : "phrase",
+      "target" : "机关"
+    },
+    "hold-pol-005-a" : {
+      "choices" : [
+        "export",
+        "exit",
+        "speak",
+        "leave port",
+        "utter",
+        "issue"
+      ],
+      "kind" : "phrase",
+      "target" : "出口"
+    },
+    "hold-pol-005-b" : {
+      "choices" : [
+        "export",
+        "exit",
+        "speak",
+        "leave port",
+        "utter",
+        "issue"
+      ],
+      "kind" : "phrase",
+      "target" : "出口"
+    },
+    "hold-pol-006-a" : {
+      "choices" : [
+        "import",
+        "inlet",
+        "imported",
+        "entrance",
+        "in\" door",
+        "enter a port"
+      ],
+      "kind" : "phrase",
+      "target" : "进口"
+    },
+    "hold-pol-006-b" : {
+      "choices" : [
+        "import",
+        "inlet",
+        "imported",
+        "entrance",
+        "in\" door",
+        "enter a port"
+      ],
+      "kind" : "phrase",
+      "target" : "进口"
+    },
+    "hold-pol-007-a" : {
+      "choices" : [
+        "meter",
+        "uncooked rice",
+        "Chinese yuan",
+        "husked seed",
+        "metre",
+        "grain-like things"
+      ],
+      "kind" : "word",
+      "target" : "米"
+    },
+    "hold-pol-007-b" : {
+      "choices" : [
+        "meter",
+        "uncooked rice",
+        "Chinese yuan",
+        "husked seed",
+        "metre",
+        "grain-like things"
+      ],
+      "kind" : "word",
+      "target" : "米"
+    },
+    "hold-pol-008-a" : {
+      "choices" : [
+        "station",
+        "stand",
+        "halt",
+        "stop",
+        "website",
+        "post station"
+      ],
+      "kind" : "word",
+      "target" : "站"
+    },
+    "hold-pol-008-b" : {
+      "choices" : [
+        "station",
+        "stand",
+        "halt",
+        "stop",
+        "website",
+        "post station"
+      ],
+      "kind" : "word",
+      "target" : "站"
+    },
+    "hold-pol-009-a" : {
+      "choices" : [
+        "grow",
+        "arise",
+        "light",
+        "live",
+        "life",
+        "raw"
+      ],
+      "kind" : "word",
+      "target" : "生"
+    },
+    "hold-pol-009-b" : {
+      "choices" : [
+        "grow",
+        "arise",
+        "light",
+        "live",
+        "life",
+        "raw"
+      ],
+      "kind" : "word",
+      "target" : "生"
+    },
+    "hold-pol-010-a" : {
+      "choices" : [
+        "ripe",
+        "familiar",
+        "experienced",
+        "deep",
+        "thoroughly cooked",
+        "also pr. [shou2"
+      ],
+      "kind" : "word",
+      "target" : "熟"
+    },
+    "hold-pol-010-b" : {
+      "choices" : [
+        "ripe",
+        "familiar",
+        "experienced",
+        "deep",
+        "thoroughly cooked",
+        "also pr. [shou2"
+      ],
+      "kind" : "word",
+      "target" : "熟"
+    },
+    "hold-pol-011-a" : {
+      "choices" : [
+        "cold",
+        "indifferent",
+        "aloof",
+        "apathetic",
+        "treat coldly",
+        "sluggish"
+      ],
+      "kind" : "phrase",
+      "target" : "冷淡"
+    },
+    "hold-pol-011-b" : {
+      "choices" : [
+        "cold",
+        "indifferent",
+        "aloof",
+        "apathetic",
+        "treat coldly",
+        "sluggish"
+      ],
+      "kind" : "phrase",
+      "target" : "冷淡"
+    },
+    "hold-pol-012-a" : {
+      "choices" : [
+        "hot",
+        "heat",
+        "fervent",
+        "warm up",
+        "heat up",
+        "heated"
+      ],
+      "kind" : "word",
+      "target" : "热"
+    },
+    "hold-pol-012-b" : {
+      "choices" : [
+        "hot",
+        "heat",
+        "fervent",
+        "warm up",
+        "heat up",
+        "heated"
+      ],
+      "kind" : "word",
+      "target" : "热"
+    },
+    "hold-pol-013-a" : {
+      "choices" : [
+        "fire",
+        "urgent",
+        "ammunition",
+        "hot",
+        "fiery or flaming",
+        "internal heat"
+      ],
+      "kind" : "word",
+      "target" : "火"
+    },
+    "hold-pol-013-b" : {
+      "choices" : [
+        "fire",
+        "urgent",
+        "ammunition",
+        "hot",
+        "fiery or flaming",
+        "internal heat"
+      ],
+      "kind" : "word",
+      "target" : "火"
+    },
+    "hold-pol-014-a" : {
+      "choices" : [
+        "white",
+        "clear",
+        "plain",
+        "explain",
+        "vernacular",
+        "reactionary"
+      ],
+      "kind" : "word",
+      "target" : "白"
+    },
+    "hold-pol-014-b" : {
+      "choices" : [
+        "white",
+        "clear",
+        "plain",
+        "explain",
+        "vernacular",
+        "reactionary"
+      ],
+      "kind" : "word",
+      "target" : "白"
+    },
+    "hold-pol-015-a" : {
+      "choices" : [
+        "black",
+        "dark",
+        "sinister",
+        "secret",
+        "shady",
+        "illegal"
+      ],
+      "kind" : "word",
+      "target" : "黑"
+    },
+    "hold-pol-015-b" : {
+      "choices" : [
+        "black",
+        "dark",
+        "sinister",
+        "secret",
+        "shady",
+        "illegal"
+      ],
+      "kind" : "word",
+      "target" : "黑"
+    },
+    "hold-pol-016-a" : {
+      "choices" : [
+        "dry",
+        "empty",
+        "futile",
+        "rude",
+        "cold-shoulder",
+        "shield"
+      ],
+      "kind" : "word",
+      "target" : "干"
+    },
+    "hold-pol-016-b" : {
+      "choices" : [
+        "dry",
+        "empty",
+        "futile",
+        "rude",
+        "cold-shoulder",
+        "shield"
+      ],
+      "kind" : "word",
+      "target" : "干"
+    },
+    "hold-pol-017-a" : {
+      "choices" : [
+        "empty",
+        "air",
+        "sky",
+        "vacant",
+        "unoccupied",
+        "space"
+      ],
+      "kind" : "word",
+      "target" : "空"
+    },
+    "hold-pol-017-b" : {
+      "choices" : [
+        "empty",
+        "air",
+        "sky",
+        "vacant",
+        "unoccupied",
+        "space"
+      ],
+      "kind" : "word",
+      "target" : "空"
+    },
+    "hold-pol-018-a" : {
+      "choices" : [
+        "fill",
+        "full",
+        "filled",
+        "packed",
+        "fully",
+        "completely"
+      ],
+      "kind" : "word",
+      "target" : "满"
+    },
+    "hold-pol-018-b" : {
+      "choices" : [
+        "fill",
+        "full",
+        "filled",
+        "packed",
+        "fully",
+        "completely"
+      ],
+      "kind" : "word",
+      "target" : "满"
+    },
+    "hold-pol-019-a" : {
+      "choices" : [
+        "calculate",
+        "include",
+        "count",
+        "regard as",
+        "consider",
+        "figure out"
+      ],
+      "kind" : "word",
+      "target" : "算"
+    },
+    "hold-pol-019-b" : {
+      "choices" : [
+        "calculate",
+        "include",
+        "count",
+        "regard as",
+        "consider",
+        "figure out"
+      ],
+      "kind" : "word",
+      "target" : "算"
+    },
+    "hold-pol-020-a" : {
+      "choices" : [
+        "right",
+        "towards",
+        "concerning",
+        "treat",
+        "face",
+        "opposite"
+      ],
+      "kind" : "word",
+      "target" : "对"
+    },
+    "hold-pol-020-b" : {
+      "choices" : [
+        "right",
+        "towards",
+        "concerning",
+        "treat",
+        "face",
+        "opposite"
+      ],
+      "kind" : "word",
+      "target" : "对"
+    },
+    "hold-pol-021-a" : {
+      "choices" : [
+        "close",
+        "confine",
+        "concern",
+        "mountain pass",
+        "shut",
+        "involve"
+      ],
+      "kind" : "word",
+      "target" : "关"
+    },
+    "hold-pol-021-b" : {
+      "choices" : [
+        "close",
+        "confine",
+        "concern",
+        "mountain pass",
+        "shut",
+        "involve"
+      ],
+      "kind" : "word",
+      "target" : "关"
+    },
+    "hold-pol-022-a" : {
+      "choices" : [
+        "send",
+        "give",
+        "accompany",
+        "deliver",
+        "go along with",
+        "transmit"
+      ],
+      "kind" : "word",
+      "target" : "送"
+    },
+    "hold-pol-022-b" : {
+      "choices" : [
+        "send",
+        "give",
+        "accompany",
+        "deliver",
+        "go along with",
+        "transmit"
+      ],
+      "kind" : "word",
+      "target" : "送"
+    },
+    "hold-pol-023-a" : {
+      "choices" : [
+        "turn",
+        "transfer",
+        "forward",
+        "share",
+        "revolve",
+        "change direction"
+      ],
+      "kind" : "word",
+      "target" : "转"
+    },
+    "hold-pol-023-b" : {
+      "choices" : [
+        "turn",
+        "transfer",
+        "forward",
+        "share",
+        "revolve",
+        "change direction"
+      ],
+      "kind" : "word",
+      "target" : "转"
+    },
+    "hold-pol-024-a" : {
+      "choices" : [
+        "push",
+        "cut",
+        "refuse",
+        "reject",
+        "decline",
+        "shirk"
+      ],
+      "kind" : "word",
+      "target" : "推"
+    },
+    "hold-pol-024-b" : {
+      "choices" : [
+        "push",
+        "cut",
+        "refuse",
+        "reject",
+        "decline",
+        "shirk"
+      ],
+      "kind" : "word",
+      "target" : "推"
+    },
+    "hold-pol-025-a" : {
+      "choices" : [
+        "pull",
+        "play",
+        "drag",
+        "draw",
+        "chat",
+        "empty one's bowels"
+      ],
+      "kind" : "word",
+      "target" : "拉"
+    },
+    "hold-pol-025-b" : {
+      "choices" : [
+        "pull",
+        "play",
+        "drag",
+        "draw",
+        "chat",
+        "empty one's bowels"
+      ],
+      "kind" : "word",
+      "target" : "拉"
+    },
+    "hold-pol-026-a" : {
+      "choices" : [
+        "carry",
+        "lift",
+        "mention",
+        "raise",
+        "put forward",
+        "upwards character stroke"
+      ],
+      "kind" : "word",
+      "target" : "提"
+    },
+    "hold-pol-026-b" : {
+      "choices" : [
+        "carry",
+        "lift",
+        "mention",
+        "raise",
+        "put forward",
+        "upwards character stroke"
+      ],
+      "kind" : "word",
+      "target" : "提"
+    },
+    "hold-pol-027-a" : {
+      "choices" : [
+        "hang",
+        "register",
+        "kill",
+        "hang up",
+        "dead",
+        "worried"
+      ],
+      "kind" : "word",
+      "target" : "挂"
+    },
+    "hold-pol-027-b" : {
+      "choices" : [
+        "hang",
+        "register",
+        "kill",
+        "hang up",
+        "dead",
+        "worried"
+      ],
+      "kind" : "word",
+      "target" : "挂"
+    },
+    "hold-pol-028-a" : {
+      "choices" : [
+        "cover",
+        "wrap",
+        "hold",
+        "include",
+        "contract",
+        "package"
+      ],
+      "kind" : "word",
+      "target" : "包"
+    },
+    "hold-pol-028-b" : {
+      "choices" : [
+        "cover",
+        "wrap",
+        "hold",
+        "include",
+        "contract",
+        "package"
+      ],
+      "kind" : "word",
+      "target" : "包"
+    },
+    "hold-pol-029-a" : {
+      "choices" : [
+        "cover",
+        "encase",
+        "sheath",
+        "overlap",
+        "interleave",
+        "copy"
+      ],
+      "kind" : "word",
+      "target" : "套"
+    },
+    "hold-pol-029-b" : {
+      "choices" : [
+        "cover",
+        "encase",
+        "sheath",
+        "overlap",
+        "interleave",
+        "copy"
+      ],
+      "kind" : "word",
+      "target" : "套"
+    },
+    "hold-pol-030-a" : {
+      "choices" : [
+        "can",
+        "meet",
+        "meeting",
+        "union",
+        "moment",
+        "likely to"
+      ],
+      "kind" : "word",
+      "target" : "会"
+    },
+    "hold-pol-030-b" : {
+      "choices" : [
+        "can",
+        "meet",
+        "meeting",
+        "union",
+        "moment",
+        "likely to"
+      ],
+      "kind" : "word",
+      "target" : "会"
+    },
+    "hold-pol-031-a" : {
+      "choices" : [
+        "demand",
+        "want",
+        "will",
+        "if",
+        "important",
+        "need to"
+      ],
+      "kind" : "word",
+      "target" : "要"
+    },
+    "hold-pol-031-b" : {
+      "choices" : [
+        "demand",
+        "want",
+        "will",
+        "if",
+        "important",
+        "need to"
+      ],
+      "kind" : "word",
+      "target" : "要"
+    },
+    "hold-pol-032-a" : {
+      "choices" : [
+        "yield",
+        "permit",
+        "by",
+        "make sb",
+        "let sb do sth",
+        "have sb do sth"
+      ],
+      "kind" : "word",
+      "target" : "让"
+    },
+    "hold-pol-032-b" : {
+      "choices" : [
+        "yield",
+        "permit",
+        "by",
+        "make sb",
+        "let sb do sth",
+        "have sb do sth"
+      ],
+      "kind" : "word",
+      "target" : "让"
+    },
+    "hold-pol-033-a" : {
+      "choices" : [
+        "to",
+        "for",
+        "give",
+        "allow",
+        "supply",
+        "sufficient"
+      ],
+      "kind" : "word",
+      "target" : "给"
+    },
+    "hold-pol-033-b" : {
+      "choices" : [
+        "to",
+        "for",
+        "give",
+        "allow",
+        "supply",
+        "sufficient"
+      ],
+      "kind" : "word",
+      "target" : "给"
+    },
+    "hold-pol-034-a" : {
+      "choices" : [
+        "heel",
+        "with",
+        "to",
+        "towards",
+        "and",
+        "follow closely"
+      ],
+      "kind" : "word",
+      "target" : "跟"
+    },
+    "hold-pol-034-b" : {
+      "choices" : [
+        "heel",
+        "with",
+        "to",
+        "towards",
+        "and",
+        "follow closely"
+      ],
+      "kind" : "word",
+      "target" : "跟"
+    },
+    "hold-pol-035-a" : {
+      "choices" : [
+        "towards",
+        "face",
+        "direction",
+        "support",
+        "formerly",
+        "always"
+      ],
+      "kind" : "word",
+      "target" : "向"
+    },
+    "hold-pol-035-b" : {
+      "choices" : [
+        "towards",
+        "face",
+        "direction",
+        "support",
+        "formerly",
+        "always"
+      ],
+      "kind" : "word",
+      "target" : "向"
+    },
+    "hold-pol-036-a" : {
+      "choices" : [
+        "shout",
+        "call",
+        "order",
+        "ask",
+        "by",
+        "called"
+      ],
+      "kind" : "word",
+      "target" : "叫"
+    },
+    "hold-pol-036-b" : {
+      "choices" : [
+        "shout",
+        "call",
+        "order",
+        "ask",
+        "by",
+        "called"
+      ],
+      "kind" : "word",
+      "target" : "叫"
+    },
+    "hold-pol-037-a" : {
+      "choices" : [
+        "hope",
+        "expect",
+        "visit",
+        "gaze",
+        "towards",
+        "full moon"
+      ],
+      "kind" : "word",
+      "target" : "望"
+    },
+    "hold-pol-037-b" : {
+      "choices" : [
+        "hope",
+        "expect",
+        "visit",
+        "gaze",
+        "towards",
+        "full moon"
+      ],
+      "kind" : "word",
+      "target" : "望"
+    },
+    "hold-pol-038-a" : {
+      "choices" : [
+        "cope",
+        "deal with",
+        "payable",
+        "due",
+        "required to be paid",
+        "cope with"
+      ],
+      "kind" : "phrase",
+      "target" : "应付"
+    },
+    "hold-pol-038-b" : {
+      "choices" : [
+        "cope",
+        "deal with",
+        "payable",
+        "due",
+        "required to be paid",
+        "cope with"
+      ],
+      "kind" : "phrase",
+      "target" : "应付"
+    },
+    "hold-pol-039-a" : {
+      "choices" : [
+        "thing",
+        "stuff",
+        "person",
+        "east and west",
+        "direction",
+        "from east to west"
+      ],
+      "kind" : "phrase",
+      "target" : "东西"
+    },
+    "hold-pol-039-b" : {
+      "choices" : [
+        "thing",
+        "stuff",
+        "person",
+        "east and west",
+        "direction",
+        "from east to west"
+      ],
+      "kind" : "phrase",
+      "target" : "东西"
+    },
+    "hold-pol-040-a" : {
+      "choices" : [
+        "place",
+        "region",
+        "regional",
+        "local",
+        "aspect",
+        "location"
+      ],
+      "kind" : "phrase",
+      "target" : "地方"
+    },
+    "hold-pol-040-b" : {
+      "choices" : [
+        "place",
+        "region",
+        "regional",
+        "local",
+        "aspect",
+        "location"
+      ],
+      "kind" : "phrase",
+      "target" : "地方"
+    },
+    "hold-pol-041-a" : {
+      "choices" : [
+        "household",
+        "dwelling",
+        "family",
+        "sb else's house",
+        "household business",
+        "other people"
+      ],
+      "kind" : "phrase",
+      "target" : "人家"
+    },
+    "hold-pol-041-b" : {
+      "choices" : [
+        "household",
+        "dwelling",
+        "family",
+        "sb else's house",
+        "household business",
+        "other people"
+      ],
+      "kind" : "phrase",
+      "target" : "人家"
+    },
+    "hold-pol-042-a" : {
+      "choices" : [
+        "length",
+        "accident",
+        "right and wrong",
+        "mishap",
+        "good and bad",
+        "merits and demerits"
+      ],
+      "kind" : "phrase",
+      "target" : "长短"
+    },
+    "hold-pol-042-b" : {
+      "choices" : [
+        "length",
+        "accident",
+        "right and wrong",
+        "mishap",
+        "good and bad",
+        "merits and demerits"
+      ],
+      "kind" : "phrase",
+      "target" : "长短"
+    },
+    "hold-pol-043-a" : {
+      "choices" : [
+        "nearby",
+        "approximately",
+        "attendant",
+        "control",
+        "influence",
+        "left and right"
+      ],
+      "kind" : "phrase",
+      "target" : "左右"
+    },
+    "hold-pol-043-b" : {
+      "choices" : [
+        "nearby",
+        "approximately",
+        "attendant",
+        "control",
+        "influence",
+        "left and right"
+      ],
+      "kind" : "phrase",
+      "target" : "左右"
+    },
+    "hold-pol-044-a" : {
+      "choices" : [
+        "height",
+        "propriety",
+        "relative superiority",
+        "no matter what",
+        "at long last",
+        "level"
+      ],
+      "kind" : "phrase",
+      "target" : "高低"
+    },
+    "hold-pol-044-b" : {
+      "choices" : [
+        "height",
+        "propriety",
+        "relative superiority",
+        "no matter what",
+        "at long last",
+        "level"
+      ],
+      "kind" : "phrase",
+      "target" : "高低"
+    },
+    "hold-pol-045-a" : {
+      "choices" : [
+        "quarrel",
+        "right and wrong",
+        "praise and censure",
+        "pass judgment on",
+        "comment",
+        "remark"
+      ],
+      "kind" : "phrase",
+      "target" : "是非"
+    },
+    "hold-pol-045-b" : {
+      "choices" : [
+        "quarrel",
+        "right and wrong",
+        "praise and censure",
+        "pass judgment on",
+        "comment",
+        "remark"
+      ],
+      "kind" : "phrase",
+      "target" : "是非"
+    },
+    "hold-pol-046-a" : {
+      "choices" : [
+        "action",
+        "trick",
+        "hand and foot",
+        "movement of limbs",
+        "step in a procedure",
+        "motion"
+      ],
+      "kind" : "phrase",
+      "target" : "手脚"
+    },
+    "hold-pol-046-b" : {
+      "choices" : [
+        "action",
+        "trick",
+        "hand and foot",
+        "movement of limbs",
+        "step in a procedure",
+        "motion"
+      ],
+      "kind" : "phrase",
+      "target" : "手脚"
+    },
+    "hold-pol-047-a" : {
+      "choices" : [
+        "air",
+        "atmosphere",
+        "thing",
+        "matter",
+        "affair",
+        "empty qi"
+      ],
+      "kind" : "phrase",
+      "target" : "空气"
+    },
+    "hold-pol-047-b" : {
+      "choices" : [
+        "air",
+        "atmosphere",
+        "thing",
+        "matter",
+        "affair",
+        "empty qi"
+      ],
+      "kind" : "phrase",
+      "target" : "空气"
+    },
+    "hold-pol-048-a" : {
+      "choices" : [
+        "smell",
+        "taste",
+        "flavor",
+        "feeling",
+        "interest",
+        "sense"
+      ],
+      "kind" : "phrase",
+      "target" : "味道"
+    },
+    "hold-pol-048-b" : {
+      "choices" : [
+        "smell",
+        "taste",
+        "flavor",
+        "feeling",
+        "interest",
+        "sense"
+      ],
+      "kind" : "phrase",
+      "target" : "味道"
+    },
+    "hold-pol-049-a" : {
+      "choices" : [
+        "color",
+        "countenance",
+        "appearance",
+        "pigment",
+        "dyestuff",
+        "facial expression"
+      ],
+      "kind" : "phrase",
+      "target" : "颜色"
+    },
+    "hold-pol-049-b" : {
+      "choices" : [
+        "color",
+        "countenance",
+        "appearance",
+        "pigment",
+        "dyestuff",
+        "facial expression"
+      ],
+      "kind" : "phrase",
+      "target" : "颜色"
+    },
+    "hold-pol-050-a" : {
+      "choices" : [
+        "background",
+        "backdrop",
+        "context",
+        "powerful backer",
+        "powerful connections",
+        "setting"
+      ],
+      "kind" : "phrase",
+      "target" : "背景"
+    },
+    "hold-pol-050-b" : {
+      "choices" : [
+        "background",
+        "backdrop",
+        "context",
+        "powerful backer",
+        "powerful connections",
+        "setting"
+      ],
+      "kind" : "phrase",
+      "target" : "背景"
+    },
+    "hold-sen-001" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我先确认一下"
+    },
+    "hold-sen-002" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "这个方案可以落地"
+    },
+    "hold-sen-003" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "明天我们再同步"
+    },
+    "hold-sen-004" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "目前还没定"
+    },
+    "hold-sen-005" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我会尽快回复"
+    },
+    "hold-sen-006" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "这个问题需要排查"
+    },
+    "hold-sen-007" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "已经和相关同学确认"
+    },
+    "hold-sen-008" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "请把日志发我"
+    },
+    "hold-sen-009" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "预计今晚完成"
+    },
+    "hold-sen-010" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "上线前再检查一遍"
+    },
+    "hold-sen-011" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "暂时先不处理"
+    },
+    "hold-sen-012" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "这条需求优先级不高"
+    },
+    "hold-sen-013" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我先走一步"
+    },
+    "hold-sen-014" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "等一下我马上到"
+    },
+    "hold-sen-015" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我们换个时间吧"
+    },
+    "hold-sen-016" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "你方便接电话吗"
+    },
+    "hold-sen-017" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "这个结果不太理想"
+    },
+    "hold-sen-018" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我觉得可以试试"
+    },
+    "hold-sen-019" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "先按这个方案推进"
+    },
+    "hold-sen-020" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "有问题随时联系我"
+    },
+    "hold-sen-021" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "现在已经来不及了"
+    },
+    "hold-sen-022" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "请稍等一下"
+    },
+    "hold-sen-023" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我晚点再确认"
+    },
+    "hold-sen-024" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "这个改动影响不大"
+    },
+    "hold-sen-025" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "先把风险列出来"
+    },
+    "hold-sen-026" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "我们保持同步"
+    },
+    "hold-sen-027" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "目前进展顺利"
+    },
+    "hold-sen-028" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "需要更多信息"
+    },
+    "hold-sen-029" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "这个问题很重要"
+    },
+    "hold-sen-030" : {
+      "choices" : [
+
+      ],
+      "kind" : "sentence",
+      "target" : "感谢你的反馈"
+    }
+  },
+  "generatedAt" : "2026-10-22T03:30:54Z"
+}

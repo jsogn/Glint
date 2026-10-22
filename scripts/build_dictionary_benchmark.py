@@ -60,12 +60,15 @@ AMBIGUOUS = {
     "复盘": ["retrospective", "review"],
 }
 
-BLOCKED = ["打", "尼", "你号"]
+BLOCKED = ["你号"]
 
 
 def main() -> None:
     overrides_payload = json.loads(OVERRIDES.read_text(encoding="utf-8"))
-    overrides = overrides_payload.get("overrides", {})
+    overrides = {
+        **overrides_payload.get("retiredOverrides", {}),
+        **overrides_payload.get("overrides", {}),
+    }
     cases = []
     for text, expected in GENERAL.items():
         cases.append({"text": text, "category": "general", "expected": expected})

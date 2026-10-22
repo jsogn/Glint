@@ -122,8 +122,6 @@ public final class OpenAICompatibleConfigurationStore: @unchecked Sendable {
     public static let defaultService = "com.local.glint.openai-compatible"
     public static let defaultAccount = "api-key"
     public static let providersKey = "translation.openAICompatible.providers"
-    public static let baseURLKey = "translation.openAICompatible.baseURL"
-    public static let modelKey = "translation.openAICompatible.model"
 
     private let defaults: UserDefaults
     private let service: String
@@ -147,38 +145,7 @@ public final class OpenAICompatibleConfigurationStore: @unchecked Sendable {
            ) {
             return providers
         }
-
-        let baseURL = defaults.string(forKey: Self.baseURLKey) ?? ""
-        let model = defaults.string(forKey: Self.modelKey) ?? ""
-        guard !baseURL.isEmpty || !model.isEmpty else {
-            return []
-        }
-
-        let provider = OpenAICompatibleProvider(
-            name: "OpenAI 兼容接口",
-            baseURL: baseURL,
-            model: model
-        )
-        let legacyKey = Self.readKeychain(service: service, account: account)
-        try? Self.writeKeychain(
-            legacyKey,
-            service: service,
-            account: keychainAccount(for: provider.id)
-        )
-        try? persist([provider])
-        defaults.removeObject(forKey: Self.baseURLKey)
-        defaults.removeObject(forKey: Self.modelKey)
-        try? Self.writeKeychain("", service: service, account: account)
-        if TranslationModelSelection.selected(in: defaults)
-            == TranslationModelSelection.openAICompatibleModelID {
-            TranslationModelSelection.select(
-                TranslationModelSelection.openAICompatibleSelectionID(
-                    for: provider.id
-                ),
-                in: defaults
-            )
-        }
-        return [provider]
+        return []
     }
 
     public func provider(id: String) -> OpenAICompatibleProvider? {
@@ -232,24 +199,6 @@ public final class OpenAICompatibleConfigurationStore: @unchecked Sendable {
         )
         let providers = loadProviders().filter { $0.id != id }
         try persist(providers)
-    }
-
-    public func load() -> OpenAICompatibleConfiguration {
-        guard let first = loadProviders().first,
-              let configuration = configuration(for: first.id) else {
-            return OpenAICompatibleConfiguration()
-        }
-        return configuration
-    }
-
-    public func save(_ configuration: OpenAICompatibleConfiguration) throws {
-        let provider = loadProviders().first ?? OpenAICompatibleProvider(
-            name: "OpenAI 兼容接口"
-        )
-        var updated = provider
-        updated.baseURL = configuration.baseURL
-        updated.model = configuration.model
-        try saveProvider(updated, apiKey: configuration.apiKey)
     }
 
     private func persist(_ providers: [OpenAICompatibleProvider]) throws {

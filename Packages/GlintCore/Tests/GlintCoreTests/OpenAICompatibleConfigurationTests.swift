@@ -69,41 +69,6 @@ final class OpenAICompatibleConfigurationTests: XCTestCase {
         XCTAssertEqual(store.loadProviders(), [second])
     }
 
-    func testMigratesLegacySingleProviderConfiguration() throws {
-        let suite = "OpenAILegacy-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(
-            "http://localhost:11434/v1",
-            forKey: OpenAICompatibleConfigurationStore.baseURLKey
-        )
-        defaults.set(
-            "qwen3:8b",
-            forKey: OpenAICompatibleConfigurationStore.modelKey
-        )
-        TranslationModelSelection.select(
-            TranslationModelSelection.openAICompatibleModelID,
-            in: defaults
-        )
-        let store = OpenAICompatibleConfigurationStore(
-            defaults: defaults,
-            service: "GlintTests-\(suite)",
-            account: "provider-key"
-        )
-
-        let providers = store.loadProviders()
-
-        XCTAssertEqual(providers.count, 1)
-        XCTAssertEqual(providers[0].baseURL, "http://localhost:11434/v1")
-        XCTAssertEqual(providers[0].model, "qwen3:8b")
-        XCTAssertEqual(
-            TranslationModelSelection.selected(in: defaults),
-            TranslationModelSelection.openAICompatibleSelectionID(
-                for: providers[0].id
-            )
-        )
-    }
-
     func testOpenAIProviderSelectionIDRoundTrips() {
         let modelID = TranslationModelSelection.openAICompatibleSelectionID(
             for: "provider-123"

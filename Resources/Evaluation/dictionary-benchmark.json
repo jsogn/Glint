@@ -310,47 +310,9 @@
     ]
   },
   {
-    "text": "打",
-    "category": "blocked",
-    "expected": []
-  },
-  {
-    "text": "尼",
-    "category": "blocked",
-    "expected": []
-  },
-  {
     "text": "你号",
     "category": "blocked",
     "expected": []
-  },
-  {
-    "text": "你好吗",
-    "category": "technical",
-    "expected": [
-      "How are you?"
-    ]
-  },
-  {
-    "text": "数据",
-    "category": "technical",
-    "expected": [
-      "data"
-    ]
-  },
-  {
-    "text": "计算机",
-    "category": "technical",
-    "expected": [
-      "computer"
-    ]
-  },
-  {
-    "text": "项目",
-    "category": "technical",
-    "expected": [
-      "project"
-    ]
   },
   {
     "text": "功能",
@@ -360,66 +322,10 @@
     ]
   },
   {
-    "text": "系统",
-    "category": "technical",
-    "expected": [
-      "system"
-    ]
-  },
-  {
-    "text": "用户",
-    "category": "technical",
-    "expected": [
-      "user"
-    ]
-  },
-  {
-    "text": "产品",
-    "category": "technical",
-    "expected": [
-      "product"
-    ]
-  },
-  {
     "text": "业务",
     "category": "technical",
     "expected": [
       "business"
-    ]
-  },
-  {
-    "text": "团队",
-    "category": "technical",
-    "expected": [
-      "team"
-    ]
-  },
-  {
-    "text": "公司",
-    "category": "technical",
-    "expected": [
-      "company"
-    ]
-  },
-  {
-    "text": "客户",
-    "category": "technical",
-    "expected": [
-      "customer"
-    ]
-  },
-  {
-    "text": "会议",
-    "category": "technical",
-    "expected": [
-      "meeting"
-    ]
-  },
-  {
-    "text": "计划",
-    "category": "technical",
-    "expected": [
-      "plan"
     ]
   },
   {
@@ -434,27 +340,6 @@
     "category": "technical",
     "expected": [
       "process"
-    ]
-  },
-  {
-    "text": "版本",
-    "category": "technical",
-    "expected": [
-      "version"
-    ]
-  },
-  {
-    "text": "代码",
-    "category": "technical",
-    "expected": [
-      "code"
-    ]
-  },
-  {
-    "text": "测试",
-    "category": "technical",
-    "expected": [
-      "test"
     ]
   },
   {
@@ -486,38 +371,10 @@
     ]
   },
   {
-    "text": "性能",
-    "category": "technical",
-    "expected": [
-      "performance"
-    ]
-  },
-  {
     "text": "安全",
     "category": "technical",
     "expected": [
       "security"
-    ]
-  },
-  {
-    "text": "隐私",
-    "category": "technical",
-    "expected": [
-      "privacy"
-    ]
-  },
-  {
-    "text": "模型",
-    "category": "technical",
-    "expected": [
-      "model"
-    ]
-  },
-  {
-    "text": "插件",
-    "category": "technical",
-    "expected": [
-      "plugin"
     ]
   },
   {
@@ -539,41 +396,6 @@
     "category": "technical",
     "expected": [
       "translation"
-    ]
-  },
-  {
-    "text": "词典",
-    "category": "technical",
-    "expected": [
-      "dictionary"
-    ]
-  },
-  {
-    "text": "句子",
-    "category": "technical",
-    "expected": [
-      "sentence"
-    ]
-  },
-  {
-    "text": "单词",
-    "category": "technical",
-    "expected": [
-      "word"
-    ]
-  },
-  {
-    "text": "英文",
-    "category": "technical",
-    "expected": [
-      "English"
-    ]
-  },
-  {
-    "text": "苹果",
-    "category": "technical",
-    "expected": [
-      "apple"
     ]
   },
   {
@@ -633,24 +455,10 @@
     ]
   },
   {
-    "text": "吞吐",
-    "category": "technical",
-    "expected": [
-      "throughput"
-    ]
-  },
-  {
     "text": "依赖",
     "category": "technical",
     "expected": [
       "dependency"
-    ]
-  },
-  {
-    "text": "模块",
-    "category": "technical",
-    "expected": [
-      "module"
     ]
   },
   {
@@ -668,24 +476,10 @@
     ]
   },
   {
-    "text": "评审",
-    "category": "technical",
-    "expected": [
-      "review"
-    ]
-  },
-  {
     "text": "验收",
     "category": "technical",
     "expected": [
       "acceptance"
-    ]
-  },
-  {
-    "text": "埋点",
-    "category": "technical",
-    "expected": [
-      "event tracking"
     ]
   },
   {
@@ -696,46 +490,11 @@
     ]
   },
   {
-    "text": "回滚",
-    "category": "technical",
-    "expected": [
-      "rollback"
-    ]
-  },
-  {
-    "text": "队列",
-    "category": "technical",
-    "expected": [
-      "queue"
-    ]
-  },
-  {
-    "text": "架构",
-    "category": "technical",
-    "expected": [
-      "architecture"
-    ]
-  },
-  {
-    "text": "算法",
-    "category": "technical",
-    "expected": [
-      "algorithm"
-    ]
-  },
-  {
     "text": "计算",
     "category": "technical",
     "expected": [
       "calculate",
       "calculation"
-    ]
-  },
-  {
-    "text": "输入法",
-    "category": "technical",
-    "expected": [
-      "input method"
     ]
   },
   {
@@ -790,6 +549,244 @@
     ]
   },
   {
+    "text": "推理",
+    "category": "technical",
+    "expected": [
+      "reasoning"
+    ]
+  },
+  {
+    "text": "你好吗",
+    "category": "technical",
+    "expected": [
+      "How are you?"
+    ]
+  },
+  {
+    "text": "数据",
+    "category": "technical",
+    "expected": [
+      "data"
+    ]
+  },
+  {
+    "text": "计算机",
+    "category": "technical",
+    "expected": [
+      "computer"
+    ]
+  },
+  {
+    "text": "项目",
+    "category": "technical",
+    "expected": [
+      "project"
+    ]
+  },
+  {
+    "text": "系统",
+    "category": "technical",
+    "expected": [
+      "system"
+    ]
+  },
+  {
+    "text": "用户",
+    "category": "technical",
+    "expected": [
+      "user"
+    ]
+  },
+  {
+    "text": "产品",
+    "category": "technical",
+    "expected": [
+      "product"
+    ]
+  },
+  {
+    "text": "团队",
+    "category": "technical",
+    "expected": [
+      "team"
+    ]
+  },
+  {
+    "text": "公司",
+    "category": "technical",
+    "expected": [
+      "company"
+    ]
+  },
+  {
+    "text": "客户",
+    "category": "technical",
+    "expected": [
+      "customer"
+    ]
+  },
+  {
+    "text": "会议",
+    "category": "technical",
+    "expected": [
+      "meeting"
+    ]
+  },
+  {
+    "text": "计划",
+    "category": "technical",
+    "expected": [
+      "plan"
+    ]
+  },
+  {
+    "text": "版本",
+    "category": "technical",
+    "expected": [
+      "version"
+    ]
+  },
+  {
+    "text": "代码",
+    "category": "technical",
+    "expected": [
+      "code"
+    ]
+  },
+  {
+    "text": "测试",
+    "category": "technical",
+    "expected": [
+      "test"
+    ]
+  },
+  {
+    "text": "性能",
+    "category": "technical",
+    "expected": [
+      "performance"
+    ]
+  },
+  {
+    "text": "隐私",
+    "category": "technical",
+    "expected": [
+      "privacy"
+    ]
+  },
+  {
+    "text": "模型",
+    "category": "technical",
+    "expected": [
+      "model"
+    ]
+  },
+  {
+    "text": "插件",
+    "category": "technical",
+    "expected": [
+      "plugin"
+    ]
+  },
+  {
+    "text": "词典",
+    "category": "technical",
+    "expected": [
+      "dictionary"
+    ]
+  },
+  {
+    "text": "句子",
+    "category": "technical",
+    "expected": [
+      "sentence"
+    ]
+  },
+  {
+    "text": "单词",
+    "category": "technical",
+    "expected": [
+      "word"
+    ]
+  },
+  {
+    "text": "英文",
+    "category": "technical",
+    "expected": [
+      "English"
+    ]
+  },
+  {
+    "text": "苹果",
+    "category": "technical",
+    "expected": [
+      "apple"
+    ]
+  },
+  {
+    "text": "吞吐",
+    "category": "technical",
+    "expected": [
+      "throughput"
+    ]
+  },
+  {
+    "text": "模块",
+    "category": "technical",
+    "expected": [
+      "module"
+    ]
+  },
+  {
+    "text": "评审",
+    "category": "technical",
+    "expected": [
+      "review"
+    ]
+  },
+  {
+    "text": "埋点",
+    "category": "technical",
+    "expected": [
+      "event tracking"
+    ]
+  },
+  {
+    "text": "回滚",
+    "category": "technical",
+    "expected": [
+      "rollback"
+    ]
+  },
+  {
+    "text": "队列",
+    "category": "technical",
+    "expected": [
+      "queue"
+    ]
+  },
+  {
+    "text": "架构",
+    "category": "technical",
+    "expected": [
+      "architecture"
+    ]
+  },
+  {
+    "text": "算法",
+    "category": "technical",
+    "expected": [
+      "algorithm"
+    ]
+  },
+  {
+    "text": "输入法",
+    "category": "technical",
+    "expected": [
+      "input method"
+    ]
+  },
+  {
     "text": "兜底",
     "category": "technical",
     "expected": [
@@ -808,13 +805,6 @@
     "category": "technical",
     "expected": [
       "semantics"
-    ]
-  },
-  {
-    "text": "推理",
-    "category": "technical",
-    "expected": [
-      "reasoning"
     ]
   },
   {

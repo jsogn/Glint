@@ -1,0 +1,8065 @@
+{
+  "generated_at": "2026-10-22T03:25:38.995687+00:00",
+  "cases": "/Users/alone/code/Glint/Tools/DictionaryLab/eval/override_stress_cases.json",
+  "overrides": "/Users/alone/code/Glint/Resources/Dictionary/overrides.json",
+  "lexicon": "/Users/alone/code/Glint/build/dictionary-core/normalized_lexicon.sqlite3",
+  "current_choices": "/Users/alone/code/Glint/Tools/DictionaryLab/results/current-route-choices.json",
+  "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "warmup_seconds": 0.345,
+  "summary": {
+    "case_count": 40,
+    "pair_count": 20,
+    "variants": {
+      "current_override": {
+        "case_count": 40,
+        "acceptable": 17,
+        "acceptable_rate": 0.425,
+        "top3_acceptable": 32,
+        "top3_acceptable_rate": 0.8,
+        "invalid": 0,
+        "aligned_acceptable": 11,
+        "conflict_acceptable": 6,
+        "conflict_count": 20,
+        "conflict_top3_acceptable": 12,
+        "paired_both_acceptable": 1,
+        "paired_both_top3_acceptable": 12,
+        "pair_count": 20,
+        "p50_latency_ms": 0.0001,
+        "p95_latency_ms": 0.0002
+      },
+      "dictionary_unranked": {
+        "case_count": 40,
+        "acceptable": 13,
+        "acceptable_rate": 0.325,
+        "top3_acceptable": 22,
+        "top3_acceptable_rate": 0.55,
+        "invalid": 0,
+        "aligned_acceptable": 7,
+        "conflict_acceptable": 6,
+        "conflict_count": 20,
+        "conflict_top3_acceptable": 9,
+        "paired_both_acceptable": 1,
+        "paired_both_top3_acceptable": 7,
+        "pair_count": 20,
+        "p50_latency_ms": 0.0435,
+        "p95_latency_ms": 0.0923
+      },
+      "dictionary_ranked": {
+        "case_count": 40,
+        "acceptable": 17,
+        "acceptable_rate": 0.425,
+        "top3_acceptable": 27,
+        "top3_acceptable_rate": 0.675,
+        "invalid": 0,
+        "aligned_acceptable": 13,
+        "conflict_acceptable": 4,
+        "conflict_count": 20,
+        "conflict_top3_acceptable": 11,
+        "paired_both_acceptable": 1,
+        "paired_both_top3_acceptable": 9,
+        "pair_count": 20,
+        "p50_latency_ms": 0.0571,
+        "p95_latency_ms": 0.1072
+      },
+      "model_target_only": {
+        "case_count": 40,
+        "acceptable": 20,
+        "acceptable_rate": 0.5,
+        "top3_acceptable": 20,
+        "top3_acceptable_rate": 0.5,
+        "invalid": 0,
+        "aligned_acceptable": 13,
+        "conflict_acceptable": 7,
+        "conflict_count": 20,
+        "conflict_top3_acceptable": 7,
+        "paired_both_acceptable": 3,
+        "paired_both_top3_acceptable": 3,
+        "pair_count": 20,
+        "p50_latency_ms": 151.6635,
+        "p95_latency_ms": 174.2922
+      },
+      "model_context": {
+        "case_count": 40,
+        "acceptable": 29,
+        "acceptable_rate": 0.725,
+        "top3_acceptable": 29,
+        "top3_acceptable_rate": 0.725,
+        "invalid": 0,
+        "aligned_acceptable": 17,
+        "conflict_acceptable": 12,
+        "conflict_count": 20,
+        "conflict_top3_acceptable": 12,
+        "paired_both_acceptable": 9,
+        "paired_both_top3_acceptable": 9,
+        "pair_count": 20,
+        "p50_latency_ms": 242.3095,
+        "p95_latency_ms": 257.7091
+      },
+      "model_target_only_plus_dictionary": {
+        "case_count": 40,
+        "acceptable": 20,
+        "acceptable_rate": 0.5,
+        "top3_acceptable": 32,
+        "top3_acceptable_rate": 0.8,
+        "invalid": 0,
+        "aligned_acceptable": 13,
+        "conflict_acceptable": 7,
+        "conflict_count": 20,
+        "conflict_top3_acceptable": 14,
+        "paired_both_acceptable": 3,
+        "paired_both_top3_acceptable": 12,
+        "pair_count": 20,
+        "p50_latency_ms": 151.6635,
+        "p95_latency_ms": 174.2922
+      },
+      "model_context_plus_dictionary": {
+        "case_count": 40,
+        "acceptable": 29,
+        "acceptable_rate": 0.725,
+        "top3_acceptable": 34,
+        "top3_acceptable_rate": 0.85,
+        "invalid": 0,
+        "aligned_acceptable": 17,
+        "conflict_acceptable": 12,
+        "conflict_count": 20,
+        "conflict_top3_acceptable": 15,
+        "paired_both_acceptable": 9,
+        "paired_both_top3_acceptable": 14,
+        "pair_count": 20,
+        "p50_latency_ms": 242.3095,
+        "p95_latency_ms": 257.7091
+      }
+    },
+    "versus_current_override": {
+      "dictionary_unranked": {
+        "case_wins": 5,
+        "case_losses": 9,
+        "case_ties": 26,
+        "pair_wins": 2,
+        "pair_losses": 5,
+        "pair_ties": 13,
+        "top3_case_wins": 0,
+        "top3_case_losses": 10,
+        "top3_case_ties": 30,
+        "top3_pair_wins": 0,
+        "top3_pair_losses": 8,
+        "top3_pair_ties": 12
+      },
+      "dictionary_ranked": {
+        "case_wins": 3,
+        "case_losses": 3,
+        "case_ties": 34,
+        "pair_wins": 1,
+        "pair_losses": 1,
+        "pair_ties": 18,
+        "top3_case_wins": 0,
+        "top3_case_losses": 5,
+        "top3_case_ties": 35,
+        "top3_pair_wins": 0,
+        "top3_pair_losses": 5,
+        "top3_pair_ties": 15
+      },
+      "model_target_only": {
+        "case_wins": 8,
+        "case_losses": 5,
+        "case_ties": 27,
+        "pair_wins": 5,
+        "pair_losses": 2,
+        "pair_ties": 13,
+        "top3_case_wins": 2,
+        "top3_case_losses": 14,
+        "top3_case_ties": 24,
+        "top3_pair_wins": 2,
+        "top3_pair_losses": 12,
+        "top3_pair_ties": 6
+      },
+      "model_context": {
+        "case_wins": 15,
+        "case_losses": 3,
+        "case_ties": 22,
+        "pair_wins": 10,
+        "pair_losses": 0,
+        "pair_ties": 10,
+        "top3_case_wins": 4,
+        "top3_case_losses": 7,
+        "top3_case_ties": 29,
+        "top3_pair_wins": 4,
+        "top3_pair_losses": 7,
+        "top3_pair_ties": 9
+      },
+      "model_target_only_plus_dictionary": {
+        "case_wins": 8,
+        "case_losses": 5,
+        "case_ties": 27,
+        "pair_wins": 5,
+        "pair_losses": 2,
+        "pair_ties": 13,
+        "top3_case_wins": 2,
+        "top3_case_losses": 2,
+        "top3_case_ties": 36,
+        "top3_pair_wins": 2,
+        "top3_pair_losses": 2,
+        "top3_pair_ties": 16
+      },
+      "model_context_plus_dictionary": {
+        "case_wins": 15,
+        "case_losses": 3,
+        "case_ties": 22,
+        "pair_wins": 10,
+        "pair_losses": 0,
+        "pair_ties": 10,
+        "top3_case_wins": 4,
+        "top3_case_losses": 2,
+        "top3_case_ties": 34,
+        "top3_pair_wins": 4,
+        "top3_pair_losses": 2,
+        "top3_pair_ties": 14
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "override-001-aligned",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "handle",
+        "deal with",
+        "resolve"
+      ],
+      "candidates": [
+        "handle",
+        "punish",
+        "process",
+        "sell at reduced prices",
+        "deal with",
+        "treat sth by a special process"
+      ],
+      "visible_candidates": [
+        "handle",
+        "punish",
+        "process"
+      ],
+      "prediction": "handle",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0004
+    },
+    {
+      "id": "override-001-aligned",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "handle",
+        "deal with",
+        "resolve"
+      ],
+      "candidates": [
+        "to handle",
+        "to deal with",
+        "to punish",
+        "to treat sth by a special process",
+        "to process",
+        "to sell at reduced prices"
+      ],
+      "visible_candidates": [
+        "to handle",
+        "to deal with",
+        "to punish"
+      ],
+      "prediction": "to handle",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0873
+    },
+    {
+      "id": "override-001-aligned",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "handle",
+        "deal with",
+        "resolve"
+      ],
+      "candidates": [
+        "to handle",
+        "to penalise",
+        "to process",
+        "to punish",
+        "to deal with",
+        "to tend to"
+      ],
+      "visible_candidates": [
+        "to handle",
+        "to penalise",
+        "to process"
+      ],
+      "prediction": "to handle",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.1072
+    },
+    {
+      "id": "override-001-conflict",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "process",
+        "processing"
+      ],
+      "candidates": [
+        "handle",
+        "punish",
+        "process",
+        "sell at reduced prices",
+        "deal with",
+        "treat sth by a special process"
+      ],
+      "visible_candidates": [
+        "handle",
+        "punish",
+        "process"
+      ],
+      "prediction": "handle",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0002
+    },
+    {
+      "id": "override-001-conflict",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "process",
+        "processing"
+      ],
+      "candidates": [
+        "to handle",
+        "to deal with",
+        "to punish",
+        "to treat sth by a special process",
+        "to process",
+        "to sell at reduced prices"
+      ],
+      "visible_candidates": [
+        "to handle",
+        "to deal with",
+        "to punish"
+      ],
+      "prediction": "to handle",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.081
+    },
+    {
+      "id": "override-001-conflict",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "process",
+        "processing"
+      ],
+      "candidates": [
+        "to handle",
+        "to penalise",
+        "to process",
+        "to punish",
+        "to deal with",
+        "to tend to"
+      ],
+      "visible_candidates": [
+        "to handle",
+        "to penalise",
+        "to process"
+      ],
+      "prediction": "to handle",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.1014
+    },
+    {
+      "id": "override-002-aligned",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "release",
+        "launch",
+        "unveil"
+      ],
+      "candidates": [
+        "issue",
+        "release",
+        "announce",
+        "distribute",
+        "publication"
+      ],
+      "visible_candidates": [
+        "issue",
+        "release",
+        "announce"
+      ],
+      "prediction": "issue",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0002
+    },
+    {
+      "id": "override-002-aligned",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "release",
+        "launch",
+        "unveil"
+      ],
+      "candidates": [
+        "to release",
+        "to issue",
+        "to announce",
+        "to distribute",
+        "to announce (of news, instructions, orders, etc"
+      ],
+      "visible_candidates": [
+        "to release",
+        "to issue",
+        "to announce"
+      ],
+      "prediction": "to release",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0541
+    },
+    {
+      "id": "override-002-aligned",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "release",
+        "launch",
+        "unveil"
+      ],
+      "candidates": [
+        "to issue",
+        "to release",
+        "to announce",
+        "to distribute",
+        "to announce (of news, instructions, orders, etc"
+      ],
+      "visible_candidates": [
+        "to issue",
+        "to release",
+        "to announce"
+      ],
+      "prediction": "to issue",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0696
+    },
+    {
+      "id": "override-002-conflict",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "post",
+        "publish",
+        "posted",
+        "published"
+      ],
+      "candidates": [
+        "issue",
+        "release",
+        "announce",
+        "distribute",
+        "publication"
+      ],
+      "visible_candidates": [
+        "issue",
+        "release",
+        "announce"
+      ],
+      "prediction": "issue",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0002
+    },
+    {
+      "id": "override-002-conflict",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "post",
+        "publish",
+        "posted",
+        "published"
+      ],
+      "candidates": [
+        "to release",
+        "to issue",
+        "to announce",
+        "to distribute",
+        "to announce (of news, instructions, orders, etc"
+      ],
+      "visible_candidates": [
+        "to release",
+        "to issue",
+        "to announce"
+      ],
+      "prediction": "to release",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0475
+    },
+    {
+      "id": "override-002-conflict",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "post",
+        "publish",
+        "posted",
+        "published"
+      ],
+      "candidates": [
+        "to issue",
+        "to release",
+        "to announce",
+        "to distribute",
+        "to announce (of news, instructions, orders, etc"
+      ],
+      "visible_candidates": [
+        "to issue",
+        "to release",
+        "to announce"
+      ],
+      "prediction": "to issue",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0695
+    },
+    {
+      "id": "override-003-aligned",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "implement",
+        "implemented",
+        "roll out",
+        "rolled out"
+      ],
+      "candidates": [
+        "land",
+        "born",
+        "implemented",
+        "fall to the ground",
+        "put into practice",
+        "set on the ground"
+      ],
+      "visible_candidates": [
+        "land",
+        "born",
+        "implemented"
+      ],
+      "prediction": "land",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0002
+    },
+    {
+      "id": "override-003-aligned",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "implement",
+        "implemented",
+        "roll out",
+        "rolled out"
+      ],
+      "candidates": [
+        "to fall to the ground",
+        "to be set on the ground",
+        "to reach to the ground",
+        "to be born",
+        "to land",
+        "to be implemented"
+      ],
+      "visible_candidates": [
+        "to fall to the ground",
+        "to be set on the ground"
+      ],
+      "prediction": "to fall to the ground",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0952
+    },
+    {
+      "id": "override-003-aligned",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "implement",
+        "implemented",
+        "roll out",
+        "rolled out"
+      ],
+      "candidates": [
+        "to implement",
+        "to land",
+        "originally",
+        "to be born",
+        "to be implemented",
+        "to carry out"
+      ],
+      "visible_candidates": [
+        "to implement",
+        "to land",
+        "originally"
+      ],
+      "prediction": "to implement",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.1002
+    },
+    {
+      "id": "override-003-conflict",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "land",
+        "landed",
+        "touch down",
+        "touched down"
+      ],
+      "candidates": [
+        "land",
+        "born",
+        "implemented",
+        "fall to the ground",
+        "put into practice",
+        "set on the ground"
+      ],
+      "visible_candidates": [
+        "land",
+        "born",
+        "implemented"
+      ],
+      "prediction": "land",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-003-conflict",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "land",
+        "landed",
+        "touch down",
+        "touched down"
+      ],
+      "candidates": [
+        "to fall to the ground",
+        "to be set on the ground",
+        "to reach to the ground",
+        "to be born",
+        "to land",
+        "to be implemented"
+      ],
+      "visible_candidates": [
+        "to fall to the ground",
+        "to be set on the ground"
+      ],
+      "prediction": "to fall to the ground",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0879
+    },
+    {
+      "id": "override-003-conflict",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "land",
+        "landed",
+        "touch down",
+        "touched down"
+      ],
+      "candidates": [
+        "to implement",
+        "to land",
+        "originally",
+        "to be born",
+        "to be implemented",
+        "to carry out"
+      ],
+      "visible_candidates": [
+        "to implement",
+        "to land",
+        "originally"
+      ],
+      "prediction": "to implement",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0968
+    },
+    {
+      "id": "override-004-aligned",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "develop",
+        "build",
+        "developing"
+      ],
+      "candidates": [
+        "exploit",
+        "open up",
+        "develop",
+        "development",
+        "tap",
+        "exploitation"
+      ],
+      "visible_candidates": [
+        "exploit",
+        "open up",
+        "develop"
+      ],
+      "prediction": "exploit",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-004-aligned",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "develop",
+        "build",
+        "developing"
+      ],
+      "candidates": [
+        "to exploit (a resource",
+        "to open up (for development",
+        "to develop",
+        "to develop (real estate, the Internet, etc"
+      ],
+      "visible_candidates": [
+        "to exploit (a resource"
+      ],
+      "prediction": "to exploit (a resource",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0475
+    },
+    {
+      "id": "override-004-aligned",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "develop",
+        "build",
+        "developing"
+      ],
+      "candidates": [
+        "to develop",
+        "to exploit (a resource",
+        "to open up (for development",
+        "to develop (real estate, the Internet, etc"
+      ],
+      "visible_candidates": [
+        "to develop",
+        "to exploit (a resource"
+      ],
+      "prediction": "to develop",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0575
+    },
+    {
+      "id": "override-004-conflict",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "issue",
+        "write out",
+        "issuing"
+      ],
+      "candidates": [
+        "exploit",
+        "open up",
+        "develop",
+        "development",
+        "tap",
+        "exploitation"
+      ],
+      "visible_candidates": [
+        "exploit",
+        "open up",
+        "develop"
+      ],
+      "prediction": "exploit",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-004-conflict",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "issue",
+        "write out",
+        "issuing"
+      ],
+      "candidates": [
+        "to exploit (a resource",
+        "to open up (for development",
+        "to develop",
+        "to develop (real estate, the Internet, etc"
+      ],
+      "visible_candidates": [
+        "to exploit (a resource"
+      ],
+      "prediction": "to exploit (a resource",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0435
+    },
+    {
+      "id": "override-004-conflict",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "issue",
+        "write out",
+        "issuing"
+      ],
+      "candidates": [
+        "to develop",
+        "to exploit (a resource",
+        "to open up (for development",
+        "to develop (real estate, the Internet, etc"
+      ],
+      "visible_candidates": [
+        "to develop",
+        "to exploit (a resource"
+      ],
+      "prediction": "to develop",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.056
+    },
+    {
+      "id": "override-005-aligned",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "issue",
+        "problem",
+        "bug"
+      ],
+      "candidates": [
+        "problem",
+        "question",
+        "issue",
+        "topic",
+        "faulty",
+        "problematic"
+      ],
+      "visible_candidates": [
+        "problem",
+        "question",
+        "issue"
+      ],
+      "prediction": "problem",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-005-aligned",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "issue",
+        "problem",
+        "bug"
+      ],
+      "candidates": [
+        "question",
+        "problem",
+        "issue",
+        "topic",
+        "faulty",
+        "problematic"
+      ],
+      "visible_candidates": [
+        "question",
+        "problem",
+        "issue"
+      ],
+      "prediction": "question",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0396
+    },
+    {
+      "id": "override-005-aligned",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "issue",
+        "problem",
+        "bug"
+      ],
+      "candidates": [
+        "problem",
+        "question",
+        "issue",
+        "faulty",
+        "problematic",
+        "topic"
+      ],
+      "visible_candidates": [
+        "problem",
+        "question",
+        "issue"
+      ],
+      "prediction": "problem",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0551
+    },
+    {
+      "id": "override-005-conflict",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "question",
+        "questions"
+      ],
+      "candidates": [
+        "problem",
+        "question",
+        "issue",
+        "topic",
+        "faulty",
+        "problematic"
+      ],
+      "visible_candidates": [
+        "problem",
+        "question",
+        "issue"
+      ],
+      "prediction": "problem",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-005-conflict",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "question",
+        "questions"
+      ],
+      "candidates": [
+        "question",
+        "problem",
+        "issue",
+        "topic",
+        "faulty",
+        "problematic"
+      ],
+      "visible_candidates": [
+        "question",
+        "problem",
+        "issue"
+      ],
+      "prediction": "question",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.036
+    },
+    {
+      "id": "override-005-conflict",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "question",
+        "questions"
+      ],
+      "candidates": [
+        "problem",
+        "question",
+        "issue",
+        "faulty",
+        "problematic",
+        "topic"
+      ],
+      "visible_candidates": [
+        "problem",
+        "question",
+        "issue"
+      ],
+      "prediction": "problem",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0523
+    },
+    {
+      "id": "override-006-aligned",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "result",
+        "outcome",
+        "results"
+      ],
+      "candidates": [
+        "result",
+        "consequence",
+        "outcome",
+        "kill",
+        "bear fruit",
+        "in the end"
+      ],
+      "visible_candidates": [
+        "result",
+        "consequence",
+        "outcome"
+      ],
+      "prediction": "result",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-006-aligned",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "result",
+        "outcome",
+        "results"
+      ],
+      "candidates": [
+        "to bear fruit",
+        "outcome",
+        "result",
+        "consequence",
+        "in the end",
+        "as a result"
+      ],
+      "visible_candidates": [
+        "to bear fruit",
+        "outcome",
+        "result"
+      ],
+      "prediction": "to bear fruit",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0973
+    },
+    {
+      "id": "override-006-aligned",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "result",
+        "outcome",
+        "results"
+      ],
+      "candidates": [
+        "result",
+        "consequence",
+        "to dispatch",
+        "finally",
+        "to kill",
+        "outcome"
+      ],
+      "visible_candidates": [
+        "result",
+        "consequence",
+        "to dispatch"
+      ],
+      "prediction": "result",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.1184
+    },
+    {
+      "id": "override-006-conflict",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "as a result",
+        "turned out",
+        "consequently"
+      ],
+      "candidates": [
+        "result",
+        "consequence",
+        "outcome",
+        "kill",
+        "bear fruit",
+        "in the end"
+      ],
+      "visible_candidates": [
+        "result",
+        "consequence",
+        "outcome"
+      ],
+      "prediction": "result",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0002
+    },
+    {
+      "id": "override-006-conflict",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "as a result",
+        "turned out",
+        "consequently"
+      ],
+      "candidates": [
+        "to bear fruit",
+        "outcome",
+        "result",
+        "consequence",
+        "in the end",
+        "as a result"
+      ],
+      "visible_candidates": [
+        "to bear fruit",
+        "outcome",
+        "result"
+      ],
+      "prediction": "to bear fruit",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0923
+    },
+    {
+      "id": "override-006-conflict",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "as a result",
+        "turned out",
+        "consequently"
+      ],
+      "candidates": [
+        "result",
+        "consequence",
+        "to dispatch",
+        "finally",
+        "to kill",
+        "outcome"
+      ],
+      "visible_candidates": [
+        "result",
+        "consequence",
+        "to dispatch"
+      ],
+      "prediction": "result",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.1158
+    },
+    {
+      "id": "override-007-aligned",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "configuration",
+        "config",
+        "settings"
+      ],
+      "candidates": [
+        "deploy",
+        "configuration",
+        "allocation",
+        "allocate",
+        "station",
+        "configure"
+      ],
+      "visible_candidates": [
+        "deploy",
+        "configuration",
+        "allocation"
+      ],
+      "prediction": "deploy",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-007-aligned",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "configuration",
+        "config",
+        "settings"
+      ],
+      "candidates": [
+        "to deploy",
+        "to allocate",
+        "configuration",
+        "allocation",
+        "to deploy (e.g. troops",
+        "to allocate (e.g. resources, manpower, etc"
+      ],
+      "visible_candidates": [
+        "to deploy",
+        "to allocate",
+        "configuration"
+      ],
+      "prediction": "to deploy",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0547
+    },
+    {
+      "id": "override-007-aligned",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "configuration",
+        "config",
+        "settings"
+      ],
+      "candidates": [
+        "to deploy",
+        "configuration",
+        "allocation",
+        "to allocate",
+        "to configure",
+        "to deploy (e.g. troops"
+      ],
+      "visible_candidates": [
+        "to deploy",
+        "configuration",
+        "allocation"
+      ],
+      "prediction": "to deploy",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0701
+    },
+    {
+      "id": "override-007-conflict",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "configure",
+        "set up",
+        "configuring"
+      ],
+      "candidates": [
+        "deploy",
+        "configuration",
+        "allocation",
+        "allocate",
+        "station",
+        "configure"
+      ],
+      "visible_candidates": [
+        "deploy",
+        "configuration",
+        "allocation"
+      ],
+      "prediction": "deploy",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-007-conflict",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "configure",
+        "set up",
+        "configuring"
+      ],
+      "candidates": [
+        "to deploy",
+        "to allocate",
+        "configuration",
+        "allocation",
+        "to deploy (e.g. troops",
+        "to allocate (e.g. resources, manpower, etc"
+      ],
+      "visible_candidates": [
+        "to deploy",
+        "to allocate",
+        "configuration"
+      ],
+      "prediction": "to deploy",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.051
+    },
+    {
+      "id": "override-007-conflict",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "configure",
+        "set up",
+        "configuring"
+      ],
+      "candidates": [
+        "to deploy",
+        "configuration",
+        "allocation",
+        "to allocate",
+        "to configure",
+        "to deploy (e.g. troops"
+      ],
+      "visible_candidates": [
+        "to deploy",
+        "configuration",
+        "allocation"
+      ],
+      "prediction": "to deploy",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0692
+    },
+    {
+      "id": "override-008-aligned",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "security",
+        "safety"
+      ],
+      "candidates": [
+        "safety",
+        "security",
+        "safe",
+        "secure",
+        "Anquan",
+        "maintain"
+      ],
+      "visible_candidates": [
+        "safety",
+        "security",
+        "safe"
+      ],
+      "prediction": "safety",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-008-aligned",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "security",
+        "safety"
+      ],
+      "candidates": [
+        "safe",
+        "secure",
+        "safety",
+        "security",
+        "Anquan (a village in Wulipu, Shayang, Jingmen, Hubei, China",
+        "to keep in good repair"
+      ],
+      "visible_candidates": [
+        "safe",
+        "secure",
+        "safety"
+      ],
+      "prediction": "safe",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0903
+    },
+    {
+      "id": "override-008-aligned",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "security",
+        "safety"
+      ],
+      "candidates": [
+        "security",
+        "safety",
+        "to maintain",
+        "to preserve",
+        "safe",
+        "secure"
+      ],
+      "visible_candidates": [
+        "security",
+        "safety",
+        "to maintain"
+      ],
+      "prediction": "security",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.1035
+    },
+    {
+      "id": "override-008-conflict",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "safe",
+        "secure"
+      ],
+      "candidates": [
+        "safety",
+        "security",
+        "safe",
+        "secure",
+        "Anquan",
+        "maintain"
+      ],
+      "visible_candidates": [
+        "safety",
+        "security",
+        "safe"
+      ],
+      "prediction": "safety",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-008-conflict",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "safe",
+        "secure"
+      ],
+      "candidates": [
+        "safe",
+        "secure",
+        "safety",
+        "security",
+        "Anquan (a village in Wulipu, Shayang, Jingmen, Hubei, China",
+        "to keep in good repair"
+      ],
+      "visible_candidates": [
+        "safe",
+        "secure",
+        "safety"
+      ],
+      "prediction": "safe",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0852
+    },
+    {
+      "id": "override-008-conflict",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "safe",
+        "secure"
+      ],
+      "candidates": [
+        "security",
+        "safety",
+        "to maintain",
+        "to preserve",
+        "safe",
+        "secure"
+      ],
+      "visible_candidates": [
+        "security",
+        "safety",
+        "to maintain"
+      ],
+      "prediction": "security",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.1025
+    },
+    {
+      "id": "override-009-aligned",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "API",
+        "interface",
+        "endpoint"
+      ],
+      "candidates": [
+        "interface",
+        "port",
+        "connector",
+        "API",
+        "gateway",
+        "cut in"
+      ],
+      "visible_candidates": [
+        "interface",
+        "port",
+        "connector"
+      ],
+      "prediction": "interface",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-009-aligned",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "API",
+        "interface",
+        "endpoint"
+      ],
+      "candidates": [
+        "interface",
+        "port",
+        "connector",
+        "gateway",
+        "to cut in",
+        "to continue the conversation"
+      ],
+      "visible_candidates": [
+        "interface",
+        "port",
+        "connector"
+      ],
+      "prediction": "interface",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0498
+    },
+    {
+      "id": "override-009-aligned",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "API",
+        "interface",
+        "endpoint"
+      ],
+      "candidates": [
+        "interface",
+        "connector",
+        "gateway",
+        "port",
+        "to cut in",
+        "to continue the conversation"
+      ],
+      "visible_candidates": [
+        "interface",
+        "connector",
+        "gateway"
+      ],
+      "prediction": "interface",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0588
+    },
+    {
+      "id": "override-009-conflict",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "connector",
+        "port",
+        "socket"
+      ],
+      "candidates": [
+        "interface",
+        "port",
+        "connector",
+        "API",
+        "gateway",
+        "cut in"
+      ],
+      "visible_candidates": [
+        "interface",
+        "port",
+        "connector"
+      ],
+      "prediction": "interface",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-009-conflict",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "connector",
+        "port",
+        "socket"
+      ],
+      "candidates": [
+        "interface",
+        "port",
+        "connector",
+        "gateway",
+        "to cut in",
+        "to continue the conversation"
+      ],
+      "visible_candidates": [
+        "interface",
+        "port",
+        "connector"
+      ],
+      "prediction": "interface",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0458
+    },
+    {
+      "id": "override-009-conflict",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "connector",
+        "port",
+        "socket"
+      ],
+      "candidates": [
+        "interface",
+        "connector",
+        "gateway",
+        "port",
+        "to cut in",
+        "to continue the conversation"
+      ],
+      "visible_candidates": [
+        "interface",
+        "connector",
+        "gateway"
+      ],
+      "prediction": "interface",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0568
+    },
+    {
+      "id": "override-010-aligned",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "canary",
+        "canary release",
+        "canary rollout",
+        "gray release"
+      ],
+      "candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "visible_candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-010-aligned",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "canary",
+        "canary release",
+        "canary rollout",
+        "gray release"
+      ],
+      "candidates": [
+        "grayscale"
+      ],
+      "visible_candidates": [
+        "grayscale"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.019
+    },
+    {
+      "id": "override-010-aligned",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "canary",
+        "canary release",
+        "canary rollout",
+        "gray release"
+      ],
+      "candidates": [
+        "grayscale"
+      ],
+      "visible_candidates": [
+        "grayscale"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0233
+    },
+    {
+      "id": "override-010-conflict",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "grayscale",
+        "greyscale",
+        "black and white"
+      ],
+      "candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "visible_candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-010-conflict",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "grayscale",
+        "greyscale",
+        "black and white"
+      ],
+      "candidates": [
+        "grayscale"
+      ],
+      "visible_candidates": [
+        "grayscale"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.017
+    },
+    {
+      "id": "override-010-conflict",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "grayscale",
+        "greyscale",
+        "black and white"
+      ],
+      "candidates": [
+        "grayscale"
+      ],
+      "visible_candidates": [
+        "grayscale"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0218
+    },
+    {
+      "id": "override-011-aligned",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "requirement",
+        "requirements",
+        "needs"
+      ],
+      "candidates": [
+        "demand",
+        "requirement",
+        "require",
+        "need"
+      ],
+      "visible_candidates": [
+        "demand",
+        "requirement",
+        "require"
+      ],
+      "prediction": "demand",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-011-aligned",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "requirement",
+        "requirements",
+        "needs"
+      ],
+      "candidates": [
+        "requirement",
+        "to require",
+        "demand",
+        "need"
+      ],
+      "visible_candidates": [
+        "requirement",
+        "to require",
+        "demand"
+      ],
+      "prediction": "requirement",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0352
+    },
+    {
+      "id": "override-011-aligned",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "requirement",
+        "requirements",
+        "needs"
+      ],
+      "candidates": [
+        "demand",
+        "requirement",
+        "need",
+        "to require"
+      ],
+      "visible_candidates": [
+        "demand",
+        "requirement",
+        "need"
+      ],
+      "prediction": "demand",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0447
+    },
+    {
+      "id": "override-011-conflict",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "demand"
+      ],
+      "candidates": [
+        "demand",
+        "requirement",
+        "require",
+        "need"
+      ],
+      "visible_candidates": [
+        "demand",
+        "requirement",
+        "require"
+      ],
+      "prediction": "demand",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0
+    },
+    {
+      "id": "override-011-conflict",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "demand"
+      ],
+      "candidates": [
+        "requirement",
+        "to require",
+        "demand",
+        "need"
+      ],
+      "visible_candidates": [
+        "requirement",
+        "to require",
+        "demand"
+      ],
+      "prediction": "requirement",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0333
+    },
+    {
+      "id": "override-011-conflict",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "demand"
+      ],
+      "candidates": [
+        "demand",
+        "requirement",
+        "need",
+        "to require"
+      ],
+      "visible_candidates": [
+        "demand",
+        "requirement",
+        "need"
+      ],
+      "prediction": "demand",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.043
+    },
+    {
+      "id": "override-012-aligned",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "scenario",
+        "scenarios",
+        "use case",
+        "use cases"
+      ],
+      "candidates": [
+        "scene",
+        "scenario",
+        "situation",
+        "setting"
+      ],
+      "visible_candidates": [
+        "scene",
+        "scenario",
+        "situation"
+      ],
+      "prediction": "scene",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0
+    },
+    {
+      "id": "override-012-aligned",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "scenario",
+        "scenarios",
+        "use case",
+        "use cases"
+      ],
+      "candidates": [
+        "scene",
+        "scenario",
+        "situation",
+        "setting"
+      ],
+      "visible_candidates": [
+        "scene",
+        "scenario",
+        "situation"
+      ],
+      "prediction": "scene",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0347
+    },
+    {
+      "id": "override-012-aligned",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "scenario",
+        "scenarios",
+        "use case",
+        "use cases"
+      ],
+      "candidates": [
+        "scenario",
+        "scene",
+        "setting",
+        "situation"
+      ],
+      "visible_candidates": [
+        "scenario",
+        "scene",
+        "setting"
+      ],
+      "prediction": "scenario",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0398
+    },
+    {
+      "id": "override-012-conflict",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "scene",
+        "scenes"
+      ],
+      "candidates": [
+        "scene",
+        "scenario",
+        "situation",
+        "setting"
+      ],
+      "visible_candidates": [
+        "scene",
+        "scenario",
+        "situation"
+      ],
+      "prediction": "scene",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0
+    },
+    {
+      "id": "override-012-conflict",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "scene",
+        "scenes"
+      ],
+      "candidates": [
+        "scene",
+        "scenario",
+        "situation",
+        "setting"
+      ],
+      "visible_candidates": [
+        "scene",
+        "scenario",
+        "situation"
+      ],
+      "prediction": "scene",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0324
+    },
+    {
+      "id": "override-012-conflict",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "scene",
+        "scenes"
+      ],
+      "candidates": [
+        "scenario",
+        "scene",
+        "setting",
+        "situation"
+      ],
+      "visible_candidates": [
+        "scenario",
+        "scene",
+        "setting"
+      ],
+      "prediction": "scenario",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0382
+    },
+    {
+      "id": "override-013-aligned",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "retrospective",
+        "retro",
+        "review"
+      ],
+      "candidates": [
+        "resume trading",
+        "retrospective",
+        "replay the game, analyzing the players' moves"
+      ],
+      "visible_candidates": [
+        "resume trading",
+        "retrospective"
+      ],
+      "prediction": "resume trading",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0
+    },
+    {
+      "id": "override-013-aligned",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "retrospective",
+        "retro",
+        "review"
+      ],
+      "candidates": [
+        "to replay the game, analyzing the players' moves",
+        "to resume trading"
+      ],
+      "visible_candidates": [
+        "to replay the game, analyzing the players' moves"
+      ],
+      "prediction": "to replay the game, analyzing the players' moves",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0247
+    },
+    {
+      "id": "override-013-aligned",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "retrospective",
+        "retro",
+        "review"
+      ],
+      "candidates": [
+        "to resume trading",
+        "to replay the game, analyzing the players' moves"
+      ],
+      "visible_candidates": [
+        "to resume trading"
+      ],
+      "prediction": "to resume trading",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0286
+    },
+    {
+      "id": "override-013-conflict",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "review",
+        "analyze",
+        "analyse"
+      ],
+      "candidates": [
+        "resume trading",
+        "retrospective",
+        "replay the game, analyzing the players' moves"
+      ],
+      "visible_candidates": [
+        "resume trading",
+        "retrospective"
+      ],
+      "prediction": "resume trading",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0
+    },
+    {
+      "id": "override-013-conflict",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "review",
+        "analyze",
+        "analyse"
+      ],
+      "candidates": [
+        "to replay the game, analyzing the players' moves",
+        "to resume trading"
+      ],
+      "visible_candidates": [
+        "to replay the game, analyzing the players' moves"
+      ],
+      "prediction": "to replay the game, analyzing the players' moves",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0221
+    },
+    {
+      "id": "override-013-conflict",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "review",
+        "analyze",
+        "analyse"
+      ],
+      "candidates": [
+        "to resume trading",
+        "to replay the game, analyzing the players' moves"
+      ],
+      "visible_candidates": [
+        "to resume trading"
+      ],
+      "prediction": "to resume trading",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0273
+    },
+    {
+      "id": "override-014-aligned",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "break down",
+        "split",
+        "decompose"
+      ],
+      "candidates": [
+        "break down",
+        "break up into parts",
+        "split up",
+        "disassemble",
+        "dissolve",
+        "split"
+      ],
+      "visible_candidates": [
+        "break down",
+        "break up into parts",
+        "split up"
+      ],
+      "prediction": "break down",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-014-aligned",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "break down",
+        "split",
+        "decompose"
+      ],
+      "candidates": [
+        "to break up into parts",
+        "to split up",
+        "to disassemble",
+        "to dissolve"
+      ],
+      "visible_candidates": [
+        "to break up into parts",
+        "to split up"
+      ],
+      "prediction": "to break up into parts",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0285
+    },
+    {
+      "id": "override-014-aligned",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "break down",
+        "split",
+        "decompose"
+      ],
+      "candidates": [
+        "to disassemble",
+        "to dissolve",
+        "to split up",
+        "to break up into parts"
+      ],
+      "visible_candidates": [
+        "to disassemble",
+        "to dissolve",
+        "to split up"
+      ],
+      "prediction": "to disassemble",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0355
+    },
+    {
+      "id": "override-014-conflict",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "split",
+        "spin off",
+        "separate",
+        "carve out"
+      ],
+      "candidates": [
+        "break down",
+        "break up into parts",
+        "split up",
+        "disassemble",
+        "dissolve",
+        "split"
+      ],
+      "visible_candidates": [
+        "break down",
+        "break up into parts",
+        "split up"
+      ],
+      "prediction": "break down",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-014-conflict",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "split",
+        "spin off",
+        "separate",
+        "carve out"
+      ],
+      "candidates": [
+        "to break up into parts",
+        "to split up",
+        "to disassemble",
+        "to dissolve"
+      ],
+      "visible_candidates": [
+        "to break up into parts",
+        "to split up"
+      ],
+      "prediction": "to break up into parts",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0269
+    },
+    {
+      "id": "override-014-conflict",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "split",
+        "spin off",
+        "separate",
+        "carve out"
+      ],
+      "candidates": [
+        "to disassemble",
+        "to dissolve",
+        "to split up",
+        "to break up into parts"
+      ],
+      "visible_candidates": [
+        "to disassemble",
+        "to dissolve",
+        "to split up"
+      ],
+      "prediction": "to disassemble",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0344
+    },
+    {
+      "id": "override-015-aligned",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "candidates": [
+        "goal",
+        "target",
+        "objective",
+        "end",
+        "cause"
+      ],
+      "visible_candidates": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "prediction": "goal",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-015-aligned",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "candidates": [
+        "target",
+        "goal",
+        "objective"
+      ],
+      "visible_candidates": [
+        "target",
+        "goal",
+        "objective"
+      ],
+      "prediction": "target",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0247
+    },
+    {
+      "id": "override-015-aligned",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "candidates": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "visible_candidates": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "prediction": "goal",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0465
+    },
+    {
+      "id": "override-015-conflict",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "target",
+        "object"
+      ],
+      "candidates": [
+        "goal",
+        "target",
+        "objective",
+        "end",
+        "cause"
+      ],
+      "visible_candidates": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "prediction": "goal",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-015-conflict",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "target",
+        "object"
+      ],
+      "candidates": [
+        "target",
+        "goal",
+        "objective"
+      ],
+      "visible_candidates": [
+        "target",
+        "goal",
+        "objective"
+      ],
+      "prediction": "target",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.023
+    },
+    {
+      "id": "override-015-conflict",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "target",
+        "object"
+      ],
+      "candidates": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "visible_candidates": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "prediction": "goal",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0434
+    },
+    {
+      "id": "override-016-aligned",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "calculate",
+        "compute",
+        "solve"
+      ],
+      "candidates": [
+        "calculate",
+        "consider",
+        "plot",
+        "compute",
+        "scheme",
+        "think over"
+      ],
+      "visible_candidates": [
+        "calculate",
+        "consider",
+        "plot"
+      ],
+      "prediction": "calculate",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-016-aligned",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "calculate",
+        "compute",
+        "solve"
+      ],
+      "candidates": [
+        "to calculate",
+        "to compute",
+        "to consider",
+        "to think over",
+        "to plot",
+        "to scheme"
+      ],
+      "visible_candidates": [
+        "to calculate",
+        "to compute",
+        "to consider"
+      ],
+      "prediction": "to calculate",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0608
+    },
+    {
+      "id": "override-016-aligned",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "calculate",
+        "compute",
+        "solve"
+      ],
+      "candidates": [
+        "to calculate",
+        "to compute",
+        "to consider",
+        "to plan",
+        "to plot",
+        "to scheme"
+      ],
+      "visible_candidates": [
+        "to calculate",
+        "to compute",
+        "to consider"
+      ],
+      "prediction": "to calculate",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0799
+    },
+    {
+      "id": "override-016-conflict",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "calculation",
+        "computation"
+      ],
+      "candidates": [
+        "calculate",
+        "consider",
+        "plot",
+        "compute",
+        "scheme",
+        "think over"
+      ],
+      "visible_candidates": [
+        "calculate",
+        "consider",
+        "plot"
+      ],
+      "prediction": "calculate",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-016-conflict",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "calculation",
+        "computation"
+      ],
+      "candidates": [
+        "to calculate",
+        "to compute",
+        "to consider",
+        "to think over",
+        "to plot",
+        "to scheme"
+      ],
+      "visible_candidates": [
+        "to calculate",
+        "to compute",
+        "to consider"
+      ],
+      "prediction": "to calculate",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0566
+    },
+    {
+      "id": "override-016-conflict",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "calculation",
+        "computation"
+      ],
+      "candidates": [
+        "to calculate",
+        "to compute",
+        "to consider",
+        "to plan",
+        "to plot",
+        "to scheme"
+      ],
+      "visible_candidates": [
+        "to calculate",
+        "to compute",
+        "to consider"
+      ],
+      "prediction": "to calculate",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0772
+    },
+    {
+      "id": "override-017-aligned",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "dependency",
+        "dependencies"
+      ],
+      "candidates": [
+        "depend on",
+        "dependent on",
+        "dependency",
+        "rely on",
+        "rest",
+        "be dependent on each other"
+      ],
+      "visible_candidates": [
+        "depend on",
+        "dependent on",
+        "dependency"
+      ],
+      "prediction": "depend on",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-017-aligned",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "dependency",
+        "dependencies"
+      ],
+      "candidates": [
+        "to depend on",
+        "to be dependent on",
+        "to rely on",
+        "to be dependent on each other"
+      ],
+      "visible_candidates": [
+        "to depend on",
+        "to be dependent on",
+        "to rely on"
+      ],
+      "prediction": "to depend on",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0364
+    },
+    {
+      "id": "override-017-aligned",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "dependency",
+        "dependencies"
+      ],
+      "candidates": [
+        "to depend on",
+        "to rely on",
+        "to be dependent on",
+        "to be dependent on each other"
+      ],
+      "visible_candidates": [
+        "to depend on",
+        "to rely on",
+        "to be dependent on"
+      ],
+      "prediction": "to depend on",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0542
+    },
+    {
+      "id": "override-017-conflict",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "depend on",
+        "rely on"
+      ],
+      "candidates": [
+        "depend on",
+        "dependent on",
+        "dependency",
+        "rely on",
+        "rest",
+        "be dependent on each other"
+      ],
+      "visible_candidates": [
+        "depend on",
+        "dependent on",
+        "dependency"
+      ],
+      "prediction": "depend on",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-017-conflict",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "depend on",
+        "rely on"
+      ],
+      "candidates": [
+        "to depend on",
+        "to be dependent on",
+        "to rely on",
+        "to be dependent on each other"
+      ],
+      "visible_candidates": [
+        "to depend on",
+        "to be dependent on",
+        "to rely on"
+      ],
+      "prediction": "to depend on",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.034
+    },
+    {
+      "id": "override-017-conflict",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "depend on",
+        "rely on"
+      ],
+      "candidates": [
+        "to depend on",
+        "to rely on",
+        "to be dependent on",
+        "to be dependent on each other"
+      ],
+      "visible_candidates": [
+        "to depend on",
+        "to rely on",
+        "to be dependent on"
+      ],
+      "prediction": "to depend on",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0529
+    },
+    {
+      "id": "override-018-aligned",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "acceptance",
+        "acceptance testing"
+      ],
+      "candidates": [
+        "acceptance",
+        "inspect and accept",
+        "check upon delivery",
+        "inspect and approve"
+      ],
+      "visible_candidates": [
+        "acceptance",
+        "inspect and accept"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-018-aligned",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "acceptance",
+        "acceptance testing"
+      ],
+      "candidates": [
+        "to inspect and accept",
+        "acceptance",
+        "to check upon delivery",
+        "to inspect and approve"
+      ],
+      "visible_candidates": [
+        "to inspect and accept",
+        "acceptance"
+      ],
+      "prediction": "to inspect and accept",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0314
+    },
+    {
+      "id": "override-018-aligned",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "acceptance",
+        "acceptance testing"
+      ],
+      "candidates": [
+        "acceptance",
+        "to check upon delivery",
+        "to inspect and accept",
+        "to inspect and approve"
+      ],
+      "visible_candidates": [
+        "acceptance",
+        "to check upon delivery"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0379
+    },
+    {
+      "id": "override-018-conflict",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "inspect",
+        "test and accept",
+        "accept"
+      ],
+      "candidates": [
+        "acceptance",
+        "inspect and accept",
+        "check upon delivery",
+        "inspect and approve"
+      ],
+      "visible_candidates": [
+        "acceptance",
+        "inspect and accept"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0
+    },
+    {
+      "id": "override-018-conflict",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "inspect",
+        "test and accept",
+        "accept"
+      ],
+      "candidates": [
+        "to inspect and accept",
+        "acceptance",
+        "to check upon delivery",
+        "to inspect and approve"
+      ],
+      "visible_candidates": [
+        "to inspect and accept",
+        "acceptance"
+      ],
+      "prediction": "to inspect and accept",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0286
+    },
+    {
+      "id": "override-018-conflict",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "inspect",
+        "test and accept",
+        "accept"
+      ],
+      "candidates": [
+        "acceptance",
+        "to check upon delivery",
+        "to inspect and accept",
+        "to inspect and approve"
+      ],
+      "visible_candidates": [
+        "acceptance",
+        "to check upon delivery"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0367
+    },
+    {
+      "id": "override-019-aligned",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "trade-off",
+        "tradeoff",
+        "balance"
+      ],
+      "candidates": [
+        "balance",
+        "weigh",
+        "consider",
+        "trade-off",
+        "tools for weighing things",
+        "sliding weight and weighing rod"
+      ],
+      "visible_candidates": [
+        "balance",
+        "weigh",
+        "consider"
+      ],
+      "prediction": "balance",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0
+    },
+    {
+      "id": "override-019-aligned",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "trade-off",
+        "tradeoff",
+        "balance"
+      ],
+      "candidates": [
+        "to consider",
+        "to weigh (a matter",
+        "to balance (pros and cons",
+        "sliding weight and weighing rod",
+        "tools for weighing things",
+        "to weigh"
+      ],
+      "visible_candidates": [
+        "to consider",
+        "to weigh (a matter"
+      ],
+      "prediction": "to consider",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0557
+    },
+    {
+      "id": "override-019-aligned",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "trade-off",
+        "tradeoff",
+        "balance"
+      ],
+      "candidates": [
+        "to balance",
+        "to weigh",
+        "authority",
+        "to consider",
+        "power",
+        "to weigh (a matter"
+      ],
+      "visible_candidates": [
+        "to balance",
+        "to weigh",
+        "authority"
+      ],
+      "prediction": "to balance",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0662
+    },
+    {
+      "id": "override-019-conflict",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "weigh",
+        "weigh up",
+        "balance"
+      ],
+      "candidates": [
+        "balance",
+        "weigh",
+        "consider",
+        "trade-off",
+        "tools for weighing things",
+        "sliding weight and weighing rod"
+      ],
+      "visible_candidates": [
+        "balance",
+        "weigh",
+        "consider"
+      ],
+      "prediction": "balance",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-019-conflict",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "weigh",
+        "weigh up",
+        "balance"
+      ],
+      "candidates": [
+        "to consider",
+        "to weigh (a matter",
+        "to balance (pros and cons",
+        "sliding weight and weighing rod",
+        "tools for weighing things",
+        "to weigh"
+      ],
+      "visible_candidates": [
+        "to consider",
+        "to weigh (a matter"
+      ],
+      "prediction": "to consider",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 0.0526
+    },
+    {
+      "id": "override-019-conflict",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "weigh",
+        "weigh up",
+        "balance"
+      ],
+      "candidates": [
+        "to balance",
+        "to weigh",
+        "authority",
+        "to consider",
+        "power",
+        "to weigh (a matter"
+      ],
+      "visible_candidates": [
+        "to balance",
+        "to weigh",
+        "authority"
+      ],
+      "prediction": "to balance",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0648
+    },
+    {
+      "id": "override-020-aligned",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "aligned",
+      "variant": "current_override",
+      "references": [
+        "reasoning",
+        "inference"
+      ],
+      "candidates": [
+        "reasoning",
+        "inference",
+        "infer",
+        "deduce",
+        "reason",
+        "logic"
+      ],
+      "visible_candidates": [
+        "reasoning",
+        "inference",
+        "infer"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-020-aligned",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "aligned",
+      "variant": "dictionary_unranked",
+      "references": [
+        "reasoning",
+        "inference"
+      ],
+      "candidates": [
+        "reasoning",
+        "inference",
+        "to infer",
+        "to deduce",
+        "to reason"
+      ],
+      "visible_candidates": [
+        "reasoning",
+        "inference",
+        "to infer"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0356
+    },
+    {
+      "id": "override-020-aligned",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "aligned",
+      "variant": "dictionary_ranked",
+      "references": [
+        "reasoning",
+        "inference"
+      ],
+      "candidates": [
+        "reasoning",
+        "inference",
+        "to deduce",
+        "to infer",
+        "to reason"
+      ],
+      "visible_candidates": [
+        "reasoning",
+        "inference",
+        "to deduce"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 0.0608
+    },
+    {
+      "id": "override-020-conflict",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "conflict",
+      "variant": "current_override",
+      "references": [
+        "infer",
+        "reason",
+        "deduce"
+      ],
+      "candidates": [
+        "reasoning",
+        "inference",
+        "infer",
+        "deduce",
+        "reason",
+        "logic"
+      ],
+      "visible_candidates": [
+        "reasoning",
+        "inference",
+        "infer"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0001
+    },
+    {
+      "id": "override-020-conflict",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "conflict",
+      "variant": "dictionary_unranked",
+      "references": [
+        "infer",
+        "reason",
+        "deduce"
+      ],
+      "candidates": [
+        "reasoning",
+        "inference",
+        "to infer",
+        "to deduce",
+        "to reason"
+      ],
+      "visible_candidates": [
+        "reasoning",
+        "inference",
+        "to infer"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0365
+    },
+    {
+      "id": "override-020-conflict",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "conflict",
+      "variant": "dictionary_ranked",
+      "references": [
+        "infer",
+        "reason",
+        "deduce"
+      ],
+      "candidates": [
+        "reasoning",
+        "inference",
+        "to deduce",
+        "to infer",
+        "to reason"
+      ],
+      "visible_candidates": [
+        "reasoning",
+        "inference",
+        "to deduce"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 0.0571
+    },
+    {
+      "id": "override-001-aligned",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "handle",
+        "deal with",
+        "resolve"
+      ],
+      "candidates": [
+        "handle"
+      ],
+      "visible_candidates": [
+        "handle"
+      ],
+      "prediction": "handle",
+      "raw_output": "handle",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.7168
+    },
+    {
+      "id": "override-001-aligned",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "handle",
+        "deal with",
+        "resolve"
+      ],
+      "candidates": [
+        "handling"
+      ],
+      "visible_candidates": [
+        "handling"
+      ],
+      "prediction": "handling",
+      "raw_output": "[handling]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 242.9485
+    },
+    {
+      "id": "override-001-conflict",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "process",
+        "processing"
+      ],
+      "candidates": [
+        "handle"
+      ],
+      "visible_candidates": [
+        "handle"
+      ],
+      "prediction": "handle",
+      "raw_output": "handle",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 149.9196
+    },
+    {
+      "id": "override-001-conflict",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "process",
+        "processing"
+      ],
+      "candidates": [
+        "processing"
+      ],
+      "visible_candidates": [
+        "processing"
+      ],
+      "prediction": "processing",
+      "raw_output": "[processing]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.6614
+    },
+    {
+      "id": "override-002-aligned",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "release",
+        "launch",
+        "unveil"
+      ],
+      "candidates": [
+        "launch"
+      ],
+      "visible_candidates": [
+        "launch"
+      ],
+      "prediction": "launch",
+      "raw_output": "launch",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.7164
+    },
+    {
+      "id": "override-002-aligned",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "release",
+        "launch",
+        "unveil"
+      ],
+      "candidates": [
+        "release"
+      ],
+      "visible_candidates": [
+        "release"
+      ],
+      "prediction": "release",
+      "raw_output": "[release]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.031
+    },
+    {
+      "id": "override-002-conflict",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "post",
+        "publish",
+        "posted",
+        "published"
+      ],
+      "candidates": [
+        "launch"
+      ],
+      "visible_candidates": [
+        "launch"
+      ],
+      "prediction": "launch",
+      "raw_output": "launch",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 149.8386
+    },
+    {
+      "id": "override-002-conflict",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "post",
+        "publish",
+        "posted",
+        "published"
+      ],
+      "candidates": [
+        "posted"
+      ],
+      "visible_candidates": [
+        "posted"
+      ],
+      "prediction": "posted",
+      "raw_output": "posted",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 219.51
+    },
+    {
+      "id": "override-003-aligned",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "implement",
+        "implemented",
+        "roll out",
+        "rolled out"
+      ],
+      "candidates": [
+        "landed"
+      ],
+      "visible_candidates": [
+        "landed"
+      ],
+      "prediction": "landed",
+      "raw_output": "landed",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 160.1041
+    },
+    {
+      "id": "override-003-aligned",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "implement",
+        "implemented",
+        "roll out",
+        "rolled out"
+      ],
+      "candidates": [
+        "be put into practice"
+      ],
+      "visible_candidates": [
+        "be put into practice"
+      ],
+      "prediction": "be put into practice",
+      "raw_output": "[be put into practice]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 276.8175
+    },
+    {
+      "id": "override-003-conflict",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "land",
+        "landed",
+        "touch down",
+        "touched down"
+      ],
+      "candidates": [
+        "landed"
+      ],
+      "visible_candidates": [
+        "landed"
+      ],
+      "prediction": "landed",
+      "raw_output": "landed",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 174.2922
+    },
+    {
+      "id": "override-003-conflict",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "land",
+        "landed",
+        "touch down",
+        "touched down"
+      ],
+      "candidates": [
+        "landed"
+      ],
+      "visible_candidates": [
+        "landed"
+      ],
+      "prediction": "landed",
+      "raw_output": "[landed]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 257.7091
+    },
+    {
+      "id": "override-004-aligned",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "develop",
+        "build",
+        "developing"
+      ],
+      "candidates": [
+        "developing"
+      ],
+      "visible_candidates": [
+        "developing"
+      ],
+      "prediction": "developing",
+      "raw_output": "developing",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 164.686
+    },
+    {
+      "id": "override-004-aligned",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "develop",
+        "build",
+        "developing"
+      ],
+      "candidates": [
+        "developing"
+      ],
+      "visible_candidates": [
+        "developing"
+      ],
+      "prediction": "developing",
+      "raw_output": "[developing]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 256.4865
+    },
+    {
+      "id": "override-004-conflict",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "issue",
+        "write out",
+        "issuing"
+      ],
+      "candidates": [
+        "developing"
+      ],
+      "visible_candidates": [
+        "developing"
+      ],
+      "prediction": "developing",
+      "raw_output": "developing",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 162.4797
+    },
+    {
+      "id": "override-004-conflict",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "issue",
+        "write out",
+        "issuing"
+      ],
+      "candidates": [
+        "developing"
+      ],
+      "visible_candidates": [
+        "developing"
+      ],
+      "prediction": "developing",
+      "raw_output": "[developing]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 252.8868
+    },
+    {
+      "id": "override-005-aligned",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "issue",
+        "problem",
+        "bug"
+      ],
+      "candidates": [
+        "Issue"
+      ],
+      "visible_candidates": [
+        "Issue"
+      ],
+      "prediction": "Issue",
+      "raw_output": "Issue",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.8717
+    },
+    {
+      "id": "override-005-aligned",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "issue",
+        "problem",
+        "bug"
+      ],
+      "candidates": [
+        "issue"
+      ],
+      "visible_candidates": [
+        "issue"
+      ],
+      "prediction": "issue",
+      "raw_output": "[issue]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.2813
+    },
+    {
+      "id": "override-005-conflict",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "question",
+        "questions"
+      ],
+      "candidates": [
+        "Issue"
+      ],
+      "visible_candidates": [
+        "Issue"
+      ],
+      "prediction": "Issue",
+      "raw_output": "Issue",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 150.6307
+    },
+    {
+      "id": "override-005-conflict",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "question",
+        "questions"
+      ],
+      "candidates": [
+        "question"
+      ],
+      "visible_candidates": [
+        "question"
+      ],
+      "prediction": "question",
+      "raw_output": "[question]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 241.3327
+    },
+    {
+      "id": "override-006-aligned",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "result",
+        "outcome",
+        "results"
+      ],
+      "candidates": [
+        "Result"
+      ],
+      "visible_candidates": [
+        "Result"
+      ],
+      "prediction": "Result",
+      "raw_output": "Result",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 150.0233
+    },
+    {
+      "id": "override-006-aligned",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "result",
+        "outcome",
+        "results"
+      ],
+      "candidates": [
+        "results"
+      ],
+      "visible_candidates": [
+        "results"
+      ],
+      "prediction": "results",
+      "raw_output": "results",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 220.873
+    },
+    {
+      "id": "override-006-conflict",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "as a result",
+        "turned out",
+        "consequently"
+      ],
+      "candidates": [
+        "Result"
+      ],
+      "visible_candidates": [
+        "Result"
+      ],
+      "prediction": "Result",
+      "raw_output": "Result",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 151.7542
+    },
+    {
+      "id": "override-006-conflict",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "as a result",
+        "turned out",
+        "consequently"
+      ],
+      "candidates": [
+        "as a result"
+      ],
+      "visible_candidates": [
+        "as a result"
+      ],
+      "prediction": "as a result",
+      "raw_output": "as a result",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.1712
+    },
+    {
+      "id": "override-007-aligned",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "configuration",
+        "config",
+        "settings"
+      ],
+      "candidates": [
+        "setup"
+      ],
+      "visible_candidates": [
+        "setup"
+      ],
+      "prediction": "setup",
+      "raw_output": "setup",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 151.4535
+    },
+    {
+      "id": "override-007-aligned",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "configuration",
+        "config",
+        "settings"
+      ],
+      "candidates": [
+        "configuration"
+      ],
+      "visible_candidates": [
+        "configuration"
+      ],
+      "prediction": "configuration",
+      "raw_output": "configuration",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.5063
+    },
+    {
+      "id": "override-007-conflict",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "configure",
+        "set up",
+        "configuring"
+      ],
+      "candidates": [
+        "setup"
+      ],
+      "visible_candidates": [
+        "setup"
+      ],
+      "prediction": "setup",
+      "raw_output": "setup",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 151.9593
+    },
+    {
+      "id": "override-007-conflict",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "configure",
+        "set up",
+        "configuring"
+      ],
+      "candidates": [
+        "configure"
+      ],
+      "visible_candidates": [
+        "configure"
+      ],
+      "prediction": "configure",
+      "raw_output": "[configure]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.9907
+    },
+    {
+      "id": "override-008-aligned",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "security",
+        "safety"
+      ],
+      "candidates": [
+        "safe"
+      ],
+      "visible_candidates": [
+        "safe"
+      ],
+      "prediction": "safe",
+      "raw_output": "safe",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 149.3017
+    },
+    {
+      "id": "override-008-aligned",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "security",
+        "safety"
+      ],
+      "candidates": [
+        "safety"
+      ],
+      "visible_candidates": [
+        "safety"
+      ],
+      "prediction": "safety",
+      "raw_output": "[safety]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.0364
+    },
+    {
+      "id": "override-008-conflict",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "safe",
+        "secure"
+      ],
+      "candidates": [
+        "safe"
+      ],
+      "visible_candidates": [
+        "safe"
+      ],
+      "prediction": "safe",
+      "raw_output": "safe",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 151.4666
+    },
+    {
+      "id": "override-008-conflict",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "safe",
+        "secure"
+      ],
+      "candidates": [
+        "safe"
+      ],
+      "visible_candidates": [
+        "safe"
+      ],
+      "prediction": "safe",
+      "raw_output": "safe",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 220.4745
+    },
+    {
+      "id": "override-009-aligned",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "API",
+        "interface",
+        "endpoint"
+      ],
+      "candidates": [
+        "interface"
+      ],
+      "visible_candidates": [
+        "interface"
+      ],
+      "prediction": "interface",
+      "raw_output": "interface",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 150.2298
+    },
+    {
+      "id": "override-009-aligned",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "API",
+        "interface",
+        "endpoint"
+      ],
+      "candidates": [
+        "interface"
+      ],
+      "visible_candidates": [
+        "interface"
+      ],
+      "prediction": "interface",
+      "raw_output": "[interface]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.3921
+    },
+    {
+      "id": "override-009-conflict",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "connector",
+        "port",
+        "socket"
+      ],
+      "candidates": [
+        "interface"
+      ],
+      "visible_candidates": [
+        "interface"
+      ],
+      "prediction": "interface",
+      "raw_output": "interface",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 150.1455
+    },
+    {
+      "id": "override-009-conflict",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "connector",
+        "port",
+        "socket"
+      ],
+      "candidates": [
+        "connector"
+      ],
+      "visible_candidates": [
+        "connector"
+      ],
+      "prediction": "connector",
+      "raw_output": "connector",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.9583
+    },
+    {
+      "id": "override-010-aligned",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "canary",
+        "canary release",
+        "canary rollout",
+        "gray release"
+      ],
+      "candidates": [
+        "grayscale"
+      ],
+      "visible_candidates": [
+        "grayscale"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "grayscale",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 163.5253
+    },
+    {
+      "id": "override-010-aligned",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "canary",
+        "canary release",
+        "canary rollout",
+        "gray release"
+      ],
+      "candidates": [
+        "gradual rollout"
+      ],
+      "visible_candidates": [
+        "gradual rollout"
+      ],
+      "prediction": "gradual rollout",
+      "raw_output": "gradual rollout",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 245.2048
+    },
+    {
+      "id": "override-010-conflict",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "grayscale",
+        "greyscale",
+        "black and white"
+      ],
+      "candidates": [
+        "grayscale"
+      ],
+      "visible_candidates": [
+        "grayscale"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "grayscale",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 161.6464
+    },
+    {
+      "id": "override-010-conflict",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "grayscale",
+        "greyscale",
+        "black and white"
+      ],
+      "candidates": [
+        "grayscale"
+      ],
+      "visible_candidates": [
+        "grayscale"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "grayscale",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 233.5697
+    },
+    {
+      "id": "override-011-aligned",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "requirement",
+        "requirements",
+        "needs"
+      ],
+      "candidates": [
+        "requirements"
+      ],
+      "visible_candidates": [
+        "requirements"
+      ],
+      "prediction": "requirements",
+      "raw_output": "requirements",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 151.6635
+    },
+    {
+      "id": "override-011-aligned",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "requirement",
+        "requirements",
+        "needs"
+      ],
+      "candidates": [
+        "requirements"
+      ],
+      "visible_candidates": [
+        "requirements"
+      ],
+      "prediction": "requirements",
+      "raw_output": "[requirements]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.2815
+    },
+    {
+      "id": "override-011-conflict",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "demand"
+      ],
+      "candidates": [
+        "requirements"
+      ],
+      "visible_candidates": [
+        "requirements"
+      ],
+      "prediction": "requirements",
+      "raw_output": "requirements",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 150.7803
+    },
+    {
+      "id": "override-011-conflict",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "demand"
+      ],
+      "candidates": [
+        "demand"
+      ],
+      "visible_candidates": [
+        "demand"
+      ],
+      "prediction": "demand",
+      "raw_output": "demand",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.4654
+    },
+    {
+      "id": "override-012-aligned",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "scenario",
+        "scenarios",
+        "use case",
+        "use cases"
+      ],
+      "candidates": [
+        "scene"
+      ],
+      "visible_candidates": [
+        "scene"
+      ],
+      "prediction": "scene",
+      "raw_output": "scene",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 151.1456
+    },
+    {
+      "id": "override-012-aligned",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "scenario",
+        "scenarios",
+        "use case",
+        "use cases"
+      ],
+      "candidates": [
+        "scenario"
+      ],
+      "visible_candidates": [
+        "scenario"
+      ],
+      "prediction": "scenario",
+      "raw_output": "[scenario]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 244.1006
+    },
+    {
+      "id": "override-012-conflict",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "scene",
+        "scenes"
+      ],
+      "candidates": [
+        "scene"
+      ],
+      "visible_candidates": [
+        "scene"
+      ],
+      "prediction": "scene",
+      "raw_output": "scene",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 152.9556
+    },
+    {
+      "id": "override-012-conflict",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "scene",
+        "scenes"
+      ],
+      "candidates": [
+        "setting"
+      ],
+      "visible_candidates": [
+        "setting"
+      ],
+      "prediction": "setting",
+      "raw_output": "[setting]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 242.3095
+    },
+    {
+      "id": "override-013-aligned",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "retrospective",
+        "retro",
+        "review"
+      ],
+      "candidates": [
+        "review"
+      ],
+      "visible_candidates": [
+        "review"
+      ],
+      "prediction": "review",
+      "raw_output": "review",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 150.5491
+    },
+    {
+      "id": "override-013-aligned",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "retrospective",
+        "retro",
+        "review"
+      ],
+      "candidates": [
+        "review"
+      ],
+      "visible_candidates": [
+        "review"
+      ],
+      "prediction": "review",
+      "raw_output": "review",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.6863
+    },
+    {
+      "id": "override-013-conflict",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "review",
+        "analyze",
+        "analyse"
+      ],
+      "candidates": [
+        "review"
+      ],
+      "visible_candidates": [
+        "review"
+      ],
+      "prediction": "review",
+      "raw_output": "review",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 152.7568
+    },
+    {
+      "id": "override-013-conflict",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "review",
+        "analyze",
+        "analyse"
+      ],
+      "candidates": [
+        "review the game footage"
+      ],
+      "visible_candidates": [
+        "review the game footage"
+      ],
+      "prediction": "review the game footage",
+      "raw_output": "review the game footage",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 258.8247
+    },
+    {
+      "id": "override-014-aligned",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "break down",
+        "split",
+        "decompose"
+      ],
+      "candidates": [
+        "split"
+      ],
+      "visible_candidates": [
+        "split"
+      ],
+      "prediction": "split",
+      "raw_output": "split",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 151.6934
+    },
+    {
+      "id": "override-014-aligned",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "break down",
+        "split",
+        "decompose"
+      ],
+      "candidates": [
+        "split"
+      ],
+      "visible_candidates": [
+        "split"
+      ],
+      "prediction": "split",
+      "raw_output": "[split]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.7928
+    },
+    {
+      "id": "override-014-conflict",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "split",
+        "spin off",
+        "separate",
+        "carve out"
+      ],
+      "candidates": [
+        "split"
+      ],
+      "visible_candidates": [
+        "split"
+      ],
+      "prediction": "split",
+      "raw_output": "split",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 150.0191
+    },
+    {
+      "id": "override-014-conflict",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "split",
+        "spin off",
+        "separate",
+        "carve out"
+      ],
+      "candidates": [
+        "spilt"
+      ],
+      "visible_candidates": [
+        "spilt"
+      ],
+      "prediction": "spilt",
+      "raw_output": "[spilt]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 252.9376
+    },
+    {
+      "id": "override-015-aligned",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "candidates": [
+        "target"
+      ],
+      "visible_candidates": [
+        "target"
+      ],
+      "prediction": "target",
+      "raw_output": "target",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.6415
+    },
+    {
+      "id": "override-015-aligned",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "candidates": [
+        "objective"
+      ],
+      "visible_candidates": [
+        "objective"
+      ],
+      "prediction": "objective",
+      "raw_output": "objective",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 219.94
+    },
+    {
+      "id": "override-015-conflict",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "target",
+        "object"
+      ],
+      "candidates": [
+        "target"
+      ],
+      "visible_candidates": [
+        "target"
+      ],
+      "prediction": "target",
+      "raw_output": "target",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.2619
+    },
+    {
+      "id": "override-015-conflict",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "target",
+        "object"
+      ],
+      "candidates": [
+        "objective"
+      ],
+      "visible_candidates": [
+        "objective"
+      ],
+      "prediction": "objective",
+      "raw_output": "[objective]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 241.3455
+    },
+    {
+      "id": "override-016-aligned",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "calculate",
+        "compute",
+        "solve"
+      ],
+      "candidates": [
+        "calculate"
+      ],
+      "visible_candidates": [
+        "calculate"
+      ],
+      "prediction": "calculate",
+      "raw_output": "calculate",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.1021
+    },
+    {
+      "id": "override-016-aligned",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "calculate",
+        "compute",
+        "solve"
+      ],
+      "candidates": [
+        "compute"
+      ],
+      "visible_candidates": [
+        "compute"
+      ],
+      "prediction": "compute",
+      "raw_output": "[compute]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 241.3052
+    },
+    {
+      "id": "override-016-conflict",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "calculation",
+        "computation"
+      ],
+      "candidates": [
+        "calculate"
+      ],
+      "visible_candidates": [
+        "calculate"
+      ],
+      "prediction": "calculate",
+      "raw_output": "calculate",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 150.9889
+    },
+    {
+      "id": "override-016-conflict",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "calculation",
+        "computation"
+      ],
+      "candidates": [
+        "calculation"
+      ],
+      "visible_candidates": [
+        "calculation"
+      ],
+      "prediction": "calculation",
+      "raw_output": "[calculation]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 251.6451
+    },
+    {
+      "id": "override-017-aligned",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "dependency",
+        "dependencies"
+      ],
+      "candidates": [
+        "depends on"
+      ],
+      "visible_candidates": [
+        "depends on"
+      ],
+      "prediction": "depends on",
+      "raw_output": "depends on",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 160.0352
+    },
+    {
+      "id": "override-017-aligned",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "dependency",
+        "dependencies"
+      ],
+      "candidates": [
+        "dependency"
+      ],
+      "visible_candidates": [
+        "dependency"
+      ],
+      "prediction": "dependency",
+      "raw_output": "dependency",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.0601
+    },
+    {
+      "id": "override-017-conflict",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "depend on",
+        "rely on"
+      ],
+      "candidates": [
+        "depends on"
+      ],
+      "visible_candidates": [
+        "depends on"
+      ],
+      "prediction": "depends on",
+      "raw_output": "depends on",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 160.2868
+    },
+    {
+      "id": "override-017-conflict",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "depend on",
+        "rely on"
+      ],
+      "candidates": [
+        "depend"
+      ],
+      "visible_candidates": [
+        "depend"
+      ],
+      "prediction": "depend",
+      "raw_output": "[depend]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 240.5205
+    },
+    {
+      "id": "override-018-aligned",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "acceptance",
+        "acceptance testing"
+      ],
+      "candidates": [
+        "acceptance"
+      ],
+      "visible_candidates": [
+        "acceptance"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "acceptance",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 160.7568
+    },
+    {
+      "id": "override-018-aligned",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "acceptance",
+        "acceptance testing"
+      ],
+      "candidates": [
+        "acceptance"
+      ],
+      "visible_candidates": [
+        "acceptance"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "acceptance",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 230.2488
+    },
+    {
+      "id": "override-018-conflict",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "inspect",
+        "test and accept",
+        "accept"
+      ],
+      "candidates": [
+        "acceptance"
+      ],
+      "visible_candidates": [
+        "acceptance"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "acceptance",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 161.716
+    },
+    {
+      "id": "override-018-conflict",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "inspect",
+        "test and accept",
+        "accept"
+      ],
+      "candidates": [
+        "acceptance testing"
+      ],
+      "visible_candidates": [
+        "acceptance testing"
+      ],
+      "prediction": "acceptance testing",
+      "raw_output": "acceptance testing",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 241.799
+    },
+    {
+      "id": "override-019-aligned",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "trade-off",
+        "tradeoff",
+        "balance"
+      ],
+      "candidates": [
+        "weigh the pros and cons"
+      ],
+      "visible_candidates": [
+        "weigh the pros and cons"
+      ],
+      "prediction": "weigh the pros and cons",
+      "raw_output": "weigh the pros and cons",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 192.3379
+    },
+    {
+      "id": "override-019-aligned",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "trade-off",
+        "tradeoff",
+        "balance"
+      ],
+      "candidates": [
+        "trade-off"
+      ],
+      "visible_candidates": [
+        "trade-off"
+      ],
+      "prediction": "trade-off",
+      "raw_output": "[trade-off]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 252.8353
+    },
+    {
+      "id": "override-019-conflict",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "weigh",
+        "weigh up",
+        "balance"
+      ],
+      "candidates": [
+        "weigh the pros and cons"
+      ],
+      "visible_candidates": [
+        "weigh the pros and cons"
+      ],
+      "prediction": "weigh the pros and cons",
+      "raw_output": "weigh the pros and cons",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 193.2346
+    },
+    {
+      "id": "override-019-conflict",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "weigh",
+        "weigh up",
+        "balance"
+      ],
+      "candidates": [
+        "balance"
+      ],
+      "visible_candidates": [
+        "balance"
+      ],
+      "prediction": "balance",
+      "raw_output": "balance",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 222.0316
+    },
+    {
+      "id": "override-020-aligned",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "aligned",
+      "variant": "model_target_only",
+      "references": [
+        "reasoning",
+        "inference"
+      ],
+      "candidates": [
+        "reasoning"
+      ],
+      "visible_candidates": [
+        "reasoning"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "reasoning",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 160.487
+    },
+    {
+      "id": "override-020-aligned",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "aligned",
+      "variant": "model_context",
+      "references": [
+        "reasoning",
+        "inference"
+      ],
+      "candidates": [
+        "inference"
+      ],
+      "visible_candidates": [
+        "inference"
+      ],
+      "prediction": "inference",
+      "raw_output": "inference",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 229.9681
+    },
+    {
+      "id": "override-020-conflict",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "conflict",
+      "variant": "model_target_only",
+      "references": [
+        "infer",
+        "reason",
+        "deduce"
+      ],
+      "candidates": [
+        "reasoning"
+      ],
+      "visible_candidates": [
+        "reasoning"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "reasoning",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 161.693
+    },
+    {
+      "id": "override-020-conflict",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "conflict",
+      "variant": "model_context",
+      "references": [
+        "infer",
+        "reason",
+        "deduce"
+      ],
+      "candidates": [
+        "inferred"
+      ],
+      "visible_candidates": [
+        "inferred"
+      ],
+      "prediction": "inferred",
+      "raw_output": "[inferred]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 253.5633
+    },
+    {
+      "id": "override-001-aligned",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "handle",
+        "deal with",
+        "resolve"
+      ],
+      "candidates": [
+        "handle",
+        "punish",
+        "process",
+        "sell at reduced prices",
+        "deal with",
+        "treat sth by a special process"
+      ],
+      "visible_candidates": [
+        "handle",
+        "punish",
+        "process"
+      ],
+      "prediction": "handle",
+      "raw_output": "handle",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.7168
+    },
+    {
+      "id": "override-001-aligned",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "handle",
+        "deal with",
+        "resolve"
+      ],
+      "candidates": [
+        "handling",
+        "handle",
+        "punish",
+        "process",
+        "sell at reduced prices",
+        "deal with"
+      ],
+      "visible_candidates": [
+        "handling",
+        "handle",
+        "punish"
+      ],
+      "prediction": "handling",
+      "raw_output": "[handling]",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 242.9485
+    },
+    {
+      "id": "override-001-conflict",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "process",
+        "processing"
+      ],
+      "candidates": [
+        "handle",
+        "punish",
+        "process",
+        "sell at reduced prices",
+        "deal with",
+        "treat sth by a special process"
+      ],
+      "visible_candidates": [
+        "handle",
+        "punish",
+        "process"
+      ],
+      "prediction": "handle",
+      "raw_output": "handle",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 149.9196
+    },
+    {
+      "id": "override-001-conflict",
+      "pair_id": "override-001",
+      "target": "处理",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "process",
+        "processing"
+      ],
+      "candidates": [
+        "processing",
+        "handle",
+        "punish",
+        "process",
+        "sell at reduced prices",
+        "deal with"
+      ],
+      "visible_candidates": [
+        "processing",
+        "handle",
+        "punish"
+      ],
+      "prediction": "processing",
+      "raw_output": "[processing]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.6614
+    },
+    {
+      "id": "override-002-aligned",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "release",
+        "launch",
+        "unveil"
+      ],
+      "candidates": [
+        "launch",
+        "issue",
+        "release",
+        "announce",
+        "distribute",
+        "publication"
+      ],
+      "visible_candidates": [
+        "launch",
+        "issue",
+        "release"
+      ],
+      "prediction": "launch",
+      "raw_output": "launch",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.7164
+    },
+    {
+      "id": "override-002-aligned",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "release",
+        "launch",
+        "unveil"
+      ],
+      "candidates": [
+        "release",
+        "issue",
+        "announce",
+        "distribute",
+        "publication"
+      ],
+      "visible_candidates": [
+        "release",
+        "issue",
+        "announce"
+      ],
+      "prediction": "release",
+      "raw_output": "[release]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.031
+    },
+    {
+      "id": "override-002-conflict",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "post",
+        "publish",
+        "posted",
+        "published"
+      ],
+      "candidates": [
+        "launch",
+        "issue",
+        "release",
+        "announce",
+        "distribute",
+        "publication"
+      ],
+      "visible_candidates": [
+        "launch",
+        "issue",
+        "release"
+      ],
+      "prediction": "launch",
+      "raw_output": "launch",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 149.8386
+    },
+    {
+      "id": "override-002-conflict",
+      "pair_id": "override-002",
+      "target": "发布",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "post",
+        "publish",
+        "posted",
+        "published"
+      ],
+      "candidates": [
+        "posted",
+        "issue",
+        "release",
+        "announce",
+        "distribute",
+        "publication"
+      ],
+      "visible_candidates": [
+        "posted",
+        "issue",
+        "release"
+      ],
+      "prediction": "posted",
+      "raw_output": "posted",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 219.51
+    },
+    {
+      "id": "override-003-aligned",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "implement",
+        "implemented",
+        "roll out",
+        "rolled out"
+      ],
+      "candidates": [
+        "landed",
+        "land",
+        "born",
+        "implemented",
+        "fall to the ground",
+        "put into practice"
+      ],
+      "visible_candidates": [
+        "landed",
+        "land",
+        "born"
+      ],
+      "prediction": "landed",
+      "raw_output": "landed",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 160.1041
+    },
+    {
+      "id": "override-003-aligned",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "implement",
+        "implemented",
+        "roll out",
+        "rolled out"
+      ],
+      "candidates": [
+        "be put into practice",
+        "land",
+        "born",
+        "implemented",
+        "fall to the ground",
+        "set on the ground"
+      ],
+      "visible_candidates": [
+        "be put into practice",
+        "land",
+        "born"
+      ],
+      "prediction": "be put into practice",
+      "raw_output": "[be put into practice]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 276.8175
+    },
+    {
+      "id": "override-003-conflict",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "land",
+        "landed",
+        "touch down",
+        "touched down"
+      ],
+      "candidates": [
+        "landed",
+        "land",
+        "born",
+        "implemented",
+        "fall to the ground",
+        "put into practice"
+      ],
+      "visible_candidates": [
+        "landed",
+        "land",
+        "born"
+      ],
+      "prediction": "landed",
+      "raw_output": "landed",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 174.2922
+    },
+    {
+      "id": "override-003-conflict",
+      "pair_id": "override-003",
+      "target": "落地",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "land",
+        "landed",
+        "touch down",
+        "touched down"
+      ],
+      "candidates": [
+        "landed",
+        "land",
+        "born",
+        "implemented",
+        "fall to the ground",
+        "put into practice"
+      ],
+      "visible_candidates": [
+        "landed",
+        "land",
+        "born"
+      ],
+      "prediction": "landed",
+      "raw_output": "[landed]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 257.7091
+    },
+    {
+      "id": "override-004-aligned",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "develop",
+        "build",
+        "developing"
+      ],
+      "candidates": [
+        "developing",
+        "exploit",
+        "open up",
+        "develop",
+        "development",
+        "tap"
+      ],
+      "visible_candidates": [
+        "developing",
+        "exploit",
+        "open up"
+      ],
+      "prediction": "developing",
+      "raw_output": "developing",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 164.686
+    },
+    {
+      "id": "override-004-aligned",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "develop",
+        "build",
+        "developing"
+      ],
+      "candidates": [
+        "developing",
+        "exploit",
+        "open up",
+        "develop",
+        "development",
+        "tap"
+      ],
+      "visible_candidates": [
+        "developing",
+        "exploit",
+        "open up"
+      ],
+      "prediction": "developing",
+      "raw_output": "[developing]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 256.4865
+    },
+    {
+      "id": "override-004-conflict",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "issue",
+        "write out",
+        "issuing"
+      ],
+      "candidates": [
+        "developing",
+        "exploit",
+        "open up",
+        "develop",
+        "development",
+        "tap"
+      ],
+      "visible_candidates": [
+        "developing",
+        "exploit",
+        "open up"
+      ],
+      "prediction": "developing",
+      "raw_output": "developing",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 162.4797
+    },
+    {
+      "id": "override-004-conflict",
+      "pair_id": "override-004",
+      "target": "开发",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "issue",
+        "write out",
+        "issuing"
+      ],
+      "candidates": [
+        "developing",
+        "exploit",
+        "open up",
+        "develop",
+        "development",
+        "tap"
+      ],
+      "visible_candidates": [
+        "developing",
+        "exploit",
+        "open up"
+      ],
+      "prediction": "developing",
+      "raw_output": "[developing]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 252.8868
+    },
+    {
+      "id": "override-005-aligned",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "issue",
+        "problem",
+        "bug"
+      ],
+      "candidates": [
+        "Issue",
+        "problem",
+        "question",
+        "topic",
+        "faulty",
+        "problematic"
+      ],
+      "visible_candidates": [
+        "Issue",
+        "problem",
+        "question"
+      ],
+      "prediction": "Issue",
+      "raw_output": "Issue",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.8717
+    },
+    {
+      "id": "override-005-aligned",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "issue",
+        "problem",
+        "bug"
+      ],
+      "candidates": [
+        "issue",
+        "problem",
+        "question",
+        "topic",
+        "faulty",
+        "problematic"
+      ],
+      "visible_candidates": [
+        "issue",
+        "problem",
+        "question"
+      ],
+      "prediction": "issue",
+      "raw_output": "[issue]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.2813
+    },
+    {
+      "id": "override-005-conflict",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "question",
+        "questions"
+      ],
+      "candidates": [
+        "Issue",
+        "problem",
+        "question",
+        "topic",
+        "faulty",
+        "problematic"
+      ],
+      "visible_candidates": [
+        "Issue",
+        "problem",
+        "question"
+      ],
+      "prediction": "Issue",
+      "raw_output": "Issue",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 150.6307
+    },
+    {
+      "id": "override-005-conflict",
+      "pair_id": "override-005",
+      "target": "问题",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "question",
+        "questions"
+      ],
+      "candidates": [
+        "question",
+        "problem",
+        "issue",
+        "topic",
+        "faulty",
+        "problematic"
+      ],
+      "visible_candidates": [
+        "question",
+        "problem",
+        "issue"
+      ],
+      "prediction": "question",
+      "raw_output": "[question]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 241.3327
+    },
+    {
+      "id": "override-006-aligned",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "result",
+        "outcome",
+        "results"
+      ],
+      "candidates": [
+        "Result",
+        "consequence",
+        "outcome",
+        "kill",
+        "bear fruit",
+        "in the end"
+      ],
+      "visible_candidates": [
+        "Result",
+        "consequence",
+        "outcome"
+      ],
+      "prediction": "Result",
+      "raw_output": "Result",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 150.0233
+    },
+    {
+      "id": "override-006-aligned",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "result",
+        "outcome",
+        "results"
+      ],
+      "candidates": [
+        "results",
+        "result",
+        "consequence",
+        "outcome",
+        "kill",
+        "bear fruit"
+      ],
+      "visible_candidates": [
+        "results",
+        "result",
+        "consequence"
+      ],
+      "prediction": "results",
+      "raw_output": "results",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 220.873
+    },
+    {
+      "id": "override-006-conflict",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "as a result",
+        "turned out",
+        "consequently"
+      ],
+      "candidates": [
+        "Result",
+        "consequence",
+        "outcome",
+        "kill",
+        "bear fruit",
+        "in the end"
+      ],
+      "visible_candidates": [
+        "Result",
+        "consequence",
+        "outcome"
+      ],
+      "prediction": "Result",
+      "raw_output": "Result",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 151.7542
+    },
+    {
+      "id": "override-006-conflict",
+      "pair_id": "override-006",
+      "target": "结果",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "as a result",
+        "turned out",
+        "consequently"
+      ],
+      "candidates": [
+        "as a result",
+        "result",
+        "consequence",
+        "outcome",
+        "kill",
+        "bear fruit"
+      ],
+      "visible_candidates": [
+        "as a result",
+        "result",
+        "consequence"
+      ],
+      "prediction": "as a result",
+      "raw_output": "as a result",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.1712
+    },
+    {
+      "id": "override-007-aligned",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "configuration",
+        "config",
+        "settings"
+      ],
+      "candidates": [
+        "setup",
+        "deploy",
+        "configuration",
+        "allocation",
+        "allocate",
+        "station"
+      ],
+      "visible_candidates": [
+        "setup",
+        "deploy",
+        "configuration"
+      ],
+      "prediction": "setup",
+      "raw_output": "setup",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 151.4535
+    },
+    {
+      "id": "override-007-aligned",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "configuration",
+        "config",
+        "settings"
+      ],
+      "candidates": [
+        "configuration",
+        "deploy",
+        "allocation",
+        "allocate",
+        "station",
+        "configure"
+      ],
+      "visible_candidates": [
+        "configuration",
+        "deploy",
+        "allocation"
+      ],
+      "prediction": "configuration",
+      "raw_output": "configuration",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.5063
+    },
+    {
+      "id": "override-007-conflict",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "configure",
+        "set up",
+        "configuring"
+      ],
+      "candidates": [
+        "setup",
+        "deploy",
+        "configuration",
+        "allocation",
+        "allocate",
+        "station"
+      ],
+      "visible_candidates": [
+        "setup",
+        "deploy",
+        "configuration"
+      ],
+      "prediction": "setup",
+      "raw_output": "setup",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 151.9593
+    },
+    {
+      "id": "override-007-conflict",
+      "pair_id": "override-007",
+      "target": "配置",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "configure",
+        "set up",
+        "configuring"
+      ],
+      "candidates": [
+        "configure",
+        "deploy",
+        "configuration",
+        "allocation",
+        "allocate",
+        "station"
+      ],
+      "visible_candidates": [
+        "configure",
+        "deploy",
+        "configuration"
+      ],
+      "prediction": "configure",
+      "raw_output": "[configure]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.9907
+    },
+    {
+      "id": "override-008-aligned",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "security",
+        "safety"
+      ],
+      "candidates": [
+        "safe",
+        "safety",
+        "security",
+        "secure",
+        "Anquan",
+        "maintain"
+      ],
+      "visible_candidates": [
+        "safe",
+        "safety",
+        "security"
+      ],
+      "prediction": "safe",
+      "raw_output": "safe",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 149.3017
+    },
+    {
+      "id": "override-008-aligned",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "security",
+        "safety"
+      ],
+      "candidates": [
+        "safety",
+        "security",
+        "safe",
+        "secure",
+        "Anquan",
+        "maintain"
+      ],
+      "visible_candidates": [
+        "safety",
+        "security",
+        "safe"
+      ],
+      "prediction": "safety",
+      "raw_output": "[safety]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.0364
+    },
+    {
+      "id": "override-008-conflict",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "safe",
+        "secure"
+      ],
+      "candidates": [
+        "safe",
+        "safety",
+        "security",
+        "secure",
+        "Anquan",
+        "maintain"
+      ],
+      "visible_candidates": [
+        "safe",
+        "safety",
+        "security"
+      ],
+      "prediction": "safe",
+      "raw_output": "safe",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 151.4666
+    },
+    {
+      "id": "override-008-conflict",
+      "pair_id": "override-008",
+      "target": "安全",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "safe",
+        "secure"
+      ],
+      "candidates": [
+        "safe",
+        "safety",
+        "security",
+        "secure",
+        "Anquan",
+        "maintain"
+      ],
+      "visible_candidates": [
+        "safe",
+        "safety",
+        "security"
+      ],
+      "prediction": "safe",
+      "raw_output": "safe",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 220.4745
+    },
+    {
+      "id": "override-009-aligned",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "API",
+        "interface",
+        "endpoint"
+      ],
+      "candidates": [
+        "interface",
+        "port",
+        "connector",
+        "API",
+        "gateway",
+        "cut in"
+      ],
+      "visible_candidates": [
+        "interface",
+        "port",
+        "connector"
+      ],
+      "prediction": "interface",
+      "raw_output": "interface",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 150.2298
+    },
+    {
+      "id": "override-009-aligned",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "API",
+        "interface",
+        "endpoint"
+      ],
+      "candidates": [
+        "interface",
+        "port",
+        "connector",
+        "API",
+        "gateway",
+        "cut in"
+      ],
+      "visible_candidates": [
+        "interface",
+        "port",
+        "connector"
+      ],
+      "prediction": "interface",
+      "raw_output": "[interface]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.3921
+    },
+    {
+      "id": "override-009-conflict",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "connector",
+        "port",
+        "socket"
+      ],
+      "candidates": [
+        "interface",
+        "port",
+        "connector",
+        "API",
+        "gateway",
+        "cut in"
+      ],
+      "visible_candidates": [
+        "interface",
+        "port",
+        "connector"
+      ],
+      "prediction": "interface",
+      "raw_output": "interface",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 150.1455
+    },
+    {
+      "id": "override-009-conflict",
+      "pair_id": "override-009",
+      "target": "接口",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "connector",
+        "port",
+        "socket"
+      ],
+      "candidates": [
+        "connector",
+        "interface",
+        "port",
+        "API",
+        "gateway",
+        "cut in"
+      ],
+      "visible_candidates": [
+        "connector",
+        "interface",
+        "port"
+      ],
+      "prediction": "connector",
+      "raw_output": "connector",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.9583
+    },
+    {
+      "id": "override-010-aligned",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "canary",
+        "canary release",
+        "canary rollout",
+        "gray release"
+      ],
+      "candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "visible_candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "grayscale",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 163.5253
+    },
+    {
+      "id": "override-010-aligned",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "canary",
+        "canary release",
+        "canary rollout",
+        "gray release"
+      ],
+      "candidates": [
+        "gradual rollout",
+        "grayscale",
+        "canary"
+      ],
+      "visible_candidates": [
+        "gradual rollout",
+        "grayscale",
+        "canary"
+      ],
+      "prediction": "gradual rollout",
+      "raw_output": "gradual rollout",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 245.2048
+    },
+    {
+      "id": "override-010-conflict",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "grayscale",
+        "greyscale",
+        "black and white"
+      ],
+      "candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "visible_candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "grayscale",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 161.6464
+    },
+    {
+      "id": "override-010-conflict",
+      "pair_id": "override-010",
+      "target": "灰度",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "grayscale",
+        "greyscale",
+        "black and white"
+      ],
+      "candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "visible_candidates": [
+        "grayscale",
+        "canary"
+      ],
+      "prediction": "grayscale",
+      "raw_output": "grayscale",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 233.5697
+    },
+    {
+      "id": "override-011-aligned",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "requirement",
+        "requirements",
+        "needs"
+      ],
+      "candidates": [
+        "requirements",
+        "demand",
+        "requirement",
+        "require",
+        "need"
+      ],
+      "visible_candidates": [
+        "requirements",
+        "demand",
+        "requirement"
+      ],
+      "prediction": "requirements",
+      "raw_output": "requirements",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 151.6635
+    },
+    {
+      "id": "override-011-aligned",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "requirement",
+        "requirements",
+        "needs"
+      ],
+      "candidates": [
+        "requirements",
+        "demand",
+        "requirement",
+        "require",
+        "need"
+      ],
+      "visible_candidates": [
+        "requirements",
+        "demand",
+        "requirement"
+      ],
+      "prediction": "requirements",
+      "raw_output": "[requirements]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 243.2815
+    },
+    {
+      "id": "override-011-conflict",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "demand"
+      ],
+      "candidates": [
+        "requirements",
+        "demand",
+        "requirement",
+        "require",
+        "need"
+      ],
+      "visible_candidates": [
+        "requirements",
+        "demand",
+        "requirement"
+      ],
+      "prediction": "requirements",
+      "raw_output": "requirements",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 150.7803
+    },
+    {
+      "id": "override-011-conflict",
+      "pair_id": "override-011",
+      "target": "需求",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "demand"
+      ],
+      "candidates": [
+        "demand",
+        "requirement",
+        "require",
+        "need"
+      ],
+      "visible_candidates": [
+        "demand",
+        "requirement",
+        "require"
+      ],
+      "prediction": "demand",
+      "raw_output": "demand",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.4654
+    },
+    {
+      "id": "override-012-aligned",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "scenario",
+        "scenarios",
+        "use case",
+        "use cases"
+      ],
+      "candidates": [
+        "scene",
+        "scenario",
+        "situation",
+        "setting"
+      ],
+      "visible_candidates": [
+        "scene",
+        "scenario",
+        "situation"
+      ],
+      "prediction": "scene",
+      "raw_output": "scene",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 151.1456
+    },
+    {
+      "id": "override-012-aligned",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "scenario",
+        "scenarios",
+        "use case",
+        "use cases"
+      ],
+      "candidates": [
+        "scenario",
+        "scene",
+        "situation",
+        "setting"
+      ],
+      "visible_candidates": [
+        "scenario",
+        "scene",
+        "situation"
+      ],
+      "prediction": "scenario",
+      "raw_output": "[scenario]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 244.1006
+    },
+    {
+      "id": "override-012-conflict",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "scene",
+        "scenes"
+      ],
+      "candidates": [
+        "scene",
+        "scenario",
+        "situation",
+        "setting"
+      ],
+      "visible_candidates": [
+        "scene",
+        "scenario",
+        "situation"
+      ],
+      "prediction": "scene",
+      "raw_output": "scene",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 152.9556
+    },
+    {
+      "id": "override-012-conflict",
+      "pair_id": "override-012",
+      "target": "场景",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "scene",
+        "scenes"
+      ],
+      "candidates": [
+        "setting",
+        "scene",
+        "scenario",
+        "situation"
+      ],
+      "visible_candidates": [
+        "setting",
+        "scene",
+        "scenario"
+      ],
+      "prediction": "setting",
+      "raw_output": "[setting]",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 242.3095
+    },
+    {
+      "id": "override-013-aligned",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "retrospective",
+        "retro",
+        "review"
+      ],
+      "candidates": [
+        "review",
+        "resume trading",
+        "retrospective",
+        "replay the game, analyzing the players' moves"
+      ],
+      "visible_candidates": [
+        "review",
+        "resume trading",
+        "retrospective"
+      ],
+      "prediction": "review",
+      "raw_output": "review",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 150.5491
+    },
+    {
+      "id": "override-013-aligned",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "retrospective",
+        "retro",
+        "review"
+      ],
+      "candidates": [
+        "review",
+        "resume trading",
+        "retrospective",
+        "replay the game, analyzing the players' moves"
+      ],
+      "visible_candidates": [
+        "review",
+        "resume trading",
+        "retrospective"
+      ],
+      "prediction": "review",
+      "raw_output": "review",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.6863
+    },
+    {
+      "id": "override-013-conflict",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "review",
+        "analyze",
+        "analyse"
+      ],
+      "candidates": [
+        "review",
+        "resume trading",
+        "retrospective",
+        "replay the game, analyzing the players' moves"
+      ],
+      "visible_candidates": [
+        "review",
+        "resume trading",
+        "retrospective"
+      ],
+      "prediction": "review",
+      "raw_output": "review",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 152.7568
+    },
+    {
+      "id": "override-013-conflict",
+      "pair_id": "override-013",
+      "target": "复盘",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "review",
+        "analyze",
+        "analyse"
+      ],
+      "candidates": [
+        "review the game footage",
+        "resume trading",
+        "retrospective",
+        "replay the game, analyzing the players' moves"
+      ],
+      "visible_candidates": [
+        "review the game footage",
+        "resume trading"
+      ],
+      "prediction": "review the game footage",
+      "raw_output": "review the game footage",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 258.8247
+    },
+    {
+      "id": "override-014-aligned",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "break down",
+        "split",
+        "decompose"
+      ],
+      "candidates": [
+        "split",
+        "break down",
+        "break up into parts",
+        "split up",
+        "disassemble",
+        "dissolve"
+      ],
+      "visible_candidates": [
+        "split",
+        "break down",
+        "break up into parts"
+      ],
+      "prediction": "split",
+      "raw_output": "split",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 151.6934
+    },
+    {
+      "id": "override-014-aligned",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "break down",
+        "split",
+        "decompose"
+      ],
+      "candidates": [
+        "split",
+        "break down",
+        "break up into parts",
+        "split up",
+        "disassemble",
+        "dissolve"
+      ],
+      "visible_candidates": [
+        "split",
+        "break down",
+        "break up into parts"
+      ],
+      "prediction": "split",
+      "raw_output": "[split]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 242.7928
+    },
+    {
+      "id": "override-014-conflict",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "split",
+        "spin off",
+        "separate",
+        "carve out"
+      ],
+      "candidates": [
+        "split",
+        "break down",
+        "break up into parts",
+        "split up",
+        "disassemble",
+        "dissolve"
+      ],
+      "visible_candidates": [
+        "split",
+        "break down",
+        "break up into parts"
+      ],
+      "prediction": "split",
+      "raw_output": "split",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 150.0191
+    },
+    {
+      "id": "override-014-conflict",
+      "pair_id": "override-014",
+      "target": "拆分",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "split",
+        "spin off",
+        "separate",
+        "carve out"
+      ],
+      "candidates": [
+        "spilt",
+        "break down",
+        "break up into parts",
+        "split up",
+        "disassemble",
+        "dissolve"
+      ],
+      "visible_candidates": [
+        "spilt",
+        "break down",
+        "break up into parts"
+      ],
+      "prediction": "spilt",
+      "raw_output": "[spilt]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 252.9376
+    },
+    {
+      "id": "override-015-aligned",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "candidates": [
+        "target",
+        "goal",
+        "objective",
+        "end",
+        "cause"
+      ],
+      "visible_candidates": [
+        "target",
+        "goal",
+        "objective"
+      ],
+      "prediction": "target",
+      "raw_output": "target",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.6415
+    },
+    {
+      "id": "override-015-aligned",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "goal",
+        "target",
+        "objective"
+      ],
+      "candidates": [
+        "objective",
+        "goal",
+        "target",
+        "end",
+        "cause"
+      ],
+      "visible_candidates": [
+        "objective",
+        "goal",
+        "target"
+      ],
+      "prediction": "objective",
+      "raw_output": "objective",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 219.94
+    },
+    {
+      "id": "override-015-conflict",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "target",
+        "object"
+      ],
+      "candidates": [
+        "target",
+        "goal",
+        "objective",
+        "end",
+        "cause"
+      ],
+      "visible_candidates": [
+        "target",
+        "goal",
+        "objective"
+      ],
+      "prediction": "target",
+      "raw_output": "target",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.2619
+    },
+    {
+      "id": "override-015-conflict",
+      "pair_id": "override-015",
+      "target": "目标",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "target",
+        "object"
+      ],
+      "candidates": [
+        "objective",
+        "goal",
+        "target",
+        "end",
+        "cause"
+      ],
+      "visible_candidates": [
+        "objective",
+        "goal",
+        "target"
+      ],
+      "prediction": "objective",
+      "raw_output": "[objective]",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 241.3455
+    },
+    {
+      "id": "override-016-aligned",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "calculate",
+        "compute",
+        "solve"
+      ],
+      "candidates": [
+        "calculate",
+        "consider",
+        "plot",
+        "compute",
+        "scheme",
+        "think over"
+      ],
+      "visible_candidates": [
+        "calculate",
+        "consider",
+        "plot"
+      ],
+      "prediction": "calculate",
+      "raw_output": "calculate",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 149.1021
+    },
+    {
+      "id": "override-016-aligned",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "calculate",
+        "compute",
+        "solve"
+      ],
+      "candidates": [
+        "compute",
+        "calculate",
+        "consider",
+        "plot",
+        "scheme",
+        "think over"
+      ],
+      "visible_candidates": [
+        "compute",
+        "calculate",
+        "consider"
+      ],
+      "prediction": "compute",
+      "raw_output": "[compute]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 241.3052
+    },
+    {
+      "id": "override-016-conflict",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "calculation",
+        "computation"
+      ],
+      "candidates": [
+        "calculate",
+        "consider",
+        "plot",
+        "compute",
+        "scheme",
+        "think over"
+      ],
+      "visible_candidates": [
+        "calculate",
+        "consider",
+        "plot"
+      ],
+      "prediction": "calculate",
+      "raw_output": "calculate",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 150.9889
+    },
+    {
+      "id": "override-016-conflict",
+      "pair_id": "override-016",
+      "target": "计算",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "calculation",
+        "computation"
+      ],
+      "candidates": [
+        "calculation",
+        "calculate",
+        "consider",
+        "plot",
+        "compute",
+        "scheme"
+      ],
+      "visible_candidates": [
+        "calculation",
+        "calculate",
+        "consider"
+      ],
+      "prediction": "calculation",
+      "raw_output": "[calculation]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 251.6451
+    },
+    {
+      "id": "override-017-aligned",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "dependency",
+        "dependencies"
+      ],
+      "candidates": [
+        "depends on",
+        "depend on",
+        "dependent on",
+        "dependency",
+        "rely on",
+        "rest"
+      ],
+      "visible_candidates": [
+        "depends on",
+        "depend on",
+        "dependent on"
+      ],
+      "prediction": "depends on",
+      "raw_output": "depends on",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 160.0352
+    },
+    {
+      "id": "override-017-aligned",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "dependency",
+        "dependencies"
+      ],
+      "candidates": [
+        "dependency",
+        "depend on",
+        "dependent on",
+        "rely on",
+        "rest",
+        "be dependent on each other"
+      ],
+      "visible_candidates": [
+        "dependency",
+        "depend on",
+        "dependent on"
+      ],
+      "prediction": "dependency",
+      "raw_output": "dependency",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 221.0601
+    },
+    {
+      "id": "override-017-conflict",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "depend on",
+        "rely on"
+      ],
+      "candidates": [
+        "depends on",
+        "depend on",
+        "dependent on",
+        "dependency",
+        "rely on",
+        "rest"
+      ],
+      "visible_candidates": [
+        "depends on",
+        "depend on",
+        "dependent on"
+      ],
+      "prediction": "depends on",
+      "raw_output": "depends on",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 160.2868
+    },
+    {
+      "id": "override-017-conflict",
+      "pair_id": "override-017",
+      "target": "依赖",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "depend on",
+        "rely on"
+      ],
+      "candidates": [
+        "depend",
+        "depend on",
+        "dependent on",
+        "dependency",
+        "rely on",
+        "rest"
+      ],
+      "visible_candidates": [
+        "depend",
+        "depend on",
+        "dependent on"
+      ],
+      "prediction": "depend",
+      "raw_output": "[depend]",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 240.5205
+    },
+    {
+      "id": "override-018-aligned",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "acceptance",
+        "acceptance testing"
+      ],
+      "candidates": [
+        "acceptance",
+        "inspect and accept",
+        "check upon delivery",
+        "inspect and approve"
+      ],
+      "visible_candidates": [
+        "acceptance",
+        "inspect and accept"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "acceptance",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 160.7568
+    },
+    {
+      "id": "override-018-aligned",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "acceptance",
+        "acceptance testing"
+      ],
+      "candidates": [
+        "acceptance",
+        "inspect and accept",
+        "check upon delivery",
+        "inspect and approve"
+      ],
+      "visible_candidates": [
+        "acceptance",
+        "inspect and accept"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "acceptance",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 230.2488
+    },
+    {
+      "id": "override-018-conflict",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "inspect",
+        "test and accept",
+        "accept"
+      ],
+      "candidates": [
+        "acceptance",
+        "inspect and accept",
+        "check upon delivery",
+        "inspect and approve"
+      ],
+      "visible_candidates": [
+        "acceptance",
+        "inspect and accept"
+      ],
+      "prediction": "acceptance",
+      "raw_output": "acceptance",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 161.716
+    },
+    {
+      "id": "override-018-conflict",
+      "pair_id": "override-018",
+      "target": "验收",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "inspect",
+        "test and accept",
+        "accept"
+      ],
+      "candidates": [
+        "acceptance testing",
+        "acceptance",
+        "inspect and accept",
+        "check upon delivery",
+        "inspect and approve"
+      ],
+      "visible_candidates": [
+        "acceptance testing",
+        "acceptance"
+      ],
+      "prediction": "acceptance testing",
+      "raw_output": "acceptance testing",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "listed_unacceptable",
+      "latency_ms": 241.799
+    },
+    {
+      "id": "override-019-aligned",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "trade-off",
+        "tradeoff",
+        "balance"
+      ],
+      "candidates": [
+        "weigh the pros and cons",
+        "balance",
+        "weigh",
+        "consider",
+        "trade-off",
+        "tools for weighing things"
+      ],
+      "visible_candidates": [
+        "weigh the pros and cons",
+        "balance",
+        "weigh"
+      ],
+      "prediction": "weigh the pros and cons",
+      "raw_output": "weigh the pros and cons",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 192.3379
+    },
+    {
+      "id": "override-019-aligned",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "trade-off",
+        "tradeoff",
+        "balance"
+      ],
+      "candidates": [
+        "trade-off",
+        "balance",
+        "weigh",
+        "consider",
+        "tools for weighing things",
+        "sliding weight and weighing rod"
+      ],
+      "visible_candidates": [
+        "trade-off",
+        "balance",
+        "weigh"
+      ],
+      "prediction": "trade-off",
+      "raw_output": "[trade-off]",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 252.8353
+    },
+    {
+      "id": "override-019-conflict",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "weigh",
+        "weigh up",
+        "balance"
+      ],
+      "candidates": [
+        "weigh the pros and cons",
+        "balance",
+        "weigh",
+        "consider",
+        "trade-off",
+        "tools for weighing things"
+      ],
+      "visible_candidates": [
+        "weigh the pros and cons",
+        "balance",
+        "weigh"
+      ],
+      "prediction": "weigh the pros and cons",
+      "raw_output": "weigh the pros and cons",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "not_in_reference_set",
+      "latency_ms": 193.2346
+    },
+    {
+      "id": "override-019-conflict",
+      "pair_id": "override-019",
+      "target": "权衡",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "weigh",
+        "weigh up",
+        "balance"
+      ],
+      "candidates": [
+        "balance",
+        "weigh",
+        "consider",
+        "trade-off",
+        "tools for weighing things",
+        "sliding weight and weighing rod"
+      ],
+      "visible_candidates": [
+        "balance",
+        "weigh",
+        "consider"
+      ],
+      "prediction": "balance",
+      "raw_output": "balance",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 222.0316
+    },
+    {
+      "id": "override-020-aligned",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "aligned",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "reasoning",
+        "inference"
+      ],
+      "candidates": [
+        "reasoning",
+        "inference",
+        "infer",
+        "deduce",
+        "reason",
+        "logic"
+      ],
+      "visible_candidates": [
+        "reasoning",
+        "inference",
+        "infer"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "reasoning",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 160.487
+    },
+    {
+      "id": "override-020-aligned",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "aligned",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "reasoning",
+        "inference"
+      ],
+      "candidates": [
+        "inference",
+        "reasoning",
+        "infer",
+        "deduce",
+        "reason",
+        "logic"
+      ],
+      "visible_candidates": [
+        "inference",
+        "reasoning",
+        "infer"
+      ],
+      "prediction": "inference",
+      "raw_output": "inference",
+      "status": "acceptable",
+      "top3_status": "acceptable",
+      "reason": "",
+      "latency_ms": 229.9681
+    },
+    {
+      "id": "override-020-conflict",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "conflict",
+      "variant": "model_target_only_plus_dictionary",
+      "references": [
+        "infer",
+        "reason",
+        "deduce"
+      ],
+      "candidates": [
+        "reasoning",
+        "inference",
+        "infer",
+        "deduce",
+        "reason",
+        "logic"
+      ],
+      "visible_candidates": [
+        "reasoning",
+        "inference",
+        "infer"
+      ],
+      "prediction": "reasoning",
+      "raw_output": "reasoning",
+      "status": "incorrect",
+      "top3_status": "acceptable",
+      "reason": "listed_unacceptable",
+      "latency_ms": 161.693
+    },
+    {
+      "id": "override-020-conflict",
+      "pair_id": "override-020",
+      "target": "推理",
+      "role": "conflict",
+      "variant": "model_context_plus_dictionary",
+      "references": [
+        "infer",
+        "reason",
+        "deduce"
+      ],
+      "candidates": [
+        "inferred",
+        "reasoning",
+        "inference",
+        "infer",
+        "deduce",
+        "reason"
+      ],
+      "visible_candidates": [
+        "inferred",
+        "reasoning",
+        "inference"
+      ],
+      "prediction": "inferred",
+      "raw_output": "[inferred]",
+      "status": "incorrect",
+      "top3_status": "incorrect",
+      "reason": "not_in_reference_set",
+      "latency_ms": 253.5633
+    }
+  ]
+}

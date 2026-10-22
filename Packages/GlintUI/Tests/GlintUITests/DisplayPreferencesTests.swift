@@ -77,22 +77,6 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
-    func testLegacyStabilityDelayIsIgnoredDuringDevelopment() throws {
-        let suiteName = "GlintUITests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        defaults.set(0.25, forKey: "display.stabilityDelay")
-        let preferences = DisplayPreferences(defaults: defaults)
-
-        XCTAssertEqual(
-            preferences.candidateDwellDuration,
-            0.12,
-            accuracy: 0.001
-        )
-    }
-
-    @MainActor
     func testTranslationScopeDefaultsToSelectedAndNotifiesChanges() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

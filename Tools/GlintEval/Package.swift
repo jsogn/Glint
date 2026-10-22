@@ -28,6 +28,9 @@ let package = Package(
         .executableTarget(
             name: "ContextAXProbe"
         ),
+        .executableTarget(
+            name: "CandidateAXProbe"
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
