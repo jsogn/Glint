@@ -206,7 +206,7 @@ final class DisplayPreferencesTests: XCTestCase {
 
         let preferences = DisplayPreferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.hudBackgroundStyle, .lightGlass)
+        XCTAssertEqual(preferences.hudBackgroundStyle, .systemCandidate)
     }
 
     @MainActor
@@ -220,7 +220,7 @@ final class DisplayPreferencesTests: XCTestCase {
 
         let preferences = DisplayPreferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.hudBackgroundStyle, .lightGlass)
+        XCTAssertEqual(preferences.hudBackgroundStyle, .systemCandidate)
     }
 
     @MainActor

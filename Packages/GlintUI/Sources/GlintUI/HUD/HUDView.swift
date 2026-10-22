@@ -238,7 +238,11 @@ private struct HUDSurfaceStyle: ViewModifier {
                     HUDNativeMaterialBackground(
                         backgroundStyle: appearance.backgroundStyle
                     )
-                        .opacity(backgroundOpacity)
+                        .opacity(
+                            appearance.backgroundStyle == .systemCandidate
+                                ? 1
+                                : backgroundOpacity
+                        )
                         .clipShape(Capsule())
                 }
                 .overlay {
@@ -279,25 +283,127 @@ struct HUDNativeMaterialBackground: NSViewRepresentable {
         self.backgroundStyle = backgroundStyle
     }
 
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .popover
-        view.blendingMode = .behindWindow
-        view.state = .active
-        view.isEmphasized = false
-        view.appearance = resolvedAppearance
-        return view
+    func makeNSView(context: Context) -> HUDMaterialBackgroundContainer {
+        HUDMaterialBackgroundContainer(backgroundStyle: backgroundStyle)
     }
 
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.appearance = resolvedAppearance
+    func updateNSView(
+        _ nsView: HUDMaterialBackgroundContainer,
+        context: Context
+    ) {
+        nsView.apply(backgroundStyle)
+    }
+}
+
+@MainActor
+final class HUDMaterialBackgroundContainer: NSView {
+    private var backgroundStyle: HUDBackgroundStyle?
+    private var materialView: NSView?
+
+    init(backgroundStyle: HUDBackgroundStyle?) {
+        self.backgroundStyle = backgroundStyle
+        super.init(frame: .zero)
+        installMaterialView()
     }
 
-    private var resolvedAppearance: NSAppearance? {
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func apply(_ backgroundStyle: HUDBackgroundStyle?) {
+        guard self.backgroundStyle != backgroundStyle else { return }
+        self.backgroundStyle = backgroundStyle
+        installMaterialView()
+    }
+
+    override func layout() {
+        super.layout()
+        guard #available(macOS 26.0, *),
+              let glassView = materialView as? NSGlassEffectView else {
+            return
+        }
+        glassView.cornerRadius = bounds.height / 2
+    }
+
+    private func installMaterialView() {
+        materialView?.removeFromSuperview()
+
+        let nextView: NSView
+        if backgroundStyle == .systemCandidate,
+           #available(macOS 26.0, *) {
+            let glassView = NSGlassEffectView()
+            glassView.style = .regular
+            glassView.contentView = NSView()
+            glassView.appearance = NSAppearance(named: .aqua)
+            glassView.cornerRadius = 22
+            nextView = glassView
+        } else {
+            nextView = HUDFallbackMaterialBackground(
+                backgroundStyle: backgroundStyle
+            )
+        }
+
+        nextView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(nextView)
+        NSLayoutConstraint.activate([
+            nextView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            nextView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            nextView.topAnchor.constraint(equalTo: topAnchor),
+            nextView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+        materialView = nextView
+    }
+}
+
+@MainActor
+private final class HUDFallbackMaterialBackground: NSView {
+    init(backgroundStyle: HUDBackgroundStyle?) {
+        super.init(frame: .zero)
+
+        let effectView = NSVisualEffectView()
+        effectView.material = .popover
+        effectView.blendingMode = .behindWindow
+        effectView.state = .active
+        effectView.isEmphasized = false
+        effectView.appearance = resolvedAppearance(
+            for: backgroundStyle
+        )
+        effectView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(effectView)
+
+        let tintView = NSView()
+        tintView.wantsLayer = true
+        tintView.layer?.backgroundColor = backgroundStyle == .systemCandidate
+            ? NSColor.white.withAlphaComponent(0.7).cgColor
+            : NSColor.clear.cgColor
+        tintView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(tintView)
+
+        NSLayoutConstraint.activate([
+            effectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            effectView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            effectView.topAnchor.constraint(equalTo: topAnchor),
+            effectView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            tintView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            tintView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            tintView.topAnchor.constraint(equalTo: topAnchor),
+            tintView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func resolvedAppearance(
+        for backgroundStyle: HUDBackgroundStyle?
+    ) -> NSAppearance? {
         switch backgroundStyle {
         case .darkGlass:
             return NSAppearance(named: .darkAqua)
-        case .lightGlass:
+        case .systemCandidate:
             return NSAppearance(named: .aqua)
         case .solid, nil:
             return nil

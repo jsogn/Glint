@@ -14,16 +14,18 @@ final class HUDAppearanceTests: XCTestCase {
         XCTAssertEqual(color.blue, 0)
     }
 
-    func testAutomaticTextColorMatchesSelectedGlassAppearance() {
+    func testAutomaticTextColorMatchesSelectedBackgroundStyle() {
         let darkGlass = HUDAppearance()
-        let lightGlass = HUDAppearance(backgroundStyle: .lightGlass)
+        let systemCandidate = HUDAppearance(
+            backgroundStyle: .systemCandidate
+        )
 
         XCTAssertEqual(
             darkGlass.effectiveTextColor,
             HUDAppearance.defaultTextColor
         )
         XCTAssertEqual(
-            lightGlass.effectiveTextColor,
+            systemCandidate.effectiveTextColor,
             HUDAppearance.defaultLightGlassTextColor
         )
     }

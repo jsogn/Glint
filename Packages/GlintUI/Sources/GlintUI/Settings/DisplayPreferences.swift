@@ -230,7 +230,7 @@ public final class DisplayPreferences {
         } else if wasLegacyCustom || storedUsesGlass == false {
             .solid
         } else if storedGlassAppearance == "light" {
-            .lightGlass
+            .systemCandidate
         } else {
             .darkGlass
         }
@@ -294,7 +294,7 @@ public final class DisplayPreferences {
             forKey: Key.hudUsesGlass
         )
         defaults.set(
-            self.hudBackgroundStyle == .lightGlass ? "light" : "dark",
+            self.hudBackgroundStyle == .systemCandidate ? "light" : "dark",
             forKey: Key.hudGlassAppearance
         )
         defaults.set(

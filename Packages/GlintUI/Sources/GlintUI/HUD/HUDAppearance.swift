@@ -3,13 +3,13 @@ import SwiftUI
 
 public enum HUDBackgroundStyle: String, CaseIterable, Sendable {
     case darkGlass
-    case lightGlass
+    case systemCandidate = "lightGlass"
     case solid
 
     public var title: String {
         switch self {
         case .darkGlass: return "深色玻璃"
-        case .lightGlass: return "浅色玻璃"
+        case .systemCandidate: return "候选栏"
         case .solid: return "纯色"
         }
     }
@@ -127,7 +127,7 @@ public struct HUDAppearance: Equatable, Sendable {
         if usesCustomTextColor {
             return textColor
         }
-        if backgroundStyle == .lightGlass {
+        if backgroundStyle == .systemCandidate {
             return Self.defaultLightGlassTextColor
         }
         return Self.defaultTextColor

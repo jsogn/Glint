@@ -69,13 +69,13 @@ private final class MaterialLabApplicationDelegate:
 private final class MaterialLabWindowController: NSWindowController {
     init(referencePath: String?) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1_060, height: 900),
+            contentRect: NSRect(x: 0, y: 0, width: 1_060, height: 1_000),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = "Glint HUD Material Lab"
-        window.minSize = NSSize(width: 1_060, height: 900)
+        window.minSize = NSSize(width: 1_060, height: 1_000)
         window.appearance = NSAppearance(named: .aqua)
         window.center()
         window.contentView = MaterialLabView(referencePath: referencePath)
@@ -127,18 +127,6 @@ private final class MaterialLabView: NSView {
             tintAlpha: 0
         ),
         Sample(
-            title: "popover · behind · white 30%",
-            material: .popover,
-            blendingMode: .behindWindow,
-            tintAlpha: 0.3
-        ),
-        Sample(
-            title: "popover · behind · white 50%",
-            material: .popover,
-            blendingMode: .behindWindow,
-            tintAlpha: 0.5
-        ),
-        Sample(
             title: "popover · behind · white 70%",
             material: .popover,
             blendingMode: .behindWindow,
@@ -162,6 +150,12 @@ private final class MaterialLabView: NSView {
             blendingMode: .withinWindow,
             tintAlpha: 0
         ),
+    ]
+    private let glassSamples = [
+        (title: "Liquid Glass · no tint", tintAlpha: CGFloat(0)),
+        (title: "Liquid Glass · white 20%", tintAlpha: CGFloat(0.2)),
+        (title: "Liquid Glass · white 40%", tintAlpha: CGFloat(0.4)),
+        (title: "Liquid Glass · white 60%", tintAlpha: CGFloat(0.6)),
     ]
 
     init(referencePath: String?) {
@@ -358,7 +352,14 @@ private final class MaterialLabView: NSView {
         }
 
         if #available(macOS 26.0, *) {
-            samplesStack.addArrangedSubview(makeGlassSampleRow())
+            for sample in glassSamples {
+                samplesStack.addArrangedSubview(
+                    makeGlassSampleRow(
+                        title: sample.title,
+                        tintAlpha: sample.tintAlpha
+                    )
+                )
+            }
         }
         return sampleHost
     }
@@ -388,22 +389,28 @@ private final class MaterialLabView: NSView {
     }
 
     @available(macOS 26.0, *)
-    private func makeGlassSampleRow() -> NSView {
+    private func makeGlassSampleRow(
+        title: String,
+        tintAlpha: CGFloat
+    ) -> NSView {
         let row = NSStackView()
         row.orientation = .horizontal
         row.alignment = .centerY
         row.spacing = 12
 
-        let title = NSTextField(labelWithString: "Liquid Glass · regular")
-        title.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-        title.textColor = .secondaryLabelColor
-        title.alignment = .right
-        title.widthAnchor.constraint(equalToConstant: 224).isActive = true
-        row.addArrangedSubview(title)
+        let label = NSTextField(labelWithString: title)
+        label.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+        label.textColor = .secondaryLabelColor
+        label.alignment = .right
+        label.widthAnchor.constraint(equalToConstant: 224).isActive = true
+        row.addArrangedSubview(label)
 
         let glass = NSGlassEffectView()
         glass.style = .regular
         glass.cornerRadius = 22
+        if tintAlpha > 0 {
+            glass.tintColor = NSColor.white.withAlphaComponent(tintAlpha)
+        }
         glass.contentView = makeCandidateContent()
         glass.widthAnchor.constraint(equalToConstant: 700).isActive = true
         glass.heightAnchor.constraint(equalToConstant: 44).isActive = true

@@ -14,7 +14,8 @@ The lab shows:
 - native AppKit popover, menu, header, and content-background materials;
 - `withinWindow` and `behindWindow` blending;
 - white tint strengths over popover material;
-- regular Liquid Glass on macOS 26 or later;
+- regular Liquid Glass with no tint and 20%, 40%, and 60% white tints on
+  macOS 26 or later;
 - white, gray, split, and colorful test backdrops.
 
 `withinWindow` samples the test backdrop inside the lab. `behindWindow`

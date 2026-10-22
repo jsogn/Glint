@@ -314,9 +314,7 @@ private struct DisplayPage: View {
                     segmentedSetting(
                         title: "背景",
                         selection: $preferences.hudBackgroundStyle,
-                        caption: preferences.hudBackgroundStyle == .solid
-                            ? "纯色背景默认黑色、80% 不透明度。"
-                            : nil
+                        caption: backgroundStyleCaption
                     ) {
                         ForEach(HUDBackgroundStyle.allCases, id: \.self) {
                             style in
@@ -353,17 +351,19 @@ private struct DisplayPage: View {
                         )
                     )
 
-                    sliderSetting(
-                        title: "背景不透明度",
-                        value: String(
-                            format: "%.0f%%",
-                            preferences.hudOpacity * 100
-                        ),
-                        binding: $preferences.hudOpacity,
-                        range: 0.4...1.0,
-                        step: 0.02,
-                        caption: "只调整显示背景，不改变文字清晰度。"
-                    )
+                    if preferences.hudBackgroundStyle != .systemCandidate {
+                        sliderSetting(
+                            title: "背景不透明度",
+                            value: String(
+                                format: "%.0f%%",
+                                preferences.hudOpacity * 100
+                            ),
+                            binding: $preferences.hudOpacity,
+                            range: 0.4...1.0,
+                            step: 0.02,
+                            caption: "只调整显示背景，不改变文字清晰度。"
+                        )
+                    }
 
                     sliderSetting(
                         title: "文字大小",
@@ -459,6 +459,17 @@ private struct DisplayPage: View {
         .padding(.vertical, 10)
         .overlay(alignment: .bottom) {
             Divider()
+        }
+    }
+
+    private var backgroundStyleCaption: String? {
+        switch preferences.hudBackgroundStyle {
+        case .darkGlass:
+            return nil
+        case .systemCandidate:
+            return "匹配系统候选栏的浅色材质，透明度由系统控制。"
+        case .solid:
+            return "纯色背景默认黑色、80% 不透明度。"
         }
     }
 
