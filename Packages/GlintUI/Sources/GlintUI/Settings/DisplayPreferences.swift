@@ -43,7 +43,7 @@ public final class DisplayPreferences {
 
     public var candidateDwellDuration: Double {
         didSet {
-            let clamped = min(max(candidateDwellDuration, 0.08), 0.3)
+            let clamped = min(max(candidateDwellDuration, 0.05), 0.3)
             if clamped != candidateDwellDuration {
                 candidateDwellDuration = clamped
                 return
@@ -94,7 +94,7 @@ public final class DisplayPreferences {
             forKey: Key.candidateDwellDuration
         ) as? Double
         self.candidateDwellDuration = min(
-            max(storedDwellDuration ?? 0.12, 0.08),
+            max(storedDwellDuration ?? 0.12, 0.05),
             0.3
         )
 

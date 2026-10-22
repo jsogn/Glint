@@ -86,7 +86,8 @@ public enum MonitoringEvent: Sendable {
     case results(
         [CandidateTranslationPresentation],
         CandidateRegion,
-        revision: UInt64
+        revision: UInt64,
+        isProgressive: Bool
     )
 }
 
@@ -189,6 +190,10 @@ public actor MonitoringController {
     private var handledRevision: UInt64?
     private var dwellDetectedAt: ContinuousClock.Instant?
     private var translationStartedAt: ContinuousClock.Instant?
+    private var candidateChangedAtNanoseconds: UInt64?
+    private var dwellConfirmedAtNanoseconds: UInt64?
+    private var translationAttempts: UInt64 = 0
+    private var cancelledTranslationAttempts: UInt64 = 0
     private var lastPermissionCheck: UInt64 = 0
     private var lastStatus = ""
     private var candidateSessionActive = false
@@ -242,7 +247,7 @@ public actor MonitoringController {
 
     public func setCandidateDwellDuration(_ seconds: Double) {
         guard seconds.isFinite else { return }
-        let clamped = min(max(seconds, 0.08), 0.3)
+        let clamped = min(max(seconds, 0.05), 0.3)
         candidateDwellNanoseconds = UInt64(clamped * 1_000_000_000)
     }
 
@@ -264,6 +269,8 @@ public actor MonitoringController {
     public func start() {
         guard task == nil else { return }
         lastPermissionCheck = 0
+        translationAttempts = 0
+        cancelledTranslationAttempts = 0
         monitoringLogger.info("monitor start requested")
         task = Task { [weak self] in
             await self?.run()
@@ -346,19 +353,15 @@ public actor MonitoringController {
         }
 
         let observationStartedAt = ContinuousClock.now
-        guard var axCandidate = axCandidates.snapshot(
-            includeVisibleCandidates: translationScope == .row
+        // Both translation scopes need visible-row evidence so an expanded
+        // candidate grid is rejected before translation or HUD presentation.
+        guard let axCandidate = axCandidates.snapshot(
+            includeVisibleCandidates: true
         ) else {
             return observeCandidateMiss(
                 status: "未检测到候选",
                 pollInterval: 60_000_000
             )
-        }
-        if axCandidate.frame == nil
-            || (translationScope == .row && axCandidate.visibleTexts.isEmpty) {
-            axCandidate = axCandidates.snapshot(
-                includeVisibleCandidates: true
-            ) ?? axCandidate
         }
         guard let candidateFrame = axCandidate.frame
                 ?? axCandidate.candidateWindowFrame
@@ -409,10 +412,11 @@ public actor MonitoringController {
         )
         let previousSelectedIndex = selectedCandidateIndex
         selectedCandidateIndex = selectedIndex
+        let observationTimestamp = DispatchTime.now().uptimeNanoseconds
         let activity = typingTracker.observe(
             text: trackingIdentity.text,
             highlightRect: trackingIdentity.frame,
-            timestamp: DispatchTime.now().uptimeNanoseconds,
+            timestamp: observationTimestamp,
             dwellDurationNanoseconds: candidateDwellNanoseconds
         )
         let candidateChanged: Bool
@@ -428,8 +432,9 @@ public actor MonitoringController {
             handledRevision = nil
             dwellDetectedAt = nil
             translationStartedAt = nil
-            translationTask?.cancel()
-            translationTask = nil
+            dwellConfirmedAtNanoseconds = nil
+            candidateChangedAtNanoseconds = observationTimestamp
+            cancelTranslationTask()
             emitCandidateChanged(revision: revision)
             let selectedCandidate = candidates[selectedIndex]
             monitoringLogger.debug(
@@ -441,6 +446,12 @@ public actor MonitoringController {
             }
             handledRevision = revision
             dwellDetectedAt = .now
+            dwellConfirmedAtNanoseconds = observationTimestamp
+            if let candidateChangedAtNanoseconds {
+                monitoringLogger.notice(
+                    "perf latency phase=dwell revision=\(revision, privacy: .public) scope=\(self.translationScope.rawValue, privacy: .public) mode=\(self.mode.rawValue, privacy: .public) row_count=\(candidates.count, privacy: .public) dwell_ms=\(Self.elapsedMilliseconds(from: candidateChangedAtNanoseconds, to: observationTimestamp), privacy: .public)"
+                )
+            }
             monitoringLogger.debug(
                 "perf candidate_detect_ms=\(Self.elapsedMilliseconds(observationStartedAt.duration(to: .now)), privacy: .public)"
             )
@@ -463,7 +474,18 @@ public actor MonitoringController {
                 )
             )
         }
-        return 40_000_000
+        return nextCandidatePollInterval(after: observationTimestamp)
+    }
+
+    private func nextCandidatePollInterval(after timestamp: UInt64) -> UInt64 {
+        let regularInterval: UInt64 = 24_000_000
+        guard let remaining = typingTracker.nanosecondsUntilDwell(
+            at: timestamp,
+            dwellDurationNanoseconds: candidateDwellNanoseconds
+        ) else {
+            return regularInterval
+        }
+        return min(regularInterval, max(4_000_000, remaining))
     }
 
     private func startTranslation(
@@ -476,8 +498,9 @@ public actor MonitoringController {
         let router = router
         let memo = translationMemo
         let configurationToken = translationConfigurationToken
+        translationAttempts &+= 1
         translationStartedAt = .now
-        translationTask?.cancel()
+        cancelTranslationTask()
         translationTask = Task.detached(priority: .userInitiated) {
             [
                 weak self,
@@ -490,13 +513,21 @@ public actor MonitoringController {
                 revision,
                 mode,
             ] in
+            guard !Task.isCancelled else { return }
             let presentations = await Self.translateCandidates(
                 candidates,
                 selectedIndex: selectedIndex,
                 mode: mode,
                 configurationToken: configurationToken,
                 router: router,
-                memo: memo
+                memo: memo,
+                publishProgress: { [weak self] presentations in
+                    await self?.publishPartialTranslation(
+                        presentations,
+                        highlight: highlight,
+                        revision: revision
+                    )
+                }
             )
             guard !Task.isCancelled else { return }
             await self?.completeTranslation(
@@ -507,53 +538,149 @@ public actor MonitoringController {
         }
     }
 
-    private static func translateCandidates(
+    static func translateCandidates(
         _ candidates: [Candidate],
         selectedIndex: Int,
         mode: TranslationMode,
         configurationToken: String,
         router: SmartRouter,
-        memo: TranslationMemo
+        memo: TranslationMemo,
+        publishProgress: (
+            @Sendable ([CandidateTranslationPresentation]) async -> Void
+        )? = nil
     ) async -> [CandidateTranslationPresentation] {
-        guard !candidates.isEmpty else { return [] }
+        guard candidates.indices.contains(selectedIndex) else { return [] }
         var results = [TranslationResult?](
             repeating: nil,
             count: candidates.count
         )
-        let indices = [selectedIndex] + candidates.indices.filter {
-            $0 != selectedIndex
-        }
+        var selectedWasPublished = false
         await withTaskGroup(of: (Int, TranslationResult?).self) { group in
-            for index in indices {
+            for index in translationTaskOrder(
+                candidateCount: candidates.count,
+                selectedIndex: selectedIndex
+            ) {
                 let candidate = candidates[index]
-                let key = TranslationMemoKey(
-                    text: candidate.text,
-                    mode: mode,
-                    configuration: configurationToken
-                )
                 group.addTask {
-                    guard !Task.isCancelled else { return (index, nil) }
-                    let result = try? await memo.resolve(for: key) {
-                        try await router.route(candidate, mode: mode)
-                    }
+                    let result = await translateCandidate(
+                        candidate,
+                        mode: mode,
+                        configurationToken: configurationToken,
+                        router: router,
+                        memo: memo
+                    )
                     return (index, result)
                 }
             }
             for await (index, result) in group {
                 results[index] = result
+                if candidates.count > 1,
+                   index == selectedIndex,
+                   !selectedWasPublished,
+                   result != nil {
+                    selectedWasPublished = true
+                    let partialPresentations = candidates.indices.map {
+                        presentation(
+                            for: $0,
+                            candidates: candidates,
+                            results: results,
+                            selectedIndex: selectedIndex
+                        )
+                    }
+                    await publishProgress?(partialPresentations)
+                }
             }
         }
-        return candidates.enumerated().map { index, candidate in
-            let translation = results[index].flatMap {
-                isDisplayable($0) ? $0.displayText : nil
-            }
-            return CandidateTranslationPresentation(
-                index: index,
-                candidateText: candidate.text,
-                translation: translation,
-                isSelected: index == selectedIndex
+        return candidates.indices.map {
+            presentation(
+                for: $0,
+                candidates: candidates,
+                results: results,
+                selectedIndex: selectedIndex
             )
         }
+    }
+
+    static func translationTaskOrder(
+        candidateCount: Int,
+        selectedIndex: Int
+    ) -> [Int] {
+        guard candidateCount > 0,
+              (0..<candidateCount).contains(selectedIndex) else {
+            return []
+        }
+        return [selectedIndex] + (0..<candidateCount).filter {
+            $0 != selectedIndex
+        }
+    }
+
+    private static func translateCandidate(
+        _ candidate: Candidate,
+        mode: TranslationMode,
+        configurationToken: String,
+        router: SmartRouter,
+        memo: TranslationMemo
+    ) async -> TranslationResult? {
+        guard !Task.isCancelled else { return nil }
+        let key = TranslationMemoKey(
+            text: candidate.text,
+            mode: mode,
+            configuration: configurationToken
+        )
+        let result = try? await memo.resolve(for: key) {
+            try await router.route(candidate, mode: mode)
+        }
+        return Task.isCancelled ? nil : result
+    }
+
+    private static func presentation(
+        for index: Int,
+        candidates: [Candidate],
+        results: [TranslationResult?],
+        selectedIndex: Int
+    ) -> CandidateTranslationPresentation {
+        let translation = results[index].flatMap {
+            isDisplayable($0) ? $0.displayText : nil
+        }
+        return CandidateTranslationPresentation(
+            index: index,
+            candidateText: candidates[index].text,
+            translation: translation,
+            isSelected: index == selectedIndex
+        )
+    }
+
+    private func publishPartialTranslation(
+        _ translations: [CandidateTranslationPresentation],
+        highlight: CandidateRegion,
+        revision: UInt64
+    ) {
+        guard revision == typingTracker.revision,
+              typingTracker.isDwelling,
+              translations.contains(where: { $0.translation != nil }) else {
+            return
+        }
+        if let translationStartedAt {
+            let now = DispatchTime.now().uptimeNanoseconds
+            let total = candidateChangedAtNanoseconds.map {
+                Self.elapsedMilliseconds(from: $0, to: now)
+            } ?? 0
+            let dwell = Self.elapsedMilliseconds(
+                from: dwellConfirmedAtNanoseconds,
+                to: now
+            )
+            monitoringLogger.notice(
+                "perf latency phase=selected_ready revision=\(revision, privacy: .public) scope=\(self.translationScope.rawValue, privacy: .public) mode=\(self.mode.rawValue, privacy: .public) row_count=\(translations.count, privacy: .public) dwell_ms=\(Self.dwellLatencyMilliseconds(from: self.candidateChangedAtNanoseconds, to: self.dwellConfirmedAtNanoseconds), privacy: .public) route_ms=\(Self.elapsedMilliseconds(translationStartedAt.duration(to: .now)), privacy: .public) dwell_to_selected_ms=\(dwell, privacy: .public) total_to_selected_ms=\(total, privacy: .public) attempts=\(self.translationAttempts, privacy: .public) cancelled=\(self.cancelledTranslationAttempts, privacy: .public)"
+            )
+        }
+        continuation.yield(
+            .results(
+                translations,
+                highlight,
+                revision: revision,
+                isProgressive: true
+            )
+        )
     }
 
     private func completeTranslation(
@@ -568,8 +695,22 @@ public actor MonitoringController {
         translationTask = nil
         let finishedAt = ContinuousClock.now
         if let translationStartedAt {
-            monitoringLogger.debug(
-                "perf translation_ms=\(Self.elapsedMilliseconds(translationStartedAt.duration(to: finishedAt)), privacy: .public)"
+            let now = DispatchTime.now().uptimeNanoseconds
+            let phase = translationScope == .row
+                ? "row_ready"
+                : "selected_ready"
+            let total = candidateChangedAtNanoseconds.map {
+                Self.elapsedMilliseconds(from: $0, to: now)
+            } ?? 0
+            let dwell = Self.elapsedMilliseconds(
+                from: dwellConfirmedAtNanoseconds,
+                to: now
+            )
+            let resultCount = translations.filter {
+                $0.translation != nil
+            }.count
+            monitoringLogger.notice(
+                "perf latency phase=\(phase, privacy: .public) revision=\(revision, privacy: .public) scope=\(self.translationScope.rawValue, privacy: .public) mode=\(self.mode.rawValue, privacy: .public) row_count=\(translations.count, privacy: .public) result_count=\(resultCount, privacy: .public) dwell_ms=\(Self.dwellLatencyMilliseconds(from: self.candidateChangedAtNanoseconds, to: self.dwellConfirmedAtNanoseconds), privacy: .public) route_ms=\(Self.elapsedMilliseconds(translationStartedAt.duration(to: finishedAt)), privacy: .public) dwell_to_ready_ms=\(dwell, privacy: .public) total_to_ready_ms=\(total, privacy: .public) attempts=\(self.translationAttempts, privacy: .public) cancelled=\(self.cancelledTranslationAttempts, privacy: .public)"
             )
         }
         if let dwellDetectedAt {
@@ -601,7 +742,8 @@ public actor MonitoringController {
             .results(
                 presentations,
                 highlight,
-                revision: revision
+                revision: revision,
+                isProgressive: false
             )
         )
     }
@@ -614,8 +756,9 @@ public actor MonitoringController {
         handledRevision = nil
         dwellDetectedAt = nil
         translationStartedAt = nil
-        translationTask?.cancel()
-        translationTask = nil
+        candidateChangedAtNanoseconds = nil
+        dwellConfirmedAtNanoseconds = nil
+        cancelTranslationTask()
         emitCandidateEnded(immediate: immediate)
     }
 
@@ -650,6 +793,43 @@ public actor MonitoringController {
     private static func elapsedMilliseconds(_ duration: Duration) -> Double {
         Double(duration.components.seconds) * 1_000
             + Double(duration.components.attoseconds) / 1_000_000_000_000_000
+    }
+
+    private static func elapsedMilliseconds(
+        from start: UInt64,
+        to end: UInt64
+    ) -> Double {
+        guard end >= start else { return 0 }
+        return Double(end - start) / 1_000_000
+    }
+
+    private static func elapsedMilliseconds(
+        from start: UInt64?,
+        to end: UInt64
+    ) -> Double {
+        guard let start else { return 0 }
+        return elapsedMilliseconds(from: start, to: end)
+    }
+
+    private static func dwellLatencyMilliseconds(
+        from candidateChangedAt: UInt64?,
+        to dwellConfirmedAt: UInt64?
+    ) -> Double {
+        guard let candidateChangedAt,
+              let dwellConfirmedAt else {
+            return 0
+        }
+        return elapsedMilliseconds(
+            from: candidateChangedAt,
+            to: dwellConfirmedAt
+        )
+    }
+
+    private func cancelTranslationTask() {
+        guard let translationTask else { return }
+        translationTask.cancel()
+        self.translationTask = nil
+        cancelledTranslationAttempts &+= 1
     }
 
     private func emitStatus(_ status: String) {

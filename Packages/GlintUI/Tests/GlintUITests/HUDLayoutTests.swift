@@ -272,4 +272,40 @@ final class HUDLayoutTests: XCTestCase {
         )
     }
 
+    @MainActor
+    func testSameRevisionUsesInPlaceContentPatch() {
+        XCTAssertEqual(
+            HUDController.contentUpdate(
+                displayedRevision: 42,
+                incomingRevision: 42,
+                isVisible: true
+            ),
+            .patch
+        )
+    }
+
+    @MainActor
+    func testChangedRevisionUsesTransition() {
+        XCTAssertEqual(
+            HUDController.contentUpdate(
+                displayedRevision: 42,
+                incomingRevision: 43,
+                isVisible: true
+            ),
+            .transition
+        )
+    }
+
+    @MainActor
+    func testHiddenHUDUsesEntryRegardlessOfRevision() {
+        XCTAssertEqual(
+            HUDController.contentUpdate(
+                displayedRevision: nil,
+                incomingRevision: 42,
+                isVisible: false
+            ),
+            .entry
+        )
+    }
+
 }

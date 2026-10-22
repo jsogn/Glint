@@ -26,6 +26,13 @@ let package = Package(
             ]
         ),
         .executableTarget(
+            name: "TranslationCompare",
+            dependencies: [
+                .product(name: "GlintCore", package: "GlintCore"),
+                .product(name: "GlintInference", package: "GlintInference"),
+            ]
+        ),
+        .executableTarget(
             name: "ContextAXProbe"
         ),
         .executableTarget(

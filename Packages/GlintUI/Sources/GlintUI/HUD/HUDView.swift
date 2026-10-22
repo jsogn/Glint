@@ -190,12 +190,6 @@ struct HUDItemRow: View {
                 )
         }
         .opacity(textOpacity)
-        .animation(
-            animatesBackground
-                ? .easeOut(duration: 0.06)
-                : nil,
-            value: textOpacity
-        )
         .padding(
             .horizontal,
             items.count > 1

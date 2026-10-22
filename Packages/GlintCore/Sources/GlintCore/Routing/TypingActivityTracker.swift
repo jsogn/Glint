@@ -84,6 +84,22 @@ public struct TypingActivityTracker: Sendable {
         isDwelling = false
     }
 
+    public func nanosecondsUntilDwell(
+        at timestamp: UInt64,
+        dwellDurationNanoseconds: UInt64
+    ) -> UInt64? {
+        guard sample != nil,
+              !isDwelling,
+              consecutiveMatches >= 2 else {
+            return nil
+        }
+        let elapsed = timestamp >= changeTimestamp
+            ? timestamp - changeTimestamp
+            : 0
+        guard elapsed < dwellDurationNanoseconds else { return 0 }
+        return dwellDurationNanoseconds - elapsed
+    }
+
     private mutating func beginRevision(
         _ sample: CandidateSample,
         timestamp: UInt64

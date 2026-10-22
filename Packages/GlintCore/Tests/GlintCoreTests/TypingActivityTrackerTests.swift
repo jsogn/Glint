@@ -87,6 +87,48 @@ final class TypingActivityTrackerTests: XCTestCase {
         )
     }
 
+    func testNanosecondsUntilDwellTargetsExactDeadline() {
+        var tracker = TypingActivityTracker()
+        let dwell: UInt64 = 50_000_000
+
+        _ = tracker.observe(
+            text: "学习",
+            highlightRect: rect,
+            timestamp: 0,
+            dwellDurationNanoseconds: dwell
+        )
+        _ = tracker.observe(
+            text: "学习",
+            highlightRect: rect,
+            timestamp: 24_000_000,
+            dwellDurationNanoseconds: dwell
+        )
+
+        XCTAssertEqual(
+            tracker.nanosecondsUntilDwell(
+                at: 24_000_000,
+                dwellDurationNanoseconds: dwell
+            ),
+            26_000_000
+        )
+        XCTAssertEqual(
+            tracker.nanosecondsUntilDwell(
+                at: 48_000_000,
+                dwellDurationNanoseconds: dwell
+            ),
+            2_000_000
+        )
+        XCTAssertEqual(
+            tracker.observe(
+                text: "学习",
+                highlightRect: rect,
+                timestamp: 50_000_000,
+                dwellDurationNanoseconds: dwell
+            ),
+            .dwelling(revision: 1)
+        )
+    }
+
     func testResetInvalidatesActiveRevision() {
         var tracker = TypingActivityTracker()
         _ = tracker.observe(

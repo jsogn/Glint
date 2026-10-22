@@ -41,7 +41,9 @@ final class DisplayPreferencesTests: XCTestCase {
         preferences.candidateDwellDuration = 2
         XCTAssertEqual(preferences.candidateDwellDuration, 0.3)
         preferences.candidateDwellDuration = 0
-        XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.05)
+        preferences.candidateDwellDuration = 0.05
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.05)
 
         preferences.candidateSpacing = 30
         XCTAssertEqual(preferences.candidateSpacing, 24)

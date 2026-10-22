@@ -1,6 +1,7 @@
 import CoreGraphics
 import XCTest
 import GlintCore
+import os
 @testable import GlintMac
 
 private struct StubInputSource: InputSourceReading {
@@ -27,6 +28,35 @@ private struct StubCandidates: AXCandidateReading {
     }
 }
 
+private struct VisibleCaretFocus: FocusReading {
+    func snapshot() -> FocusSnapshot? {
+        FocusSnapshot(
+            caretRect: CGRect(x: 120, y: 160, width: 2, height: 20),
+            elementFrame: nil,
+            compositionState: .composing,
+            isEditableTextInput: true
+        )
+    }
+}
+
+private final class RecordingCandidates: AXCandidateReading, Sendable {
+    private let state = OSAllocatedUnfairLock<[Bool]>(initialState: [])
+
+    func snapshot(
+        processIdentifier: pid_t?,
+        includeVisibleCandidates: Bool
+    ) -> AXCandidateSnapshot? {
+        state.withLock {
+            $0.append(includeVisibleCandidates)
+        }
+        return nil
+    }
+
+    var requestedVisibleCandidates: [Bool] {
+        state.withLock { $0 }
+    }
+}
+
 private struct EmptyDictionary: DictionaryEngine {
     func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
         nil
@@ -36,6 +66,54 @@ private struct EmptyDictionary: DictionaryEngine {
 private struct EmptyTranslation: TranslationEngine {
     func translate(_ candidate: Candidate) async throws -> TranslationResult? {
         nil
+    }
+}
+
+private struct ImmediateTranslation: TranslationEngine {
+    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        try Task.checkCancellation()
+        return TranslationResult(
+            text: "english-\(candidate.text)",
+            source: .translation,
+            confidence: 0.9
+        )
+    }
+}
+
+private actor ParallelTranslation: TranslationEngine {
+    private var activeCount = 0
+    private var peakActiveCount = 0
+
+    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        activeCount += 1
+        peakActiveCount = max(peakActiveCount, activeCount)
+        try await Task.sleep(nanoseconds: 20_000_000)
+        activeCount -= 1
+        return TranslationResult(
+            text: "english-\(candidate.text)",
+            source: .translation,
+            confidence: 0.9
+        )
+    }
+
+    func maximumConcurrency() -> Int {
+        peakActiveCount
+    }
+}
+
+private actor PresentationBatchRecorder {
+    private var batches: [[CandidateTranslationPresentation]] = []
+
+    func record(_ batch: [CandidateTranslationPresentation]) {
+        batches.append(batch)
+    }
+
+    func firstBatchIndices() -> [Int]? {
+        batches.first?.map(\.index)
+    }
+
+    func recordedBatches() -> [[CandidateTranslationPresentation]] {
+        batches
     }
 }
 
@@ -56,6 +134,100 @@ final class GlintMacTests: XCTestCase {
         let interval = await controller.tick()
 
         XCTAssertEqual(interval, 250_000_000)
+    }
+
+    func testSelectedScopeRequestsVisibleCandidateLayout() async {
+        let candidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: true),
+            focus: VisibleCaretFocus(),
+            axCandidates: candidates,
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        let interval = await controller.tick()
+
+        XCTAssertEqual(interval, 60_000_000)
+        XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
+    }
+
+    func testRowTranslationPublishesStableSlotsBeforeRowFinishes() async {
+        let recorder = PresentationBatchRecorder()
+        let candidates = ["one", "selected", "three"].map {
+            Candidate(
+                text: $0,
+                kind: .word,
+                confidence: 1
+            )
+        }
+
+        let presentations = await MonitoringController.translateCandidates(
+            candidates,
+            selectedIndex: 1,
+            mode: .modelFirst,
+            configurationToken: "model-a",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: ImmediateTranslation()
+            ),
+            memo: TranslationMemo(),
+            publishProgress: { batch in
+                await recorder.record(batch)
+            }
+        )
+
+        let firstIndices = await recorder.firstBatchIndices()
+        let batches = await recorder.recordedBatches()
+
+        XCTAssertEqual(firstIndices, [0, 1, 2])
+        XCTAssertEqual(batches.count, 1)
+        XCTAssertEqual(
+            batches[0].map(\.isSelected),
+            [false, true, false]
+        )
+        XCTAssertEqual(presentations.map(\.index), [0, 1, 2])
+        XCTAssertEqual(presentations[1].isSelected, true)
+    }
+
+    func testRowTranslationStartsAllCandidatesConcurrently() async {
+        let translation = ParallelTranslation()
+        let candidates = ["one", "two", "three"].map {
+            Candidate(
+                text: $0,
+                kind: .word,
+                confidence: 1
+            )
+        }
+
+        _ = await MonitoringController.translateCandidates(
+            candidates,
+            selectedIndex: 1,
+            mode: .modelFirst,
+            configurationToken: "model-a",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: translation
+            ),
+            memo: TranslationMemo()
+        )
+
+        let maximumConcurrency = await translation.maximumConcurrency()
+        XCTAssertGreaterThan(maximumConcurrency, 1)
+    }
+
+    func testRowTranslationSubmitsSelectedCandidateFirst() {
+        XCTAssertEqual(
+            MonitoringController.translationTaskOrder(
+                candidateCount: 5,
+                selectedIndex: 3
+            ),
+            [3, 0, 1, 2, 4]
+        )
     }
 
     func testCandidateRegionConvertsToCGRect() {
@@ -430,6 +602,27 @@ final class GlintMacTests: XCTestCase {
         XCTAssertNil(
             AXCandidateVisibleRowSelector.select(
                 selected: selected,
+                visible: visible
+            )
+        )
+    }
+
+    func testAXVisibleRowRejectsMoreThanNineCandidates() {
+        let visible = (0..<10).map { index in
+            AXCandidateItem(
+                text: "candidate\(index)",
+                frame: CGRect(
+                    x: CGFloat(index * 60),
+                    y: 80,
+                    width: 50,
+                    height: 28
+                )
+            )
+        }
+
+        XCTAssertNil(
+            AXCandidateVisibleRowSelector.select(
+                selected: visible[0],
                 visible: visible
             )
         )

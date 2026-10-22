@@ -82,7 +82,7 @@ struct AXCandidateVisibleRow: Sendable, Equatable {
 }
 
 enum AXCandidateVisibleRowSelector {
-    private static let maximumRowCount = 12
+    static let maximumRowCount = 9
 
     static func select(
         selected: AXCandidateItem,

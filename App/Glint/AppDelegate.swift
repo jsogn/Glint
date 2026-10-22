@@ -3,6 +3,12 @@ import CoreGraphics
 import GlintMac
 import GlintPlugins
 import GlintUI
+import OSLog
+
+private let hudLatencyLogger = Logger(
+    subsystem: "com.local.glint",
+    category: "HUD"
+)
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -18,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let windowModel: MainWindowModel
     private var monitoringTask: Task<Void, Never>?
     private var displayedCandidateRevision: UInt64?
+    private var candidateChangedEventAt: ContinuousClock.Instant?
     private var permissionRequestPending = false
     private var permissionRequestWasIssued = false
     private var startupPreparationTask: Task<Void, Never>?
@@ -307,6 +314,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             windowModel.statusText = isActionableStatus(status) ? status : ""
             NSLog("Glint: %@", status)
         case .candidateChanged:
+            candidateChangedEventAt = .now
             hud.beginUpdate()
         case .selectionChanged(let index, let revision):
             guard displayedCandidateRevision == revision else { return }
@@ -314,7 +322,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .candidateEnded(let immediate):
             clearHUDState()
             hud.hide(animated: !immediate)
-        case .results(let translations, let highlight, let revision):
+        case .results(
+            let translations,
+            let highlight,
+            let revision,
+            let isProgressive
+        ):
             windowModel.statusText = ""
             let showsNumbers =
                 windowModel.displayPreferences.translationScope == .row
@@ -329,7 +342,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             showHUD(
                 revision: revision,
                 items: items,
-                near: highlight.cgRect
+                near: highlight.cgRect,
+                isProgressive: isProgressive
             )
         }
     }
@@ -343,10 +357,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showHUD(
         revision: UInt64,
         items: [HUDItem],
-        near rect: CGRect
+        near rect: CGRect,
+        isProgressive: Bool
     ) {
-        guard monitoringTask != nil,
-              displayedCandidateRevision != revision else {
+        guard monitoringTask != nil else { return }
+        // Progressive row results share one revision. Reject only results
+        // older than the revision already on screen.
+        if let displayedCandidateRevision,
+           revision < displayedCandidateRevision {
             return
         }
         displayedCandidateRevision = revision
@@ -355,12 +373,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             near: rect,
             position: windowModel.displayPreferences.position,
             spacing: windowModel.displayPreferences.candidateSpacing,
-            opacity: windowModel.displayPreferences.hudOpacity
+            opacity: windowModel.displayPreferences.hudOpacity,
+            revision: revision
+        )
+        let phase: String
+        if windowModel.displayPreferences.translationScope == .row,
+           items.count > 1,
+           !isProgressive {
+            phase = "row_visible"
+        } else {
+            phase = "selected_visible"
+        }
+        let eventToVisible = candidateChangedEventAt.map {
+            Self.elapsedMilliseconds($0.duration(to: .now))
+        } ?? 0
+        hudLatencyLogger.notice(
+            "perf latency phase=\(phase, privacy: .public) revision=\(revision, privacy: .public) visible_items=\(items.count, privacy: .public) event_to_visible_ms=\(eventToVisible, privacy: .public)"
         )
     }
 
     private func clearHUDState() {
         displayedCandidateRevision = nil
+        candidateChangedEventAt = nil
+    }
+
+    private static func elapsedMilliseconds(_ duration: Duration) -> Double {
+        Double(duration.components.seconds) * 1_000
+            + Double(duration.components.attoseconds) / 1_000_000_000_000_000
     }
 
     private func syncTranslationConfiguration() {

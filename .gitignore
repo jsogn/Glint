@@ -1,6 +1,7 @@
 .DS_Store
 .build/
 build/
+build-tests/
 build-release/
 DerivedData/
 *.xcresult

@@ -37,4 +37,43 @@ final class MLXTranslationEngineTests: XCTestCase {
         XCTAssertNotNil(qwen.instructions)
         XCTAssertEqual(qwen.prompt(for: "你好"), "你好")
     }
+
+    func testBatchPromptPreservesNumbersAndOrder() {
+        let profile = MLXPromptProfile(modelID: "mt-hy-mt2-1.8b")
+        let prompt = profile.batchPrompt(for: ["学习", "学校", "学生"])
+
+        XCTAssertTrue(prompt.contains("1. 学习"))
+        XCTAssertTrue(prompt.contains("2. 学校"))
+        XCTAssertTrue(prompt.contains("3. 学生"))
+        XCTAssertTrue(prompt.contains("不要合并"))
+    }
+
+    func testBatchParserReadsNumberedLines() throws {
+        XCTAssertEqual(
+            try MLXTranslationEngine.parseBatchTranslations(
+                "1. Study\n2. School\n3. Student",
+                expectedCount: 3
+            ),
+            ["Study", "School", "Student"]
+        )
+    }
+
+    func testBatchParserFallsBackToSequentialLines() throws {
+        XCTAssertEqual(
+            try MLXTranslationEngine.parseBatchTranslations(
+                "Study\nSchool\nStudent",
+                expectedCount: 3
+            ),
+            ["Study", "School", "Student"]
+        )
+    }
+
+    func testBatchParserRejectsIncompleteOutput() {
+        XCTAssertThrowsError(
+            try MLXTranslationEngine.parseBatchTranslations(
+                "1. Study\n2. School",
+                expectedCount: 3
+            )
+        )
+    }
 }

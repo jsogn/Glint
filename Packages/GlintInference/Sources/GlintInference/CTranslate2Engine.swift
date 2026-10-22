@@ -128,6 +128,7 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
     }
 
     public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        try Task.checkCancellation()
         let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return nil }
 

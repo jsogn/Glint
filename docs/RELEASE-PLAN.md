@@ -50,6 +50,20 @@ OCR 和 ONNX Runtime 已从产品移除，主 App 不再携带
 Release 构建不得使用 `CODE_SIGNING_ALLOWED=NO`。签名顺序应先内层动态库，后主 App，
 全部使用 hardened runtime 和时间戳。
 
+### 开发签名与 TCC
+
+- `scripts/build.sh` 构建后使用 ad-hoc 签名，并把 designated requirement 固定为
+  `identifier "com.local.glint"`；
+- `scripts/test.sh` 必须使用独立的 `build-tests` DerivedData。测试构建会设置
+  `CODE_SIGNING_ALLOWED=NO`，不得覆盖 `build/.../Glint.app`；
+- 测试完成后必须从 LaunchServices 注销 `build-tests/.../Glint.app`，避免同名
+  Bundle ID 与开发版并存；
+- 可运行 App 与测试 App 不得共享同一个 Bundle 路径，否则 TCC 可能在稳定 identifier
+  和测试构建 CDHash 之间反复切换，造成每次启动都要求重新授权；
+- 切换 Bundle ID、签名 Team 或首次修复历史 TCC 记录后，需要一次性重新授权；
+- 若后续取得 Apple Development 证书，开发构建应优先使用固定 Team 身份，不再
+  依赖 ad-hoc 签名。
+
 ## 4. Release Pipeline
 
 取得 Developer ID 后执行以下流程：

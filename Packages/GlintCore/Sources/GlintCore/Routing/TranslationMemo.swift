@@ -46,6 +46,7 @@ public actor TranslationMemo {
         for key: TranslationMemoKey,
         operation: @escaping @Sendable () async throws -> TranslationResult?
     ) async throws -> TranslationResult? {
+        try Task.checkCancellation()
         guard !key.text.isEmpty else {
             return try await operation()
         }

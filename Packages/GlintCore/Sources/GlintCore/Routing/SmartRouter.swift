@@ -13,6 +13,7 @@ public struct SmartRouter: Sendable {
         _ candidate: Candidate,
         mode: TranslationMode = .dictionaryFirst
     ) async throws -> TranslationResult? {
+        try Task.checkCancellation()
         guard !candidate.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -22,6 +23,7 @@ public struct SmartRouter: Sendable {
             if let dictionaryResult = try? await dictionary.lookup(candidate) {
                 return dictionaryResult
             }
+            try Task.checkCancellation()
             return try await translation.translate(candidate)
         case .modelFirst:
             if let modelResult = try? await translation.translate(candidate),
@@ -38,6 +40,7 @@ public struct SmartRouter: Sendable {
                     dictionary: dictionaryResult
                 )
             }
+            try Task.checkCancellation()
             return try await dictionary.lookup(candidate)
         }
     }

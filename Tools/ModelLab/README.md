@@ -79,3 +79,22 @@ python3 Tools/ModelLab/eval/run_context_rerank.py \
   --gold-file Tools/ModelLab/eval/context_choice_gold.json \
   --dry-run
 ```
+
+## 运行时速度与质量对照
+
+在同一进程中加载 Hy-MT2 与 OPUS-MT，并按同一语料交错测试：
+
+```bash
+swift build --package-path Tools/GlintEval \
+  --product TranslationCompare
+
+Tools/GlintEval/.build/debug/TranslationCompare \
+  --cases Tools/ModelLab/eval/cases.json \
+  --mlx "$HOME/Library/Application Support/Glint/plugins/mt-hy-mt2-1.8b/model" \
+  --ct2 "$HOME/Library/Application Support/Glint/plugins/mt-opus-zh-en/model" \
+  --metallib "$PWD/build/Build/Products/Debug/Glint.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib" \
+  --rounds 3
+```
+
+结果与结论见
+[`docs/M26-OPUS-HYMT2-COMPARISON.md`](../../docs/M26-OPUS-HYMT2-COMPARISON.md)。

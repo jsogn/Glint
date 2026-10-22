@@ -42,6 +42,7 @@ public actor OpenAICompatibleTranslationEngine: TranslationEngine {
     }
 
     public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        try Task.checkCancellation()
         let input = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty else { return nil }
         guard configuration.isConfigured,

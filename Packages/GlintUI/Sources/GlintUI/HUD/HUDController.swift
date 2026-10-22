@@ -1,18 +1,46 @@
 import AppKit
 import SwiftUI
 
+enum HUDContentUpdate: Equatable {
+    case entry
+    case patch
+    case transition
+}
+
 @MainActor
 public final class HUDController {
     private enum Timing {
-        static let enter = 0.08
+        static let enter = 0.06
         static let leave = 0.06
+        static let textTransition = 0.06
         static let staleDimNanoseconds: UInt64 = 80_000_000
         static let staleOpacity = 0.3
+    }
+
+    private struct PresentationRequest {
+        let revision: UInt64?
+        let items: [HUDItem]
+        let screenRect: CGRect
+        let position: HUDPosition
+        let spacing: Double
+        let opacity: Double
+    }
+
+    private struct PresentationLayout {
+        let request: PresentationRequest
+        let showsOnlySelectedItem: Bool
+        let panelSize: NSSize
+        let targetFrame: NSRect
+        let placesBelow: Bool
     }
 
     private let panel: NSPanel
     private let contentModel: HUDPresentationModel
     private var panelSize = NSSize(width: 440, height: 36)
+    private var displayedRevision: UInt64?
+    private var pendingPresentation: PresentationRequest?
+    private var entryAnimationIsActive = false
+    private var entryAnimationGeneration = 0
     private var transitionGeneration = 0
     private var stalePresentationTask: Task<Void, Never>?
     private var stalePresentationGeneration = 0
@@ -55,13 +83,15 @@ public final class HUDController {
 
     public func beginUpdate() {
         guard panel.isVisible else { return }
+        pendingPresentation = nil
         transitionGeneration &+= 1
         let reduceMotion =
             NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         contentModel.animatesTransitions = !reduceMotion
         if reduceMotion {
             panel.alphaValue = 1
-        } else if panel.alphaValue < 0.999 {
+        } else if !entryAnimationIsActive,
+                  panel.alphaValue < 0.999 {
             animate(
                 duration: Timing.enter,
                 alpha: 1,
@@ -85,7 +115,9 @@ public final class HUDController {
             )
         }
         guard updated != contentModel.items else { return }
-        contentModel.items = updated
+        withoutAnimation {
+            contentModel.items = updated
+        }
     }
 
     public func show(
@@ -93,14 +125,18 @@ public final class HUDController {
         near screenRect: CGRect,
         position: HUDPosition = .automatic,
         spacing: Double = 8,
-        opacity: Double = 0.92
+        opacity: Double = 0.92,
+        revision: UInt64? = nil
     ) {
         present(
-            items: [HUDItem(id: 0, text: text)],
-            near: screenRect,
-            position: position,
-            spacing: spacing,
-            opacity: opacity
+            PresentationRequest(
+                revision: revision,
+                items: [HUDItem(id: 0, text: text)],
+                screenRect: screenRect,
+                position: position,
+                spacing: spacing,
+                opacity: opacity
+            )
         )
     }
 
@@ -109,95 +145,173 @@ public final class HUDController {
         near screenRect: CGRect,
         position: HUDPosition = .automatic,
         spacing: Double = 8,
-        opacity: Double = 0.92
+        opacity: Double = 0.92,
+        revision: UInt64? = nil
     ) {
         present(
-            items: items,
-            near: screenRect,
-            position: position,
-            spacing: spacing,
-            opacity: opacity
+            PresentationRequest(
+                revision: revision,
+                items: items,
+                screenRect: screenRect,
+                position: position,
+                spacing: spacing,
+                opacity: opacity
+            )
         )
     }
 
-    private func present(
-        items: [HUDItem],
-        near screenRect: CGRect,
-        position: HUDPosition,
-        spacing: Double,
-        opacity: Double
-    ) {
+    private func present(_ request: PresentationRequest) {
         cancelStalePresentation()
         let reduceMotion =
             NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         contentModel.animatesTransitions = !reduceMotion
         transitionGeneration &+= 1
+
+        if panel.isVisible, entryAnimationIsActive {
+            pendingPresentation = request
+            return
+        }
+
+        guard let layout = resolveLayout(for: request) else {
+            applyContent(
+                request,
+                textOpacity: 1,
+                animatesText: false
+            )
+            panel.alphaValue = 1
+            panel.orderFrontRegardless()
+            displayedRevision = request.revision
+            return
+        }
+        let update = Self.contentUpdate(
+            displayedRevision: displayedRevision,
+            incomingRevision: request.revision,
+            isVisible: panel.isVisible
+        )
+        if update == .entry {
+            presentEntry(layout, reduceMotion: reduceMotion)
+        } else {
+            presentVisible(
+                layout,
+                update: update,
+                reduceMotion: reduceMotion
+            )
+        }
+    }
+
+    private func resolveLayout(
+        for request: PresentationRequest
+    ) -> PresentationLayout? {
         guard let mainScreen = NSScreen.screens.first(where: {
             $0.frame.origin == .zero
         })
             ?? NSScreen.main else {
-            panel.alphaValue = 1
-            panel.orderFrontRegardless()
-            return
+            return nil
         }
         let appKitRect = CGRect(
-            x: screenRect.minX,
-            y: mainScreen.frame.maxY - screenRect.maxY,
-            width: screenRect.width,
-            height: screenRect.height
+            x: request.screenRect.minX,
+            y: mainScreen.frame.maxY - request.screenRect.maxY,
+            width: request.screenRect.width,
+            height: request.screenRect.height
         )
         let targetScreen = NSScreen.screens.first {
             $0.frame.contains(NSPoint(x: appKitRect.midX, y: appKitRect.midY))
         } ?? mainScreen
         let maximumWidth = targetScreen.visibleFrame.width - 16
         let showsOnlySelectedItem = HUDItemRow.requiresSelectedOnly(
-            for: items,
+            for: request.items,
             maximumWidth: maximumWidth
         )
-        contentModel.items = items
-        contentModel.backgroundOpacity = opacity
-        contentModel.textOpacity = 1
-        contentModel.showsOnlySelectedItem = showsOnlySelectedItem
         let proposedPanelSize = Self.panelSize(
-            for: items,
+            for: request.items,
             maximumWidth: maximumWidth,
             selectedOnly: showsOnlySelectedItem
         )
-        panelSize = Self.resolvedPanelSize(
+        let resolvedPanelSize = Self.resolvedPanelSize(
             current: panelSize,
             proposed: proposedPanelSize,
             isVisible: panel.isVisible
         )
         let layout = HUDLayout.placement(
             near: appKitRect,
-            panelSize: panelSize,
+            panelSize: resolvedPanelSize,
             visibleFrame: targetScreen.visibleFrame,
-            position: position,
-            spacing: spacing
+            position: request.position,
+            spacing: request.spacing
         )
-        let targetFrame = layout.frame
-        let placesBelow = layout.placesBelow
+        return PresentationLayout(
+            request: request,
+            showsOnlySelectedItem: showsOnlySelectedItem,
+            panelSize: resolvedPanelSize,
+            targetFrame: layout.frame,
+            placesBelow: layout.placesBelow
+        )
+    }
 
-        if !panel.isVisible {
-            let entryOffset: CGFloat = placesBelow ? 2 : -2
-            let entryFrame = reduceMotion
-                ? targetFrame
-                : targetFrame.offsetBy(dx: 0, dy: entryOffset)
-            panel.setFrame(entryFrame, display: false)
-            panel.alphaValue = reduceMotion ? 1 : 0
-            panel.orderFrontRegardless()
-            guard !reduceMotion else { return }
-            animate(
-                duration: Timing.enter,
-                alpha: 1,
-                frame: targetFrame
-            )
+    private func presentEntry(
+        _ layout: PresentationLayout,
+        reduceMotion: Bool
+    ) {
+        panelSize = layout.panelSize
+        applyContent(
+            layout.request,
+            showsOnlySelectedItem: layout.showsOnlySelectedItem,
+            textOpacity: 1,
+            animatesText: false
+        )
+        let entryOffset: CGFloat = layout.placesBelow ? 2 : -2
+        let entryFrame = reduceMotion
+            ? layout.targetFrame
+            : layout.targetFrame.offsetBy(dx: 0, dy: entryOffset)
+        panel.setFrame(entryFrame, display: false)
+        panel.alphaValue = reduceMotion ? 1 : 0
+        panel.orderFrontRegardless()
+        displayedRevision = layout.request.revision
+        guard !reduceMotion else { return }
+
+        entryAnimationGeneration &+= 1
+        let generation = entryAnimationGeneration
+        entryAnimationIsActive = true
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = Timing.enter
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1
+            panel.animator().setFrame(layout.targetFrame, display: true)
+        } completionHandler: { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                self.finishEntryAnimation(generation: generation)
+            }
+        }
+    }
+
+    private func finishEntryAnimation(generation: Int) {
+        guard generation == entryAnimationGeneration,
+              entryAnimationIsActive else {
             return
+        }
+        entryAnimationIsActive = false
+        panel.alphaValue = 1
+        guard let pendingPresentation else { return }
+        self.pendingPresentation = nil
+        present(pendingPresentation)
+    }
+
+    private func presentVisible(
+        _ layout: PresentationLayout,
+        update: HUDContentUpdate,
+        reduceMotion: Bool
+    ) {
+        panelSize = layout.panelSize
+        if panel.frame != layout.targetFrame {
+            panel.setFrame(layout.targetFrame, display: false)
+            panel.contentView?.layoutSubtreeIfNeeded()
         }
 
         if reduceMotion {
             panel.alphaValue = 1
-        } else if panel.alphaValue < 0.999 {
+        } else if !entryAnimationIsActive,
+                  panel.alphaValue < 0.999 {
             animate(
                 duration: Timing.enter,
                 alpha: 1,
@@ -206,11 +320,22 @@ public final class HUDController {
         } else {
             panel.alphaValue = 1
         }
-        panel.setFrame(targetFrame, display: true)
+        let animatesText = update == .transition
+            && contentModel.textOpacity < 0.999
+        applyContent(
+            layout.request,
+            showsOnlySelectedItem: layout.showsOnlySelectedItem,
+            textOpacity: 1,
+            animatesText: animatesText
+        )
+        displayedRevision = layout.request.revision
     }
 
     public func hide(animated: Bool = true) {
         cancelStalePresentation()
+        pendingPresentation = nil
+        entryAnimationGeneration &+= 1
+        entryAnimationIsActive = false
         transitionGeneration &+= 1
         let generation = transitionGeneration
         guard panel.isVisible else {
@@ -254,6 +379,7 @@ public final class HUDController {
         guard generation == transitionGeneration else { return }
         panel.orderOut(nil)
         panel.alphaValue = 0
+        displayedRevision = nil
     }
 
     private func beginStalePresentation() {
@@ -270,7 +396,7 @@ public final class HUDController {
                       self.panel.isVisible else {
                     return
                 }
-                self.contentModel.textOpacity = Timing.staleOpacity
+                self.animateTextOpacity(Timing.staleOpacity)
                 self.stalePresentationTask = nil
             } catch {
                 return
@@ -282,6 +408,66 @@ public final class HUDController {
         stalePresentationGeneration &+= 1
         stalePresentationTask?.cancel()
         stalePresentationTask = nil
+    }
+
+    private func applyContent(
+        _ request: PresentationRequest,
+        showsOnlySelectedItem: Bool? = nil,
+        textOpacity: Double,
+        animatesText: Bool
+    ) {
+        let changes = {
+            self.contentModel.items = request.items
+            self.contentModel.backgroundOpacity = request.opacity
+            if let showsOnlySelectedItem {
+                self.contentModel.showsOnlySelectedItem =
+                    showsOnlySelectedItem
+            }
+            self.contentModel.textOpacity = textOpacity
+        }
+        if animatesText {
+            withAnimation(
+                .easeOut(duration: Timing.textTransition)
+            ) {
+                changes()
+            }
+        } else {
+            withoutAnimation(changes)
+        }
+    }
+
+    private func animateTextOpacity(_ opacity: Double) {
+        if contentModel.animatesTransitions {
+            withAnimation(
+                .easeOut(duration: Timing.textTransition)
+            ) {
+                contentModel.textOpacity = opacity
+            }
+        } else {
+            withoutAnimation {
+                contentModel.textOpacity = opacity
+            }
+        }
+    }
+
+    private func withoutAnimation(_ changes: () -> Void) {
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction, changes)
+    }
+
+    static func contentUpdate(
+        displayedRevision: UInt64?,
+        incomingRevision: UInt64?,
+        isVisible: Bool
+    ) -> HUDContentUpdate {
+        guard isVisible else { return .entry }
+        guard let displayedRevision,
+              let incomingRevision,
+              displayedRevision == incomingRevision else {
+            return .transition
+        }
+        return .patch
     }
 
     static func panelSize(

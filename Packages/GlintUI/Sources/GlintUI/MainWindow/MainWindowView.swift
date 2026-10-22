@@ -276,7 +276,7 @@ private struct DisplayPage: View {
                             preferences.candidateDwellDuration * 1000
                         ),
                         binding: $preferences.candidateDwellDuration,
-                        range: 0.08...0.3,
+                        range: 0.05...0.3,
                         step: 0.01,
                         caption: "连续输入时不翻译；候选停留达到该时长后触发。"
                     )
@@ -782,7 +782,7 @@ extension CandidateTranslationScope {
     var explanation: String {
         switch self {
         case .selected:
-            "只显示当前高亮候选的英文。"
+            "只显示当前高亮候选的英文；展开更多候选后隐藏。"
         case .row:
             "仅在单行候选栏显示首栏英文；展开更多候选后隐藏。"
         }

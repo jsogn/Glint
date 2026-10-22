@@ -49,6 +49,7 @@ public actor TranslationRuntime: TranslationEngine {
             let engine = try makeEngine(for: descriptor)
             if let mlx = engine as? MLXTranslationEngine {
                 _ = try await mlx.prepare()
+                try? await mlx.warmUp()
             }
             activeModel = descriptor
             activeEngine = engine
@@ -69,6 +70,7 @@ public actor TranslationRuntime: TranslationEngine {
     }
 
     public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        try Task.checkCancellation()
         if activeModel?.modelID != selectedModelID {
             await prepareSelectedModel()
         }
