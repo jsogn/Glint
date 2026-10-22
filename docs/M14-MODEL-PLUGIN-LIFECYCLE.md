@@ -29,12 +29,9 @@ UI 在模型加载前就提交选择，因此加载失败后仍显示“使用�
 - CTranslate2 初始化错误包含缺失路径、动态库、桥接符号或模型加载原因。
 - OPUS 模型和 CTranslate2 动态库进入 App bundle，并在启动迁移时删除旧
   Application Support 插件副本。
-- OPUS 资源不进入 Git 历史；构建脚本从固定的 `bundled-assets-v1` Release
-  下载归档、校验 SHA256，再复制进 App bundle。
-- 开发 catalog 会从 `Tools/ModelLab` 和 `Vendor/ct2` 生成离线 OPUS
-  归档；归档只用于重新安装，不会自动落成插件目录。
-- OPUS 归档包含 SHA256、实际大小和 `file://` 下载地址，卸载后仍会作为
-  可下载模型出现在安装列表。
+- OPUS 权重不进入 Git；构建前由 `scripts/prepare_opus_model.sh` 从固定
+  Hugging Face revision 转换为 CTranslate2 int8，并按 lock 文件校验。
+- 其他翻译模型继续使用 catalog 下载、安装、切换和卸载。
 - 模型选择不显示“推荐”标签；没有翻译模型时，使用中性的“启用句子翻译”
   引导卡，让用户安装离线模型、导入本地模型或配置在线接口。
 - 版本检测使用数字分段比较，`1.10.0 > 1.9.9`，且 `1.0 == 1.0.0`。
@@ -50,22 +47,30 @@ UI 在模型加载前就提交选择，因此加载失败后仍显示“使用�
 - 更新先保留旧插件目录；使用中的翻译模型成功加载新版本后才提交更新。
   新版本加载失败时恢复旧目录并重新加载旧版本。
 
-首次显式安装开发版 OPUS：
+手动准备内置 OPUS：
 
 ```bash
-GLINT_INSTALL_DEV_OPUS=1 ./scripts/install_dev_plugins.sh
+./scripts/prepare_opus_model.sh
 ```
 
 ## 运行验证
 
-- 已安装 OPUS 可以加载并翻译“你好”。
+- 内置 OPUS 可以加载并翻译短句。
 - 缺失 CTranslate2 模型时返回包含实际路径的错误。
-- 激活失败后恢复原模型，失败项仍可卸载。
+- 可选模型激活失败后恢复原模型，失败项仍可卸载。
 - 卸载会调用运行时释放动作，并删除 manifest ID 对应目录。
-- 从开发 catalog 安装 OPUS 到临时目录后，目录结构、SHA256 和动态库
+- 从开发 catalog 安装可选模型到临时目录后，目录结构、SHA256 和动态库
   加载均通过验证。
 - `GlintPlugins` 15 个测试通过，`GlintUI` 14 个测试通过；覆盖语义版本
   比较、更新提示、条件请求、检查冷却、插件提交/回滚以及使用中翻译模型
   更新失败恢复。
-- 干净构建的 Debug App 不包含 `model.bin`、`libglintct2.dylib` 或
-  `libctranslate2.dylib`；App 体积由约 258MB 降至约 175MB。
+- 干净构建会先准备内置 OPUS，再生成包含模型和动态库的 Debug App。
+
+## OPUS 构建产物
+
+- `model-lock.json` 固定 Hugging Face revision、转换工具版本、量化方式和
+  每个产物的 SHA256。
+- `prepare_opus_model.py` 下载原始 Transformers 模型并转换为 CTranslate2
+  int8，产物写入 Git 忽略的 `Resources/Plugins/mt-opus-zh-en/model`。
+- `scripts/build.sh` 和 `scripts/test.sh` 自动调用准备脚本；模型未变化时只做
+  SHA256 校验，不重复转换。

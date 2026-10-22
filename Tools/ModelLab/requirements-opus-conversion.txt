@@ -1,0 +1,5 @@
+ctranslate2==4.8.3
+huggingface-hub==2.2.0
+sentencepiece==0.2.2
+torch==2.14.1
+transformers==5.20.2

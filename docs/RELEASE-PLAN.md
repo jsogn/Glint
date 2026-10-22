@@ -46,8 +46,9 @@ OCR 和 ONNX Runtime 已从产品移除，主 App 不再携带
 和桥接动态库位于 `Contents/Resources/mt-opus-zh-en/bin`，必须与主 App 使用
 同一 Developer ID Team 签名。其他可选模型的动态库仍需随对应插件清单校验
 版本。归档阶段要枚举 App 实际包含的 dylib 和 framework，完成内层优先签名。
-构建前必须运行 `scripts/fetch_bundled_assets.sh`，确认固定 Release 归档的
-SHA256；模型、词表和动态库不得重新加入 Git。
+构建前必须运行 `scripts/prepare_opus_model.sh`，按 `model-lock.json` 转换或
+校验内置 OPUS；模型权重和词表不得加入 Git。小体积 CT2 运行时由仓库提供，
+并随主 App 一起签名。
 
 Release 构建不得使用 `CODE_SIGNING_ALLOWED=NO`。签名顺序应先内层动态库，后主 App，
 全部使用 hardened runtime 和时间戳。

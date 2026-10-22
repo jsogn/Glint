@@ -29,10 +29,10 @@ cd Glint
 ./scripts/run.sh
 ```
 
-首次构建会下载约 69 MB 的 OPUS-MT 模型与运行时资源，校验 SHA256 后打入
-`Glint.app`。之后启动和翻译均使用 App 内的本地资源，不需要联网。
-如果默认下载通道不可用，可通过 `GLINT_BUNDLED_ASSETS_MIRROR_URL` 指定镜像；
-脚本会在校验 SHA256 后使用镜像内容。
+首次构建会把固定 revision 的 OPUS-MT 转换为 CTranslate2 int8，校验产物后
+打入 `Glint.app`。转换工具和源文件会缓存在 Git 忽略目录中；之后构建可复用。
+源模型默认从 `hf-mirror.com` 下载，也可以通过 `GLINT_HF_ENDPOINT` 指定镜像。
+最终 App 启动和翻译均使用内置本地资源，不需要联网。
 
 ## 开始使用
 

@@ -15,8 +15,8 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 1. 原生 macOS 集成：Accessibility、TIS、AppKit；候选识别不截图、不执行 OCR。
 2. 全局默认生效，但只读取当前输入法候选，不读文本正文。
 3. CC-CEDICT、ECDICT、Wiktionary 和 OPUS-MT 是只读内置核心能力；其他词典与
-   更大的翻译模型按插件管理。OPUS-MT 的模型和运行时在构建时从固定 Release
-   资产下载并校验 SHA256，随后进入 App bundle，不存入 Git 历史。
+   更大的翻译模型按插件管理。OPUS-MT 在构建时从固定 Hugging Face revision
+   转换为 CTranslate2 int8，校验产物后进入 App bundle，不存入 Git 历史。
 4. 翻译运行时可以替换，但插件不执行任意第三方代码。
 5. App 逻辑与模型实验分离，先完成 M1 模型 spike，再把胜出的运行时接进 App。
 6. 默认不保存候选文本、翻译结果或输入历史。
@@ -292,8 +292,9 @@ MonitoringController → @Observable AppState → MainWindowView
   - `mlx` → MLX Swift；
   - `apple-translation` → 可选的系统适配器。
 - CC-CEDICT、overrides、ECDICT、Wiktionary 和 OPUS-MT 作为只读核心资源直接
-  随 App 提供，不复制到 Application Support，不参与安装和卸载。OPUS-MT 源文件
-  由 `scripts/fetch_bundled_assets.sh` 在构建前获取，并校验固定 SHA256。
+  随 App 提供，不复制到 Application Support，不参与安装和卸载。OPUS-MT 由
+  `scripts/prepare_opus_model.sh` 在构建前转换并校验，锁文件记录源 revision、
+  工具版本和每个产物的 SHA256。
 - 词典路由由只读内置词典和 Application Support 中的可选插件合并；内置 ID
   优先，插件列表不得重复注册同一词典。
 - 下载目录：
@@ -329,8 +330,9 @@ MonitoringController → @Observable AppState → MainWindowView
   - MLX Swift（高质量翻译插件）；
   - CTranslate2（通过 `Bridges/CTranslate2Bridge`）。
 - App target 只复制运行时 allowlist：`catalog.json`、`dict-cedict`、
-  `dict-ecdict`、`dict-wiktionary-zh-en` 和 `mt-opus-zh-en` 四个只读核心
-  资源。评测数据、可选插件和模型目录不得由 `Resources` 整目录进入 App。
+  `dict-ecdict`、`dict-wiktionary-zh-en` 和 `mt-opus-zh-en` 五个只读核心
+  资源。OPUS-MT 权重由构建脚本准备且不进入 Git；评测数据、可选插件和其他
+  模型目录不得由 `Resources` 整目录进入 App。
 - App 第一版不启用 App Sandbox；使用 Developer ID + hardened runtime + 公证。
 - Bundle ID 暂定 `com.local.glint`，正式签名/团队确定后再改。
 - `scripts/build.sh`、`scripts/test.sh` 只封装 `xcodebuild`/`swift test`，不复制 demo 的 `swiftc` 流程。

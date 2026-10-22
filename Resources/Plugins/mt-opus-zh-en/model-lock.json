@@ -1,0 +1,71 @@
+{
+  "source": {
+    "repository": "Helsinki-NLP/opus-mt-zh-en",
+    "revision": "cf109095479db38d6df799875e34039d4938aaa6",
+    "mirrorEndpoint": "https://hf-mirror.com",
+    "license": "CC-BY-4.0",
+    "downloadFiles": [
+      "config.json",
+      "generation_config.json",
+      "metadata.json",
+      "pytorch_model.bin",
+      "source.spm",
+      "target.spm",
+      "tokenizer_config.json",
+      "vocab.json"
+    ]
+  },
+  "conversion": {
+    "runtime": "ctranslate2",
+    "quantization": "int8",
+    "copyFiles": [
+      "source.spm",
+      "target.spm"
+    ],
+    "tools": {
+      "ctranslate2": "4.8.3",
+      "huggingface-hub": "2.2.0",
+      "sentencepiece": "0.2.2",
+      "torch": "2.14.1",
+      "transformers": "5.20.2"
+    }
+  },
+  "files": {
+    "model/model.bin": {
+      "sizeBytes": 79567635,
+      "sha256": "e4955858cae9542bef37424a9b79720e3db2f32501fe62264c0cd3eac6319777"
+    },
+    "model/config.json": {
+      "sizeBytes": 223,
+      "sha256": "8f6496adfc930cbfecbe8281112197705c488fab47d34b4829b06d7f478909af"
+    },
+    "model/shared_vocabulary.json": {
+      "sizeBytes": 1303998,
+      "sha256": "acbf13516c56af2bb78ebdb770c2e4648fd8232ddd17af75298119cbfa7ee33d"
+    },
+    "model/source.spm": {
+      "sizeBytes": 804677,
+      "sha256": "e27a3a1b539f4959ec72ea60e453f49156289f95d4e6000b29332efc45616203"
+    },
+    "model/target.spm": {
+      "sizeBytes": 806530,
+      "sha256": "6a881f4717cd7265f53fea54fd3dc689c767c05338fac7a4590f3088cb2d7855"
+    },
+    "bin/libctranslate2.dylib": {
+      "sizeBytes": 2954336,
+      "sha256": "fcf10d15cd0ee1d74f6909fd6ebdc474f48d46e9992b12350e194a9b3e2c75df"
+    },
+    "bin/libglintct2.dylib": {
+      "sizeBytes": 64368,
+      "sha256": "d53ba26c0b8c0ed4aaa22e8186cc7b375a649735eeda32f21f0a22a09ea56cdd"
+    },
+    "bin/libsentencepiece.0.0.0.dylib": {
+      "sizeBytes": 2073456,
+      "sha256": "07e2bf49b7b206c1c92dfc81ea0c51c54e52c0fd68bfb3711035a038effecfe6"
+    },
+    "bin/libsentencepiece.0.dylib": {
+      "sizeBytes": 2073456,
+      "sha256": "07e2bf49b7b206c1c92dfc81ea0c51c54e52c0fd68bfb3711035a038effecfe6"
+    }
+  }
+}

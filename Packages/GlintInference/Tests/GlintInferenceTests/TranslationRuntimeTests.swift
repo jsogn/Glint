@@ -50,7 +50,7 @@ final class TranslationRuntimeTests: XCTestCase {
         )
         guard FileManager.default.fileExists(atPath: modelDirectory.path) else {
             throw XCTSkip(
-                "Run scripts/fetch_bundled_assets.sh before package tests."
+                "Run scripts/prepare_opus_model.sh before package tests."
             )
         }
 
