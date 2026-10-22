@@ -13,17 +13,8 @@ enum Diagnostics {
             let inputSource = InputSourceMonitor()
             let activeInputSource = inputSource.currentInputSource()
             let focus = FocusMonitor().snapshot()
-            let allowGenericCandidates: Bool = {
-                switch activeInputSource.kind {
-                case .applePinyin, .keyboardLayout:
-                    return false
-                case .otherInputMethod, .unknown:
-                    return (focus?.compositionState ?? .unknown) != .inactive
-                }
-            }()
             let candidate = AXCandidateReader().snapshot(
-                includeVisibleCandidates: true,
-                allowGenericCandidates: allowGenericCandidates
+                includeVisibleCandidates: true
             )
             let frontmost = NSWorkspace.shared.frontmostApplication
 

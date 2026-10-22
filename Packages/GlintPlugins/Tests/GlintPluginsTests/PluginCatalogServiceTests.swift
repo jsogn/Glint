@@ -195,6 +195,83 @@ final class PluginCatalogServiceTests: XCTestCase {
         }
     }
 
+    func testRejectsDownloadedCTranslatePlugin() async {
+        let manifest = PluginManifest(
+            id: "unsafe-ct2",
+            type: .translation,
+            name: "Unsafe CT2",
+            version: "1.0",
+            runtime: "ctranslate2",
+            capabilities: ["word"],
+            languages: ["zh-Hans", "en"],
+            sizeBytes: 1,
+            sha256: "unused",
+            url: URL(string: "https://example.com/plugin.zip")!,
+            license: "MIT",
+            minRAMBytes: 0,
+            quality: "test",
+            recommended: false
+        )
+        let service = PluginCatalogService()
+
+        do {
+            _ = try await service.install(manifest)
+            XCTFail("Downloaded CTranslate2 plugins must be rejected")
+        } catch let error as PluginCatalogError {
+            XCTAssertEqual(error, .unsupportedRuntime)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func testRejectsExecutablePluginContent() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GlintUnsafePlugin-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: source,
+            withIntermediateDirectories: true
+        )
+        try Data([0xCF, 0xFA, 0xED, 0xFE]).write(
+            to: source.appendingPathComponent("payload.dylib")
+        )
+        let archive = root.appendingPathComponent("unsafe.zip")
+        try createArchive(from: source, at: archive)
+        let data = try Data(contentsOf: archive)
+        let digest = SHA256.hash(data: data)
+            .map { String(format: "%02x", $0) }
+            .joined()
+        let manifest = PluginManifest(
+            id: "unsafe-content",
+            type: .dictionary,
+            name: "Unsafe Content",
+            version: "1.0",
+            runtime: "sqlite-v1",
+            capabilities: ["word"],
+            languages: ["zh-Hans", "en"],
+            sizeBytes: Int64(data.count),
+            sha256: digest,
+            url: archive,
+            license: "MIT",
+            minRAMBytes: 0,
+            quality: "test",
+            recommended: false
+        )
+        let service = PluginCatalogService(
+            manager: PluginManager(baseDirectory: root)
+        )
+
+        do {
+            _ = try await service.install(manifest)
+            XCTFail("Executable plugin content must be rejected")
+        } catch let error as PluginCatalogError {
+            XCTAssertEqual(error, .unsafeContent)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
     private func createArchive(from source: URL, at archive: URL) throws {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")

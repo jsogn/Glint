@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 import GlintCore
 
@@ -307,14 +308,31 @@ public actor LocalModelImportService {
                 at: destination.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            do {
-                try fileManager.linkItem(at: entry.source, to: destination)
-            } catch {
-                try copyFile(from: entry.source, to: destination)
-            }
+            try cloneOrCopyFile(from: entry.source, to: destination)
             completed += entry.sizeBytes
             progress?(min(0.95, Double(completed) / Double(total)))
         }
+    }
+
+    private static func cloneOrCopyFile(
+        from source: URL,
+        to destination: URL
+    ) throws {
+        let cloneStatus = source.path.withCString { sourcePath in
+            destination.path.withCString { destinationPath in
+                copyfile(
+                    sourcePath,
+                    destinationPath,
+                    nil,
+                    copyfile_flags_t(COPYFILE_CLONE_FORCE)
+                )
+            }
+        }
+        if cloneStatus == 0 {
+            return
+        }
+        try? FileManager.default.removeItem(at: destination)
+        try copyFile(from: source, to: destination)
     }
 
     private static func copyFile(from source: URL, to destination: URL) throws {

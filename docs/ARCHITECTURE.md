@@ -1,11 +1,10 @@
-# Glint Architecture v0.1
+# Glint Architecture
 
-- 状态：现行草案
+- 状态：现行
 - 日期：2026-10-19
-- 最近校准：2026-10-22
+- 最近校准：2026-10-23
 - 平台：macOS 26+，Apple Silicon
 - 语言：Swift 6
-- 关联 PRD：`docs/PRD-v0.2.md`
 - 关联 Demo：外部 PinyinLensDemo 原型仓库
 
 ## 1. 架构目标
@@ -18,7 +17,7 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
    更大的翻译模型按插件管理。OPUS-MT 在构建时从固定 Hugging Face revision
    转换为 CTranslate2 int8，校验产物后进入 App bundle，不存入 Git 历史。
 4. 翻译运行时可以替换，但插件不执行任意第三方代码。
-5. App 逻辑与模型实验分离，先完成 M1 模型 spike，再把胜出的运行时接进 App。
+5. App 逻辑与模型实验分离；模型评测结论与生产运行时保持可追溯。
 6. 默认不保存候选文本、翻译结果或输入历史。
 
 ## 2. 技术栈
@@ -30,7 +29,7 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 | 主窗口 | AppKit `NSWindow` + SwiftUI `NSHostingController` |
 | HUD | AppKit `NSPanel` + SwiftUI `NSHostingView` |
 | UI | 系统 AppKit/SwiftUI 控件，不引入第三方 UI 组件库 |
-| 候选读取 | Accessibility `InputMethodCandidateList` + 通用 `AXList` 回退 |
+| 候选读取 | Accessibility `InputMethodCandidateList` |
 | 上下文 | 当前不读取输入框正文；如后续启用，必须单独评审隐私边界 |
 | 输入状态 | Carbon TIS + Accessibility API |
 | 词典 | 系统 SQLite3，CC-CEDICT，ECDICT 作为反查/词频辅助 |
@@ -117,22 +116,26 @@ Glint/
 │       ├── eval/
 │       └── results/
 ├── Resources/
-│   ├── Dictionary/
+│   ├── Distribution/
 │   ├── Evaluation/
 │   ├── Plugins/
 │   └── catalog.json
 ├── docs/
-│   ├── PRD-v0.2.md
-│   ├── ARCHITECTURE-v0.1.md
-│   └── ADR/
+│   ├── ARCHITECTURE.md
+│   ├── AX-CANDIDATE-VALIDATION.md
+│   ├── DICTIONARY-SOURCES.md
+│   ├── RELEASE-PLAN.md
+│   └── assets/
 ├── scripts/
 │   ├── build.sh
+│   ├── dev.sh
+│   ├── launch.sh
+│   ├── package_test_dmg.sh
+│   ├── prepare_opus_model.sh
+│   ├── run.sh
 │   ├── test.sh
-│   ├── download_models.sh
+│   ├── verify_app.sh
 │   └── notarize.sh
-└── Tests/
-    ├── Integration/
-    └── Fixtures/
 ```
 
 ## 4. 模块边界
@@ -211,7 +214,7 @@ Python 实验环境，只用于 M1：
 - 模型下载和转换；
 - 50 条测试集；
 - 质量、延迟、内存评测；
-- 生成 `docs/M1-MODEL-SPIKE.md`。
+- 将选型结论记录到实验工具说明和提交历史。
 
 不进入 App 安装包。
 
@@ -273,8 +276,8 @@ MonitoringController → @Observable AppState → MainWindowView
 ## 8. 并发与状态
 
 - `MonitoringController`：主线程上的轻量调度器；定时/事件触发，单飞（single-flight）。
-- `AXCandidateReader`：候选识别主路径；优先识别苹果拼音
-  `InputMethodCandidateList`，其他输入法在组合输入阶段尝试通用 `AXList`。
+- `AXCandidateReader`：候选识别主路径；只识别具有输入法候选语义的
+  `InputMethodCandidateList`，不读取普通 `AXList`。
 - `AXCandidateReader`：候选识别唯一主路径。
 - `TranslationPipeline`：actor，取消旧请求，避免旧结果覆盖新候选。
 - `PluginManager`/`ModelDownloader`：actor；下载状态通过 AsyncStream 发布。
@@ -314,6 +317,9 @@ MonitoringController → @Observable AppState → MainWindowView
 - 删除流程：先取消推理/卸载模型，再删除目录和 registry 条目。核心词典和
   内置 OPUS-MT 不提供删除操作。
 - 不支持任意第三方 dylib、脚本或可执行文件。
+- 下载和本地导入的翻译插件只允许 MLX；词典插件只允许固定 SQLite runtime。
+  CTranslate2 只从签名的 App bundle 加载。
+- 插件升级使用持久化事务标记；未完成激活的升级在下次启动时回滚到旧版本。
 
 ## 10. 持久化与隐私
 
@@ -359,7 +365,7 @@ MonitoringController → @Observable AppState → MainWindowView
 - `Tools/ModelLab` 生成 50 条测试集；
 - 对比 OPUS-MT、M2M100、Qwen3-4B；
 - 记录：英文对应准确率、短句自然度、p95 延迟、峰值内存、模型体积；
-- 结果写入 `docs/M1-MODEL-SPIKE.md`；
+- 结果保留在版本历史和实验工具说明中；
 - 通过后再把胜出的运行时接入 `GlintInference`。
 
 ## 13. ADR 列表

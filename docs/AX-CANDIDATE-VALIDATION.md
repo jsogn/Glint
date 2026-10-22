@@ -1,4 +1,4 @@
-# Glint M15 AX Candidate Validation
+# Glint AX Candidate Validation
 
 > Follow-up: on 2026-10-21 the inactive OCR fallback described below was
 > removed. Glint now has a single AX candidate path and requests only
@@ -172,33 +172,6 @@ Chrome 回归中，空格确认后再执行剪切/粘贴，探针从候选“你
 `candidate=<none>`，旧候选没有重新出现。`AXWindows` 查询本机 p50 约
 `0.103ms`、p95 约 `0.359ms`，缓存存活校验仍处于低个位毫秒范围。
 
-## 与 OCR 链路对比
-
-当前 OCR 相关代码包括截图、色彩定位、候选上下文、Vision/PP-OCR、识别缓存和
-运行时桥接。粗略统计以下核心文件约 2,191 行：
-
-- `CandidateCapture`
-- `OCRService`
-- `FocusedCandidateLocator`
-- `PPOCRRecognizer`
-- `OCRResultCache`
-- `OCRPluginLoader`
-
-AX 验证实现约 320 行，其中包含通用 AX 属性读取、缓存、fallback 和诊断结构。
-正式产品不需要可见候选列表诊断，代码还可以进一步缩小。
-
-产品层面的差异更重要：
-
-| 项目 | AX | OCR |
-| --- | --- | --- |
-| 候选文本来源 | 原始 AX 字符串 | 像素识别 |
-| 字符保真 | 暴露后为精确文本 | 受字体、背景和模型影响 |
-| 权限 | 辅助功能 | 辅助功能 + 屏幕录制 |
-| 模型/插件 | 不需要 | Vision/PP-OCR 与运行时 |
-| HUD 锚点 | 候选 AX frame | 蓝色高亮区域 |
-| 首次发现 | 数十 ms | 截图、定位、预热模型 |
-| 稳态读取 | 亚毫秒到低个位 ms | 仍经历截图和识别 |
-
 ## 风险和待验收
 
 1. `InputMethodCandidateList` 是系统 UI 实现标识，不是 Apple 文档化稳定契约。
@@ -207,8 +180,8 @@ AX 验证实现约 320 行，其中包含通用 AX 属性读取、缓存、fallb
 3. Safari 和 TextEdit 已通过；VS Code 曾观察到真实候选列表，但自动化键事件
    会绕过 Electron 的输入法处理，需要人工输入完成最终验收。
 4. Chrome、微信、飞书、Word、多显示器、全屏和不同缩放比例尚未完成 AX 矩阵。
-5. 已增加非苹果输入法的通用 `AXList` best-effort 回退，但第三方候选窗口的进程归属、
-   节点角色和组合范围仍需逐款验证；失败时静默跳过，不影响苹果拼音主路径。
+5. 通用 `AXList` 回退会误读侧栏、任务列表等普通控件，已移除；第三方输入法只有在
+   提供可验证的输入法候选结构后才能接入。
 6. 正式接入仍保留安全输入检查、真实文字选区检查和候选停留触发。
 7. 豆包等 App 的进程级焦点 fallback 本轮未实现，留待 AX 主链路稳定后的专项
    测试决定。
@@ -220,20 +193,13 @@ AX 验证实现约 320 行，其中包含通用 AX 属性读取、缓存、fallb
 1. 组合输入时从 `AXSelectedChildren` 读取候选项；
 2. 使用候选 `AXTitle` 和 `AXFrame` 驱动分类、停留、HUD 位置和翻译；
 3. AX 不存在时静默跳过，不因读取失败弹窗；
-4. OCR 服务、插件配置和设置页完整保留，但退出当前输入识别热路径；
-5. 屏幕录制权限流程暂未移除，为后续上下文能力保留；当前候选识别本身不调用
-   ScreenCaptureKit；
-6. 进程级焦点 fallback 暂不实现，不使用针对豆包等 App 的特例。
+4. 不截图、不执行 OCR、不请求屏幕录制权限；
+5. 进程级焦点 fallback 和通用列表猜测暂不实现，不使用针对特定 App 的特例。
 
 ## 自动化验证
 
-- `./scripts/test.sh`：全部通过，Xcode 测试为 `TEST SUCCEEDED`；
-- `GlintCore` 40 个、`GlintMac` 48 个（1 个外部截图测试跳过）、
-  `GlintDictionary` 6 个、`GlintInference` 10 个、`GlintPlugins` 15 个、
-  `GlintUI` 22 个测试通过；
-- `swift test --package-path Packages/GlintMac`：48 个测试，47 通过，1 个需要
-  外部截图的测试按预期跳过；
-- `./scripts/build.sh`：通过；
-- Release arm64 构建：通过；
-- `./scripts/run.sh`：通过 readiness token 确认唯一 Debug 实例已启动；
-- 概览页显示“系统候选词”；OCR 配置页及模型管理保持可用。
+- 2026-10-23：完整 `./scripts/test.sh` 通过；
+- Debug 和 Release arm64 构建通过；
+- `./scripts/dev.sh` 通过 readiness token 确认唯一实例启动；
+- 概览页显示“拼音输入”，关于页显示 macOS 26+、Apple 芯片；
+- 诊断命令只输出权限、输入源、焦点和候选结构状态，不输出候选原文。

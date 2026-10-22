@@ -62,4 +62,5 @@ Tools/GlintEval/.build/debug/CandidateAXProbe --pid <目标 App PID>
 2026-10-22 实测结果：候选只暴露 `AXTitle`、`AXDescription`、
 `AXValueDescription`、`AXRoleDescription` 等文本字段，没有拼音或读音字段。
 `AXRoleDescription` 是“结构的结，如果的果”这类汉字说明。因此当前 AX
-接口不能满足拼音消歧，详见 `docs/M22-AX-PINYIN-PROBE.md`。
+接口不能满足拼音消歧；当前候选兼容边界见
+`docs/AX-CANDIDATE-VALIDATION.md`。

@@ -24,9 +24,13 @@ Build inputs:
 - `Vendor/ct2/libctranslate2.dylib`
 - `Vendor/ct2/libsentencepiece.0.dylib`
 
-The bridge is loaded from `Resources/CT2/libglintct2.dylib` in the dev bundle.
-The model and dylibs are local development assets; production moves them to a
-downloaded plugin directory.
+The bridge and CTranslate2/SentencePiece dylibs are bundled at
+`Resources/Plugins/mt-opus-zh-en/bin`. The converted OPUS-MT model is prepared
+by `scripts/prepare_opus_model.sh` and bundled at
+`Resources/Plugins/mt-opus-zh-en/model`.
+
+`Vendor/` is only needed when rebuilding the native bridge and its library
+dependencies. It is not part of the App bundle.
 
 Rules:
 

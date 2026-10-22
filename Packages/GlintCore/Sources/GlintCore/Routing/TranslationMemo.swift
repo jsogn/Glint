@@ -163,12 +163,28 @@ public struct TranslationMemoStatistics: Sendable, Equatable {
 
 /// Exact-result, memory-only translation memoization with request coalescing.
 public actor TranslationMemo {
+    private final class WaiterLatch: @unchecked Sendable {
+        private let lock = NSLock()
+        private var didDetach = false
+
+        func claim() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            guard !didDetach else { return false }
+            didDetach = true
+            return true
+        }
+    }
+
+    private struct InFlightRequest {
+        let task: Task<TranslationResult?, Error>
+        var waiterCount: Int
+    }
+
     private let capacity: Int
     private let maximumCost: Int
     private var cache: LRUCache<TranslationMemoKey, TranslationResult>
-    private var inFlight: [
-        TranslationMemoKey: Task<TranslationResult?, Error>
-    ] = [:]
+    private var inFlight: [TranslationMemoKey: InFlightRequest] = [:]
     private var hitCount = 0
     private var missCount = 0
     private var inFlightHitCount = 0
@@ -201,28 +217,30 @@ public actor TranslationMemo {
             hitCount += 1
             return result
         }
-        if let task = inFlight[key] {
+        if var request = inFlight[key] {
             inFlightHitCount += 1
-            return try await waitForTask(task, key: key)
+            request.waiterCount += 1
+            inFlight[key] = request
+            return try await waitForTask(request.task, key: key)
         }
 
         missCount += 1
         let task = Task.detached(priority: .userInitiated) {
             try await operation()
         }
-        inFlight[key] = task
+        inFlight[key] = InFlightRequest(task: task, waiterCount: 1)
 
         do {
             let result = try await waitForTask(task, key: key)
             if let result,
                !result.displayText.trimmingCharacters(
                     in: .whitespacesAndNewlines
-               ).isEmpty {
+               ).isEmpty,
+               cache.value(for: key) == nil {
                 store(result, for: key)
             }
             return result
         } catch {
-            inFlight[key] = nil
             throw error
         }
     }
@@ -252,8 +270,8 @@ public actor TranslationMemo {
 
     public func clear() {
         cache.removeAll()
-        for task in inFlight.values {
-            task.cancel()
+        for request in inFlight.values {
+            request.task.cancel()
         }
         inFlight.removeAll()
         hitCount = 0
@@ -267,17 +285,35 @@ public actor TranslationMemo {
         _ task: Task<TranslationResult?, Error>,
         key: TranslationMemoKey
     ) async throws -> TranslationResult? {
+        let latch = WaiterLatch()
         do {
             let result = try await withTaskCancellationHandler {
                 try await task.value
             } onCancel: {
-                task.cancel()
+                Task {
+                    await self.detachWaiter(for: key, latch: latch)
+                }
             }
-            inFlight[key] = nil
+            detachWaiter(for: key, latch: latch)
             return result
         } catch {
-            inFlight[key] = nil
+            detachWaiter(for: key, latch: latch)
             throw error
+        }
+    }
+
+    private func detachWaiter(
+        for key: TranslationMemoKey,
+        latch: WaiterLatch
+    ) {
+        guard latch.claim() else { return }
+        guard var request = inFlight[key] else { return }
+        request.waiterCount -= 1
+        if request.waiterCount <= 0 {
+            request.task.cancel()
+            inFlight[key] = nil
+        } else {
+            inFlight[key] = request
         }
     }
 

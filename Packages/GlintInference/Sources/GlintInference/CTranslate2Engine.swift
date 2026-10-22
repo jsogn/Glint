@@ -175,15 +175,6 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
            FileManager.default.fileExists(atPath: bundled.path) {
             return bundled
         }
-        if let support = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first?.appendingPathComponent(
-            "Glint/plugins/mt-opus-zh-en/model",
-            isDirectory: true
-        ), FileManager.default.fileExists(atPath: support.path) {
-            return support
-        }
         return nil
     }
 }

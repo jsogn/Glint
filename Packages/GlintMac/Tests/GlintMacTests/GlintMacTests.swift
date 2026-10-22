@@ -68,8 +68,7 @@ private struct StubFocus: FocusReading {
 private struct StubCandidates: AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool,
-        allowGenericCandidates: Bool
+        includeVisibleCandidates: Bool
     ) -> AXCandidateSnapshot? {
         nil
     }
@@ -89,21 +88,18 @@ private struct VisibleCaretFocus: FocusReading {
 private final class RecordingCandidates: AXCandidateReading, Sendable {
     private struct Request: Sendable {
         let includeVisibleCandidates: Bool
-        let allowGenericCandidates: Bool
     }
 
     private let state = OSAllocatedUnfairLock<[Request]>(initialState: [])
 
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool,
-        allowGenericCandidates: Bool
+        includeVisibleCandidates: Bool
     ) -> AXCandidateSnapshot? {
         state.withLock {
             $0.append(
                 Request(
-                    includeVisibleCandidates: includeVisibleCandidates,
-                    allowGenericCandidates: allowGenericCandidates
+                    includeVisibleCandidates: includeVisibleCandidates
                 )
             )
         }
@@ -112,10 +108,6 @@ private final class RecordingCandidates: AXCandidateReading, Sendable {
 
     var requestedVisibleCandidates: [Bool] {
         state.withLock { $0.map(\.includeVisibleCandidates) }
-    }
-
-    var requestedGenericCandidates: [Bool] {
-        state.withLock { $0.map(\.allowGenericCandidates) }
     }
 }
 
@@ -258,7 +250,7 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
     }
 
-    func testOtherInputMethodUsesGenericCandidateFallback() async {
+    func testOtherInputMethodStillUsesVerifiedCandidatePath() async {
         let candidates = RecordingCandidates()
         let controller = MonitoringController(
             router: SmartRouter(
@@ -276,7 +268,6 @@ final class GlintMacTests: XCTestCase {
 
         XCTAssertEqual(interval, 60_000_000)
         XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
-        XCTAssertEqual(candidates.requestedGenericCandidates, [true])
     }
 
     func testKeyboardLayoutDoesNotScanCandidates() async {
@@ -297,7 +288,6 @@ final class GlintMacTests: XCTestCase {
 
         XCTAssertEqual(interval, 250_000_000)
         XCTAssertTrue(candidates.requestedVisibleCandidates.isEmpty)
-        XCTAssertTrue(candidates.requestedGenericCandidates.isEmpty)
     }
 
     func testRowTranslationPublishesStableSlotsBeforeRowFinishes() async {

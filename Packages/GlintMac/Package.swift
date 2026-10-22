@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "GlintMac",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS("26.0")],
     products: [
         .library(name: "GlintMac", targets: ["GlintMac"]),
     ],

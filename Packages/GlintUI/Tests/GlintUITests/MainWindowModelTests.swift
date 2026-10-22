@@ -326,7 +326,7 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
-    func testFailedActiveTranslationUpdateRollsBackPluginAndRuntime() async throws {
+    func testDownloadedCTranslateUpdateIsRejectedWithoutReplacingVersion() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
                 "GlintActivePluginUpdateTests-\(UUID().uuidString)"
@@ -412,12 +412,8 @@ final class MainWindowModelTests: XCTestCase {
             id: first.id
         )?.version
         XCTAssertEqual(installedVersion, first.version)
-        XCTAssertEqual(
-            model.translationModelStatusText,
-            "更新失败，已恢复旧版本：新版本加载失败"
-        )
-        XCTAssertEqual(model.translationModelStatusModelID, first.id)
-        XCTAssertEqual(activationCount, 2)
+        XCTAssertEqual(model.catalogError, "插件使用了不支持的运行环境")
+        XCTAssertEqual(activationCount, 0)
     }
 
     @MainActor

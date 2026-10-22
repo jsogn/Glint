@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "GlintPlugins",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS("26.0")],
     products: [
         .library(name: "GlintPlugins", targets: ["GlintPlugins"]),
         .executable(name: "glint-plugin-probe", targets: ["GlintPluginProbe"]),

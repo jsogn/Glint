@@ -70,4 +70,58 @@ final class TranslationRuntimeTests: XCTestCase {
 
         XCTAssertEqual(result?.text, "It's a nice day.")
     }
+
+    func testBrokenSelectedModelFallsBackToBundledOPUS() async throws {
+        var repositoryRoot = URL(fileURLWithPath: #filePath)
+        for _ in 0..<5 {
+            repositoryRoot.deleteLastPathComponent()
+        }
+        let pluginDirectory = repositoryRoot.appendingPathComponent(
+            "Resources/Plugins/mt-opus-zh-en",
+            isDirectory: true
+        )
+        let modelDirectory = pluginDirectory.appendingPathComponent(
+            "model",
+            isDirectory: true
+        )
+        guard FileManager.default.fileExists(atPath: modelDirectory.path) else {
+            throw XCTSkip(
+                "Run scripts/prepare_opus_model.sh before package tests."
+            )
+        }
+
+        let suiteName = "GlintTranslationRuntimeTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        TranslationModelSelection.select("broken-optional-model", in: defaults)
+        let missingDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("missing-ct2-\(UUID().uuidString)")
+        let runtime = TranslationRuntime(
+            defaults: defaults
+        ) { modelID in
+            if modelID == TranslationModelSelection.defaultModelID {
+                return .ctranslate2(
+                    modelID: modelID,
+                    directory: modelDirectory
+                )
+            }
+            return .ctranslate2(
+                modelID: modelID,
+                directory: missingDirectory
+            )
+        }
+
+        let preparationError = await runtime.prepare(
+            modelID: "broken-optional-model"
+        )
+        XCTAssertNotNil(preparationError)
+
+        let result = try await runtime.translate(
+            Candidate(
+                text: "今天天气不错",
+                kind: .sentence,
+                confidence: 1
+            )
+        )
+        XCTAssertEqual(result?.text, "It's a nice day.")
+    }
 }

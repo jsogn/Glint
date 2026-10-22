@@ -152,21 +152,18 @@ extension FocusMonitor: FocusReading {}
 protocol AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool,
-        allowGenericCandidates: Bool
+        includeVisibleCandidates: Bool
     ) -> AXCandidateSnapshot?
 }
 
 extension AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t? = nil,
-        includeVisibleCandidates: Bool = false,
-        allowGenericCandidates: Bool = false
+        includeVisibleCandidates: Bool = false
     ) -> AXCandidateSnapshot? {
         snapshot(
             processIdentifier: processIdentifier,
-            includeVisibleCandidates: includeVisibleCandidates,
-            allowGenericCandidates: allowGenericCandidates
+            includeVisibleCandidates: includeVisibleCandidates
         )
     }
 }
@@ -369,20 +366,11 @@ public actor MonitoringController {
             )
         }
 
-        let allowGenericCandidates = {
-            switch activeInputSource.kind {
-            case .applePinyin, .keyboardLayout:
-                return false
-            case .otherInputMethod, .unknown:
-                return snapshot.compositionState != .inactive
-            }
-        }()
         let observationStartedAt = ContinuousClock.now
         // Both translation scopes need visible-row evidence so an expanded
         // candidate grid is rejected before translation or HUD presentation.
         guard let axCandidate = axCandidates.snapshot(
-            includeVisibleCandidates: true,
-            allowGenericCandidates: allowGenericCandidates
+            includeVisibleCandidates: true
         ) else {
             return observeCandidateMiss(
                 status: "未检测到候选",

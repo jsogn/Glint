@@ -1,8 +1,7 @@
 # Glint Dictionary Lab
 
 Research tooling for preserving dictionary polysemy and evaluating the
-dictionary core. Runtime decisions that came out of this lab are documented in
-`docs/M20-OVERRIDE-ABLATION.md`.
+dictionary core. Runtime decisions have been applied to the current routing.
 
 ## Build
 
@@ -111,8 +110,7 @@ HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
 ```
 
 The default report is
-`Tools/DictionaryLab/results/override-ablation.{json,md}`. The study conclusion
-is recorded in `docs/M20-OVERRIDE-ABLATION.md`.
+`Tools/DictionaryLab/results/override-ablation.{json,md}`.
 
 ## Product Held-Out
 

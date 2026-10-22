@@ -11,6 +11,7 @@ public actor TranslationRuntime: TranslationEngine {
     private let openAISession: URLSession
     private var activeModel: ResolvedTranslationModel?
     private var activeEngine: (any TranslationEngine)?
+    private var failedSelectedModelID: String?
     private(set) public var lastError: String?
 
     public init(
@@ -35,6 +36,31 @@ public actor TranslationRuntime: TranslationEngine {
 
     @discardableResult
     public func prepare(modelID: String) async -> String? {
+        let error = await load(modelID: modelID)
+        if error != nil,
+           modelID != TranslationModelSelection.defaultModelID {
+            failedSelectedModelID = modelID
+            let originalError = error
+            let fallbackError = await load(
+                modelID: TranslationModelSelection.defaultModelID
+            )
+            if fallbackError == nil {
+                lastError =
+                    "\(originalError ?? "所选模型不可用")（已回退到内置模型）"
+                return lastError
+            }
+            lastError = (
+                "\(originalError ?? "所选模型不可用")"
+                    + "（内置模型回退失败：\(fallbackError ?? "unknown")）"
+            )
+            return lastError
+        } else if error == nil {
+            failedSelectedModelID = nil
+        }
+        return error
+    }
+
+    private func load(modelID: String) async -> String? {
         guard let descriptor = await modelResolver(modelID) else {
             activeModel = nil
             activeEngine = nil
@@ -71,7 +97,8 @@ public actor TranslationRuntime: TranslationEngine {
 
     public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
         try Task.checkCancellation()
-        if activeModel?.modelID != selectedModelID {
+        if activeModel?.modelID != selectedModelID,
+           failedSelectedModelID != selectedModelID {
             await prepareSelectedModel()
         }
 
@@ -155,21 +182,6 @@ public actor TranslationRuntime: TranslationEngine {
                     modelID: modelID,
                     directory: bundled
                 )
-            }
-            if let support = FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first {
-                let directory = support.appendingPathComponent(
-                    "Glint/plugins/mt-opus-zh-en/model",
-                    isDirectory: true
-                )
-                if FileManager.default.fileExists(atPath: directory.path) {
-                    return .ctranslate2(
-                        modelID: modelID,
-                        directory: directory
-                    )
-                }
             }
         }
 

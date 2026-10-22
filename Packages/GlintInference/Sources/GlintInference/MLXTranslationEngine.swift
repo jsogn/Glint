@@ -134,6 +134,8 @@ public actor MLXTranslationEngine: TranslationEngine {
     private var lastLoadSeconds: Double?
     private(set) public var lastWarmUpSeconds: Double?
     private let profile: MLXPromptProfile
+    private var generationIsBusy = false
+    private var generationWaiters: [CheckedContinuation<Void, Never>] = []
 
     public init(
         modelDirectory: URL? = nil,
@@ -197,6 +199,9 @@ public actor MLXTranslationEngine: TranslationEngine {
         guard !input.isEmpty else { return nil }
 
         let container = try await prepare()
+        await acquireGenerationSlot()
+        defer { releaseGenerationSlot() }
+        try Task.checkCancellation()
         let session = Self.makeSession(
             container,
             profile: profile,
@@ -232,6 +237,9 @@ public actor MLXTranslationEngine: TranslationEngine {
         }
 
         let container = try await prepare()
+        await acquireGenerationSlot()
+        defer { releaseGenerationSlot() }
+        try Task.checkCancellation()
         let maximumTokens = min(256, max(64, inputs.count * 24 + 16))
         let session = Self.makeSession(
             container,
@@ -258,6 +266,9 @@ public actor MLXTranslationEngine: TranslationEngine {
     public func warmUp() async throws {
         try Task.checkCancellation()
         let container = try await prepare()
+        await acquireGenerationSlot()
+        defer { releaseGenerationSlot() }
+        try Task.checkCancellation()
         let started = ContinuousClock.now
         let session = Self.makeSession(
             container,
@@ -287,6 +298,24 @@ public actor MLXTranslationEngine: TranslationEngine {
             ),
             additionalContext: profile.additionalContext
         )
+    }
+
+    private func acquireGenerationSlot() async {
+        if !generationIsBusy {
+            generationIsBusy = true
+            return
+        }
+        await withCheckedContinuation { continuation in
+            generationWaiters.append(continuation)
+        }
+    }
+
+    private func releaseGenerationSlot() {
+        guard !generationWaiters.isEmpty else {
+            generationIsBusy = false
+            return
+        }
+        generationWaiters.removeFirst().resume()
     }
 
     public static func availableModelDirectory(

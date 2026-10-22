@@ -244,6 +244,53 @@ final class TranslationMemoTests: XCTestCase {
         XCTAssertEqual(count, 1)
     }
 
+    func testCancellingOneWaiterKeepsSharedRequestAlive() async throws {
+        let memo = TranslationMemo()
+        let counter = Counter()
+        let key = TranslationMemoKey(
+            text: "共享请求",
+            mode: .dictionaryFirst,
+            configuration: "model-a"
+        )
+        let operation: @Sendable () async throws -> TranslationResult? = {
+            _ = await counter.increment()
+            try await Task.sleep(nanoseconds: 120_000_000)
+            return TranslationResult(
+                text: "shared result",
+                source: .translation,
+                confidence: 0.9
+            )
+        }
+
+        let first = Task {
+            try await memo.resolve(for: key, operation: operation)
+        }
+        for _ in 0..<50 {
+            let statistics = await memo.statistics()
+            if statistics.misses == 1 {
+                break
+            }
+            try await Task.sleep(nanoseconds: 2_000_000)
+        }
+        let second = Task {
+            try await memo.resolve(for: key, operation: operation)
+        }
+        for _ in 0..<50 {
+            let statistics = await memo.statistics()
+            if statistics.inFlightHits == 1 {
+                break
+            }
+            try await Task.sleep(nanoseconds: 2_000_000)
+        }
+
+        first.cancel()
+        let result = try await second.value
+
+        XCTAssertEqual(result?.text, "shared result")
+        let count = await counter.value
+        XCTAssertEqual(count, 1)
+    }
+
     func testLRUEvictionKeepsNewestEntry() async throws {
         let memo = TranslationMemo(capacity: 1)
         let counter = Counter()

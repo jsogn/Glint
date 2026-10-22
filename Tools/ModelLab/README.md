@@ -1,16 +1,17 @@
 # Glint ModelLab
 
-M1 模型实验区。这里只做模型对比，不进入 App 安装包。
+模型实验区。这里只做模型对比，不进入 App 安装包。
 
-**M1 已完成**：结果见 [`docs/M1-MODEL-SPIKE.md`](../../docs/M1-MODEL-SPIKE.md)。
+历史选型结果保留在 Git 历史中。
 
 ## 目标
 
 对比：
 
-- OPUS-MT zh-en（轻量默认候选）
-- M2M100-418M（均衡候选）
-- Qwen3-4B 4-bit（高质量候选）
+- OPUS-MT zh-en CTranslate2 int8
+- Hy-MT2 1.8B 4-bit
+- Index-Translate 2B 4-bit
+- Qwen3 0.6B / 1.7B / 4B 4-bit
 
 ## 测试集
 
@@ -33,14 +34,13 @@ M1 模型实验区。这里只做模型对比，不进入 App 安装包。
 
 ## 产出
 
-- `docs/M1-MODEL-SPIKE.md`
 - `Tools/ModelLab/results/` 下的原始结果
 
 ## 约束
 
 - Python 只用于实验和模型转换；
 - 不把 Python 或模型文件放进 App；
-- 不把模型下载逻辑写进 App，直到 M1 选出运行时。
+- 模型下载和转换实验不进入 App 运行时。
 
 ## 上下文评估
 
@@ -64,10 +64,7 @@ HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
   --choices-file Tools/ModelLab/results/context-choices.json
 ```
 
-评估结论见
-[`docs/M16-CONTEXT-EVALUATION.md`](../../docs/M16-CONTEXT-EVALUATION.md)
-和
-[`docs/M17-CONTEXT-DISAMBIGUATION-RESEARCH.md`](../../docs/M17-CONTEXT-DISAMBIGUATION-RESEARCH.md)。
+评估结论已落实到当前路由；完整研究记录保留在 Git 历史中。
 
 M17 的生成候选和候选来源消融流程见
 [`Tools/CandidateLab/README.md`](../CandidateLab/README.md)。候选重排结果使用
@@ -91,10 +88,9 @@ swift build --package-path Tools/GlintEval \
 Tools/GlintEval/.build/debug/TranslationCompare \
   --cases Tools/ModelLab/eval/cases.json \
   --mlx "$HOME/Library/Application Support/Glint/plugins/mt-hy-mt2-1.8b/model" \
-  --ct2 "$HOME/Library/Application Support/Glint/plugins/mt-opus-zh-en/model" \
+  --ct2 "$PWD/Resources/Plugins/mt-opus-zh-en/model" \
   --metallib "$PWD/build/Build/Products/Debug/Glint.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib" \
   --rounds 3
 ```
 
-结果与结论见
-[`docs/M26-OPUS-HYMT2-COMPARISON.md`](../../docs/M26-OPUS-HYMT2-COMPARISON.md)。
+对照结果保留在 `Tools/ModelLab/results/` 和 Git 历史中。

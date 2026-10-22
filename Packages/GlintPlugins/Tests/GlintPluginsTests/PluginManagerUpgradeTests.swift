@@ -61,6 +61,29 @@ final class PluginManagerUpgradeTests: XCTestCase {
         })
     }
 
+    func testRestartRollsBackUncommittedUpgrade() async throws {
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = PluginManager(baseDirectory: root)
+        let first = manifest(version: "1.0.0")
+        let second = manifest(version: "2.0.0")
+
+        _ = try await manager.installLocalPlugin(
+            at: try sourceDirectory(first, root: root)
+        )
+        _ = try await manager.installPreparedPlugin(
+            at: try sourceDirectory(second, root: root),
+            keepBackup: true
+        )
+
+        let restarted = PluginManager(baseDirectory: root)
+        let restoredVersion = await restarted.installedPlugin(
+            id: first.id
+        )?.version
+
+        XCTAssertEqual(restoredVersion, first.version)
+    }
+
     private func temporaryRoot() -> URL {
         FileManager.default.temporaryDirectory.appendingPathComponent(
             "GlintPluginUpgradeTests-\(UUID().uuidString)",

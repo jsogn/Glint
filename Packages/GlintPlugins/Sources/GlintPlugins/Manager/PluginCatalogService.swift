@@ -11,6 +11,7 @@ public enum PluginCatalogError: Error, LocalizedError, Equatable {
     case invalidModelSnapshot
     case insufficientDiskSpace
     case unsupportedRuntime
+    case unsafeContent
 
     public var errorDescription: String? {
         switch self {
@@ -23,6 +24,7 @@ public enum PluginCatalogError: Error, LocalizedError, Equatable {
         case .invalidModelSnapshot: return "模型文件不完整或校验失败"
         case .insufficientDiskSpace: return "磁盘空间不足，无法安装该模型"
         case .unsupportedRuntime: return "插件使用了不支持的运行环境"
+        case .unsafeContent: return "插件包含不允许执行的文件或链接"
         }
     }
 }
@@ -70,6 +72,9 @@ public actor PluginCatalogService {
         etag: String? = nil,
         lastModified: String? = nil
     ) async throws -> PluginCatalogFetchResult {
+        guard url.isFileURL || Self.isAllowedRemoteURL(url) else {
+            throw PluginCatalogError.invalidResponse
+        }
         let data: Data
         let responseETag: String?
         let responseLastModified: String?
@@ -134,6 +139,15 @@ public actor PluginCatalogService {
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> PluginManifest {
         try Task.checkCancellation()
+        guard PluginRuntimePolicy.supportsDownloadedRuntime(
+            type: manifest.type,
+            runtime: manifest.runtime
+        ) else {
+            throw PluginCatalogError.unsupportedRuntime
+        }
+        guard manifest.url.isFileURL || Self.isAllowedRemoteURL(manifest.url) else {
+            throw PluginCatalogError.invalidResponse
+        }
         if manifest.runtime == "mlx" {
             return try await installMLXSnapshot(manifest, progress: progress)
         }
@@ -205,6 +219,7 @@ public actor PluginCatalogService {
         guard process.terminationStatus == 0 else {
             throw PluginCatalogError.extractionFailed
         }
+        try validatePluginContents(in: extractedDirectory)
 
         guard let manifestURL = findManifest(in: extractedDirectory),
               let data = try? Data(contentsOf: manifestURL),
@@ -244,6 +259,65 @@ public actor PluginCatalogService {
             return url
         }
         return nil
+    }
+
+    private func validatePluginContents(in directory: URL) throws {
+        guard let enumerator = fileManager.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [
+                .isRegularFileKey,
+                .isSymbolicLinkKey,
+            ],
+            options: []
+        ) else {
+            throw PluginCatalogError.extractionFailed
+        }
+        let rejectedExtensions: Set<String> = [
+            "app", "bundle", "command", "dylib", "framework", "jar",
+            "js", "o", "py", "rb", "sh", "so", "a",
+        ]
+        for case let url as URL in enumerator {
+            let values = try url.resourceValues(
+                forKeys: [.isRegularFileKey, .isSymbolicLinkKey]
+            )
+            if values.isSymbolicLink == true {
+                throw PluginCatalogError.unsafeContent
+            }
+            let pathExtension = url.pathExtension.lowercased()
+            if rejectedExtensions.contains(pathExtension) {
+                throw PluginCatalogError.unsafeContent
+            }
+            guard values.isRegularFile == true else { continue }
+            if fileManager.isExecutableFile(atPath: url.path)
+                || Self.hasExecutableMagic(url) {
+                throw PluginCatalogError.unsafeContent
+            }
+        }
+    }
+
+    private static func hasExecutableMagic(_ url: URL) -> Bool {
+        guard let handle = try? FileHandle(forReadingFrom: url) else {
+            return false
+        }
+        defer { try? handle.close() }
+        guard let data = try? handle.read(upToCount: 4),
+              data.count == 4 else {
+            return false
+        }
+        let bytes = Array(data)
+        if bytes.starts(with: [0x23, 0x21]) {
+            return true
+        }
+        return [
+            [0xFE, 0xED, 0xFA, 0xCE],
+            [0xCE, 0xFA, 0xED, 0xFE],
+            [0xFE, 0xED, 0xFA, 0xCF],
+            [0xCF, 0xFA, 0xED, 0xFE],
+            [0xCA, 0xFE, 0xBA, 0xBE],
+            [0xBE, 0xBA, 0xFE, 0xCA],
+            [0xCA, 0xFE, 0xBA, 0xBF],
+            [0xBF, 0xBA, 0xFE, 0xCA],
+        ].contains(bytes)
     }
 
     private func installMLXSnapshot(
@@ -443,7 +517,21 @@ public actor PluginCatalogService {
             let trimmed = value.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             guard seen.insert(trimmed).inserted else { return nil }
             return URL(string: trimmed)
+        }.filter {
+            isAllowedRemoteURL($0)
         }
+    }
+
+    private static func isAllowedRemoteURL(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        if scheme == "https" {
+            return true
+        }
+        guard scheme == "http",
+              let host = url.host?.lowercased() else {
+            return false
+        }
+        return ["localhost", "127.0.0.1", "::1"].contains(host)
     }
 
     private static func shouldInstallModelFile(_ name: String) -> Bool {

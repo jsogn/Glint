@@ -36,7 +36,7 @@ Glint 当前是可稳定运行的开发版本，但还不是可分发包。
 推荐直接下载分发，不启用 App Sandbox：
 
 - `com.apple.security.app-sandbox`：不启用；
-- Screen Recording / Accessibility：继续通过用户 TCC 授权；
+- Accessibility：继续通过用户 TCC 授权；不申请屏幕录制权限；
 - Hardened Runtime：启用；
 - 不使用 `disable-library-validation` 绕过动态库校验；
 - 主 App、嵌套 dylib 和动态库必须使用同一个 Developer ID Team 签名。

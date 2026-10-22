@@ -12,6 +12,24 @@ public enum PluginSource: String, Codable, Sendable {
     case local
 }
 
+public enum PluginRuntimePolicy {
+    public static func supportsDownloadedRuntime(
+        type: PluginKind,
+        runtime: String
+    ) -> Bool {
+        switch type {
+        case .translation:
+            runtime == "mlx"
+        case .dictionary:
+            [
+                "sqlite-v1",
+                "cedict-sqlite",
+                "ecdict-rank",
+            ].contains(runtime)
+        }
+    }
+}
+
 public struct PluginManifest: Codable, Sendable, Equatable {
     public let id: String
     public let type: PluginKind

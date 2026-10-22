@@ -80,11 +80,6 @@ final class AppEnvironment {
                     promptProfile: manifest.promptProfile
                         ?? .inferred(from: modelID)
                 )
-            case "ctranslate2":
-                return .ctranslate2(
-                    modelID: modelID,
-                    directory: directory
-                )
             default:
                 return nil
             }

@@ -118,6 +118,26 @@ final class LocalModelImportServiceTests: XCTestCase {
         XCTAssertEqual(plugins.filter { $0.id == second.id }.count, 1)
     }
 
+    func testImportedModelIsIndependentFromSourceMutation() async throws {
+        let source = try makeValidModel(named: "SourceMutation")
+        let support = root.appendingPathComponent("support", isDirectory: true)
+        let manager = PluginManager(baseDirectory: support)
+        let service = LocalModelImportService(manager: manager)
+        let manifest = try await service.importModel(from: source)
+        let installed = await manager.pluginDirectory(for: manifest.id)
+            .appendingPathComponent("model/model.safetensors")
+        let before = try Data(contentsOf: installed)
+
+        let handle = try FileHandle(
+            forWritingTo: source.appendingPathComponent("model.safetensors")
+        )
+        try handle.seek(toOffset: 0)
+        try handle.write(contentsOf: Data(repeating: 9, count: before.count))
+        try handle.close()
+
+        XCTAssertEqual(try Data(contentsOf: installed), before)
+    }
+
     private func makeValidModel(named name: String) throws -> URL {
         let source = root.appendingPathComponent(name, isDirectory: true)
         try FileManager.default.createDirectory(
