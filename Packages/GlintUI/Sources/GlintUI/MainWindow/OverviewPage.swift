@@ -95,6 +95,9 @@ private struct OverviewStatusCard: View {
         if let missingPermissions {
             return .permissions(missingPermissions)
         }
+        if model.isPreparingMonitoring {
+            return .preparing
+        }
         if let attentionMessage {
             return .attention(attentionMessage)
         }
@@ -148,13 +151,19 @@ private struct OverviewStatusCard: View {
 
                 Spacer(minLength: 12)
 
-                Button(action: primaryAction) {
-                    Label(actionTitle, systemImage: actionSymbol)
+                if missingPermissionText == nil && model.isPreparingMonitoring {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel("正在准备翻译模型")
+                } else {
+                    Button(action: primaryAction) {
+                        Label(actionTitle, systemImage: actionSymbol)
+                    }
+                    .tint(actionTint)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .accessibilityLabel(actionTitle)
                 }
-                .tint(actionTint)
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .accessibilityLabel(actionTitle)
             }
 
             Divider()
@@ -337,6 +346,7 @@ private struct OverviewInfoCard: View {
 private enum OverviewRuntimeState {
     case running
     case paused
+    case preparing
     case permissions(String)
     case attention(String)
 
@@ -344,6 +354,7 @@ private enum OverviewRuntimeState {
         switch self {
         case .running: "翻译显示已开启"
         case .paused: "翻译显示未开启"
+        case .preparing: "正在准备翻译模型"
         case .permissions: "需要完成权限设置"
         case .attention: "运行状态需要检查"
         }
@@ -353,6 +364,8 @@ private enum OverviewRuntimeState {
         switch self {
         case .running:
             "在输入法候选栏旁显示对应英文翻译。"
+        case .preparing:
+            "完成后会自动开始读取输入法候选。"
         case .paused:
             "开启后，输入中文会显示对应英文翻译。"
         case .permissions(let message):
@@ -366,6 +379,7 @@ private enum OverviewRuntimeState {
         switch self {
         case .running: "sparkles"
         case .paused: "pause.circle"
+        case .preparing: "hourglass"
         case .permissions: "lock.shield"
         case .attention: "exclamationmark.triangle"
         }
@@ -375,6 +389,7 @@ private enum OverviewRuntimeState {
         switch self {
         case .running: .accentColor
         case .paused: .secondary
+        case .preparing: .secondary
         case .permissions, .attention: .orange
         }
     }
@@ -384,6 +399,7 @@ private enum OverviewRuntimeState {
 private enum OverviewPreviewState: Equatable {
     case running
     case paused
+    case preparing
     case permission
     case attention
 }
@@ -431,6 +447,7 @@ private struct OverviewPagePreview: View {
         )
         model.accessibilityGranted = state != .permission
         model.isMonitoring = state == .running || state == .attention
+        model.isPreparingMonitoring = state == .preparing
         if state == .attention {
             model.statusText = "翻译模型暂时不可用，请检查插件与模型。"
         }
@@ -483,6 +500,11 @@ private enum OverviewPreviewManifests {
 
 #Preview("概览 · 未开启") {
     OverviewPagePreview(.paused)
+        .preferredColorScheme(.light)
+}
+
+#Preview("概览 · 正在准备") {
+    OverviewPagePreview(.preparing)
         .preferredColorScheme(.light)
 }
 

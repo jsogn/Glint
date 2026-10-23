@@ -286,6 +286,7 @@ public final class AXCandidateReader {
 
     private static func focusedProcessIdentifier() -> pid_t? {
         let system = AXUIElementCreateSystemWide()
+        AXUIElementSetMessagingTimeout(system, 0.25)
         if let application = Self.elementAttribute(
             system,
             kAXFocusedApplicationAttribute
@@ -296,6 +297,7 @@ public final class AXCandidateReader {
             system,
             kAXFocusedUIElementAttribute
         ) {
+            AXUIElementSetMessagingTimeout(focusedElement, 0.25)
             var element = focusedElement
             for _ in 0..<64 {
                 if attribute(element, kAXRoleAttribute) as? String
@@ -311,6 +313,7 @@ public final class AXCandidateReader {
                 else {
                     break
                 }
+                AXUIElementSetMessagingTimeout(parent, 0.25)
                 element = parent
             }
         }

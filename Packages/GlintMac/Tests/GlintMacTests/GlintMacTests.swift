@@ -83,6 +83,7 @@ private struct VisibleCaretFocus: FocusReading {
 
 private final class RecordingCandidates: AXCandidateReading, Sendable {
     private struct Request: Sendable {
+        let processIdentifier: pid_t?
         let includeVisibleCandidates: Bool
     }
 
@@ -95,6 +96,7 @@ private final class RecordingCandidates: AXCandidateReading, Sendable {
         state.withLock {
             $0.append(
                 Request(
+                    processIdentifier: processIdentifier,
                     includeVisibleCandidates: includeVisibleCandidates
                 )
             )
@@ -104,6 +106,22 @@ private final class RecordingCandidates: AXCandidateReading, Sendable {
 
     var requestedVisibleCandidates: [Bool] {
         state.withLock { $0.map(\.includeVisibleCandidates) }
+    }
+
+    var requestedProcessIdentifiers: [pid_t?] {
+        state.withLock { $0.map(\.processIdentifier) }
+    }
+}
+
+private struct PIDCaretFocus: FocusReading {
+    func snapshot() -> FocusSnapshot? {
+        FocusSnapshot(
+            caretRect: CGRect(x: 120, y: 160, width: 2, height: 20),
+            elementFrame: nil,
+            compositionState: .composing,
+            isEditableTextInput: true,
+            processIdentifier: 4242
+        )
     }
 }
 
@@ -1011,5 +1029,123 @@ final class GlintMacTests: XCTestCase {
             ),
             .keyboardLayout
         )
+    }
+}
+
+final class MonitoringSessionTests: XCTestCase {
+    func testCandidateReaderReceivesFocusedProcessIdentifier() async {
+        let candidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: true),
+            focus: PIDCaretFocus(),
+            axCandidates: candidates,
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        _ = await controller.tick()
+
+        XCTAssertEqual(candidates.requestedProcessIdentifiers.count, 1)
+        XCTAssertEqual(
+            candidates.requestedProcessIdentifiers.first ?? nil ?? 0,
+            pid_t(4242)
+        )
+    }
+
+    func testSessionKeepsDeliveringEventsAcrossStopAndStart() async throws {
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(kind: .keyboardLayout),
+            focus: StubFocus(),
+            axCandidates: StubCandidates(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+        let session = MonitoringSession(controller: controller)
+        let recorder = SessionEventRecorder()
+        let collector = Task {
+            let events = await session.events
+            for await event in events {
+                recorder.record(event)
+            }
+        }
+        defer { collector.cancel() }
+
+        let settings = MonitoringSettings(
+            mode: .modelFirst,
+            candidateDwellDuration: 0.08,
+            translationScope: .selected,
+            configurationToken: "test"
+        )
+
+        await session.start(settings)
+        try await waitUntil {
+            recorder.states.filter { $0 == .running }.count == 1
+        }
+        try await waitUntil { recorder.statuses.count >= 1 }
+
+        await session.stop()
+        try await waitUntil { recorder.states.last == .idle }
+
+        await session.start(settings)
+        try await waitUntil {
+            recorder.states.filter { $0 == .running }.count == 2
+        }
+        try await waitUntil { recorder.statuses.count >= 2 }
+
+        XCTAssertEqual(
+            recorder.states.filter { $0 == .running }.count,
+            2
+        )
+        XCTAssertGreaterThanOrEqual(recorder.statuses.count, 2)
+    }
+
+    private func waitUntil(
+        timeout: TimeInterval = 2,
+        _ condition: @escaping @Sendable () -> Bool
+    ) async throws {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("timed out waiting for condition")
+    }
+}
+
+private final class SessionEventRecorder: Sendable {
+    private let events = OSAllocatedUnfairLock<[MonitoringSessionEvent]>(
+        initialState: []
+    )
+
+    func record(_ event: MonitoringSessionEvent) {
+        events.withLock { $0.append(event) }
+    }
+
+    var states: [MonitoringSessionState] {
+        events.withLock { $0.compactMap(\.state) }
+    }
+
+    var statuses: [String] {
+        events.withLock { $0.compactMap(\.monitoringStatus) }
+    }
+}
+
+private extension MonitoringSessionEvent {
+    var state: MonitoringSessionState? {
+        if case .state(let state) = self { return state }
+        return nil
+    }
+
+    var monitoringStatus: String? {
+        if case .monitoring(.status(let status)) = self { return status }
+        return nil
     }
 }

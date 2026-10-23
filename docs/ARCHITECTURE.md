@@ -225,7 +225,7 @@ InputSourceMonitor (TIS)
 主窗口只是观察同一套状态：
 
 ```text
-MonitoringController → AppDelegate + HUDEventCoordinator
+MonitoringSession → AppDelegate + HUDEventCoordinator
 MainWindowModel → MainWindowView
 ```
 
@@ -233,8 +233,14 @@ MainWindowModel → MainWindowView
 
 - `MonitoringController`：actor；单一轮询循环，负责权限节流、候选去抖、
   停留判定、翻译取消和事件发布。
+- `MonitoringSession`：actor；串行化 start/stop 意图，长期持有
+  `MonitoringController` 的事件流，向 AppDelegate 发布状态和监控事件。
+  停止监控只停止轮询循环，不取消事件消费者，因此重新开启后事件仍然可达。
+- `AppDelegate`：仅在 `MonitoringSession` 报告 running 后把 UI 置为已开启；
+  启动准备期间显示 preparing 状态；事件泵在 App 生命周期内不取消。
 - `AXCandidateReader`：候选识别主路径；只识别具有输入法候选语义的
-  `InputMethodCandidateList`，不读取普通 `AXList`。
+  `InputMethodCandidateList`，不读取普通 `AXList`。通过 FocusSnapshot 的
+  focused PID 复用焦点解析结果，避免每次轮询重新查找 focused application。
 - `CandidateTranslationPipeline`：无状态并发编排；选中项优先，整栏结果按
   revision 发布，旧任务由监控层取消。
 - `TranslationRuntime`/`TranslationMemo`：actor；模型加载、推理和缓存请求串行化。

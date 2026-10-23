@@ -15,19 +15,22 @@ public struct FocusSnapshot: Sendable, Equatable {
     public let hasTextSelection: Bool
     public let compositionState: TextCompositionState
     public let isEditableTextInput: Bool
+    public let processIdentifier: pid_t?
 
     public init(
         caretRect: CGRect?,
         elementFrame: CGRect?,
         hasTextSelection: Bool = false,
         compositionState: TextCompositionState = .unknown,
-        isEditableTextInput: Bool = false
+        isEditableTextInput: Bool = false,
+        processIdentifier: pid_t? = nil
     ) {
         self.caretRect = caretRect
         self.elementFrame = elementFrame
         self.hasTextSelection = hasTextSelection
         self.compositionState = compositionState
         self.isEditableTextInput = isEditableTextInput
+        self.processIdentifier = processIdentifier
     }
 }
 
@@ -52,11 +55,17 @@ public struct FocusMonitor: Sendable {
 
     public func snapshot() -> FocusSnapshot? {
         let system = AXUIElementCreateSystemWide()
+        AXUIElementSetMessagingTimeout(system, 0.25)
         guard let focused = Self.axAttribute(system, kAXFocusedUIElementAttribute) else {
             return nil
         }
         guard let element = AXValueReader.element(focused) else {
             return nil
+        }
+        AXUIElementSetMessagingTimeout(element, 0.25)
+        var processIdentifier: pid_t = 0
+        if AXUIElementGetPid(element, &processIdentifier) != .success {
+            processIdentifier = 0
         }
         let selectedRange = Self.selectedRange(of: element)
         let markedRange = Self.markedRange(of: element)
@@ -84,7 +93,8 @@ public struct FocusMonitor: Sendable {
             elementFrame: frame,
             hasTextSelection: hasTextSelection,
             compositionState: compositionState,
-            isEditableTextInput: isEditableTextInput
+            isEditableTextInput: isEditableTextInput,
+            processIdentifier: processIdentifier > 0 ? processIdentifier : nil
         )
     }
 

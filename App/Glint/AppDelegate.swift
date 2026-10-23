@@ -21,7 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hudEventCoordinator: HUDEventCoordinator
     private let environment: AppEnvironment
     private let windowModel: MainWindowModel
-    private var monitoringTask: Task<Void, Never>?
+    private var eventPumpTask: Task<Void, Never>?
+    private var sessionState: MonitoringSessionState = .idle
     private var permissionRequestPending = false
     private var permissionRequestWasIssued = false
     private var startupPreparationTask: Task<Void, Never>?
@@ -51,12 +52,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         mainWindowController = MainWindowController(model: windowModel)
         mainWindowController.show()
+        windowModel.isPreparingMonitoring = true
+        updateMonitoringMenuItem()
+        updateStatusItem(isMonitoring: false)
+        startEventPump()
         refreshPermissionState()
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
             await environment.refreshDictionaryRoutes()
             await environment.translationRuntime.prepareSelectedModel()
             startupPreparationTask = nil
+            windowModel.isPreparingMonitoring = false
             if shouldStartMonitoringAfterPreparation {
                 shouldStartMonitoringAfterPreparation = false
                 let shouldRequestPermission =
@@ -65,6 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 startMonitoring(
                     requestPermissionIfNeeded: shouldRequestPermission
                 )
+            } else {
+                updateStatusItem(isMonitoring: windowModel.isMonitoring)
+                updateMonitoringMenuItem()
             }
         }
         let permissionsGranted = FocusMonitor.isAccessibilityTrusted()
@@ -150,7 +159,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             button.attributedTitle = NSAttributedString(string: "")
         }
-        button.toolTip = isMonitoring ? "Glint · 翻译显示已开启" : "Glint · 翻译显示已关闭"
+        button.toolTip =
+            windowModel.isPreparingMonitoring
+            ? "Glint · 正在准备翻译模型"
+            : (isMonitoring ? "Glint · 翻译显示已开启" : "Glint · 翻译显示已关闭")
         button.setAccessibilityLabel(
             isMonitoring ? "Glint，翻译显示已开启" : "Glint，翻译显示已关闭"
         )
@@ -166,7 +178,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateMonitoringMenuItem() {
-        monitoringMenuItem?.title = monitoringTask == nil ? "开启翻译显示" : "关闭翻译显示"
+        guard let monitoringMenuItem else { return }
+        if windowModel.isPreparingMonitoring {
+            monitoringMenuItem.title = "正在准备翻译模型…"
+            monitoringMenuItem.isEnabled = false
+            return
+        }
+        switch sessionState {
+        case .idle:
+            monitoringMenuItem.title = "开启翻译显示"
+            monitoringMenuItem.isEnabled = true
+        case .starting:
+            monitoringMenuItem.title = "正在开启…"
+            monitoringMenuItem.isEnabled = false
+        case .running:
+            monitoringMenuItem.title = "关闭翻译显示"
+            monitoringMenuItem.isEnabled = true
+        case .stopping:
+            monitoringMenuItem.title = "正在关闭…"
+            monitoringMenuItem.isEnabled = false
+        }
     }
 
     private func configureWindowModel() {
@@ -243,10 +274,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleMonitoring() {
-        if monitoringTask == nil {
+        if windowModel.isPreparingMonitoring { return }
+        switch sessionState {
+        case .idle:
             startMonitoring()
-        } else {
+        case .running:
             stopMonitoring()
+        case .starting, .stopping:
+            break
         }
     }
 
@@ -257,68 +292,80 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startMonitoring(
         requestPermissionIfNeeded: Bool
     ) {
-        guard monitoringTask == nil else { return }
-        guard startupPreparationTask == nil else {
+        if startupPreparationTask != nil || windowModel.isPreparingMonitoring {
             shouldStartMonitoringAfterPreparation = true
             shouldRequestPermissionAfterPreparation =
                 shouldRequestPermissionAfterPreparation
                 || requestPermissionIfNeeded
+            updateMonitoringMenuItem()
             return
         }
+        guard sessionState == .idle else { return }
         refreshPermissionState()
         if !windowModel.accessibilityGranted,
             requestPermissionIfNeeded
         {
             beginPermissionRequest()
         }
-        monitoringTask = Task { [weak self] in
-            guard let self else { return }
-            let events = await self.environment.monitoring.events
-            for await event in events {
-                await MainActor.run {
-                    self.handle(event)
-                }
-            }
+        let settings = monitoringSettings
+        let session = environment.monitoringSession
+        Task.detached(priority: .userInitiated) {
+            await session.start(settings)
         }
-        let mode = windowModel.translationMode
-        let candidateDwellDuration =
-            windowModel.displayPreferences.candidateDwellDuration
-        let translationScope =
-            windowModel.displayPreferences.translationScope
-        let configurationToken = translationConfigurationToken
-        Task { [weak self] in
-            guard let self else { return }
-            await environment.monitoring.setMode(mode)
-            await environment.monitoring.setCandidateDwellDuration(
-                candidateDwellDuration
-            )
-            await environment.monitoring.setTranslationScope(
-                translationScope
-            )
-            await environment.monitoring.setTranslationConfigurationToken(
-                configurationToken
-            )
-            await environment.monitoring.start()
-            markRuntimeReady()
-        }
-        windowModel.isMonitoring = true
-        windowModel.statusText = ""
-        updateStatusItem(isMonitoring: true)
-        updateMonitoringMenuItem()
     }
 
     @objc private func stopMonitoring() {
         shouldStartMonitoringAfterPreparation = false
         shouldRequestPermissionAfterPreparation = false
-        monitoringTask?.cancel()
-        monitoringTask = nil
         hudEventCoordinator.hide(animated: false)
-        updateStatusItem(isMonitoring: false)
         windowModel.isMonitoring = false
         windowModel.statusText = ""
+        updateStatusItem(isMonitoring: false)
         updateMonitoringMenuItem()
-        Task {
-            await environment.monitoring.stop()
+        let session = environment.monitoringSession
+        Task.detached(priority: .userInitiated) {
+            await session.stop()
+        }
+    }
+
+    private var monitoringSettings: MonitoringSettings {
+        MonitoringSettings(
+            mode: windowModel.translationMode,
+            candidateDwellDuration: windowModel.displayPreferences
+                .candidateDwellDuration,
+            translationScope: windowModel.displayPreferences.translationScope,
+            configurationToken: translationConfigurationToken
+        )
+    }
+
+    private func startEventPump() {
+        guard eventPumpTask == nil else { return }
+        eventPumpTask = Task { [weak self] in
+            guard let self else { return }
+            let events = await self.environment.monitoringSession.events
+            for await event in events {
+                self.handleSessionEvent(event)
+            }
+        }
+    }
+
+    private func handleSessionEvent(_ event: MonitoringSessionEvent) {
+        switch event {
+        case .state(let state):
+            sessionState = state
+            switch state {
+            case .running:
+                windowModel.isMonitoring = true
+                markRuntimeReady()
+            case .idle:
+                windowModel.isMonitoring = false
+            case .starting, .stopping:
+                break
+            }
+            updateStatusItem(isMonitoring: windowModel.isMonitoring)
+            updateMonitoringMenuItem()
+        case .monitoring(let monitoringEvent):
+            handle(monitoringEvent)
         }
     }
 
@@ -346,7 +393,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 highlight: highlight,
                 revision: revision,
                 isProgressive: isProgressive,
-                isMonitoring: monitoringTask != nil
+                isMonitoring: windowModel.isMonitoring
             )
         }
     }

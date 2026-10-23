@@ -8,6 +8,7 @@ final class AppEnvironment {
     let pluginManager: PluginManager
     let translationRuntime: TranslationRuntime
     let monitoring: MonitoringController
+    let monitoringSession: MonitoringSession
     private let dictionary: PluginDictionaryRouter
 
     init() {
@@ -68,7 +69,9 @@ final class AppEnvironment {
         self.pluginManager = pluginManager
         self.translationRuntime = translationRuntime
         let router = SmartRouter(dictionary: dictionary, translation: translationRuntime)
-        self.monitoring = MonitoringController(router: router)
+        let monitoring = MonitoringController(router: router)
+        self.monitoring = monitoring
+        self.monitoringSession = MonitoringSession(controller: monitoring)
     }
 
     func refreshDictionaryRoutes() async {

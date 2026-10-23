@@ -33,6 +33,7 @@ struct CatalogUpdatePolicy {
 @Observable
 public final class MainWindowModel {
     public var isMonitoring = false
+    public var isPreparingMonitoring = false
     public var accessibilityGranted = false
     public var hasRequestedAccessibilityPermission = false
     public var statusText = ""

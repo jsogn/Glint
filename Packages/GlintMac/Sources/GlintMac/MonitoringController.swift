@@ -197,6 +197,8 @@ public actor MonitoringController {
     private var cancelledTranslationAttempts: UInt64 = 0
     private var lastPermissionCheck: UInt64 = 0
     private var lastStatus = ""
+    private var cachedInputSource: ActiveInputSource?
+    private var lastInputSourceCheck: UInt64 = 0
     private var candidateSessionActive = false
     private var selectedCandidateIndex: Int?
     private var latestCandidateHighlight: CandidateRegion?
@@ -275,6 +277,8 @@ public actor MonitoringController {
         guard task == nil else { return }
         lastPermissionCheck = 0
         lastStatus = ""
+        cachedInputSource = nil
+        lastInputSourceCheck = 0
         translationAttempts = 0
         cancelledTranslationAttempts = 0
         monitoringLogger.info("monitor start requested")
@@ -321,7 +325,7 @@ public actor MonitoringController {
                 return 1_000_000_000
             }
         }
-        let activeInputSource = await inputSource.currentInputSource()
+        let activeInputSource = await currentInputSource()
         if activeInputSource.kind == .keyboardLayout {
             invalidateCandidate(immediate: true)
             emitStatus("等待中文输入")
@@ -371,6 +375,7 @@ public actor MonitoringController {
         // candidate grid is rejected before translation or HUD presentation.
         guard
             let axCandidate = axCandidates.snapshot(
+                processIdentifier: snapshot.processIdentifier,
                 includeVisibleCandidates: true
             )
         else {
@@ -502,7 +507,7 @@ public actor MonitoringController {
     }
 
     private func nextCandidatePollInterval(after timestamp: UInt64) -> UInt64 {
-        let regularInterval: UInt64 = 24_000_000
+        let regularInterval: UInt64 = 40_000_000
         guard
             let remaining = typingTracker.nanosecondsUntilDwell(
                 at: timestamp,
@@ -511,7 +516,21 @@ public actor MonitoringController {
         else {
             return regularInterval
         }
-        return min(regularInterval, max(4_000_000, remaining))
+        return min(regularInterval, max(10_000_000, remaining))
+    }
+
+    private func currentInputSource() async -> ActiveInputSource {
+        let now = DispatchTime.now().uptimeNanoseconds
+        if let cachedInputSource,
+            now >= lastInputSourceCheck,
+            now - lastInputSourceCheck < 200_000_000
+        {
+            return cachedInputSource
+        }
+        let source = await inputSource.currentInputSource()
+        cachedInputSource = source
+        lastInputSourceCheck = now
+        return source
     }
 
     static func shouldPrefetchDictionary(
