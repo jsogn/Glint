@@ -61,15 +61,11 @@ final class PluginCatalogServiceTests: XCTestCase {
             name: "Test Dictionary",
             version: "1.0",
             runtime: "sqlite-v1",
-            capabilities: ["word"],
-            languages: ["zh-Hans", "en"],
             sizeBytes: Int64(archiveData.count),
             sha256: sha,
             url: archive,
             license: "MIT",
-            minRAMBytes: 0,
-            quality: "test",
-            recommended: false
+            minRAMBytes: 0
         )
         try JSONEncoder().encode(manifest).write(
             to: source.appendingPathComponent("manifest.json")
@@ -88,19 +84,17 @@ final class PluginCatalogServiceTests: XCTestCase {
             name: manifest.name,
             version: manifest.version,
             runtime: manifest.runtime,
-            capabilities: manifest.capabilities,
-            languages: manifest.languages,
             sizeBytes: Int64(finalData.count),
             sha256: finalSHA,
             url: archive,
             license: manifest.license,
-            minRAMBytes: manifest.minRAMBytes,
-            quality: manifest.quality,
-            recommended: manifest.recommended
+            minRAMBytes: manifest.minRAMBytes
         )
 
         let catalogURL = root.appendingPathComponent("catalog.json")
-        try JSONEncoder().encode([finalManifest]).write(to: catalogURL)
+        try JSONEncoder().encode(
+            ["plugins": [finalManifest]]
+        ).write(to: catalogURL)
         let manager = PluginManager(baseDirectory: root)
         let service = PluginCatalogService(manager: manager)
 
@@ -202,15 +196,11 @@ final class PluginCatalogServiceTests: XCTestCase {
             name: "Unsafe CT2",
             version: "1.0",
             runtime: "ctranslate2",
-            capabilities: ["word"],
-            languages: ["zh-Hans", "en"],
             sizeBytes: 1,
             sha256: "unused",
             url: URL(string: "https://example.com/plugin.zip")!,
             license: "MIT",
-            minRAMBytes: 0,
-            quality: "test",
-            recommended: false
+            minRAMBytes: 0
         )
         let service = PluginCatalogService()
 
@@ -222,6 +212,52 @@ final class PluginCatalogServiceTests: XCTestCase {
         } catch {
             XCTFail("Unexpected error: \(error)")
         }
+    }
+
+    func testDictionaryArchiveRequiresRuntimeFile() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintRuntimeFiles-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        let manifest = PluginManifest(
+            id: "test-dictionary",
+            type: .dictionary,
+            name: "Test Dictionary",
+            version: "1.0",
+            runtime: "sqlite-v1",
+            sizeBytes: 1,
+            sha256: "test",
+            url: URL(string: "https://example.com/plugin.zip")!,
+            license: "MIT",
+            minRAMBytes: 0
+        )
+
+        XCTAssertFalse(
+            PluginCatalogService.hasRequiredRuntimeFiles(
+                for: manifest,
+                in: directory
+            )
+        )
+        XCTAssertTrue(
+            FileManager.default.createFile(
+                atPath: directory.appendingPathComponent(
+                    "dictionary.sqlite3"
+                ).path,
+                contents: Data()
+            )
+        )
+        XCTAssertTrue(
+            PluginCatalogService.hasRequiredRuntimeFiles(
+                for: manifest,
+                in: directory
+            )
+        )
     }
 
     func testRejectsExecutablePluginContent() async throws {
@@ -248,15 +284,11 @@ final class PluginCatalogServiceTests: XCTestCase {
             name: "Unsafe Content",
             version: "1.0",
             runtime: "sqlite-v1",
-            capabilities: ["word"],
-            languages: ["zh-Hans", "en"],
             sizeBytes: Int64(data.count),
             sha256: digest,
             url: archive,
             license: "MIT",
-            minRAMBytes: 0,
-            quality: "test",
-            recommended: false
+            minRAMBytes: 0
         )
         let service = PluginCatalogService(
             manager: PluginManager(baseDirectory: root)

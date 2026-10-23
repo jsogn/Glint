@@ -23,12 +23,7 @@ public final class DisplayPreferences {
         static let position = "display.position"
         static let candidateDwellDuration = "display.candidateDwellDuration"
         static let candidateSpacing = "display.candidateSpacing"
-        static let legacyHUDOpacity = "display.hudOpacity"
-        static let legacyHUDAppearanceMode = "display.hudAppearanceMode"
-        static let hudAppearanceSchemaVersion =
-            "display.hudAppearanceSchemaVersion"
         static let hudBackgroundStyle = "display.hudBackgroundStyle"
-        static let hudUsesGlass = "display.hudUsesGlass"
         static let hudUsesCustomTextColor = "display.hudUsesCustomTextColor"
         static let hudGlassOpacity = "display.hudGlassOpacity"
         static let hudSolidOpacity = "display.hudSolidOpacity"
@@ -44,6 +39,7 @@ public final class DisplayPreferences {
 
     @ObservationIgnored
     public var candidateDwellDurationDidChange: (@MainActor (Double) -> Void)?
+    @ObservationIgnored
     public var translationScopeDidChange:
         (@MainActor (CandidateTranslationScope) -> Void)?
 
@@ -55,7 +51,7 @@ public final class DisplayPreferences {
 
     public var candidateDwellDuration: Double {
         didSet {
-            let clamped = min(max(candidateDwellDuration, 0.08), 0.3)
+            let clamped = Self.clampedDwellDuration(candidateDwellDuration)
             if clamped != candidateDwellDuration {
                 candidateDwellDuration = clamped
                 return
@@ -67,7 +63,7 @@ public final class DisplayPreferences {
 
     public var candidateSpacing: Double {
         didSet {
-            let clamped = min(max(candidateSpacing, 0), 24)
+            let clamped = Self.clampedSpacing(candidateSpacing)
             if clamped != candidateSpacing {
                 candidateSpacing = clamped
                 return
@@ -194,9 +190,8 @@ public final class DisplayPreferences {
         let storedDwellDuration = defaults.object(
             forKey: Key.candidateDwellDuration
         ) as? Double
-        let dwellDuration = min(
-            max(storedDwellDuration ?? 0.12, 0.08),
-            0.3
+        let dwellDuration = Self.clampedDwellDuration(
+            storedDwellDuration ?? 0.12
         )
         if storedDwellDuration != dwellDuration {
             defaults.set(dwellDuration, forKey: Key.candidateDwellDuration)
@@ -204,42 +199,20 @@ public final class DisplayPreferences {
         self.candidateDwellDuration = dwellDuration
 
         let storedSpacing = defaults.object(forKey: Key.candidateSpacing) as? Double
-        self.candidateSpacing = min(max(storedSpacing ?? 8, 0), 24)
+        self.candidateSpacing = Self.clampedSpacing(storedSpacing ?? 8)
 
-        let legacyAppearanceMode = defaults.string(
-            forKey: Key.legacyHUDAppearanceMode
-        )
-        let wasLegacyCustom = legacyAppearanceMode == "custom"
-        let appearanceSchemaVersion = defaults.integer(
-            forKey: Key.hudAppearanceSchemaVersion
-        )
-        let storedUsesGlass = defaults.object(
-            forKey: Key.hudUsesGlass
-        ) as? Bool
         let storedBackgroundStyle = defaults.string(
             forKey: Key.hudBackgroundStyle
         )
-        let backgroundStyle: HUDBackgroundStyle
-        if appearanceSchemaVersion >= 2 {
-            backgroundStyle = storedBackgroundStyle.flatMap(
-                HUDBackgroundStyle.init(rawValue:)
-            ) ?? .darkGlass
-        } else if wasLegacyCustom || storedUsesGlass == false {
-            backgroundStyle = .solid
-        } else {
-            backgroundStyle = .darkGlass
-        }
-        self.hudBackgroundStyle = backgroundStyle
+        self.hudBackgroundStyle = storedBackgroundStyle.flatMap(
+            HUDBackgroundStyle.init(rawValue:)
+        ) ?? .darkGlass
 
         let storedUsesCustomTextColor = defaults.object(
             forKey: Key.hudUsesCustomTextColor
         ) as? Bool
-        self.hudUsesCustomTextColor = storedUsesCustomTextColor
-            ?? wasLegacyCustom
+        self.hudUsesCustomTextColor = storedUsesCustomTextColor ?? false
 
-        let storedOpacity = defaults.object(
-            forKey: Key.legacyHUDOpacity
-        ) as? Double
         let storedGlassOpacity = defaults.object(
             forKey: Key.hudGlassOpacity
         ) as? Double
@@ -247,13 +220,10 @@ public final class DisplayPreferences {
             forKey: Key.hudSolidOpacity
         ) as? Double
         self.hudGlassOpacity = Self.clampedOpacity(
-            storedGlassOpacity
-                ?? storedOpacity
-                ?? 0.8
+            storedGlassOpacity ?? 0.8
         )
         self.hudSolidOpacity = Self.clampedOpacity(
-            storedSolidOpacity
-                ?? (wasLegacyCustom ? storedOpacity ?? 0.8 : 0.8)
+            storedSolidOpacity ?? 0.8
         )
 
         self.hudTextColor = Self.storedColor(
@@ -279,22 +249,6 @@ public final class DisplayPreferences {
         self.translationScope = CandidateTranslationScope(
             rawValue: storedTranslationScope ?? ""
         ) ?? .selected
-
-        defaults.set(2, forKey: Key.hudAppearanceSchemaVersion)
-        defaults.set(
-            self.hudBackgroundStyle.rawValue,
-            forKey: Key.hudBackgroundStyle
-        )
-        defaults.set(
-            self.hudBackgroundStyle != .solid,
-            forKey: Key.hudUsesGlass
-        )
-        defaults.set(
-            self.hudUsesCustomTextColor,
-            forKey: Key.hudUsesCustomTextColor
-        )
-        defaults.set(self.hudGlassOpacity, forKey: Key.hudGlassOpacity)
-        defaults.set(self.hudSolidOpacity, forKey: Key.hudSolidOpacity)
     }
 
     public func resetHUDAppearance() {
@@ -327,6 +281,16 @@ public final class DisplayPreferences {
             max(value, HUDAppearance.fontSizeRange.lowerBound),
             HUDAppearance.fontSizeRange.upperBound
         )
+    }
+
+    private static func clampedDwellDuration(_ value: Double) -> Double {
+        guard value.isFinite else { return 0.12 }
+        return min(max(value, 0.08), 0.3)
+    }
+
+    private static func clampedSpacing(_ value: Double) -> Double {
+        guard value.isFinite else { return 8 }
+        return min(max(value, 0), 24)
     }
 
     private static func clampedOpacity(_ value: Double) -> Double {

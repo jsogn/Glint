@@ -54,7 +54,9 @@ public struct FocusMonitor: Sendable {
         guard let focused = Self.axAttribute(system, kAXFocusedUIElementAttribute) else {
             return nil
         }
-        let element = focused as! AXUIElement
+        guard let element = AXValueReader.element(focused) else {
+            return nil
+        }
         let selectedRange = Self.selectedRange(of: element)
         let markedRange = Self.markedRange(of: element)
         let compositionState = Self.compositionState(for: markedRange)
@@ -92,12 +94,10 @@ public struct FocusMonitor: Sendable {
     }
 
     private static func rangeValue(_ value: Any?) -> NSRange? {
-        guard let value, CFGetTypeID(value as CFTypeRef) == AXValueGetTypeID() else {
+        guard let range = AXValueReader.range(value),
+              range.location != NSNotFound else {
             return nil
         }
-        var range = CFRange()
-        guard AXValueGetValue(value as! AXValue, .cfRange, &range) else { return nil }
-        guard range.location != NSNotFound else { return nil }
         return NSRange(location: range.location, length: max(0, range.length))
     }
 
@@ -179,36 +179,22 @@ public struct FocusMonitor: Sendable {
             &value
         )
         guard result == .success,
-              let value,
-              CFGetTypeID(value) == AXValueGetTypeID() else {
-            return nil
-        }
-        var rect = CGRect.zero
-        guard AXValueGetValue(value as! AXValue, .cgRect, &rect), rect.height > 0 else {
+              let rect = AXValueReader.rect(value),
+              rect.height > 0 else {
             return nil
         }
         return rect
     }
 
     private static func elementFrame(of element: AXUIElement) -> CGRect? {
-        if let frameValue = axAttribute(element, "AXFrame"),
-           CFGetTypeID(frameValue as CFTypeRef) == AXValueGetTypeID() {
-            var rect = CGRect.zero
-            if AXValueGetValue(frameValue as! AXValue, .cgRect, &rect) {
-                return rect
-            }
+        if let rect = AXValueReader.rect(axAttribute(element, "AXFrame")) {
+            return rect
         }
 
         guard let positionValue = axAttribute(element, kAXPositionAttribute),
               let sizeValue = axAttribute(element, kAXSizeAttribute),
-              CFGetTypeID(positionValue as CFTypeRef) == AXValueGetTypeID(),
-              CFGetTypeID(sizeValue as CFTypeRef) == AXValueGetTypeID() else {
-            return nil
-        }
-        var point = CGPoint.zero
-        var size = CGSize.zero
-        guard AXValueGetValue(positionValue as! AXValue, .cgPoint, &point),
-              AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) else {
+              let point = AXValueReader.point(positionValue),
+              let size = AXValueReader.size(sizeValue) else {
             return nil
         }
         return CGRect(origin: point, size: size)

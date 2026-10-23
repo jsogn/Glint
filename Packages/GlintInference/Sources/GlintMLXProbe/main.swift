@@ -79,8 +79,7 @@ struct GlintMLXProbe {
         let candidates = inputs.map {
             Candidate(
                 text: $0,
-                kind: CandidateClassifier.classify($0),
-                confidence: 1
+                kind: CandidateClassifier.classify($0)
             )
         }
         try await engine.warmUp()

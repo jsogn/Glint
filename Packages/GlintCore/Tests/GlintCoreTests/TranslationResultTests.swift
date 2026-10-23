@@ -9,9 +9,7 @@ final class TranslationResultTests: XCTestCase {
                 TranslationOption(text: "design", score: 0.9),
                 TranslationOption(text: "Design", score: 0.5),
                 TranslationOption(text: "layout", score: 0.7),
-            ],
-            source: .dictionary,
-            confidence: 0.9
+            ]
         )
 
         XCTAssertEqual(result.text, "design")
@@ -24,14 +22,16 @@ final class TranslationResultTests: XCTestCase {
             options: [
                 TranslationOption(text: "primary", score: 0.8),
                 TranslationOption(text: "alternative", score: 0.7),
-            ],
-            source: .translation,
-            confidence: 0.8
+            ]
         )
 
         XCTAssertEqual(result.primaryOnly.text, "primary")
         XCTAssertEqual(result.primaryOnly.options.count, 1)
-        XCTAssertEqual(result.primaryOnly.source, result.source)
-        XCTAssertEqual(result.primaryOnly.confidence, result.confidence)
+    }
+
+    func testNonFiniteOptionScoreIsNormalized() {
+        let option = TranslationOption(text: "fallback", score: .nan)
+
+        XCTAssertEqual(option.score, 0)
     }
 }

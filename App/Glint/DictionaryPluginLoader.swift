@@ -24,8 +24,8 @@ actor PluginDictionaryRouter: DictionaryEngine {
         )
     }
 
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
-        try await router.lookup(candidate)
+    func lookup(_ candidate: Candidate) async -> TranslationResult? {
+        await router.lookup(candidate)
     }
 }
 
@@ -37,12 +37,21 @@ enum DictionaryPluginLoader {
         )
         let bundledIDs = Set(bundledRoutes.map(\.id))
         let fileManager = FileManager.default
-        let pluginsDirectory = baseDirectory
-            ?? fileManager.urls(
+        let pluginsDirectory: URL
+        if let baseDirectory {
+            pluginsDirectory = baseDirectory
+        } else {
+            guard let support = fileManager.urls(
                 for: .applicationSupportDirectory,
                 in: .userDomainMask
-            ).first!
-                .appendingPathComponent("Glint/plugins", isDirectory: true)
+            ).first else {
+                return bundledRoutes
+            }
+            pluginsDirectory = support.appendingPathComponent(
+                "Glint/plugins",
+                isDirectory: true
+            )
+        }
 
         guard let directories = try? fileManager.contentsOfDirectory(
             at: pluginsDirectory,
@@ -68,15 +77,10 @@ enum DictionaryPluginLoader {
         directories
             .enumerated()
             .compactMap { index, directory in
-                guard let data = try? Data(
-                    contentsOf: directory.appendingPathComponent("manifest.json")
-                ),
-                let manifest = try? JSONDecoder().decode(
-                    PluginManifest.self,
-                    from: data
+                guard let manifest = try? PluginManifest.load(
+                    from: directory
                 ),
                 manifest.type == .dictionary,
-                manifest.languages.count >= 2,
                 let engine = engine(
                     for: manifest,
                     in: directory
@@ -124,8 +128,8 @@ enum DictionaryPluginLoader {
             )
             return GenericSQLiteDictionary(
                 databaseURL: database,
-                sourceLanguage: manifest.languages[0],
-                targetLanguage: manifest.languages[1]
+                sourceLanguage: "zh-Hans",
+                targetLanguage: "en"
             )
         default:
             return nil

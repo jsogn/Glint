@@ -1,33 +1,28 @@
 import Foundation
 import GlintCore
 
-/// Resolves the selected model into a concrete local or remote runtime.
+/// Resolves the selected model into a concrete local runtime.
 public actor TranslationRuntime: TranslationEngine {
     public typealias ModelResolver =
         @Sendable (_ modelID: String) async -> ResolvedTranslationModel?
 
     private let defaults: UserDefaults
     private let modelResolver: ModelResolver
-    private let openAISession: URLSession
     private var activeModel: ResolvedTranslationModel?
     private var activeEngine: (any TranslationEngine)?
     private var failedSelectedModelID: String?
-    private(set) public var lastError: String?
+    private(set) var lastError: String?
 
     public init(
         defaults: UserDefaults = .standard,
-        modelResolver: ModelResolver? = nil,
-        openAISession: URLSession = .shared
+        modelResolver: @escaping ModelResolver
     ) {
         self.defaults = defaults
-        self.modelResolver = modelResolver ?? { modelID in
-            Self.defaultModel(for: modelID)
-        }
-        self.openAISession = openAISession
+        self.modelResolver = modelResolver
     }
 
     public var selectedModelID: String {
-        Self.selectedModelID(in: defaults)
+        TranslationModelSelection.selected(in: defaults)
     }
 
     public func prepareSelectedModel() async {
@@ -123,17 +118,6 @@ public actor TranslationRuntime: TranslationEngine {
         throw GlintError.engineUnavailable
     }
 
-    public static func selectedModelID(in defaults: UserDefaults = .standard) -> String {
-        TranslationModelSelection.selected(in: defaults)
-    }
-
-    public static func setSelectedModelID(
-        _ modelID: String,
-        in defaults: UserDefaults = .standard
-    ) {
-        TranslationModelSelection.select(modelID, in: defaults)
-    }
-
     private func makeEngine(
         for model: ResolvedTranslationModel
     ) throws -> any TranslationEngine {
@@ -146,55 +130,6 @@ public actor TranslationRuntime: TranslationEngine {
             )
         case let .ctranslate2(_, directory):
             return try CTranslate2Engine(modelDirectory: directory)
-        case let .openAICompatible(_, configuration):
-            return OpenAICompatibleTranslationEngine(
-                configuration: configuration,
-                session: openAISession
-            )
         }
-    }
-
-    private static func defaultModel(
-        for modelID: String
-    ) -> ResolvedTranslationModel? {
-        let store = OpenAICompatibleConfigurationStore()
-        let providerID = TranslationModelSelection.openAIProviderID(
-            fromSelectionID: modelID
-        )
-        if let providerID,
-           let configuration = store.configuration(for: providerID) {
-            guard configuration.isConfigured else { return nil }
-            return .openAICompatible(
-                modelID: TranslationModelSelection.openAICompatibleSelectionID(
-                    for: providerID
-                ),
-                configuration: configuration
-            )
-        }
-
-        if modelID == TranslationModelSelection.defaultModelID {
-            if let bundled = Bundle.main.url(
-                forResource: "mt-opus-zh-en",
-                withExtension: nil
-            )?.appendingPathComponent("model", isDirectory: true),
-               FileManager.default.fileExists(atPath: bundled.path) {
-                return .ctranslate2(
-                    modelID: modelID,
-                    directory: bundled
-                )
-            }
-        }
-
-        guard TranslationModelSelection.usesMLX(modelID),
-              let directory = MLXTranslationEngine.availableModelDirectory(
-                modelID: modelID
-              ) else {
-            return nil
-        }
-        return .mlx(
-            modelID: modelID,
-            directory: directory,
-            promptProfile: .inferred(from: modelID)
-        )
     }
 }

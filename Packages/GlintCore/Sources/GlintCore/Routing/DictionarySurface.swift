@@ -16,11 +16,8 @@ public enum DictionarySurface {
             value.removeSubrange(opening...closing)
             value = value.trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        value = value.replacingOccurrences(
-            of: #"\s+"#,
-            with: " ",
-            options: .regularExpression
-        )
+        value = value.split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
         for prefix in ["to ", "the ", "a ", "an ", "be ", "of "] {
             if value.lowercased().hasPrefix(prefix) {
                 value = String(value.dropFirst(prefix.count))

@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import GlintInference
 
@@ -74,6 +75,31 @@ final class MLXTranslationEngineTests: XCTestCase {
                 "1. Study\n2. School",
                 expectedCount: 3
             )
+        )
+    }
+
+    func testModelDirectoryAcceptsSentencePieceTokenizer() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMLXModel-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        for name in ["config.json", "tokenizer.model", "weights.safetensors"] {
+            XCTAssertTrue(
+                FileManager.default.createFile(
+                    atPath: directory.appendingPathComponent(name).path,
+                    contents: Data()
+                )
+            )
+        }
+
+        XCTAssertTrue(
+            MLXTranslationEngine.containsModelFiles(directory)
         )
     }
 }

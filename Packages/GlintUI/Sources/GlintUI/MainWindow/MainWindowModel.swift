@@ -43,10 +43,8 @@ public final class MainWindowModel {
     public private(set) var isCancellingInstallation = false
     public private(set) var installProgress: [String: Double] = [:]
     public private(set) var catalogError: String?
-    public private(set) var catalogMessage = "未配置插件目录"
     public private(set) var activeModelID: String
     public private(set) var translationMode: TranslationMode
-    public private(set) var openAIProviders: [OpenAICompatibleProvider] = []
     public private(set) var isImportingLocalModel = false
     public private(set) var localImportProgress = 0.0
     public private(set) var localImportError: String?
@@ -60,8 +58,6 @@ public final class MainWindowModel {
     private let pluginLifecycle: PluginLifecycleService
     @ObservationIgnored
     private let builtInPlugins: [PluginManifest]
-    @ObservationIgnored
-    private let openAICompatibleStore: OpenAICompatibleConfigurationStore
     @ObservationIgnored
     private let defaults: UserDefaults
     @ObservationIgnored
@@ -95,9 +91,6 @@ public final class MainWindowModel {
     public var releaseTranslationModelAction:
         @MainActor (String) async -> Void = { _ in }
     @ObservationIgnored
-    public var testOpenAICompatibleAction:
-        @MainActor (OpenAICompatibleConfiguration) async throws -> Void = { _ in }
-    @ObservationIgnored
     public var translationModeAction: @MainActor (TranslationMode) -> Void = { _ in }
     @ObservationIgnored
     public var translationConfigurationChangedAction: @MainActor () -> Void = {}
@@ -111,7 +104,6 @@ public final class MainWindowModel {
         builtInPlugins: [PluginManifest] = [],
         catalogURL: URL? = nil,
         defaults: UserDefaults = .standard,
-        openAICompatibleStore: OpenAICompatibleConfigurationStore? = nil,
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.displayPreferences = displayPreferences ?? DisplayPreferences()
@@ -120,14 +112,11 @@ public final class MainWindowModel {
         self.installedPlugins = builtInPlugins.sorted {
             $0.name < $1.name
         }
-        self.catalogURL = catalogURL ?? Self.defaultCatalogURL()
+        self.catalogURL = catalogURL ?? Self.defaultCatalogURL(
+            defaults: defaults
+        )
         self.defaults = defaults
         self.now = now
-        let openAICompatibleStore = openAICompatibleStore
-            ?? OpenAICompatibleConfigurationStore(defaults: defaults)
-        self.openAICompatibleStore = openAICompatibleStore
-        let providers = openAICompatibleStore.loadProviders()
-        self.openAIProviders = providers
         self.activeModelID = TranslationModelSelection.selected(in: defaults)
         self.translationMode = TranslationModeSelection.selected(in: defaults)
     }
@@ -140,14 +129,7 @@ public final class MainWindowModel {
         installedPlugins.filter { $0.type == .translation }
     }
 
-    public var dictionarySummary: String {
-        Self.summary(for: dictionaryPlugins)
-    }
-
     public var translationSummary: String {
-        if let provider = activeOpenAIProvider {
-            return provider.name
-        }
         if let plugin = translationPlugins.first(where: {
             $0.id == activeModelID
         }) {
@@ -158,19 +140,6 @@ public final class MainWindowModel {
 
     public var candidateSummary: String {
         "系统候选词"
-    }
-
-    public var isOpenAICompatibleActive: Bool {
-        activeOpenAIProvider != nil
-    }
-
-    public var activeOpenAIProvider: OpenAICompatibleProvider? {
-        guard let providerID = TranslationModelSelection.openAIProviderID(
-            fromSelectionID: activeModelID
-        ) else {
-            return nil
-        }
-        return openAIProviders.first(where: { $0.id == providerID })
     }
 
     public func startMonitoring() {
@@ -209,7 +178,6 @@ public final class MainWindowModel {
     public func checkForCatalogUpdates(force: Bool = false) async {
         guard let catalogURL else {
             availablePlugins = []
-            catalogMessage = "未配置插件目录"
             return
         }
         guard !isLoadingCatalog else { return }
@@ -243,10 +211,8 @@ public final class MainWindowModel {
             catalogLastModified = result.lastModified
             lastCatalogSuccessAt = now()
             lastCatalogFailureAt = nil
-            catalogMessage = ""
         } catch {
             lastCatalogFailureAt = now()
-            catalogMessage = "暂时无法更新模型列表"
         }
     }
 
@@ -258,13 +224,8 @@ public final class MainWindowModel {
         await checkForCatalogUpdates(force: true)
     }
 
-    public func refreshPlugins() async {
-        await refreshInstalledPlugins()
-        await checkForCatalogUpdates(force: true)
-    }
-
     public func installPlugin(_ plugin: PluginManifest) {
-        guard installTask == nil else { return }
+        guard installTask == nil, localImportTask == nil else { return }
         isInstalling = plugin.id
         isCancellingInstallation = false
         installProgress[plugin.id] = 0
@@ -293,6 +254,7 @@ public final class MainWindowModel {
                 localImportTask = nil
             }
             do {
+                let previousModelID = activeModelID
                 let manifest = try await pluginLifecycle.importLocalModel(
                     from: directory
                 ) { [weak self] value in
@@ -300,16 +262,122 @@ public final class MainWindowModel {
                         self?.localImportProgress = value
                     }
                 }
-                installedPlugins = await pluginLifecycle.installedPlugins()
-                reconcileActiveTranslationModel()
-                activateTranslationModel(manifest)
-                localImportProgress = 1
+                let hadPendingUpgrade =
+                    await pluginLifecycle.hasPendingUpgrade()
+                await refreshInstalledPlugins()
+                if Task.isCancelled {
+                    _ = await recoverFromLocalModelFailure(
+                        manifest: manifest,
+                        previousModelID: previousModelID,
+                        hadPendingUpgrade: hadPendingUpgrade,
+                        error: "导入已取消"
+                    )
+                    return
+                }
+                activeModelID = manifest.id
+                TranslationModelSelection.select(manifest.id, in: defaults)
+                translationModelStatusText = "正在加载本地模型…"
+                translationModelStatusIsError = false
+                translationModelStatusModelID = manifest.id
+
+                let activationError =
+                    await activateTranslationModelAction(manifest.id)
+                if Task.isCancelled {
+                    _ = await recoverFromLocalModelFailure(
+                        manifest: manifest,
+                        previousModelID: previousModelID,
+                        hadPendingUpgrade: hadPendingUpgrade,
+                        error: "导入已取消"
+                    )
+                    return
+                }
+                if let activationError {
+                    let message = await recoverFromLocalModelFailure(
+                        manifest: manifest,
+                        previousModelID: previousModelID,
+                        hadPendingUpgrade: hadPendingUpgrade,
+                        error: activationError
+                    )
+                    localImportError = message
+                    translationModelStatusText = message
+                    translationModelStatusIsError = true
+                    translationModelStatusModelID = previousModelID
+                    return
+                }
+
+                do {
+                    try await pluginLifecycle.commitPendingUpgrade()
+                    localImportProgress = 1
+                    translationModelStatusText = nil
+                    translationModelStatusIsError = false
+                    translationModelStatusModelID = nil
+                    translationConfigurationChangedAction()
+                } catch {
+                    let message = await recoverFromLocalModelFailure(
+                        manifest: manifest,
+                        previousModelID: previousModelID,
+                        hadPendingUpgrade: hadPendingUpgrade,
+                        error: error.localizedDescription
+                    )
+                    localImportError = message
+                    translationModelStatusText = message
+                    translationModelStatusIsError = true
+                    translationModelStatusModelID = previousModelID
+                }
             } catch {
                 if !Self.isCancellation(error) {
                     localImportError = error.localizedDescription
                 }
             }
         }
+    }
+
+    private func recoverFromLocalModelFailure(
+        manifest: PluginManifest,
+        previousModelID: String,
+        hadPendingUpgrade: Bool,
+        error: String
+    ) async -> String {
+        await releaseTranslationModelAction(manifest.id)
+        var recoveryErrors: [String] = []
+
+        if hadPendingUpgrade {
+            do {
+                try await pluginLifecycle.rollbackPendingUpgrade()
+            } catch {
+                recoveryErrors.append(
+                    "恢复旧版本失败：\(error.localizedDescription)"
+                )
+            }
+        } else {
+            do {
+                try await pluginLifecycle.uninstall(id: manifest.id)
+            } catch {
+                recoveryErrors.append(
+                    "移除失败模型失败：\(error.localizedDescription)"
+                )
+            }
+        }
+
+        activeModelID = previousModelID
+        TranslationModelSelection.select(previousModelID, in: defaults)
+        await refreshInstalledPlugins()
+        if let recoveryError = await activateTranslationModelAction(
+            previousModelID
+        ) {
+            recoveryErrors.append(
+                "恢复原模型失败：\(recoveryError)"
+            )
+        }
+        translationConfigurationChangedAction()
+
+        if recoveryErrors.isEmpty {
+            return "导入失败，已恢复原模型：\(error)"
+        }
+        return (
+            "导入失败：\(error)"
+                + "（\(recoveryErrors.joined(separator: "；"))）"
+        )
     }
 
     public func cancelLocalModelImport() {
@@ -319,6 +387,7 @@ public final class MainWindowModel {
     private func performInstallation(_ plugin: PluginManifest) async {
         let wasActiveTranslation = plugin.type == .translation
             && activeModelID == plugin.id
+        var hadPendingUpgrade = false
         defer {
             installTask = nil
             isInstalling = nil
@@ -331,7 +400,7 @@ public final class MainWindowModel {
                     self?.installProgress[plugin.id] = value
                 }
             }
-            let hadPendingUpgrade = await pluginLifecycle.hasPendingUpgrade()
+            hadPendingUpgrade = await pluginLifecycle.hasPendingUpgrade()
             await refreshInstalledPlugins()
             if plugin.type == .dictionary {
                 await dictionaryConfigurationChangedAction()
@@ -343,20 +412,32 @@ public final class MainWindowModel {
                 translationModelStatusModelID = plugin.id
                 let error = await activateTranslationModelAction(plugin.id)
                 if let error {
+                    let wasCancelled = Task.isCancelled
                     if hadPendingUpgrade {
                         try await pluginLifecycle.rollbackPendingUpgrade()
                         await refreshInstalledPlugins()
                         _ = await activateTranslationModelAction(plugin.id)
-                        translationModelStatusText =
-                            "更新失败，已恢复旧版本：\(error)"
+                        if !wasCancelled {
+                            translationModelStatusText =
+                                "更新失败，已恢复旧版本：\(error)"
+                        }
                     } else {
                         await releaseTranslationModelAction(plugin.id)
                         try await pluginLifecycle.uninstall(id: plugin.id)
                         await refreshInstalledPlugins()
-                        translationModelStatusText = "模型加载失败：\(error)"
+                        if !wasCancelled {
+                            translationModelStatusText =
+                                "模型加载失败：\(error)"
+                        }
                     }
-                    translationModelStatusIsError = true
-                    translationModelStatusModelID = plugin.id
+                    if wasCancelled {
+                        translationModelStatusText = nil
+                        translationModelStatusIsError = false
+                        translationModelStatusModelID = nil
+                    } else {
+                        translationModelStatusIsError = true
+                        translationModelStatusModelID = plugin.id
+                    }
                 } else {
                     try await pluginLifecycle.commitPendingUpgrade()
                     translationModelStatusText = nil
@@ -370,6 +451,33 @@ public final class MainWindowModel {
             installProgress[plugin.id] = 1
         } catch {
             try? await pluginLifecycle.rollbackPendingUpgrade()
+            if wasActiveTranslation, hadPendingUpgrade {
+                await releaseTranslationModelAction(plugin.id)
+            }
+            await refreshInstalledPlugins()
+            if plugin.type == .dictionary {
+                await dictionaryConfigurationChangedAction()
+            }
+            if wasActiveTranslation, hadPendingUpgrade {
+                let recoveryError =
+                    await activateTranslationModelAction(plugin.id)
+                if Self.isCancellation(error) {
+                    translationModelStatusText = nil
+                    translationModelStatusIsError = false
+                    translationModelStatusModelID = nil
+                } else if let recoveryError {
+                    translationModelStatusText =
+                        "更新失败，模型恢复失败：\(recoveryError)"
+                    translationModelStatusIsError = true
+                    translationModelStatusModelID = plugin.id
+                } else {
+                    translationModelStatusText =
+                        "更新失败，已恢复当前版本：\(error)"
+                    translationModelStatusIsError = true
+                    translationModelStatusModelID = plugin.id
+                }
+                translationConfigurationChangedAction()
+            }
             if !Self.isCancellation(error) {
                 catalogError = error.localizedDescription
             }
@@ -407,89 +515,6 @@ public final class MainWindowModel {
         activeModelID = plugin.id
         TranslationModelSelection.select(plugin.id, in: defaults)
         prepareActiveTranslationModel(rollbackTo: previousModelID)
-    }
-
-    public func activateOpenAICompatibleProvider(
-        _ provider: OpenAICompatibleProvider
-    ) {
-        guard openAIProviders.contains(where: { $0.id == provider.id }) else {
-            return
-        }
-        activeModelID = TranslationModelSelection.openAICompatibleSelectionID(
-            for: provider.id
-        )
-        TranslationModelSelection.select(activeModelID, in: defaults)
-        prepareActiveTranslationModel()
-        translationConfigurationChangedAction()
-    }
-
-    @discardableResult
-    public func saveOpenAICompatibleProvider(
-        id: String?,
-        name: String,
-        baseURL: String,
-        model: String,
-        apiKey: String
-    ) throws -> OpenAICompatibleProvider {
-        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let configuration = OpenAICompatibleConfiguration(
-            baseURL: baseURL,
-            model: model,
-            apiKey: apiKey
-        )
-        guard !name.isEmpty else {
-            throw OpenAIProviderError.missingName
-        }
-        guard configuration.chatCompletionsURL != nil else {
-            throw OpenAIProviderError.invalidConfiguration
-        }
-        if openAIProviders.contains(where: {
-            $0.id != id
-                && $0.name.compare(
-                    name,
-                    options: [.caseInsensitive, .diacriticInsensitive]
-                ) == .orderedSame
-        }) {
-            throw OpenAIProviderError.duplicateName
-        }
-        let provider = OpenAICompatibleProvider(
-            id: id ?? UUID().uuidString,
-            name: name,
-            baseURL: configuration.baseURL,
-            model: configuration.model
-        )
-        try openAICompatibleStore.saveProvider(provider, apiKey: apiKey)
-        openAIProviders = openAICompatibleStore.loadProviders()
-        if activeOpenAIProvider?.id == provider.id {
-            prepareActiveTranslationModel()
-            translationConfigurationChangedAction()
-        }
-        return provider
-    }
-
-    public func removeOpenAICompatibleProvider(
-        _ provider: OpenAICompatibleProvider
-    ) throws {
-        let wasActive = activeOpenAIProvider?.id == provider.id
-        try openAICompatibleStore.removeProvider(id: provider.id)
-        openAIProviders = openAICompatibleStore.loadProviders()
-        if wasActive {
-            translationModelStatusText = nil
-            translationModelStatusIsError = false
-            translationModelStatusModelID = nil
-            reconcileActiveTranslationModel()
-            translationConfigurationChangedAction()
-        }
-    }
-
-    public func apiKey(for provider: OpenAICompatibleProvider) -> String {
-        openAICompatibleStore.apiKey(for: provider.id)
-    }
-
-    public func testOpenAICompatibleConfiguration(
-        _ configuration: OpenAICompatibleConfiguration
-    ) async throws {
-        try await testOpenAICompatibleAction(configuration)
     }
 
     public func setTranslationMode(_ mode: TranslationMode) {
@@ -532,16 +557,6 @@ public final class MainWindowModel {
         )
     }
 
-    private static func summary(for plugins: [PluginManifest]) -> String {
-        if plugins.isEmpty {
-            return "未安装"
-        }
-        if plugins.count == 1 {
-            return plugins[0].name
-        }
-        return "\(plugins.count) 个已安装"
-    }
-
     private static func isCancellation(_ error: Error) -> Bool {
         if error is CancellationError {
             return true
@@ -553,10 +568,6 @@ public final class MainWindowModel {
     }
 
     private func reconcileActiveTranslationModel() {
-        if let provider = activeOpenAIProvider,
-           openAICompatibleStore.configuration(for: provider.id)?.isConfigured == true {
-            return
-        }
         let models = installedPlugins.filter { $0.type == .translation }
         guard !models.contains(where: { $0.id == activeModelID }) else { return }
         let fallback = models.first {
@@ -601,12 +612,14 @@ public final class MainWindowModel {
         }
     }
 
-    private static func defaultCatalogURL() -> URL? {
+    private static func defaultCatalogURL(
+        defaults: UserDefaults
+    ) -> URL? {
         if let value = ProcessInfo.processInfo.environment["GLINT_PLUGIN_CATALOG_URL"],
            let url = URL(string: value) {
             return url
         }
-        if let value = UserDefaults.standard.string(forKey: "plugin.catalogURL"),
+        if let value = defaults.string(forKey: "plugin.catalogURL"),
            let url = URL(string: value) {
             return url
         }
@@ -625,21 +638,4 @@ public final class MainWindowModel {
         ) ?? Bundle.main.url(forResource: "catalog", withExtension: "json")
     }
 
-}
-
-private enum OpenAIProviderError: Error, LocalizedError {
-    case missingName
-    case invalidConfiguration
-    case duplicateName
-
-    var errorDescription: String? {
-        switch self {
-        case .missingName:
-            "请填写接口名称"
-        case .invalidConfiguration:
-            "请填写有效的 HTTP 或 HTTPS 接口地址和模型名称"
-        case .duplicateName:
-            "已存在同名接口"
-        }
-    }
 }

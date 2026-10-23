@@ -65,11 +65,15 @@ final class DisplayPreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
         preferences.candidateDwellDuration = 0.05
         XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
+        preferences.candidateDwellDuration = .nan
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.12)
 
         preferences.candidateSpacing = 30
         XCTAssertEqual(preferences.candidateSpacing, 24)
         preferences.candidateSpacing = -1
         XCTAssertEqual(preferences.candidateSpacing, 0)
+        preferences.candidateSpacing = .nan
+        XCTAssertEqual(preferences.candidateSpacing, 8)
 
         preferences.hudOpacity = 2
         XCTAssertEqual(preferences.hudOpacity, 1)
@@ -85,7 +89,7 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
-    func testStoredFiftyMillisecondDwellMigratesToEightyMilliseconds() throws {
+    func testStoredCandidateDwellDurationIsClampedOnLoad() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -178,49 +182,6 @@ final class DisplayPreferencesTests: XCTestCase {
         preferences.resetHUDAppearance()
 
         XCTAssertEqual(preferences.hudAppearance, .default)
-    }
-
-    @MainActor
-    func testLegacyCustomAppearanceMigratesToSolidBackground() throws {
-        let suiteName = "GlintUITests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set("custom", forKey: "display.hudAppearanceMode")
-        defaults.set(0.72, forKey: "display.hudOpacity")
-
-        let preferences = DisplayPreferences(defaults: defaults)
-
-        XCTAssertEqual(preferences.hudBackgroundStyle, .solid)
-        XCTAssertTrue(preferences.hudUsesCustomTextColor)
-        XCTAssertEqual(preferences.hudOpacity, 0.72, accuracy: 0.001)
-    }
-
-    @MainActor
-    func testStoredLightGlassMigratesToDarkGlass() throws {
-        let suiteName = "GlintUITests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set("custom", forKey: "display.hudAppearanceMode")
-        defaults.set(2, forKey: "display.hudAppearanceSchemaVersion")
-        defaults.set("lightGlass", forKey: "display.hudBackgroundStyle")
-
-        let preferences = DisplayPreferences(defaults: defaults)
-
-        XCTAssertEqual(preferences.hudBackgroundStyle, .darkGlass)
-    }
-
-    @MainActor
-    func testIntermediateLightGlassPreferenceMigratesToDarkGlass() throws {
-        let suiteName = "GlintUITests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set(1, forKey: "display.hudAppearanceSchemaVersion")
-        defaults.set(true, forKey: "display.hudUsesGlass")
-        defaults.set("light", forKey: "display.hudGlassAppearance")
-
-        let preferences = DisplayPreferences(defaults: defaults)
-
-        XCTAssertEqual(preferences.hudBackgroundStyle, .darkGlass)
     }
 
     @MainActor

@@ -64,7 +64,9 @@ final class MainWindowModelTests: XCTestCase {
             source: .bundled
         )
         let catalogURL = root.appendingPathComponent("catalog.json")
-        try JSONEncoder().encode([manifest]).write(to: catalogURL)
+        try JSONEncoder().encode(
+            ["plugins": [manifest]]
+        ).write(to: catalogURL)
         let manager = PluginManager(baseDirectory: root)
         let model = MainWindowModel(
             pluginManager: manager,
@@ -73,7 +75,8 @@ final class MainWindowModelTests: XCTestCase {
             defaults: defaults
         )
 
-        await model.refreshPlugins()
+        await model.refreshInstalledPlugins()
+        await model.checkForCatalogUpdates(force: true)
 
         XCTAssertEqual(model.translationPlugins.map(\.id), [manifest.id])
         XCTAssertEqual(model.activeModelID, manifest.id)
@@ -81,6 +84,62 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertTrue(model.availablePlugins.isEmpty)
 
         await model.uninstallPlugin(manifest)
+        let managedPlugins = await manager.installedPlugins()
+        XCTAssertTrue(managedPlugins.isEmpty)
+    }
+
+    @MainActor
+    func testFailedLocalImportRestoresPreviousModelAndCleanup() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintLocalImportTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent(
+            "ImportedModel",
+            isDirectory: true
+        )
+        try makeLocalModelDirectory(source)
+
+        let suiteName = "GlintLocalImportTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let bundled = translationManifest(
+            id: TranslationModelSelection.defaultModelID,
+            source: .bundled
+        )
+        TranslationModelSelection.select(bundled.id, in: defaults)
+        let manager = PluginManager(baseDirectory: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            builtInPlugins: [bundled],
+            catalogURL: nil,
+            defaults: defaults
+        )
+        await model.refreshInstalledPlugins()
+
+        var activationCalls: [String] = []
+        model.activateTranslationModelAction = { modelID in
+            activationCalls.append(modelID)
+            return modelID == bundled.id ? nil : "新模型加载失败"
+        }
+
+        model.importLocalTranslationModel(from: source)
+        for _ in 0..<200 where model.isImportingLocalModel {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        XCTAssertEqual(model.activeModelID, bundled.id)
+        XCTAssertEqual(activationCalls.count, 2)
+        XCTAssertEqual(activationCalls.last, bundled.id)
+        XCTAssertTrue(
+            model.localImportError?.contains("已恢复原模型") == true
+        )
         let managedPlugins = await manager.installedPlugins()
         XCTAssertTrue(managedPlugins.isEmpty)
     }
@@ -244,7 +303,8 @@ final class MainWindowModelTests: XCTestCase {
             catalogURL: nil,
             defaults: defaults
         )
-        await model.refreshPlugins()
+        await model.refreshInstalledPlugins()
+        await model.checkForCatalogUpdates(force: true)
 
         var activationCalls: [String] = []
         var releasedModels: [String] = []
@@ -306,14 +366,17 @@ final class MainWindowModelTests: XCTestCase {
         TranslationModelSelection.select(installed.id, in: defaults)
 
         let catalogURL = root.appendingPathComponent("catalog.json")
-        try JSONEncoder().encode([update]).write(to: catalogURL)
+        try JSONEncoder().encode(
+            ["plugins": [update]]
+        ).write(to: catalogURL)
         let model = MainWindowModel(
             pluginManager: manager,
             catalogURL: catalogURL,
             defaults: defaults
         )
 
-        await model.refreshPlugins()
+        await model.refreshInstalledPlugins()
+        await model.checkForCatalogUpdates(force: true)
 
         XCTAssertEqual(
             model.update(for: update),
@@ -378,25 +441,24 @@ final class MainWindowModelTests: XCTestCase {
             name: first.name,
             version: "2.0.0",
             runtime: "ctranslate2",
-            capabilities: first.capabilities,
-            languages: first.languages,
             sizeBytes: Int64(archiveData.count),
             sha256: digest,
             url: archive,
             license: first.license,
-            minRAMBytes: first.minRAMBytes,
-            quality: first.quality,
-            recommended: false
+            minRAMBytes: first.minRAMBytes
         )
         let catalogURL = root.appendingPathComponent("catalog.json")
-        try JSONEncoder().encode([second]).write(to: catalogURL)
+        try JSONEncoder().encode(
+            ["plugins": [second]]
+        ).write(to: catalogURL)
 
         let model = MainWindowModel(
             pluginManager: manager,
             catalogURL: catalogURL,
             defaults: defaults
         )
-        await model.refreshPlugins()
+        await model.refreshInstalledPlugins()
+        await model.checkForCatalogUpdates(force: true)
         var activationCount = 0
         model.activateTranslationModelAction = { _ in
             activationCount += 1
@@ -429,15 +491,11 @@ final class MainWindowModelTests: XCTestCase {
             name: id,
             version: version,
             runtime: runtime,
-            capabilities: ["sentence"],
-            languages: ["zh-Hans", "en"],
             sizeBytes: 1,
             sha256: "test",
             url: URL(string: "https://example.invalid/\(id).zip")!,
             license: "MIT",
             minRAMBytes: 0,
-            quality: "test",
-            recommended: false,
             source: source
         )
     }
@@ -453,16 +511,33 @@ final class MainWindowModelTests: XCTestCase {
             name: "Bundled Test Dictionary",
             version: "1.0",
             runtime: "sqlite-v1",
-            capabilities: ["word"],
-            languages: ["zh-Hans", "en"],
             sizeBytes: 10,
             sha256: "test",
             url: URL(string: "https://example.invalid/dictionary.zip")!,
             license: "MIT",
             minRAMBytes: 0,
-            quality: "basic",
-            recommended: true,
             source: source
+        )
+    }
+
+    private func makeLocalModelDirectory(_ directory: URL) throws {
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        try Data(
+            #"{"model_type":"qwen3","architectures":["Qwen3"]}"#.utf8
+        ).write(to: directory.appendingPathComponent("config.json"))
+        try Data("{}".utf8).write(
+            to: directory.appendingPathComponent("tokenizer.json")
+        )
+        try Data(
+            "{{ messages }}".utf8
+        ).write(
+            to: directory.appendingPathComponent("chat_template.jinja")
+        )
+        try Data(repeating: 1, count: 64).write(
+            to: directory.appendingPathComponent("model.safetensors")
         )
     }
 
@@ -483,7 +558,7 @@ final class MainWindowModelTests: XCTestCase {
         try JSONEncoder().encode(manifest).write(
             to: source.appendingPathComponent("manifest.json")
         )
-        _ = try await manager.installLocalPlugin(at: source)
+        _ = try await manager.installPreparedPlugin(at: source)
     }
 
     @MainActor

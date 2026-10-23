@@ -1,14 +1,10 @@
 # Glint AX Candidate Validation
 
-> Follow-up: on 2026-10-21 the inactive OCR fallback described below was
-> removed. Glint now has a single AX candidate path and requests only
-> Accessibility permission.
-
 - 日期：2026-10-21
-- 分支：`codex/validate-accessibility-candidate-reader`
 - 机器：Apple M4 Pro、48GB、macOS 26.6.2（25G83）
 - 输入法：Pinyin – Simplified（`com.apple.inputmethod.SCIM.ITABC`）
-- 目标：确认 Apple 拼音候选能否通过公开 Accessibility API 读取，并评估用 AX 替代 OCR 的准确率、性能和覆盖范围
+- 目标：确认 Apple 拼音候选可通过公开 Accessibility API 读取，并记录候选结构、
+  性能和多输入法兼容边界
 
 ## 结论
 

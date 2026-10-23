@@ -16,9 +16,18 @@ public final class ECDICTRanker: @unchecked Sendable {
 
     public init(databaseURL: URL? = nil) {
         guard let url = databaseURL ?? Self.locateDatabase() else { return }
-        sqlite3_open_v2(url.path, &database, SQLITE_OPEN_READONLY, nil)
-        guard database != nil else { return }
-        sqlite3_prepare_v2(
+        let openResult = sqlite3_open_v2(
+            url.path,
+            &database,
+            SQLITE_OPEN_READONLY,
+            nil
+        )
+        guard openResult == SQLITE_OK, database != nil else {
+            sqlite3_close(database)
+            database = nil
+            return
+        }
+        let prepareResult = sqlite3_prepare_v2(
             database,
             """
             SELECT english, frequency, collins, oxford
@@ -31,35 +40,17 @@ public final class ECDICTRanker: @unchecked Sendable {
             &statement,
             nil
         )
+        if prepareResult != SQLITE_OK {
+            sqlite3_finalize(statement)
+            statement = nil
+            sqlite3_close(database)
+            database = nil
+        }
     }
 
     deinit {
         sqlite3_finalize(statement)
         sqlite3_close(database)
-    }
-
-    /// Pick an ECDICT headword that is already one of the CEDICT candidates.
-    public func rankCandidates(term: String, candidates: [String]) -> String? {
-        var normalizedCandidates: [String: String] = [:]
-        for candidate in candidates {
-            normalizedCandidates[Self.normalize(candidate)] = candidate
-        }
-        for row in rows(for: term) {
-            if let original = normalizedCandidates[Self.normalize(row.english)] {
-                return original
-            }
-        }
-        return nil
-    }
-
-    /// Coverage fallback for terms missing from CEDICT. Avoid rare/unknown
-    /// ECDICT entries by requiring a real corpus frequency.
-    public func fallbackEnglish(term: String, maxFrequency: Int = 100_000) -> String? {
-        fallbackCandidates(
-            term: term,
-            maxFrequency: maxFrequency,
-            limit: 1
-        ).first
     }
 
     public func fallbackCandidates(
@@ -104,22 +95,6 @@ public final class ECDICTRanker: @unchecked Sendable {
             )
         }
         return result
-    }
-
-    private static func normalize(_ text: String) -> String {
-        var value = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        for prefix in ["to ", "the ", "a ", "an ", "be ", "of "] {
-            if value.hasPrefix(prefix) {
-                value = String(value.dropFirst(prefix.count))
-                break
-            }
-        }
-        let allowed = CharacterSet.alphanumerics.union(.whitespaces)
-        value = String(value.unicodeScalars.filter { allowed.contains($0) })
-        if value.count > 3, value.hasSuffix("s") {
-            value = String(value.dropLast())
-        }
-        return value.trimmingCharacters(in: .whitespaces)
     }
 
     private static func locateDatabase() -> URL? {

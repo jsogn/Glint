@@ -30,6 +30,7 @@ public struct MainWindowView: View {
         }
         .task {
             await model.refreshInstalledPlugins()
+            await model.checkForCatalogUpdatesAfterLaunch()
         }
     }
 
@@ -64,20 +65,7 @@ private struct PageTitleCapsule: View {
             .font(.headline)
             .padding(.horizontal, 12)
             .padding(.vertical, 5)
-            .modifier(PageTitleBackground())
             .accessibilityAddTraits(.isHeader)
-    }
-}
-
-private struct PageTitleBackground: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            // The toolbar supplies its shared Liquid Glass background.
-            content
-        } else {
-            content.background(.regularMaterial, in: Capsule())
-        }
     }
 }
 
@@ -172,11 +160,7 @@ struct SettingsCard<Content: View>: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(.separator.opacity(0.6), lineWidth: 1)
-        }
+        .modifier(SettingsSurface())
     }
 }
 
@@ -193,12 +177,19 @@ private struct SettingsPanel<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             content
         }
-            .padding(16)
-            .frame(
-                maxWidth: .infinity,
-                minHeight: minHeight,
-                alignment: .topLeading
-            )
+        .padding(16)
+        .frame(
+            maxWidth: .infinity,
+            minHeight: minHeight,
+            alignment: .topLeading
+        )
+        .modifier(SettingsSurface())
+    }
+}
+
+private struct SettingsSurface: ViewModifier {
+    func body(content: Content) -> some View {
+        content
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             .overlay {
                 RoundedRectangle(cornerRadius: 12)
@@ -447,7 +438,6 @@ private struct DisplayPage: View {
                         supportsOpacity: false
                     )
                     .labelsHidden()
-                    .frame(width: 64, alignment: .trailing)
                     .frame(width: 340, alignment: .trailing)
                 }
             }
@@ -655,7 +645,6 @@ private struct PluginsPage: View {
                         pluginRows(installed: installed, available: available)
                     }
                 }
-                OpenAICompatibleProvidersView(model: model)
             }
         }
     }
@@ -665,7 +654,7 @@ private struct PluginsPage: View {
     ) -> some View {
         SettingsCard("启用句子翻译") {
             VStack(alignment: .leading, spacing: 10) {
-                Text("安装离线翻译模型或配置在线接口后，可显示句子翻译。")
+                Text("安装离线翻译模型后，可显示句子翻译。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 HStack(spacing: 10) {
@@ -680,7 +669,7 @@ private struct PluginsPage: View {
                                 || model.isImportingLocalModel
                         )
                     }
-                    Text("也可以导入本地模型，或使用下方的在线接口。")
+                    Text("也可以导入本地 MLX 模型。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -854,7 +843,7 @@ private struct PluginsPage: View {
             fromByteCount: plugin.sizeBytes,
             countStyle: .file
         )
-        if plugin.source == .local || plugin.version == "local" {
+        if plugin.source == .local {
             return "本地导入 · \(size)"
         }
         if plugin.source == .bundled {
@@ -1039,12 +1028,9 @@ private struct PrivacyNoticeCard: View {
     var body: some View {
         SettingsCard("隐私", systemImage: "lock.shield") {
             Text("Glint 不保存候选文本、翻译结果或输入历史。")
-            Text(
-                "本地翻译不会联网。只有启用 OpenAI 兼容接口时，"
-                    + "候选文本才会发送到你配置的服务。"
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            Text("候选和翻译结果只在本地处理，不发送到网络服务。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -1100,6 +1086,7 @@ private struct AboutPage: View {
 
 private struct HUDPreview: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let preferences: DisplayPreferences
 
@@ -1170,13 +1157,17 @@ private struct HUDPreview: View {
         }
         .environment(\.hudMaterialBlendingMode, .withinWindow)
         .animation(
-            .easeInOut(duration: 0.18),
+            previewAnimation,
             value: preferences.translationScope
         )
-        .animation(.easeInOut(duration: 0.18), value: preferences.position)
-        .animation(.easeInOut(duration: 0.18), value: preferences.candidateSpacing)
-        .animation(.easeInOut(duration: 0.18), value: preferences.hudOpacity)
-        .animation(.easeInOut(duration: 0.18), value: preferences.hudAppearance)
+        .animation(previewAnimation, value: preferences.position)
+        .animation(previewAnimation, value: preferences.candidateSpacing)
+        .animation(previewAnimation, value: preferences.hudOpacity)
+        .animation(previewAnimation, value: preferences.hudAppearance)
+    }
+
+    private var previewAnimation: Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.18)
     }
 
     private var hudPreview: some View {

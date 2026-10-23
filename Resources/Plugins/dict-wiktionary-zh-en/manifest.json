@@ -4,21 +4,11 @@
   "name": "Wiktionary Chinese-English",
   "version": "2026.10.1",
   "runtime": "sqlite-v1",
-  "capabilities": [
-    "word",
-    "phrase"
-  ],
-  "languages": [
-    "zh-Hans",
-    "en"
-  ],
   "sizeBytes": 37629952,
   "sha256": "16d628405e4aeddd5eba7348fca377506692701e45fa201abe05ceb2d33837e6",
   "url": "file:///tmp/dict-wiktionary-zh-en.zip",
   "license": "CC-BY-SA-4.0 AND GFDL",
   "minRAMBytes": 0,
-  "quality": "broad",
-  "recommended": false,
   "source": "bundled",
   "summary": "Wiktionary 开放词典，覆盖大量中文词语和短语；需保留署名与相同方式共享许可。"
 }

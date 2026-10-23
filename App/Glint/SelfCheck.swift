@@ -14,7 +14,7 @@ enum SelfCheck {
             await dictionary.reload()
 
             for word in ["你好", "算法", "程序", "设计", "内卷"] {
-                let result = try? await dictionary.lookup(
+                let result = await dictionary.lookup(
                     Candidate(text: word, kind: .word)
                 )
                 print("dict \(word) -> \(result?.displayText ?? "<not found>")")

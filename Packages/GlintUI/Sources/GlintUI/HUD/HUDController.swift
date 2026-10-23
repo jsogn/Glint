@@ -97,9 +97,9 @@ public final class HUDController {
     private var stalePresentationTask: Task<Void, Never>?
     private var stalePresentationGeneration = 0
 
-    public init(text: String = "hello") {
+    public init() {
         let contentModel = HUDPresentationModel(
-            text: text,
+            text: "",
             appearance: .default,
             backgroundOpacity: 0.8,
             animatesTransitions: !NSWorkspace.shared
@@ -125,14 +125,6 @@ public final class HUDController {
         panel.contentView = hostingView
         self.contentModel = contentModel
         self.panel = panel
-    }
-
-    public func show() {
-        cancelStalePresentation()
-        transitionGeneration &+= 1
-        contentModel.textOpacity = 1
-        panel.alphaValue = 1
-        panel.orderFrontRegardless()
     }
 
     public func beginUpdate() {
@@ -173,28 +165,6 @@ public final class HUDController {
         withoutAnimation {
             contentModel.items = updated
         }
-    }
-
-    public func show(
-        text: String,
-        near screenRect: CGRect,
-        position: HUDPosition = .automatic,
-        spacing: Double = 8,
-        opacity: Double = 0.8,
-        appearance: HUDAppearance = .default,
-        revision: UInt64? = nil
-    ) {
-        enqueuePresentation(
-            PresentationRequest(
-                revision: revision,
-                items: [HUDItem(id: 0, text: text)],
-                appearance: appearance,
-                screenRect: screenRect,
-                position: position,
-                spacing: spacing,
-                opacity: opacity
-            )
-        )
     }
 
     public func show(

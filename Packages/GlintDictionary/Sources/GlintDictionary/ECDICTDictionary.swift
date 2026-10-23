@@ -9,12 +9,13 @@ public final class ECDICTDictionary: DictionaryEngine, @unchecked Sendable {
     }
 
     public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
-        guard !candidate.text.isEmpty,
-              !DictionaryPolicy.blockedTerms.contains(candidate.text) else {
+        let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty,
+              !DictionaryPolicy.blockedTerms.contains(text) else {
             return nil
         }
         guard let values = ranker?.fallbackCandidates(
-            term: candidate.text,
+            term: text,
             maxFrequency: 100_000,
             limit: 3
         ), !values.isEmpty else {
@@ -26,10 +27,6 @@ public final class ECDICTDictionary: DictionaryEngine, @unchecked Sendable {
                 score: 0.70 - Double(index) * 0.05
             )
         }
-        return TranslationResult(
-            options: options,
-            source: .dictionary,
-            confidence: 0.70
-        )
+        return TranslationResult(options: options)
     }
 }

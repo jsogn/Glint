@@ -54,4 +54,40 @@ final class GenericSQLiteDictionaryTests: XCTestCase {
         let result = try await dictionary.lookup(Candidate(text: "设计"))
         XCTAssertEqual(result?.displayText, "design · plan")
     }
+
+    func testSchemaWithoutRankingColumnsIsRejected() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintGenericInvalid-\(UUID().uuidString).sqlite3"
+            )
+        defer { try? FileManager.default.removeItem(at: databaseURL) }
+
+        var database: OpaquePointer?
+        XCTAssertEqual(
+            sqlite3_open(databaseURL.path, &database),
+            SQLITE_OK
+        )
+        defer { sqlite3_close(database) }
+        XCTAssertEqual(
+            sqlite3_exec(
+                database,
+                """
+                CREATE TABLE entries (
+                  source TEXT NOT NULL,
+                  target TEXT NOT NULL,
+                  source_lang TEXT NOT NULL,
+                  target_lang TEXT NOT NULL
+                );
+                """,
+                nil,
+                nil,
+                nil
+            ),
+            SQLITE_OK
+        )
+
+        XCTAssertFalse(
+            GenericSQLiteDictionary.isCompatible(databaseURL: databaseURL)
+        )
+    }
 }

@@ -50,7 +50,6 @@ final class CedictDictionaryTests: XCTestCase {
         let dictionary = makeDictionary()
         let result = try await dictionary.lookup(Candidate(text: "你好", kind: .word))
         XCTAssertEqual(result?.text.lowercased(), "hello")
-        XCTAssertEqual(result?.source, .dictionary)
     }
 
     func testLegitimateWordIsNotBlocked() async throws {
@@ -78,7 +77,6 @@ final class CedictDictionaryTests: XCTestCase {
             let result = try await dictionary.lookup(
                 Candidate(text: word, kind: .word)
             )
-            print("\(word) -> \(result?.displayText ?? "<not found>")")
             XCTAssertGreaterThan(result?.options.count ?? 0, 1)
         }
 
@@ -188,7 +186,6 @@ final class CedictDictionaryTests: XCTestCase {
         )
 
         XCTAssertEqual(result?.text, "fallback answer")
-        XCTAssertEqual(result?.confidence, 0.75)
     }
 
     func testRuntimeSafeFallbackSurvivesDictionaryMiss() async throws {
@@ -199,7 +196,6 @@ final class CedictDictionaryTests: XCTestCase {
         )
 
         XCTAssertEqual(result?.text, "granularity")
-        XCTAssertEqual(result?.confidence, 0.75)
     }
 
     func testECDICTFallbackReturnsMultipleOptions() async throws {

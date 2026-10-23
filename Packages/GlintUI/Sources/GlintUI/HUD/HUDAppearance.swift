@@ -28,21 +28,24 @@ public enum HUDDensity: String, CaseIterable, Sendable {
 }
 
 public struct HUDColor: Codable, Equatable, Sendable {
+    private enum CodingKeys: String, CodingKey {
+        case red
+        case green
+        case blue
+    }
+
     public let red: Double
     public let green: Double
     public let blue: Double
-    public let alpha: Double
 
     public init(
         red: Double,
         green: Double,
-        blue: Double,
-        alpha: Double = 1
+        blue: Double
     ) {
         self.red = Self.clamp(red)
         self.green = Self.clamp(green)
         self.blue = Self.clamp(blue)
-        self.alpha = Self.clamp(alpha)
     }
 
     public init(nsColor: NSColor) {
@@ -50,8 +53,7 @@ public struct HUDColor: Codable, Equatable, Sendable {
         self.init(
             red: resolved.redComponent,
             green: resolved.greenComponent,
-            blue: resolved.blueComponent,
-            alpha: resolved.alphaComponent
+            blue: resolved.blueComponent
         )
     }
 
@@ -59,13 +61,21 @@ public struct HUDColor: Codable, Equatable, Sendable {
         self.init(nsColor: NSColor(color))
     }
 
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            red: try container.decode(Double.self, forKey: .red),
+            green: try container.decode(Double.self, forKey: .green),
+            blue: try container.decode(Double.self, forKey: .blue)
+        )
+    }
+
     public var color: Color {
         Color(
             .sRGB,
             red: red,
             green: green,
-            blue: blue,
-            opacity: alpha
+            blue: blue
         )
     }
 

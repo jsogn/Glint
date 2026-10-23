@@ -26,7 +26,9 @@ public struct TypingActivityTracker: Sendable {
     private var consecutiveMatches = 0
 
     public init(positionTolerance: CGFloat = 2) {
-        self.positionTolerance = max(0, positionTolerance)
+        self.positionTolerance = positionTolerance.isFinite
+            ? max(0, positionTolerance)
+            : 2
     }
 
     @discardableResult

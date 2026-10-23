@@ -450,12 +450,8 @@ public final class AXCandidateReader {
     }
 
     private static func frame(of element: AXUIElement) -> CGRect? {
-        if let value = attribute(element, "AXFrame"),
-           CFGetTypeID(value as CFTypeRef) == AXValueGetTypeID() {
-            var frame = CGRect.zero
-            if AXValueGetValue(value as! AXValue, .cgRect, &frame) {
-                return frame
-            }
+        if let frame = AXValueReader.rect(attribute(element, "AXFrame")) {
+            return frame
         }
 
         guard let positionValue = attribute(
@@ -463,19 +459,9 @@ public final class AXCandidateReader {
                   kAXPositionAttribute
               ),
               let sizeValue = attribute(element, kAXSizeAttribute),
-              CFGetTypeID(positionValue as CFTypeRef) == AXValueGetTypeID(),
-              CFGetTypeID(sizeValue as CFTypeRef) == AXValueGetTypeID()
+              let position = AXValueReader.point(positionValue),
+              let size = AXValueReader.size(sizeValue)
         else {
-            return nil
-        }
-        var position = CGPoint.zero
-        var size = CGSize.zero
-        guard AXValueGetValue(
-                  positionValue as! AXValue,
-                  .cgPoint,
-                  &position
-              ),
-              AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) else {
             return nil
         }
         return CGRect(origin: position, size: size)
@@ -492,11 +478,7 @@ public final class AXCandidateReader {
         _ element: AXUIElement,
         _ name: String
     ) -> AXUIElement? {
-        guard let value = attribute(element, name),
-              CFGetTypeID(value as CFTypeRef) == AXUIElementGetTypeID() else {
-            return nil
-        }
-        return (value as! AXUIElement)
+        AXValueReader.element(attribute(element, name))
     }
 
     private static func attribute(

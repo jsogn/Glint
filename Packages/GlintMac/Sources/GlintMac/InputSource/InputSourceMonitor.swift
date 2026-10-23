@@ -9,16 +9,13 @@ public enum InputSourceKind: String, Sendable {
 
 public struct ActiveInputSource: Sendable, Equatable {
     public let id: String
-    public let bundleIdentifier: String
     public let kind: InputSourceKind
 
     public init(
         id: String,
-        bundleIdentifier: String,
         kind: InputSourceKind
     ) {
         self.id = id
-        self.bundleIdentifier = bundleIdentifier
         self.kind = kind
     }
 }
@@ -35,7 +32,6 @@ public struct InputSourceMonitor: Sendable {
               ) else {
             return ActiveInputSource(
                 id: "",
-                bundleIdentifier: "",
                 kind: .unknown
             )
         }
@@ -43,28 +39,13 @@ public struct InputSourceMonitor: Sendable {
             source,
             kTISPropertyInputSourceType
         ) ?? ""
-        let bundleIdentifier = Self.stringProperty(
-            source,
-            kTISPropertyBundleID
-        ) ?? ""
         return ActiveInputSource(
             id: identifier,
-            bundleIdentifier: bundleIdentifier,
             kind: Self.inputSourceKind(
                 identifier: identifier,
                 type: type
             )
         )
-    }
-
-    @MainActor
-    public func currentInputSourceID() -> String {
-        currentInputSource().id
-    }
-
-    @MainActor
-    public func isApplePinyinActive() -> Bool {
-        currentInputSource().kind == .applePinyin
     }
 
     private static func stringProperty(

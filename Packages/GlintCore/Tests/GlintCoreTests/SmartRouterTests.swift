@@ -50,9 +50,7 @@ private actor CountingDictionary: DictionaryEngine {
 final class SmartRouterTests: XCTestCase {
     func testDictionaryFirstUsesDictionaryWhenAvailable() async throws {
         let result = TranslationResult(
-            text: "hello",
-            source: .dictionary,
-            confidence: 0.95
+            text: "hello"
         )
         let router = SmartRouter(
             dictionary: MockDictionary(result: result),
@@ -68,9 +66,7 @@ final class SmartRouterTests: XCTestCase {
 
     func testDictionaryFirstFallsBackToModelOnMiss() async throws {
         let result = TranslationResult(
-            text: "How are you?",
-            source: .translation,
-            confidence: 0.8
+            text: "How are you?"
         )
         let router = SmartRouter(
             dictionary: MockDictionary(result: nil),
@@ -86,9 +82,7 @@ final class SmartRouterTests: XCTestCase {
 
     func testDictionaryFirstFallsBackToModelOnDictionaryError() async throws {
         let result = TranslationResult(
-            text: "hello",
-            source: .translation,
-            confidence: 0.8
+            text: "hello"
         )
         let router = SmartRouter(
             dictionary: FailingDictionary(),
@@ -104,9 +98,7 @@ final class SmartRouterTests: XCTestCase {
 
     func testDictionaryPrefetchIsReusedByRoute() async throws {
         let result = TranslationResult(
-            text: "hello",
-            source: .dictionary,
-            confidence: 0.95
+            text: "hello"
         )
         let dictionary = CountingDictionary(result: result)
         let router = SmartRouter(
@@ -131,17 +123,13 @@ final class SmartRouterTests: XCTestCase {
 
     func testModelFirstKeepsModelFirstAndAppendsDictionaryOptions() async throws {
         let dictionaryResult = TranslationResult(
-            text: "dictionary result",
-            source: .dictionary,
-            confidence: 0.95
+            text: "dictionary result"
         )
         let modelResult = TranslationResult(
             options: [
                 TranslationOption(text: "model result", score: 0.8),
                 TranslationOption(text: "model alternative", score: 0.7),
-            ],
-            source: .translation,
-            confidence: 0.8
+            ]
         )
         let router = SmartRouter(
             dictionary: MockDictionary(result: dictionaryResult),
@@ -156,8 +144,6 @@ final class SmartRouterTests: XCTestCase {
             output?.options.map(\.text),
             ["model result", "model alternative", "dictionary result"]
         )
-        XCTAssertEqual(output?.source, .translation)
-        XCTAssertEqual(output?.confidence, modelResult.confidence)
     }
 
     func testModelFirstPrimaryOnlySkipsDictionaryAlternatives() async throws {
@@ -165,15 +151,11 @@ final class SmartRouterTests: XCTestCase {
             options: [
                 TranslationOption(text: "model result", score: 0.8),
                 TranslationOption(text: "model alternative", score: 0.7),
-            ],
-            source: .translation,
-            confidence: 0.8
+            ]
         )
         let dictionary = CountingDictionary(
             result: TranslationResult(
-                text: "dictionary result",
-                source: .dictionary,
-                confidence: 0.95
+                text: "dictionary result"
             )
         )
         let router = SmartRouter(
@@ -194,14 +176,10 @@ final class SmartRouterTests: XCTestCase {
 
     func testModelFirstSkipsDictionaryForSentence() async throws {
         let dictionaryResult = TranslationResult(
-            text: "dictionary result",
-            source: .dictionary,
-            confidence: 0.95
+            text: "dictionary result"
         )
         let modelResult = TranslationResult(
-            text: "sentence result",
-            source: .translation,
-            confidence: 0.8
+            text: "sentence result"
         )
         let router = SmartRouter(
             dictionary: MockDictionary(result: dictionaryResult),
@@ -218,9 +196,7 @@ final class SmartRouterTests: XCTestCase {
 
     func testModelFirstKeepsModelWhenDictionaryFails() async throws {
         let modelResult = TranslationResult(
-            text: "model result",
-            source: .translation,
-            confidence: 0.8
+            text: "model result"
         )
         let router = SmartRouter(
             dictionary: FailingDictionary(),
@@ -237,14 +213,10 @@ final class SmartRouterTests: XCTestCase {
 
     func testModelFirstTreatsEmptyModelResultAsMiss() async throws {
         let dictionaryResult = TranslationResult(
-            text: "dictionary result",
-            source: .dictionary,
-            confidence: 0.95
+            text: "dictionary result"
         )
         let emptyModelResult = TranslationResult(
-            options: [],
-            source: .translation,
-            confidence: 0.8
+            options: []
         )
         let router = SmartRouter(
             dictionary: MockDictionary(result: dictionaryResult),
@@ -261,9 +233,7 @@ final class SmartRouterTests: XCTestCase {
 
     func testModelFirstFallsBackToDictionaryWhenModelHasNoResult() async throws {
         let dictionaryResult = TranslationResult(
-            text: "hello",
-            source: .dictionary,
-            confidence: 0.95
+            text: "hello"
         )
         let router = SmartRouter(
             dictionary: MockDictionary(result: dictionaryResult),
@@ -279,9 +249,7 @@ final class SmartRouterTests: XCTestCase {
 
     func testModelFirstFallsBackToDictionaryWhenModelFails() async throws {
         let dictionaryResult = TranslationResult(
-            text: "backstop",
-            source: .dictionary,
-            confidence: 0.95
+            text: "backstop"
         )
         let router = SmartRouter(
             dictionary: MockDictionary(result: dictionaryResult),

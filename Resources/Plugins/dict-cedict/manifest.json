@@ -4,15 +4,11 @@
   "name": "CC-CEDICT",
   "version": "2026.10.2",
   "runtime": "cedict-sqlite",
-  "capabilities": ["word", "phrase"],
-  "languages": ["zh-Hans", "en"],
   "sizeBytes": 10588299,
   "sha256": "REPLACE_ME",
   "url": "https://example.invalid/glint/dict-cedict.zip",
   "license": "CC-BY-SA-4.0",
   "minRAMBytes": 0,
-  "quality": "basic",
-  "recommended": true,
   "source": "bundled",
   "summary": "覆盖常用中文词汇和短语，适合日常输入与英语学习。"
 }

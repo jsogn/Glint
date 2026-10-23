@@ -15,7 +15,7 @@
 
 ## 测试集
 
-`eval/cases.sample.json` 是初始样本；M1 正式评测扩展到 50 条，覆盖：
+`eval/cases.json` 是当前 50 条评测集，覆盖：
 
 - 单词；
 - 成语/固定短语；
@@ -66,7 +66,7 @@ HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
 
 评估结论已落实到当前路由；完整研究记录保留在 Git 历史中。
 
-M17 的生成候选和候选来源消融流程见
+生成候选和候选来源消融流程见
 [`Tools/CandidateLab/README.md`](../CandidateLab/README.md)。候选重排结果使用
 人工审阅的合成语料 gold：
 

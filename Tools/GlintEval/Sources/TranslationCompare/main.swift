@@ -75,8 +75,7 @@ struct TranslationCompare {
         _ = try await ct2.translate(
             Candidate(
                 text: "你好",
-                kind: .word,
-                confidence: 1
+                kind: .word
             )
         )
         let ct2LoadMilliseconds = milliseconds(
@@ -101,8 +100,7 @@ struct TranslationCompare {
             for (index, evaluationCase) in cases.enumerated() {
                 let candidate = Candidate(
                     text: evaluationCase.input,
-                    kind: CandidateClassifier.classify(evaluationCase.input),
-                    confidence: 1
+                    kind: CandidateClassifier.classify(evaluationCase.input)
                 )
                 let mlxStarted = ContinuousClock.now
                 let mlxResult = try? await mlx.translate(candidate)
@@ -226,10 +224,15 @@ private struct Options {
             }
             return values[index + 1]
         }
-        let support = FileManager.default.urls(
+        let applicationSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
-        ).first!.appendingPathComponent("Glint/plugins", isDirectory: true)
+        ).first ?? FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support", isDirectory: true)
+        let support = applicationSupport.appendingPathComponent(
+            "Glint/plugins",
+            isDirectory: true
+        )
         casesPath = value(after: "--cases")
             ?? "Tools/ModelLab/eval/cases.json"
         mlxPath = value(after: "--mlx")

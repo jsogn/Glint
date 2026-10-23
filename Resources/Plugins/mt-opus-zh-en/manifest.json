@@ -4,15 +4,11 @@
   "name": "OPUS-MT Chinese-English",
   "version": "0.1.0",
   "runtime": "ctranslate2",
-  "capabilities": ["word", "phrase", "sentence"],
-  "languages": ["zh-Hans", "en"],
   "sizeBytes": 87575727,
   "sha256": "BUNDLED",
   "url": "file:///bundled/mt-opus-zh-en",
   "license": "CC-BY-4.0",
   "minRAMBytes": 1073741824,
-  "quality": "light",
-  "recommended": true,
   "source": "bundled",
   "summary": "速度快、占用低，适合轻量日常翻译。"
 }

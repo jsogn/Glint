@@ -38,7 +38,7 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换输入法�
 - UI：系统 SwiftUI/AppKit 控件，不引入第三方 UI 组件库。
 - 候选读取：Accessibility `InputMethodCandidateList`。
 - 词典：SQLite 插件，当前包括 CC-CEDICT、ECDICT、Wiktionary。
-- 翻译：本地 CTranslate2 / MLX 模型；另支持多个 OpenAI 兼容接口。
+- 翻译：仅使用本地 CTranslate2 / MLX 模型。
 - 日志：OSLog，默认脱敏。
 
 ## 目录职责
@@ -47,11 +47,11 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换输入法�
 - `Packages/GlintCore/`：领域模型、路由、偏好选择和纯 Swift 协议。
 - `Packages/GlintMac/`：Accessibility、TIS、候选监控和 HUD 定位。
 - `Packages/GlintDictionary/`：SQLite 词典、查询和排序。
-- `Packages/GlintInference/`：CTranslate2、MLX、OpenAI 兼容翻译运行时。
+- `Packages/GlintInference/`：CTranslate2 和 MLX 翻译运行时。
 - `Packages/GlintPlugins/`：manifest、下载、镜像回退、校验和原子安装。
 - `Packages/GlintUI/`：主窗口、设置页、HUD 视图和 UI 模型。
 - `Tools/`：评测与模型实验，不进入 App 安装包。
-- `docs/`：PRD、架构、ADR 和验证记录。
+- `docs/`：长期维护的架构、发布、AX 验证和词典来源说明。
 
 ## 构建、测试与运行
 
@@ -155,7 +155,8 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 下载必须校验 SHA256；优先国内镜像，失败后回退官方源。
 - OPUS-MT 权重不进入 Git；构建脚本按固定 revision 转换并打入最终 App。
   其他翻译模型不进入主 App 安装包，由用户按需下载。
-- OpenAI 兼容接口支持多个配置；API Key 存入 Keychain 或现有安全存储。
+- 不支持用户添加的远程翻译接口；翻译结果必须来自 App 内置、经校验下载或
+  本地导入的受支持模型。
 - 不要在 UI 文案中写某台机器上的实测速度或开发备注；只描述用途和相对档位。
 
 ## UI 规范
@@ -184,9 +185,8 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 不读取选中文字内容；只使用选区长度判断是否应跳过。
 - 不截图、不读取输入框正文。
 - 本地模型推理不得联网。
-- 只有用户主动配置并选择 OpenAI 兼容接口时才发送当前候选。
 - 密码框、终端安全输入和其他 Secure Input 场景必须跳过。
-- 日志不得包含候选原文、翻译原文、API Key 或其他敏感数据。
+- 日志不得包含候选原文、翻译原文或其他敏感数据。
 
 ## Swift 代码规范
 
@@ -196,7 +196,8 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 优先使用值类型和小接口，避免全局可变状态。
 - 不把网络下载、推理和 UI 状态混在同一模块。
 - 新增设置时先明确归属：通用、翻译、识别、显示与触发、插件与模型、权限与隐私。
-- 新增用户偏好必须有默认值、迁移策略和测试。
+- 新增用户偏好必须有默认值、边界校验和测试；只有已发布版本需要承接旧数据时，
+  才保留迁移逻辑。
 
 ## 文档与提交
 

@@ -7,6 +7,7 @@ public enum PluginCatalogError: Error, LocalizedError, Equatable {
     case extractionFailed
     case manifestNotFound
     case manifestMismatch
+    case runtimeFilesMissing
     case invalidModelRepository
     case invalidModelSnapshot
     case insufficientDiskSpace
@@ -20,6 +21,7 @@ public enum PluginCatalogError: Error, LocalizedError, Equatable {
         case .extractionFailed: return "插件压缩包无法解压"
         case .manifestNotFound: return "插件压缩包缺少 manifest.json"
         case .manifestMismatch: return "插件清单与目录记录不一致"
+        case .runtimeFilesMissing: return "插件缺少运行所需的数据文件"
         case .invalidModelRepository: return "模型仓库地址无效"
         case .invalidModelSnapshot: return "模型文件不完整或校验失败"
         case .insufficientDiskSpace: return "磁盘空间不足，无法安装该模型"
@@ -118,14 +120,10 @@ public actor PluginCatalogService {
         }
 
         let decoder = JSONDecoder()
-        let plugins = if let plugins = try? decoder.decode(
-            [PluginManifest].self,
+        let plugins = try decoder.decode(
+            PluginCatalogPayload.self,
             from: data
-        ) {
-            plugins
-        } else {
-            try decoder.decode(PluginCatalogPayload.self, from: data).plugins
-        }
+        ).plugins
         return PluginCatalogFetchResult(
             plugins: plugins,
             isNotModified: false,
@@ -221,9 +219,13 @@ public actor PluginCatalogService {
         }
         try validatePluginContents(in: extractedDirectory)
 
-        guard let manifestURL = findManifest(in: extractedDirectory),
-              let data = try? Data(contentsOf: manifestURL),
-              let embedded = try? JSONDecoder().decode(PluginManifest.self, from: data) else {
+        guard let manifestURL = findManifest(in: extractedDirectory) else {
+            throw PluginCatalogError.manifestNotFound
+        }
+        let pluginDirectory = manifestURL.deletingLastPathComponent()
+        guard let embedded = try? PluginManifest.load(
+            from: pluginDirectory
+        ) else {
             throw PluginCatalogError.manifestNotFound
         }
         guard embedded.id == manifest.id,
@@ -231,8 +233,13 @@ public actor PluginCatalogService {
               embedded.version == manifest.version else {
             throw PluginCatalogError.manifestMismatch
         }
+        guard Self.hasRequiredRuntimeFiles(
+            for: embedded,
+            in: pluginDirectory
+        ) else {
+            throw PluginCatalogError.runtimeFilesMissing
+        }
 
-        let pluginDirectory = manifestURL.deletingLastPathComponent()
         try JSONEncoder().encode(manifest).write(to: manifestURL)
         try Task.checkCancellation()
         let installed = try await manager.installPreparedPlugin(
@@ -255,7 +262,7 @@ public actor PluginCatalogService {
             return nil
         }
         for case let url as URL in enumerator
-        where url.lastPathComponent == "manifest.json" {
+        where url.lastPathComponent == PluginManifest.fileName {
             return url
         }
         return nil
@@ -393,7 +400,7 @@ public actor PluginCatalogService {
         )
 
         try Task.checkCancellation()
-        let installed = try await manager.installLocalPlugin(at: pluginDirectory)
+        let installed = try await manager.installPreparedPlugin(at: pluginDirectory)
         progress?(1)
         return installed
     }
@@ -550,6 +557,28 @@ public actor PluginCatalogService {
             || name.hasSuffix(".tiktoken")
     }
 
+    static func hasRequiredRuntimeFiles(
+        for manifest: PluginManifest,
+        in directory: URL
+    ) -> Bool {
+        let fileManager = FileManager.default
+        let requiredName: String?
+        switch manifest.runtime {
+        case "sqlite-v1":
+            requiredName = "dictionary.sqlite3"
+        case "cedict-sqlite":
+            requiredName = "cedict.sqlite3"
+        case "ecdict-rank":
+            requiredName = "ecdict_rank.sqlite3"
+        default:
+            requiredName = nil
+        }
+        guard let requiredName else { return false }
+        return fileManager.fileExists(
+            atPath: directory.appendingPathComponent(requiredName).path
+        )
+    }
+
     private static func isCompleteModelSnapshot(
         _ files: [HuggingFaceSnapshot.Sibling]
     ) -> Bool {
@@ -557,6 +586,7 @@ public actor PluginCatalogService {
         let hasWeights = names.contains { $0.hasSuffix(".safetensors") }
         let hasTokenizer = names.contains("tokenizer.json")
             || names.contains { $0.hasSuffix(".model") }
+            || names.contains { $0.hasSuffix(".spm") }
         return names.contains("config.json") && hasWeights && hasTokenizer
     }
 

@@ -23,17 +23,13 @@ final class TranslationMemoTests: XCTestCase {
         let first = try await memo.resolve(for: key) {
             _ = await counter.increment()
             return TranslationResult(
-                text: "hello",
-                source: .dictionary,
-                confidence: 0.9
+                text: "hello"
             )
         }
         let second = try await memo.resolve(for: key) {
             _ = await counter.increment()
             return TranslationResult(
-                text: "unexpected",
-                source: .translation,
-                confidence: 0.5
+                text: "unexpected"
             )
         }
 
@@ -51,9 +47,7 @@ final class TranslationMemoTests: XCTestCase {
             configuration: "model-a"
         )
         let result = TranslationResult(
-            text: "hello",
-            source: .dictionary,
-            confidence: 0.9
+            text: "hello"
         )
 
         _ = try await memo.resolve(for: key) { result }
@@ -82,9 +76,7 @@ final class TranslationMemoTests: XCTestCase {
         XCTAssertNil(peeked)
         _ = try await memo.resolve(for: key) {
             TranslationResult(
-                text: "hello",
-                source: .dictionary,
-                confidence: 0.9
+                text: "hello"
             )
         }
         let statistics = await memo.statistics()
@@ -110,9 +102,7 @@ final class TranslationMemoTests: XCTestCase {
                             text: String(repeating: "x", count: 100),
                             score: 1
                         ),
-                    ],
-                    source: .dictionary,
-                    confidence: 1
+                    ]
                 )
             }
         }
@@ -138,9 +128,7 @@ final class TranslationMemoTests: XCTestCase {
                     TranslationOption(text: "primary", score: 0.9),
                     TranslationOption(text: "alternative", score: 0.7),
                     TranslationOption(text: "secondary", score: 0.5),
-                ],
-                source: .translation,
-                confidence: 0.9
+                ]
             )
         }
 
@@ -171,9 +159,7 @@ final class TranslationMemoTests: XCTestCase {
             ) {
                 let value = await counter.increment()
                 return TranslationResult(
-                    text: "result-\(value)",
-                    source: .translation,
-                    confidence: 0.9
+                    text: "result-\(value)"
                 )
             }
         }
@@ -197,9 +183,7 @@ final class TranslationMemoTests: XCTestCase {
             ) {
                 let value = await counter.increment()
                 return TranslationResult(
-                    text: "result-\(value)",
-                    source: .translation,
-                    confidence: 0.9
+                    text: "result-\(value)"
                 )
             }
         }
@@ -221,17 +205,13 @@ final class TranslationMemoTests: XCTestCase {
             _ = await counter.increment()
             try await Task.sleep(nanoseconds: 30_000_000)
             return TranslationResult(
-                text: "It's a nice day.",
-                source: .translation,
-                confidence: 0.9
+                text: "It's a nice day."
             )
         }
         async let second = memo.resolve(for: key) {
             _ = await counter.increment()
             return TranslationResult(
-                text: "unexpected",
-                source: .translation,
-                confidence: 0.5
+                text: "unexpected"
             )
         }
 
@@ -256,9 +236,7 @@ final class TranslationMemoTests: XCTestCase {
             _ = await counter.increment()
             try await Task.sleep(nanoseconds: 120_000_000)
             return TranslationResult(
-                text: "shared result",
-                source: .translation,
-                confidence: 0.9
+                text: "shared result"
             )
         }
 
@@ -305,9 +283,7 @@ final class TranslationMemoTests: XCTestCase {
             ) {
                 let value = await counter.increment()
                 return TranslationResult(
-                    text: "result-\(value)",
-                    source: .dictionary,
-                    confidence: 0.9
+                    text: "result-\(value)"
                 )
             }
         }
@@ -321,9 +297,7 @@ final class TranslationMemoTests: XCTestCase {
         ) {
             let value = await counter.increment()
             return TranslationResult(
-                text: "result-\(value)",
-                source: .dictionary,
-                confidence: 0.9
+                text: "result-\(value)"
             )
         }
 

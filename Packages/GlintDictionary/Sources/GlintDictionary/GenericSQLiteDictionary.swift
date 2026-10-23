@@ -20,14 +20,18 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
         targetLanguage: String
     ) {
         guard Self.isCompatible(databaseURL: databaseURL) else { return nil }
-        sqlite3_open_v2(
+        let openResult = sqlite3_open_v2(
             databaseURL.path,
             &database,
             SQLITE_OPEN_READONLY,
             nil
         )
-        guard database != nil else { return nil }
-        sqlite3_prepare_v2(
+        guard openResult == SQLITE_OK, database != nil else {
+            sqlite3_close(database)
+            database = nil
+            return nil
+        }
+        let prepareResult = sqlite3_prepare_v2(
             database,
             """
             SELECT target, frequency, source_order
@@ -43,7 +47,8 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
             &statement,
             nil
         )
-        guard statement != nil else {
+        guard prepareResult == SQLITE_OK, statement != nil else {
+            sqlite3_finalize(statement)
             sqlite3_close(database)
             database = nil
             return nil
@@ -59,12 +64,14 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
 
     public static func isCompatible(databaseURL: URL) -> Bool {
         var db: OpaquePointer?
-        guard sqlite3_open_v2(
+        let openResult = sqlite3_open_v2(
             databaseURL.path,
             &db,
             SQLITE_OPEN_READONLY,
             nil
-        ) == SQLITE_OK, let db else {
+        )
+        guard openResult == SQLITE_OK, let db else {
+            sqlite3_close(db)
             return false
         }
         defer { sqlite3_close(db) }
@@ -94,6 +101,8 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
         return columns.isSuperset(of: [
             "source",
             "target",
+            "frequency",
+            "source_order",
             "source_lang",
             "target_lang",
         ])
@@ -107,9 +116,12 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
             StringTransform("Simplified-Traditional"),
             reverse: false
         )
-        let sourceVariants = traditional == nil || traditional == source
-            ? [source]
-            : [source, traditional!]
+        let sourceVariants: [String]
+        if let traditional, traditional != source {
+            sourceVariants = [source, traditional]
+        } else {
+            sourceVariants = [source]
+        }
 
         return lock.withLock {
             guard let statement else { return nil }
@@ -143,11 +155,7 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
                     score: 1.0 - Double(index) * 0.05
                 )
             }
-            return TranslationResult(
-                options: options,
-                source: .dictionary,
-                confidence: 0.88
-            )
+            return TranslationResult(options: options)
         }
     }
 }

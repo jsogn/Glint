@@ -28,10 +28,12 @@ final class LocalModelImportServiceTests: XCTestCase {
 
         let candidate = try await service.inspect(directory: source)
         XCTAssertEqual(candidate.modelType, "qwen3")
-        XCTAssertTrue(candidate.hasChatTemplate)
         XCTAssertGreaterThan(candidate.sizeBytes, 0)
 
-        let manifest = try await service.importModel(from: source)
+        let manifest = try await service.importModel(
+            from: source,
+            preserveInstalledVersion: false
+        )
         XCTAssertEqual(manifest.name, "TinyModel")
         XCTAssertEqual(manifest.type, .translation)
         XCTAssertEqual(manifest.runtime, "mlx")
@@ -99,14 +101,21 @@ final class LocalModelImportServiceTests: XCTestCase {
         let manager = PluginManager(baseDirectory: support)
         let service = LocalModelImportService(manager: manager)
 
-        let first = try await service.importModel(from: source)
+        let first = try await service.importModel(
+            from: source,
+            preserveInstalledVersion: false
+        )
         try Data(repeating: 2, count: 512).write(
             to: source.appendingPathComponent("model.safetensors"),
             options: .atomic
         )
-        let second = try await service.importModel(from: source)
+        let second = try await service.importModel(
+            from: source,
+            preserveInstalledVersion: false
+        )
 
         XCTAssertEqual(first.id, second.id)
+        XCTAssertNotEqual(first.revision, second.revision)
         let installed = await manager.pluginDirectory(for: second.id)
         let data = try Data(
             contentsOf: installed.appendingPathComponent(
@@ -123,7 +132,10 @@ final class LocalModelImportServiceTests: XCTestCase {
         let support = root.appendingPathComponent("support", isDirectory: true)
         let manager = PluginManager(baseDirectory: support)
         let service = LocalModelImportService(manager: manager)
-        let manifest = try await service.importModel(from: source)
+        let manifest = try await service.importModel(
+            from: source,
+            preserveInstalledVersion: false
+        )
         let installed = await manager.pluginDirectory(for: manifest.id)
             .appendingPathComponent("model/model.safetensors")
         let before = try Data(contentsOf: installed)

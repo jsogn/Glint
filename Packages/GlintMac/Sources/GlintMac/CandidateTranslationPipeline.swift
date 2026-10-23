@@ -11,7 +11,7 @@ enum CandidateTranslationPipeline {
         memo: TranslationMemo,
         displayOptionLimit: Int = 3,
         dictionaryPrefetchTasks: [
-            Int: Task<DictionaryPrefetchResult, Never>
+            Int: Task<TranslationResult?, Never>
         ] = [:],
         cachedPrefetchResults: [Int: TranslationResult] = [:],
         publishProgress: (
@@ -117,7 +117,7 @@ enum CandidateTranslationPipeline {
         router: SmartRouter,
         memo: TranslationMemo,
         includesAlternatives: Bool,
-        dictionaryPrefetch: Task<DictionaryPrefetchResult, Never>?,
+        dictionaryPrefetch: Task<TranslationResult?, Never>?,
         cachedResult: TranslationResult?
     ) async -> TranslationResult? {
         guard !Task.isCancelled else { return nil }

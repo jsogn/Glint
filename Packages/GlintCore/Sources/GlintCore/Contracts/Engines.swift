@@ -7,8 +7,5 @@ public protocol TranslationEngine: Sendable {
 }
 
 public enum GlintError: Error, Sendable, Equatable {
-    case invalidCandidate
     case engineUnavailable
-    case ambiguous
-    case cancelled
 }

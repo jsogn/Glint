@@ -17,25 +17,21 @@ private struct StubInputSource: InputSourceReading {
         case .applePinyin:
             source = ActiveInputSource(
                 id: "com.apple.inputmethod.SCIM.ITABC",
-                bundleIdentifier: "com.apple.inputmethod.SCIM",
                 kind: kind
             )
         case .otherInputMethod:
             source = ActiveInputSource(
                 id: "com.example.inputmethod.pinyin",
-                bundleIdentifier: "com.example.inputmethod",
                 kind: kind
             )
         case .keyboardLayout:
             source = ActiveInputSource(
                 id: "com.apple.keylayout.ABC",
-                bundleIdentifier: "com.apple.keyboardlayout.all",
                 kind: kind
             )
         case .unknown:
             source = ActiveInputSource(
                 id: "",
-                bundleIdentifier: "",
                 kind: kind
             )
         }
@@ -127,9 +123,7 @@ private struct ImmediateTranslation: TranslationEngine {
     func translate(_ candidate: Candidate) async throws -> TranslationResult? {
         try Task.checkCancellation()
         return TranslationResult(
-            text: "english-\(candidate.text)",
-            source: .translation,
-            confidence: 0.9
+            text: "english-\(candidate.text)"
         )
     }
 }
@@ -141,9 +135,7 @@ private struct MultiOptionTranslation: TranslationEngine {
                 TranslationOption(text: "primary", score: 1),
                 TranslationOption(text: "alternative", score: 0.8),
                 TranslationOption(text: "secondary", score: 0.6),
-            ],
-            source: .translation,
-            confidence: 0.9
+            ]
         )
     }
 }
@@ -158,9 +150,7 @@ private actor ParallelTranslation: TranslationEngine {
         try await Task.sleep(nanoseconds: 20_000_000)
         activeCount -= 1
         return TranslationResult(
-            text: "english-\(candidate.text)",
-            source: .translation,
-            confidence: 0.9
+            text: "english-\(candidate.text)"
         )
     }
 
@@ -295,8 +285,7 @@ final class GlintMacTests: XCTestCase {
         let candidates = ["one", "selected", "three"].map {
             Candidate(
                 text: $0,
-                kind: .word,
-                confidence: 1
+                kind: .word
             )
         }
 
@@ -333,8 +322,7 @@ final class GlintMacTests: XCTestCase {
             [
                 Candidate(
                     text: "方案",
-                    kind: .word,
-                    confidence: 1
+                    kind: .word
                 ),
             ],
             selectedIndex: 0,
@@ -385,16 +373,13 @@ final class GlintMacTests: XCTestCase {
 
     func testCachedPrefetchAvoidsTranslationRouting() async {
         let cachedResult = TranslationResult(
-            text: "cached",
-            source: .translation,
-            confidence: 1
+            text: "cached"
         )
         let presentations = await CandidateTranslationPipeline.translate(
             [
                 Candidate(
                     text: "方案",
-                    kind: .word,
-                    confidence: 1
+                    kind: .word
                 ),
             ],
             selectedIndex: 0,
@@ -417,8 +402,7 @@ final class GlintMacTests: XCTestCase {
             [
                 Candidate(
                     text: "方案",
-                    kind: .word,
-                    confidence: 1
+                    kind: .word
                 ),
             ],
             selectedIndex: 0,
@@ -445,8 +429,7 @@ final class GlintMacTests: XCTestCase {
         let candidates = ["one", "two", "three"].map {
             Candidate(
                 text: $0,
-                kind: .word,
-                confidence: 1
+                kind: .word
             )
         }
 
@@ -1002,8 +985,8 @@ final class GlintMacTests: XCTestCase {
     }
 
     @MainActor
-    func testInputSourceReturnsString() async {
-        XCTAssertFalse(InputSourceMonitor().currentInputSourceID().contains(" "))
+    func testInputSourceIdentifierDoesNotContainSpaces() async {
+        XCTAssertFalse(InputSourceMonitor().currentInputSource().id.contains(" "))
     }
 
     func testInputSourceClassificationKeepsAppleAndThirdPartyDistinct() {

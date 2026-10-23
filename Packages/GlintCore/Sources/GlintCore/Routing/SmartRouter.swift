@@ -1,13 +1,5 @@
 import Foundation
 
-public struct DictionaryPrefetchResult: Sendable {
-    public let result: TranslationResult?
-
-    public init(result: TranslationResult?) {
-        self.result = result
-    }
-}
-
 public struct SmartRouter: Sendable {
     private let dictionary: any DictionaryEngine
     private let translation: any TranslationEngine
@@ -21,7 +13,7 @@ public struct SmartRouter: Sendable {
         _ candidate: Candidate,
         mode: TranslationMode = .dictionaryFirst,
         includesAlternatives: Bool = true,
-        dictionaryPrefetch: Task<DictionaryPrefetchResult, Never>? = nil
+        dictionaryPrefetch: Task<TranslationResult?, Never>? = nil
     ) async throws -> TranslationResult? {
         try Task.checkCancellation()
         guard !candidate.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -65,22 +57,20 @@ public struct SmartRouter: Sendable {
 
     public func prefetchDictionary(
         _ candidate: Candidate
-    ) async -> DictionaryPrefetchResult {
+    ) async -> TranslationResult? {
         guard !Task.isCancelled else {
-            return DictionaryPrefetchResult(result: nil)
+            return nil
         }
         let result = try? await dictionary.lookup(candidate)
-        return DictionaryPrefetchResult(
-            result: Task.isCancelled ? nil : result
-        )
+        return Task.isCancelled ? nil : result
     }
 
     private func dictionaryResult(
         for candidate: Candidate,
-        prefetch: Task<DictionaryPrefetchResult, Never>?
+        prefetch: Task<TranslationResult?, Never>?
     ) async -> TranslationResult? {
         if let prefetch {
-            return await prefetch.value.result
+            return await prefetch.value
         }
         return try? await dictionary.lookup(candidate)
     }
@@ -101,9 +91,7 @@ public struct SmartRouter: Sendable {
             )
         }
         return TranslationResult(
-            options: model.options + dictionaryOptions,
-            source: .translation,
-            confidence: model.confidence
+            options: model.options + dictionaryOptions
         )
     }
 }

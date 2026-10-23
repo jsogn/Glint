@@ -75,14 +75,14 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         }
 
         if let resolvedDatabase {
-            sqlite3_open_v2(
+            let openResult = sqlite3_open_v2(
                 resolvedDatabase.path,
                 &database,
                 SQLITE_OPEN_READONLY,
                 nil
             )
-            if database != nil {
-                sqlite3_prepare_v2(
+            if openResult == SQLITE_OK, database != nil {
+                let prepareResult = sqlite3_prepare_v2(
                     database,
                     """
                     SELECT gloss, line_order, sense_order
@@ -95,6 +95,15 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                     &senseStatement,
                     nil
                 )
+                if prepareResult != SQLITE_OK {
+                    sqlite3_finalize(senseStatement)
+                    senseStatement = nil
+                    sqlite3_close(database)
+                    database = nil
+                }
+            } else {
+                sqlite3_close(database)
+                database = nil
             }
         }
     }
@@ -120,22 +129,14 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             let options = dictionaryOptions
                 + fallbackOptions(for: text, after: dictionaryOptions)
             guard !options.isEmpty else { return nil }
-            return TranslationResult(
-                options: options,
-                source: .dictionary,
-                confidence: 0.85
-            )
+            return TranslationResult(options: options)
         }
         let fallback = fallbackOptions(for: text)
         if !fallback.isEmpty {
-            return TranslationResult(
-                options: fallback,
-                source: .dictionary,
-                confidence: 0.75
-            )
+            return TranslationResult(options: fallback)
         }
         if let value = builtin[text] {
-            return TranslationResult(text: value, source: .dictionary, confidence: 0.8)
+            return TranslationResult(text: value)
         }
         return nil
     }
@@ -204,14 +205,14 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
     ) -> [TranslationOption] {
         var rankingByEnglish: [String: EnglishRanking] = [:]
         for ranking in ranker?.rankings(for: term) ?? [] {
-            let key = Self.normalize(ranking.english)
+            let key = EnglishWordNormalizer.normalize(ranking.english)
             if rankingByEnglish[key] == nil {
                 rankingByEnglish[key] = ranking
             }
         }
         var preferredBoosts: [String: Double] = [:]
         for (index, value) in (overrides[term] ?? []).enumerated() {
-            let key = Self.normalize(value)
+            let key = EnglishWordNormalizer.normalize(value)
             preferredBoosts[key] = max(
                 preferredBoosts[key] ?? 0,
                 index == 0 ? 0.18 : 0.02
@@ -228,7 +229,7 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 guard let compact = DictionarySurface.normalize(value) else {
                     continue
                 }
-                let key = Self.normalize(compact)
+                let key = EnglishWordNormalizer.normalize(compact)
                 guard !key.isEmpty else {
                     continue
                 }
@@ -252,22 +253,6 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             }
         }
         return options
-    }
-
-    private static func normalize(_ text: String) -> String {
-        var value = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        for prefix in ["to ", "the ", "a ", "an ", "be ", "of "] {
-            if value.hasPrefix(prefix) {
-                value = String(value.dropFirst(prefix.count))
-                break
-            }
-        }
-        let allowed = CharacterSet.alphanumerics.union(.whitespaces)
-        value = String(value.unicodeScalars.filter { allowed.contains($0) })
-        if value.count > 3, value.hasSuffix("s") {
-            value = String(value.dropLast())
-        }
-        return value.trimmingCharacters(in: .whitespaces)
     }
 
     private static func columnText(

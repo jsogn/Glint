@@ -3,16 +3,15 @@ import Darwin
 import Foundation
 import GlintCore
 
-public struct LocalTranslationModelCandidate: Sendable, Equatable {
-    public let sourceDirectory: URL
-    public let proposedName: String
-    public let modelType: String
-    public let sizeBytes: Int64
-    public let estimatedRAMBytes: Int64
-    public let hasChatTemplate: Bool
+struct LocalTranslationModelCandidate: Sendable, Equatable {
+    let sourceDirectory: URL
+    let proposedName: String
+    let modelType: String
+    let sizeBytes: Int64
+    let estimatedRAMBytes: Int64
 }
 
-public enum LocalModelImportError: Error, LocalizedError, Equatable {
+enum LocalModelImportError: Error, LocalizedError, Equatable {
     case notADirectory
     case missingConfig
     case invalidConfig
@@ -22,7 +21,7 @@ public enum LocalModelImportError: Error, LocalizedError, Equatable {
     case missingWeightShard(String)
     case unsafeFile(String)
 
-    public var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case .notADirectory:
             "请选择一个模型文件夹"
@@ -62,7 +61,7 @@ public actor LocalModelImportService {
         self.fileManager = fileManager
     }
 
-    public func inspect(
+    func inspect(
         directory: URL
     ) throws -> LocalTranslationModelCandidate {
         let entries = try modelEntries(in: directory)
@@ -137,14 +136,14 @@ public actor LocalModelImportService {
             proposedName: directory.lastPathComponent,
             modelType: modelType,
             sizeBytes: sizeBytes,
-            estimatedRAMBytes: estimatedRAMBytes,
-            hasChatTemplate: hasChatTemplate
+            estimatedRAMBytes: estimatedRAMBytes
         )
     }
 
     public func importModel(
         from sourceDirectory: URL,
         displayName: String? = nil,
+        preserveInstalledVersion: Bool,
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> PluginManifest {
         try Task.checkCancellation()
@@ -161,16 +160,13 @@ public actor LocalModelImportService {
             name: name,
             version: "local",
             runtime: "mlx",
-            capabilities: ["word", "phrase", "sentence"],
-            languages: ["zh-Hans", "en"],
             sizeBytes: candidate.sizeBytes,
             sha256: "LOCAL_IMPORT",
             url: candidate.sourceDirectory,
             license: "本地模型",
             minRAMBytes: candidate.estimatedRAMBytes,
-            quality: "local",
-            recommended: false,
             summary: "本地导入 · \(candidate.modelType)",
+            revision: UUID().uuidString,
             source: .local,
             promptProfile: .generic
         )
@@ -190,9 +186,12 @@ public actor LocalModelImportService {
             }.value
             try Task.checkCancellation()
             try JSONEncoder().encode(manifest).write(
-                to: staging.appendingPathComponent("manifest.json")
+                to: staging.appendingPathComponent(PluginManifest.fileName)
             )
-            let installed = try await manager.installPreparedPlugin(at: staging)
+            let installed = try await manager.installPreparedPlugin(
+                at: staging,
+                keepBackup: preserveInstalledVersion
+            )
             progress?(1)
             return installed
         } catch {

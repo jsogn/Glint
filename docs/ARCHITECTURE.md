@@ -5,7 +5,6 @@
 - 最近校准：2026-10-23
 - 平台：macOS 26+，Apple Silicon
 - 语言：Swift 6
-- 关联 Demo：外部 PinyinLensDemo 原型仓库
 
 ## 1. 架构目标
 
@@ -48,73 +47,25 @@ Glint/
 ├── README.md
 ├── Glint.xcworkspace
 ├── App/
-│   ├── Glint/
-│   │   ├── main.swift
-│   │   ├── AppDelegate.swift
-│   │   ├── AppEnvironment.swift
-│   │   ├── Info.plist
-│   │   ├── Glint.entitlements
-│   │   └── Assets.xcassets
-│   └── GlintTests/
+│   ├── Glint/                 # App 生命周期、组合根和命令行诊断
+│   └── GlintTests/            # App target 冒烟测试
 ├── Packages/
-│   ├── GlintCore/
-│   │   ├── Package.swift
-│   │   ├── Sources/GlintCore/
-│   │   │   ├── Domain/
-│   │   │   ├── Contracts/
-│   │   │   └── Routing/
-│   │   └── Tests/GlintCoreTests/
-│   ├── GlintMac/
-│   │   ├── Package.swift
-│   │   ├── Sources/GlintMac/
-│   │   │   ├── Accessibility/
-│   │   │   └── InputSource/
-│   │   └── Tests/GlintMacTests/
-│   ├── GlintDictionary/
-│   │   ├── Package.swift
-│   │   ├── Sources/GlintDictionary/
-│   │   │   ├── SQLite/
-│   │   │   ├── Lookup/
-│   │   │   └── Ranking/
-│   │   └── Tests/GlintDictionaryTests/
-│   ├── GlintInference/
-│   │   ├── Package.swift
-│   │   ├── Sources/GlintInference/
-│   │   │   ├── Contracts/
-│   │   │   ├── CTranslate2/
-│   │   │   └── MLX/
-│   │   └── Tests/GlintInferenceTests/
-│   ├── GlintPlugins/
-│   │   ├── Package.swift
-│   │   ├── Sources/GlintPlugins/
-│   │   │   ├── Manifest/
-│   │   │   ├── Download/
-│   │   │   └── Install/
-│   │   └── Tests/GlintPluginsTests/
-│   └── GlintUI/
-│       ├── Package.swift
-│       ├── Sources/GlintUI/
-│       │   ├── MainWindow/
-│       │   ├── HUD/
-│       │   ├── Onboarding/
-│       │   └── Components/
-│       └── Tests/GlintUITests/
+│   ├── GlintCore/             # 领域模型、协议、路由和缓存
+│   ├── GlintMac/              # Accessibility、TIS 和实时监控
+│   ├── GlintDictionary/       # SQLite 词典与排序
+│   ├── GlintInference/        # CTranslate2 与 MLX 推理
+│   ├── GlintPlugins/          # 插件清单、下载、导入和安装
+│   ├── GlintUI/               # 主窗口、设置和 HUD
+│   └── GlintBenchmark/        # 词典基准命令行
 ├── Bridges/
-│   └── CTranslate2Bridge/
-│       ├── Package.swift
-│       └── Sources/CTranslate2Bridge/
-│           ├── include/
-│           └── CTranslate2Bridge.mm
+│   └── CTranslate2Bridge/     # C ABI 源码；运行时 dylib 随 OPUS 资源提供
 ├── Tools/
+│   ├── AXCandidateLab/
+│   ├── CandidateLab/
+│   ├── DictionaryBuilder/
+│   ├── DictionaryLab/
 │   ├── GlintEval/
-│   │   ├── Package.swift
-│   │   └── Sources/GlintEval/
 │   └── ModelLab/
-│       ├── README.md
-│       ├── requirements.txt
-│       ├── convert/
-│       ├── eval/
-│       └── results/
 ├── Resources/
 │   ├── Distribution/
 │   ├── Evaluation/
@@ -135,7 +86,7 @@ Glint/
 │   ├── run.sh
 │   ├── test.sh
 │   ├── verify_app.sh
-│   └── notarize.sh
+│   └── build_wiktionary_dictionary.py
 ```
 
 ## 4. 模块边界
@@ -146,11 +97,12 @@ Glint/
 
 包含：
 
-- `Candidate`、`CandidateKind`、`EnglishResult`、`TranslationMode`；
+- `Candidate`、`CandidateKind`、`TranslationResult`、`TranslationMode`；
 - `DictionaryEngine`、`TranslationEngine` 协议；
 - `SmartRouter`：词典/模型/不显示的路由；
-- `AppPolicy`：MVP 固定 `.all`，后续白名单/黑名单；
-- 公共错误类型和插件 manifest 的领域模型。
+- `TranslationMemo`：精确结果内存缓存和并发请求合并；
+- `TypingActivityTracker`：候选停留和 revision 计算；
+- 公共错误类型、模型选择偏好和提示词档位。
 
 ### GlintMac
 
@@ -160,6 +112,7 @@ Glint/
 - Accessibility 光标/控件 frame；
 - Accessibility 输入法候选读取；
 - 安全输入判断；
+- `MonitoringController`、候选去抖和整栏翻译调度；
 - 当前不读取输入框正文；如后续启用上下文，必须经过独立隐私评审。
 
 不包含 UI、插件下载或词典数据。
@@ -194,8 +147,9 @@ Glint/
 - `MainWindowController` + SwiftUI 页面；
 - `HUDController` + `NSPanel`；
 - 侧栏、插件卡片、权限卡片、预览；
+- `MainWindowModel` 作为主窗口的 `@MainActor` 状态和动作边界；
 - 依赖 `GlintCore` 的领域类型和 `GlintPlugins` 的 manifest/manager
-  接口，不直接实现截取或推理。
+  接口，不直接实现 Accessibility 读取或推理。
 
 ### GlintApp
 
@@ -209,7 +163,7 @@ Glint/
 
 ### Tools/ModelLab
 
-Python 实验环境，只用于 M1：
+Python 模型实验环境：
 
 - 模型下载和转换；
 - 50 条测试集；
@@ -240,7 +194,8 @@ GlintCore
 - `GlintMac` 不能 import `GlintUI`。
 - `GlintInference` 不能 import `GlintPlugins`；模型路径由 App/PluginManager 注入。
 - `GlintUI` 不直接持有 `CTranslate2`/`MLX` 类型，只通过 `TranslationEngine` 协议。
-- `Bridges/CTranslate2Bridge` 只被 `GlintInference` 依赖。
+- `Bridges/CTranslate2Bridge` 的运行时产物只由 `GlintInference` 通过 C ABI
+  `dlopen` 加载；桥接源码不进入 Swift 依赖图。
 
 ## 6. App 生命周期与 UI
 
@@ -260,7 +215,7 @@ GlintCore
 ```text
 InputSourceMonitor (TIS)
   → FocusMonitor (AX)
-  → AXCandidateReader (selected candidate title + frame)
+  → AXCandidateReader (selected and visible candidate titles + frames)
   → SmartRouter (GlintCore)
       ├─ DictionaryEngine (GlintDictionary)
       └─ TranslationEngine (GlintInference)
@@ -270,18 +225,22 @@ InputSourceMonitor (TIS)
 主窗口只是观察同一套状态：
 
 ```text
-MonitoringController → @Observable AppState → MainWindowView
+MonitoringController → AppDelegate + HUDEventCoordinator
+MainWindowModel → MainWindowView
 ```
 
 ## 8. 并发与状态
 
-- `MonitoringController`：主线程上的轻量调度器；定时/事件触发，单飞（single-flight）。
+- `MonitoringController`：actor；单一轮询循环，负责权限节流、候选去抖、
+  停留判定、翻译取消和事件发布。
 - `AXCandidateReader`：候选识别主路径；只识别具有输入法候选语义的
   `InputMethodCandidateList`，不读取普通 `AXList`。
-- `AXCandidateReader`：候选识别唯一主路径。
-- `TranslationPipeline`：actor，取消旧请求，避免旧结果覆盖新候选。
-- `PluginManager`/`ModelDownloader`：actor；下载状态通过 AsyncStream 发布。
-- UI：`@MainActor`；只接收不可变的展示状态。
+- `CandidateTranslationPipeline`：无状态并发编排；选中项优先，整栏结果按
+  revision 发布，旧任务由监控层取消。
+- `TranslationRuntime`/`TranslationMemo`：actor；模型加载、推理和缓存请求串行化。
+- `PluginManager`/`PluginCatalogService`/`LocalModelImportService`：actor；
+  下载、导入和安装进度通过闭包回到主 actor。
+- `MainWindowModel`/`HUDController`：`@MainActor`；只接收不可变的展示状态。
 - 缓存：内存 LRU；不落盘；候选变化时取消旧请求。
 
 ## 9. 插件与模型
@@ -293,8 +252,7 @@ MonitoringController → @Observable AppState → MainWindowView
   - `ecdict-rank` → ECDICT 词频和义项排序；
   - `sqlite-v1` → 扩展词典；
   - `ctranslate2` → CTranslate2Bridge；
-  - `mlx` → MLX Swift；
-  - `apple-translation` → 可选的系统适配器。
+  - `mlx` → MLX Swift。
 - CC-CEDICT、overrides、ECDICT、Wiktionary 和 OPUS-MT 作为只读核心资源直接
   随 App 提供，不复制到 Application Support，不参与安装和卸载。OPUS-MT 由
   `scripts/prepare_opus_model.sh` 在构建前转换并校验，锁文件记录源 revision、
@@ -313,13 +271,15 @@ MonitoringController → @Observable AppState → MainWindowView
 ```
 
 - 安装流程：下载可选插件 → 校验 manifest 和 SHA256 → 原子替换插件目录 →
-  更新 registry。
-- 删除流程：先取消推理/卸载模型，再删除目录和 registry 条目。核心词典和
+  刷新内存中的已安装清单。
+- 删除流程：先取消推理/卸载模型，再删除插件目录。核心词典和
   内置 OPUS-MT 不提供删除操作。
 - 不支持任意第三方 dylib、脚本或可执行文件。
 - 下载和本地导入的翻译插件只允许 MLX；词典插件只允许固定 SQLite runtime。
   CTranslate2 只从签名的 App bundle 加载。
+- 不支持用户添加的远程翻译接口；候选和翻译内容只进入受支持的本地运行时。
 - 插件升级使用持久化事务标记；未完成激活的升级在下次启动时回滚到旧版本。
+- 产品语言固定为简体中文到英文；清单不重复保存 capabilities、语言或质量档位。
 
 ## 10. 持久化与隐私
 
@@ -335,7 +295,7 @@ MonitoringController → @Observable AppState → MainWindowView
 - 依赖：
   - 系统 SQLite3；
   - MLX Swift（高质量翻译插件）；
-  - CTranslate2（通过 `Bridges/CTranslate2Bridge`）。
+  - CTranslate2 与 SentencePiece 动态库（运行在 `Resources/Plugins/mt-opus-zh-en/bin`）。
 - App target 只复制运行时 allowlist：`catalog.json`、`dict-cedict`、
   `dict-ecdict`、`dict-wiktionary-zh-en` 和 `mt-opus-zh-en` 五个只读核心
   资源。OPUS-MT 权重由构建脚本准备且不进入 Git；评测数据、可选插件和其他
@@ -348,7 +308,7 @@ MonitoringController → @Observable AppState → MainWindowView
 
 ### 单元测试
 
-- `SmartRouter` 的路由/歧义/无结果；
+- `SmartRouter` 的双来源路由、失败回退和无结果；
 - 候选文本清洗、数字/emoji 过滤；
 - 词典英文对应词排序；
 - manifest 校验、版本比较、安装状态机；
@@ -360,13 +320,12 @@ MonitoringController → @Observable AppState → MainWindowView
 - 用 mock `TranslationEngine` 测试 HUD 显示/隐藏；
 - 主窗口侧栏、插件下载状态、权限提示的 UI 测试。
 
-### M1 模型评测
+### 模型评测
 
 - `Tools/ModelLab` 生成 50 条测试集；
-- 对比 OPUS-MT、M2M100、Qwen3-4B；
+- 对比 OPUS-MT、Qwen3、Hy-MT2 和 Index-Translate；
 - 记录：英文对应准确率、短句自然度、p95 延迟、峰值内存、模型体积；
-- 结果保留在版本历史和实验工具说明中；
-- 通过后再把胜出的运行时接入 `GlintInference`。
+- 结果保留在版本历史和实验工具说明中，生产运行时只接入经过验证的模型类型。
 
 ## 13. ADR 列表
 
@@ -374,12 +333,5 @@ MonitoringController → @Observable AppState → MainWindowView
 - ADR-0002：Swift 6 + AppKit/SwiftUI 混合。
 - ADR-0003：插件模型作为数据，固定 runtime adapter。
 - ADR-0004：AppKit 生命周期承载菜单栏 + 主窗口 + HUD。
-- ADR-0005：先做 ModelLab，再做 App 推理集成。
+- ADR-0005：先做 ModelLab，再接入经过验证的生产推理运行时。
 - ADR-0006：不持久化候选文本和翻译结果。
-
-## 14. 待确认
-
-1. Xcode 工程用手写 `.xcodeproj`，还是用 XcodeGen 的 `project.yml` 生成？
-2. CTranslate2 第一版是否直接 in-process 链接，还是先做独立 XPC 推理服务？
-3. 模型下载托管用 GitHub Releases、自建 CDN，还是模型平台直链？
-4. 主窗口是否需要在第一版支持多语言 UI（中文/英文）？

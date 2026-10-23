@@ -10,15 +10,12 @@ final class PluginManifestTests: XCTestCase {
           "name": "CC-CEDICT",
           "version": "2026.10",
           "runtime": "sqlite",
-          "capabilities": ["word", "phrase"],
-          "languages": ["zh-Hans", "en"],
           "sizeBytes": 20000000,
           "sha256": "abc",
           "url": "https://example.invalid/dict-cedict.zip",
           "license": "CC-BY-SA-4.0",
           "minRAMBytes": 0,
-          "quality": "basic",
-          "recommended": true,
+          "source": "bundled",
           "revision": "abc123"
         }
         """
@@ -28,7 +25,7 @@ final class PluginManifestTests: XCTestCase {
         )
         XCTAssertEqual(manifest.id, "dict-cedict")
         XCTAssertEqual(manifest.type, .dictionary)
-        XCTAssertEqual(manifest.recommended, true)
+        XCTAssertEqual(manifest.source, .bundled)
         XCTAssertEqual(manifest.revision, "abc123")
     }
 

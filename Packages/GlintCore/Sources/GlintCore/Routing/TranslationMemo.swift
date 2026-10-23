@@ -230,19 +230,15 @@ public actor TranslationMemo {
         }
         inFlight[key] = InFlightRequest(task: task, waiterCount: 1)
 
-        do {
-            let result = try await waitForTask(task, key: key)
-            if let result,
-               !result.displayText.trimmingCharacters(
-                    in: .whitespacesAndNewlines
-               ).isEmpty,
-               cache.value(for: key) == nil {
-                store(result, for: key)
-            }
-            return result
-        } catch {
-            throw error
+        let result = try await waitForTask(task, key: key)
+        if let result,
+           !result.displayText.trimmingCharacters(
+                in: .whitespacesAndNewlines
+           ).isEmpty,
+           cache.value(for: key) == nil {
+            store(result, for: key)
         }
+        return result
     }
 
     public func peek(for key: TranslationMemoKey) -> TranslationResult? {

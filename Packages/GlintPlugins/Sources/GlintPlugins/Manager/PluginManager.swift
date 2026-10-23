@@ -28,7 +28,7 @@ public actor PluginManager {
         let backupName: String
     }
 
-    public private(set) var installed: [PluginManifest] = []
+    private var installed: [PluginManifest] = []
     private let pluginsDirectory: URL
     private let fileManager: FileManager
     private var pendingUpgrade: PendingUpgrade?
@@ -38,9 +38,15 @@ public actor PluginManager {
         fileManager: FileManager = .default
     ) {
         self.fileManager = fileManager
-        let support = baseDirectory
-            ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-                .appendingPathComponent("Glint", isDirectory: true)
+        let applicationSupport = fileManager.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? fileManager.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support", isDirectory: true)
+        let support = baseDirectory ?? applicationSupport.appendingPathComponent(
+            "Glint",
+            isDirectory: true
+        )
         self.pluginsDirectory = support.appendingPathComponent("plugins", isDirectory: true)
         try? fileManager.createDirectory(
             at: pluginsDirectory,
@@ -61,9 +67,7 @@ public actor PluginManager {
 
         var manifests: [PluginManifest] = []
         for directory in directories {
-            let manifestURL = directory.appendingPathComponent("manifest.json")
-            guard let data = try? Data(contentsOf: manifestURL),
-                  let manifest = try? JSONDecoder().decode(PluginManifest.self, from: data) else {
+            guard let manifest = try? PluginManifest.load(from: directory) else {
                 continue
             }
             manifests.append(manifest)
@@ -80,14 +84,6 @@ public actor PluginManager {
     }
 
     @discardableResult
-    public func installLocalPlugin(at sourceDirectory: URL) throws -> PluginManifest {
-        let staging = stagingURL()
-        defer { try? fileManager.removeItem(at: staging) }
-        try fileManager.copyItem(at: sourceDirectory, to: staging)
-        return try installPreparedPlugin(at: staging)
-    }
-
-    @discardableResult
     public func installPreparedPlugin(
         at sourceDirectory: URL,
         keepBackup: Bool = false
@@ -95,9 +91,7 @@ public actor PluginManager {
         guard pendingUpgrade == nil else {
             throw PluginManagerError.upgradeInProgress
         }
-        let manifestURL = sourceDirectory.appendingPathComponent("manifest.json")
-        let data = try Data(contentsOf: manifestURL)
-        let manifest = try JSONDecoder().decode(PluginManifest.self, from: data)
+        let manifest = try PluginManifest.load(from: sourceDirectory)
         guard Self.isValidPluginID(manifest.id) else {
             throw PluginManagerError.invalidPluginID
         }
@@ -258,12 +252,7 @@ public actor PluginManager {
                 == pendingUpgrade.backupURL.lastPathComponent {
                 continue
             }
-            let manifestURL = directory.appendingPathComponent("manifest.json")
-            guard let data = try? Data(contentsOf: manifestURL),
-                  let manifest = try? JSONDecoder().decode(
-                      PluginManifest.self,
-                      from: data
-                  ) else {
+            guard let manifest = try? PluginManifest.load(from: directory) else {
                 try? fileManager.removeItem(at: directory)
                 continue
             }

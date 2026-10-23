@@ -8,7 +8,7 @@ public enum PluginVersion {
         compare(candidate, installed) == .orderedDescending
     }
 
-    public static func compare(
+    private static func compare(
         _ lhs: String,
         _ rhs: String
     ) -> ComparisonResult {

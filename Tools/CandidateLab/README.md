@@ -50,7 +50,7 @@ python3 Tools/ModelLab/eval/run_context_rerank.py \
 
 The current research pipeline uses context-specific candidates from Qwen3 4B.
 Each prompt requests three candidates. Candidate counts above three reduced
-coverage and increased noise in the M17 ablation.
+coverage and increased noise in evaluation.
 
 ```bash
 HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
@@ -94,6 +94,6 @@ HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
   --output Tools/ModelLab/results/context-ablation-compound-qwen3-4b.json
 ```
 
-The M17 result does not support adding the production dictionary to the
-context pipeline. It reduced answer coverage, added distractors, and did not
-improve top-choice accuracy.
+The evaluated context-dictionary merge reduced answer coverage, added
+distractors, and did not improve top-choice accuracy, so it is not part of the
+production pipeline.

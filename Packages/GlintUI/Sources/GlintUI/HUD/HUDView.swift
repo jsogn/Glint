@@ -31,12 +31,12 @@ public struct HUDItem: Identifiable, Equatable, Sendable {
     }
 }
 
-public struct HUDView: View {
+struct HUDView: View {
     private let items: [HUDItem]
     private let appearance: HUDAppearance
     private let backgroundOpacity: Double
 
-    public init(
+    init(
         text: String,
         appearance: HUDAppearance = .default,
         backgroundOpacity: Double = 0.8
@@ -48,7 +48,7 @@ public struct HUDView: View {
         self.backgroundOpacity = backgroundOpacity
     }
 
-    public init(
+    init(
         items: [HUDItem],
         appearance: HUDAppearance = .default,
         backgroundOpacity: Double = 0.8
@@ -58,7 +58,7 @@ public struct HUDView: View {
         self.backgroundOpacity = backgroundOpacity
     }
 
-    public var body: some View {
+    var body: some View {
         HUDItemRow(
             items: items,
             appearance: appearance,

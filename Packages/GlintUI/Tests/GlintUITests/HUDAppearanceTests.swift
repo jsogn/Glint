@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import GlintUI
 
@@ -19,6 +20,18 @@ final class HUDAppearanceTests: XCTestCase {
         XCTAssertEqual(color.red, 0)
         XCTAssertEqual(color.green, 1)
         XCTAssertEqual(color.blue, 0)
+    }
+
+    func testDecodedColorComponentsAreClamped() throws {
+        let data = Data(
+            #"{"red":2,"green":-1,"blue":0.5}"#.utf8
+        )
+
+        let color = try JSONDecoder().decode(HUDColor.self, from: data)
+
+        XCTAssertEqual(color.red, 1)
+        XCTAssertEqual(color.green, 0)
+        XCTAssertEqual(color.blue, 0.5)
     }
 
     func testAutomaticTextColorUsesDefaultTextColor() {

@@ -75,7 +75,7 @@ struct DictionaryChoices {
         var entries: [String: ChoicesOutput.Entry] = [:]
         for item in cases {
             let kind = CandidateKind(rawValue: item.kind) ?? .unknown
-            let result = try await dictionary.lookup(
+            let result = await dictionary.lookup(
                 Candidate(text: item.target, kind: kind)
             )
             entries[item.id] = ChoicesOutput.Entry(

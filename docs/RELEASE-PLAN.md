@@ -9,7 +9,7 @@ Glint 当前是可稳定运行的开发版本，但还不是可分发包。
 | Bundle ID | `com.local.glint` | 正式、唯一且长期不变的 Bundle ID |
 | 签名身份 | ad-hoc | Developer ID Application |
 | Team ID | 未配置 | 固定 Apple Developer Team |
-| Hardened Runtime | 已启用 | 保持启用 |
+| Hardened Runtime | Release 配置启用；ad-hoc 开发/测试包禁用 | 正式包保持启用 |
 | 公证 | 无 | Developer ID 签名后提交 Apple 公证 |
 | 更新机制 | 无 | Sparkle 2 或等价方案 |
 | 分发格式 | 源码构建 | 签名并公证的 DMG |
@@ -28,8 +28,8 @@ Glint 当前是可稳定运行的开发版本，但还不是可分发包。
    - 小范围测试：Developer ID + 公证 DMG；
    - 公开分发：再加 Sparkle 更新源和版本发布流程。
 
-切换 Bundle ID 或签名身份会造成一次 TCC 权限身份变化，用户需要重新授权屏幕录制和
-辅助功能。该切换应在外部 Beta 前完成，而不是发布后修改。
+切换 Bundle ID 或签名身份会造成一次辅助功能 TCC 权限身份变化。该切换应在外部
+Beta 前完成，而不是发布后修改。
 
 ## 3. Signing Architecture
 
@@ -41,11 +41,10 @@ Glint 当前是可稳定运行的开发版本，但还不是可分发包。
 - 不使用 `disable-library-validation` 绕过动态库校验；
 - 主 App、嵌套 dylib 和动态库必须使用同一个 Developer ID Team 签名。
 
-OCR 和 ONNX Runtime 已从产品移除，主 App 不再携带
-`libonnxruntime.1.dylib`。内置 OPUS-MT 使用的 CTranslate2、SentencePiece
-和桥接动态库位于 `Contents/Resources/mt-opus-zh-en/bin`，必须与主 App 使用
-同一 Developer ID Team 签名。其他可选模型的动态库仍需随对应插件清单校验
-版本。归档阶段要枚举 App 实际包含的 dylib 和 framework，完成内层优先签名。
+内置 OPUS-MT 使用的 CTranslate2、SentencePiece 和桥接动态库位于
+`Contents/Resources/mt-opus-zh-en/bin`，必须与主 App 使用同一 Developer ID
+Team 签名。其他可选模型只作为 MLX 数据加载。归档阶段要枚举 App 实际包含的
+dylib 和 framework，完成内层优先签名。
 构建前必须运行 `scripts/prepare_opus_model.sh`，按 `model-lock.json` 转换或
 校验内置 OPUS；模型权重和词表不得加入 Git。小体积 CT2 运行时由仓库提供，
 并随主 App 一起签名。
@@ -129,7 +128,7 @@ TCC 流程稳定后，再接入 Sparkle 2：
 - TextEdit、Safari、Chrome、微信真实输入通过；
 - 密码框与安全输入不显示 HUD；
 - 睡眠唤醒、多显示器、非蓝色高亮通过；
-- 100–200 张真实候选截图回归；
+- 真实 AX 候选文本和 frame fixture 回归，不保存候选截图；
 - 干净用户环境首次授权通过；
 - Gatekeeper、公证、staple 全部通过；
 - 下载和卸载流程不会破坏用户词典与模型配置。

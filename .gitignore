@@ -8,8 +8,6 @@ DerivedData/
 *.xcuserstate
 *.xcuserdatad/
 .firecrawl/
-Tools/OCRLab/.venv/
-Tools/OCRLab/data/
 Glint.xcodeproj/xcuserdata/
 Glint.xcodeproj/project.xcworkspace/xcuserdata/
 Tools/ModelLab/.venv/
@@ -17,15 +15,9 @@ Tools/ModelLab/models/
 Tools/ModelLab/.cache/
 __pycache__/
 Tools/ModelLab/results/*
-!Tools/ModelLab/results/.gitkeep
 !Tools/ModelLab/results/README.md
 Tools/DictionaryLab/results/*
-!Tools/DictionaryLab/results/.gitkeep
 !Tools/DictionaryLab/results/README.md
 Tools/DictionaryBuilder/cedict.json
-Tools/CT2Probe/ct2probe
-Resources/Models/
-Resources/CT2/
-Resources/ONNXRuntime/
 Resources/Plugins/mt-opus-zh-en/model/
 Vendor/

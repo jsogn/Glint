@@ -203,10 +203,9 @@ private struct OverviewStatusCard: View {
     }
 
     private var actionTint: Color {
-        if missingPermissionText != nil {
-            return .accentColor
-        }
-        return model.isMonitoring ? .red : .accentColor
+        model.isMonitoring && missingPermissionText == nil
+            ? .red
+            : .accentColor
     }
 }
 

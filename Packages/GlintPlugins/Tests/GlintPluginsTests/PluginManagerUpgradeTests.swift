@@ -10,7 +10,7 @@ final class PluginManagerUpgradeTests: XCTestCase {
         let first = manifest(version: "1.0.0")
         let second = manifest(version: "2.0.0")
 
-        _ = try await manager.installLocalPlugin(
+        _ = try await manager.installPreparedPlugin(
             at: try sourceDirectory(first, root: root)
         )
         _ = try await manager.installPreparedPlugin(
@@ -37,7 +37,7 @@ final class PluginManagerUpgradeTests: XCTestCase {
         let first = manifest(version: "1.0.0")
         let second = manifest(version: "2.0.0")
 
-        _ = try await manager.installLocalPlugin(
+        _ = try await manager.installPreparedPlugin(
             at: try sourceDirectory(first, root: root)
         )
         _ = try await manager.installPreparedPlugin(
@@ -68,7 +68,7 @@ final class PluginManagerUpgradeTests: XCTestCase {
         let first = manifest(version: "1.0.0")
         let second = manifest(version: "2.0.0")
 
-        _ = try await manager.installLocalPlugin(
+        _ = try await manager.installPreparedPlugin(
             at: try sourceDirectory(first, root: root)
         )
         _ = try await manager.installPreparedPlugin(
@@ -98,15 +98,11 @@ final class PluginManagerUpgradeTests: XCTestCase {
             name: "Test Plugin",
             version: version,
             runtime: "sqlite-v1",
-            capabilities: ["word"],
-            languages: ["zh-Hans", "en"],
             sizeBytes: 1,
             sha256: "test",
             url: URL(string: "https://example.invalid/test-plugin.zip")!,
             license: "MIT",
-            minRAMBytes: 0,
-            quality: "test",
-            recommended: false
+            minRAMBytes: 0
         )
     }
 

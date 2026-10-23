@@ -10,7 +10,9 @@ struct GlintEval {
             DictionaryRoute(id: "dict-ecdict", priority: 1, engine: ECDICTDictionary()),
         ])
         for word in ["你好", "算法", "计算", "复盘", "中国", "苹果", "打", "计算机", "程序", "开发", "设计", "数据", "内卷", "躺平"] {
-            let result = try await dictionary.lookup(Candidate(text: word, kind: .word))
+            let result = await dictionary.lookup(
+                Candidate(text: word, kind: .word)
+            )
             print("\(word) -> \(result?.text ?? "<not found>")")
         }
         if let engine = CTranslate2Engine() {

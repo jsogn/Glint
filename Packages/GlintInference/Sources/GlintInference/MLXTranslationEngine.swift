@@ -151,10 +151,6 @@ public actor MLXTranslationEngine: TranslationEngine {
         )
     }
 
-    public var isLoaded: Bool {
-        container != nil
-    }
-
     public var loadSeconds: Double? {
         lastLoadSeconds
     }
@@ -211,11 +207,7 @@ public actor MLXTranslationEngine: TranslationEngine {
         guard let translated = Self.clean(output), !translated.isEmpty else {
             throw MLXTranslationError.emptyOutput
         }
-        return TranslationResult(
-            text: translated,
-            source: .translation,
-            confidence: 0.92
-        )
+        return TranslationResult(text: translated)
     }
 
     public func translateBatch(
@@ -254,11 +246,7 @@ public actor MLXTranslationEngine: TranslationEngine {
             expectedCount: inputs.count
         )
         return translations.map {
-            TranslationResult(
-                text: $0,
-                source: .translation,
-                confidence: 0.9
-            )
+            TranslationResult(text: $0)
         }
     }
 
@@ -328,12 +316,10 @@ public actor MLXTranslationEngine: TranslationEngine {
         explicit: URL?,
         modelID: String
     ) -> URL? {
-        var candidates: [URL] = [
-            explicit,
-            Bundle.main.resourceURL?
-                .appendingPathComponent("Models", isDirectory: true)
-                .appendingPathComponent(modelID, isDirectory: true),
-        ].compactMap { $0 }
+        if let explicit {
+            return containsModelFiles(explicit) ? explicit : nil
+        }
+        var candidates: [URL] = []
         for pluginsDirectory in applicationSupportPluginsDirectories {
             let pluginDirectory = pluginsDirectory.appendingPathComponent(
                 modelID,
@@ -363,20 +349,22 @@ public actor MLXTranslationEngine: TranslationEngine {
         }
     }
 
-    private static func containsModelFiles(_ directory: URL) -> Bool {
+    static func containsModelFiles(_ directory: URL) -> Bool {
         let directory = directory.resolvingSymlinksInPath()
         let fileManager = FileManager.default
-        let config = directory.appendingPathComponent("config.json")
-        let tokenizer = directory.appendingPathComponent("tokenizer.json")
-        guard fileManager.fileExists(atPath: config.path),
-              fileManager.fileExists(atPath: tokenizer.path) else {
+        guard let files = try? fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else {
             return false
         }
-        return (try? fileManager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.fileSizeKey],
-            options: [.skipsHiddenFiles]
-        ))?.contains { $0.pathExtension == "safetensors" } == true
+        let names = Set(files.map(\.lastPathComponent))
+        let hasTokenizer = names.contains("tokenizer.json")
+            || names.contains("tokenizer.model")
+            || names.contains { $0.hasSuffix(".spm") }
+        let hasWeights = names.contains { $0.hasSuffix(".safetensors") }
+        return names.contains("config.json") && hasTokenizer && hasWeights
     }
 
     static func clean(_ raw: String) -> String? {

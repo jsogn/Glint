@@ -87,7 +87,7 @@ struct BenchmarkMain {
         var latencies: [Double] = []
         for benchmarkCase in cases {
             let start = Date()
-            let result = try? await router.lookup(
+            let result = await router.lookup(
                 Candidate(
                     text: benchmarkCase.text,
                     kind: CandidateClassifier.classify(benchmarkCase.text)

@@ -1,3 +1,5 @@
+import Foundation
+
 public struct DictionaryRoute: Sendable {
     public let id: String
     public let priority: Int
@@ -22,13 +24,13 @@ public struct DictionaryRouter: DictionaryEngine {
         self.blocked = blocked
     }
 
-    public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
-        guard !blocked.contains(candidate.text) else { return nil }
+    public func lookup(_ candidate: Candidate) async -> TranslationResult? {
+        let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !blocked.contains(text) else { return nil }
         var options: [TranslationOption] = []
-        var highestConfidence = 0.0
         for route in routes {
-            if let result = try await route.engine.lookup(candidate) {
-                highestConfidence = max(highestConfidence, result.confidence)
+            if Task.isCancelled { return nil }
+            if let result = try? await route.engine.lookup(candidate) {
                 let routeBoost = max(0, 0.2 - Double(route.priority) * 0.02)
                 for option in result.options {
                     let surfaces = DictionarySurface.split(option.text)
@@ -46,10 +48,6 @@ public struct DictionaryRouter: DictionaryEngine {
             }
         }
         guard !options.isEmpty else { return nil }
-        return TranslationResult(
-            options: options,
-            source: .dictionary,
-            confidence: highestConfidence
-        )
+        return TranslationResult(options: options)
     }
 }

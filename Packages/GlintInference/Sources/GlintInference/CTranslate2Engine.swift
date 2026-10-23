@@ -44,11 +44,7 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
     private var translateFn: TranslateFn?
     private var freeString: FreeStringFn?
     private var destroy: DestroyFn?
-    private(set) public var lastError: String?
-
-    public var isAvailable: Bool {
-        engine != nil
-    }
+    private(set) var lastError: String?
 
     public convenience init?() {
         guard let modelURL = Self.locateInstalledModel() else {
@@ -143,11 +139,7 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             freeString?(output)
             guard !translated.isEmpty else { return nil }
-            return TranslationResult(
-                text: translated,
-                source: .translation,
-                confidence: 0.85
-            )
+            return TranslationResult(text: translated)
         }
     }
 

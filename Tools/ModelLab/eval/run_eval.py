@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""M1 model comparison for Glint.
+"""Model comparison for Glint.
 
 Usage:
   HF_ENDPOINT=https://hf-mirror.com uv run python eval/run_eval.py --model opus

@@ -2,6 +2,12 @@ import AppKit
 import GlintMac
 import GlintPlugins
 import GlintUI
+import OSLog
+
+private let appLogger = Logger(
+    subsystem: "com.local.glint",
+    category: "App"
+)
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -26,8 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let environment = AppEnvironment()
         let windowModel = MainWindowModel(
             pluginManager: environment.pluginManager,
-            builtInPlugins: BundledPluginResources.manifests,
-            openAICompatibleStore: environment.openAICompatibleStore
+            builtInPlugins: BundledPluginResources.manifests
         )
         self.environment = environment
         self.windowModel = windowModel
@@ -47,15 +52,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mainWindowController = MainWindowController(model: windowModel)
         mainWindowController.show()
         refreshPermissionState()
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(2))
-            guard let self else { return }
-            await windowModel.refreshInstalledPlugins()
-            await windowModel.checkForCatalogUpdatesAfterLaunch()
-        }
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
-            await environment.removeLegacyBundledPluginCopies()
             await environment.refreshDictionaryRoutes()
             await environment.translationRuntime.prepareSelectedModel()
             startupPreparationTask = nil
@@ -199,12 +197,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 for: modelID
             )
         }
-        windowModel.testOpenAICompatibleAction = { [weak self] configuration in
-            guard let self else { return }
-            try await self.environment.validateOpenAICompatibleConfiguration(
-                configuration
-            )
-        }
         windowModel.translationModeAction = { [weak self] mode in
             guard let self else { return }
             Task {
@@ -333,7 +325,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch event {
         case .status(let status):
             windowModel.statusText = isActionableStatus(status) ? status : ""
-            NSLog("Glint: %@", status)
+            appLogger.info("status=\(status, privacy: .public)")
         case .candidateChanged:
             hudEventCoordinator.candidateChanged()
         case .selectionChanged(let index, let revision):
@@ -360,9 +352,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func isActionableStatus(_ status: String) -> Bool {
-        status == "需要屏幕录制权限"
-            || status == "需要辅助功能权限"
-            || status.hasPrefix("截取失败：")
+        status == "需要辅助功能权限"
     }
 
     private func syncTranslationConfiguration() {
@@ -384,18 +374,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 "\($0.id)@\($0.version)#\($0.revision ?? $0.sha256)"
             }
             .sorted()
-        let providerVersions = windowModel.openAIProviders
-            .map {
-                "\($0.id)@\($0.baseURL)#\($0.model)"
-            }
-            .sorted()
         return (
             [
                 "model=\(windowModel.activeModelID)",
                 "prompt=1",
             ]
                 + pluginVersions
-                + providerVersions
         ).joined(separator: "|")
     }
 
@@ -417,7 +401,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 encoding: .utf8
             )
         } catch {
-            NSLog("Glint: failed to write runtime readiness: %@", String(describing: error))
+            appLogger.error(
+                "failed to write runtime readiness: \(String(describing: error), privacy: .public)"
+            )
         }
     }
 

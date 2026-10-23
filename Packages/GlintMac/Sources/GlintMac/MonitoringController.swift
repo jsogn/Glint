@@ -202,7 +202,7 @@ public actor MonitoringController {
     private var latestCandidateHighlight: CandidateRegion?
     private var dictionaryPrefetchRevision: UInt64?
     private var dictionaryPrefetchTasks:
-        [Int: Task<DictionaryPrefetchResult, Never>] = [:]
+        [Int: Task<TranslationResult?, Never>] = [:]
     private var cachedPrefetchResults: [Int: TranslationResult] = [:]
     private var candidateMissDebouncer = CandidateMissDebouncer()
     private var compositionTransitions = CompositionTransitionTracker()
@@ -275,6 +275,7 @@ public actor MonitoringController {
     public func start() {
         guard task == nil else { return }
         lastPermissionCheck = 0
+        lastStatus = ""
         translationAttempts = 0
         cancelledTranslationAttempts = 0
         monitoringLogger.info("monitor start requested")
@@ -287,11 +288,8 @@ public actor MonitoringController {
         task?.cancel()
         task = nil
         lastPermissionCheck = 0
-        translationTask?.cancel()
-        translationTask = nil
-        typingTracker.reset()
-        handledRevision = nil
-        emitCandidateEnded(immediate: true)
+        lastStatus = ""
+        invalidateCandidate(immediate: true)
         let memo = translationMemo
         Task {
             let statistics = await memo.statistics()
@@ -412,8 +410,7 @@ public actor MonitoringController {
         let candidates = candidateTexts.map {
             Candidate(
                 text: $0,
-                kind: CandidateClassifier.classify($0),
-                confidence: 1
+                kind: CandidateClassifier.classify($0)
             )
         }
         let trackingIdentity = CandidateTrackingIdentity.make(
@@ -573,7 +570,7 @@ public actor MonitoringController {
         highlight: CandidateRegion,
         revision: UInt64,
         dictionaryPrefetchTasks: [
-            Int: Task<DictionaryPrefetchResult, Never>
+            Int: Task<TranslationResult?, Never>
         ],
         cachedPrefetchResults: [Int: TranslationResult]
     ) {

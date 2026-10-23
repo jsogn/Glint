@@ -20,10 +20,4 @@ final class TranslationModelSelectionTests: XCTestCase {
         )
     }
 
-    func testSpecializedModelsUseMLXRuntime() {
-        XCTAssertTrue(TranslationModelSelection.usesMLX("llm-qwen3-1.7b"))
-        XCTAssertTrue(TranslationModelSelection.usesMLX("mt-hy-mt2-1.8b"))
-        XCTAssertTrue(TranslationModelSelection.usesMLX("mt-index-translate-2b"))
-        XCTAssertFalse(TranslationModelSelection.usesMLX("mt-opus-zh-en"))
-    }
 }

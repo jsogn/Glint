@@ -1,6 +1,6 @@
 import Foundation
 
-public enum CandidateKind: String, Sendable, Equatable, CaseIterable {
+public enum CandidateKind: String, Sendable, Equatable {
     case word
     case phrase
     case sentence
@@ -10,18 +10,11 @@ public enum CandidateKind: String, Sendable, Equatable, CaseIterable {
 public struct Candidate: Sendable, Equatable {
     public let text: String
     public let kind: CandidateKind
-    public let confidence: Double
 
-    public init(text: String, kind: CandidateKind = .unknown, confidence: Double = 1.0) {
+    public init(text: String, kind: CandidateKind = .unknown) {
         self.text = text
         self.kind = kind
-        self.confidence = confidence
     }
-}
-
-public enum ResultSource: String, Sendable, Equatable {
-    case dictionary
-    case translation
 }
 
 public struct TranslationOption: Sendable, Equatable {
@@ -30,26 +23,18 @@ public struct TranslationOption: Sendable, Equatable {
 
     public init(text: String, score: Double) {
         self.text = text
-        self.score = score
+        self.score = score.isFinite ? score : 0
     }
 }
 
 public struct TranslationResult: Sendable, Equatable {
     public let options: [TranslationOption]
-    public let source: ResultSource
-    public let confidence: Double
 
-    public init(text: String, source: ResultSource, confidence: Double) {
-        self.options = [TranslationOption(text: text, score: confidence)]
-        self.source = source
-        self.confidence = confidence
+    public init(text: String) {
+        self.options = [TranslationOption(text: text, score: 1)]
     }
 
-    public init(
-        options: [TranslationOption],
-        source: ResultSource,
-        confidence: Double
-    ) {
+    public init(options: [TranslationOption]) {
         var seen: Set<String> = []
         self.options = options
             .filter { !$0.text.isEmpty }
@@ -60,8 +45,6 @@ public struct TranslationResult: Sendable, Equatable {
                 return lhs.score > rhs.score
             }
             .filter { seen.insert(Self.dedupeKey($0.text)).inserted }
-        self.source = source
-        self.confidence = confidence
     }
 
     public var text: String {
@@ -85,11 +68,7 @@ public struct TranslationResult: Sendable, Equatable {
 
     public var primaryOnly: TranslationResult {
         guard options.count > 1 else { return self }
-        return TranslationResult(
-            options: Array(options.prefix(1)),
-            source: source,
-            confidence: confidence
-        )
+        return TranslationResult(options: Array(options.prefix(1)))
     }
 
     private static func dedupeKey(_ text: String) -> String {

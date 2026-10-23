@@ -6,7 +6,13 @@ private struct OrderedDictionary: DictionaryEngine {
 
     func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
         guard let value else { return nil }
-        return TranslationResult(text: value, source: .dictionary, confidence: 0.9)
+        return TranslationResult(text: value)
+    }
+}
+
+private struct FailingDictionary: DictionaryEngine {
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        throw GlintError.engineUnavailable
     }
 }
 
@@ -25,7 +31,7 @@ final class DictionaryRouterTests: XCTestCase {
             ),
         ])
 
-        let result = try await router.lookup(Candidate(text: "测试", kind: .word))
+        let result = await router.lookup(Candidate(text: "测试", kind: .word))
         XCTAssertEqual(result?.text, "first result")
     }
 
@@ -43,7 +49,28 @@ final class DictionaryRouterTests: XCTestCase {
             ),
         ])
 
-        let result = try await router.lookup(Candidate(text: "测试", kind: .word))
+        let result = await router.lookup(Candidate(text: "测试", kind: .word))
+        XCTAssertEqual(result?.text, "fallback")
+    }
+
+    func testFallsThroughWhenDictionaryFails() async throws {
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "broken",
+                priority: 0,
+                engine: FailingDictionary()
+            ),
+            DictionaryRoute(
+                id: "fallback",
+                priority: 1,
+                engine: OrderedDictionary(value: "fallback")
+            ),
+        ])
+
+        let result = await router.lookup(
+            Candidate(text: "测试", kind: .word)
+        )
+
         XCTAssertEqual(result?.text, "fallback")
     }
 
@@ -61,7 +88,7 @@ final class DictionaryRouterTests: XCTestCase {
             ),
         ])
 
-        let result = try await router.lookup(Candidate(text: "测试", kind: .word))
+        let result = await router.lookup(Candidate(text: "测试", kind: .word))
         XCTAssertEqual(result?.text, "primary")
         XCTAssertEqual(
             Set(result?.options.map(\.text) ?? []),
@@ -81,7 +108,7 @@ final class DictionaryRouterTests: XCTestCase {
             blocked: ["打"]
         )
 
-        let result = try await router.lookup(Candidate(text: "打", kind: .word))
+        let result = await router.lookup(Candidate(text: "打", kind: .word))
         XCTAssertNil(result)
     }
 
@@ -94,14 +121,18 @@ final class DictionaryRouterTests: XCTestCase {
             ),
         ])
 
-        let legitimate = try await router.lookup(
+        let legitimate = await router.lookup(
             Candidate(text: "打", kind: .word)
         )
-        let invalidFragment = try await router.lookup(
+        let invalidFragment = await router.lookup(
             Candidate(text: "你号", kind: .word)
+        )
+        let spacedInvalidFragment = await router.lookup(
+            Candidate(text: " 你号 ", kind: .word)
         )
 
         XCTAssertEqual(legitimate?.text, "result")
         XCTAssertNil(invalidFragment)
+        XCTAssertNil(spacedInvalidFragment)
     }
 }

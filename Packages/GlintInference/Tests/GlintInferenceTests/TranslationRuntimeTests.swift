@@ -23,8 +23,7 @@ final class TranslationRuntimeTests: XCTestCase {
             _ = try await runtime.translate(
                 Candidate(
                     text: "你好",
-                    kind: .word,
-                    confidence: 1
+                    kind: .word
                 )
             )
             XCTFail("A failed model must not be used")
@@ -63,8 +62,7 @@ final class TranslationRuntimeTests: XCTestCase {
         let result = try await engine.translate(
             Candidate(
                 text: "今天天气不错",
-                kind: .sentence,
-                confidence: 1
+                kind: .sentence
             )
         )
 
@@ -118,8 +116,7 @@ final class TranslationRuntimeTests: XCTestCase {
         let result = try await runtime.translate(
             Candidate(
                 text: "今天天气不错",
-                kind: .sentence,
-                confidence: 1
+                kind: .sentence
             )
         )
         XCTAssertEqual(result?.text, "It's a nice day.")
