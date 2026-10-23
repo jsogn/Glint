@@ -3,11 +3,11 @@ import SwiftUI
 
 @MainActor
 public final class MainWindowController: NSWindowController, NSWindowDelegate {
-    static let minimumWindowSize = NSSize(width: 1120, height: 640)
+    static let minimumWindowSize = NSSize(width: 1_040, height: 640)
 
     public init(model: MainWindowModel) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1120, height: 720),
+            contentRect: NSRect(x: 0, y: 0, width: 1_040, height: 720),
             styleMask: [
                 .titled,
                 .closable,

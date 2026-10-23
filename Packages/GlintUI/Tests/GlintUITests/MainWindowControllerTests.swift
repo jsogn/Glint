@@ -10,7 +10,7 @@ final class MainWindowControllerTests: XCTestCase {
             NSSize(width: 578, height: 660)
         )
 
-        XCTAssertEqual(clamped.width, 1120)
+        XCTAssertEqual(clamped.width, 1_040)
         XCTAssertEqual(clamped.height, 660)
     }
 }
