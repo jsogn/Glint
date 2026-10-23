@@ -1,13 +1,8 @@
+![Glint：停留苹果拼音候选，在候选栏旁查看对应英文翻译](docs/assets/glint-hero.png)
+
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/glint-mark-dark.svg">
-    <img src="docs/assets/glint-mark-light.svg" width="72" alt="Glint">
-  </picture>
+  <code>macOS 26+</code> &nbsp; <code>Apple Silicon</code> &nbsp; <code>本地离线</code>
 </p>
-
-<h1 align="center">Glint</h1>
-
-<p align="center"><strong>停留苹果拼音候选，在候选栏旁查看对应的英文翻译。</strong></p>
 
 Glint 是一款为 macOS 打造的英文学习工具。使用苹果拼音输入中文时，在候选上稍作
 停留，就能在不打断输入的情况下看到对应的英文翻译。它不替换输入法，也不会改变
