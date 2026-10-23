@@ -145,6 +145,16 @@ public final class MainWindowModel {
         return summary.isEmpty ? "本地翻译模型" : summary
     }
 
+    public var translationAttentionMessage: String? {
+        guard translationModelStatusIsError else { return nil }
+        return "翻译模型需要检查，请在插件与模型中查看。"
+    }
+
+    public var translationAttentionDetail: String? {
+        guard translationModelStatusIsError else { return nil }
+        return translationModelStatusText
+    }
+
     private var activeTranslationPlugin: PluginManifest? {
         translationPlugins.first { $0.id == activeModelID }
     }

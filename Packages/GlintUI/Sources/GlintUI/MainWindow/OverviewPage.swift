@@ -9,7 +9,9 @@ struct OverviewPage: View {
 
     var body: some View {
         PageContainer {
-            OverviewStatusCard(model: model)
+            OverviewStatusCard(model: model) {
+                selection = .translation
+            }
 
             LazyVGrid(
                 columns: [
@@ -87,6 +89,7 @@ struct OverviewPage: View {
 
 private struct OverviewStatusCard: View {
     let model: MainWindowModel
+    let openTranslationSettings: () -> Void
 
     private var state: OverviewRuntimeState {
         let missingPermissions = missingPermissionText
@@ -107,12 +110,14 @@ private struct OverviewStatusCard: View {
     }
 
     private var attentionMessage: String? {
-        if model.translationModelStatusIsError,
-            let message = model.translationModelStatusText
-        {
+        if let message = model.translationAttentionMessage {
             return message
         }
         return model.statusText.isEmpty ? nil : model.statusText
+    }
+
+    private var attentionDetail: String? {
+        model.translationAttentionDetail
     }
 
     var body: some View {
@@ -142,9 +147,7 @@ private struct OverviewStatusCard: View {
                             .font(.title3.weight(.semibold))
                             .accessibilityAddTraits(.isHeader)
                     }
-                    Text(state.detail)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                    statusDetail
                 }
 
                 Spacer(minLength: 12)
@@ -166,7 +169,9 @@ private struct OverviewStatusCard: View {
 
             Divider()
 
-            OverviewPipeline(model: model)
+            OverviewPipeline(model: model) {
+                openTranslationSettings()
+            }
 
             Text(model.translationMode.explanation)
                 .font(.caption)
@@ -188,6 +193,18 @@ private struct OverviewStatusCard: View {
 
     private var permissionAction: AccessibilityPermissionAction {
         AccessibilityPermissionAction(model: model)
+    }
+
+    @ViewBuilder
+    private var statusDetail: some View {
+        let detail = Text(state.detail)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        if let attentionDetail {
+            detail.help(attentionDetail)
+        } else {
+            detail
+        }
     }
 
     private var actionTitle: String {
@@ -213,6 +230,7 @@ private struct OverviewStatusCard: View {
 
 private struct OverviewPipeline: View {
     let model: MainWindowModel
+    let openTranslationSettings: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
@@ -227,7 +245,8 @@ private struct OverviewPipeline: View {
             stage(
                 symbol: "arrow.triangle.branch",
                 label: "策略",
-                value: model.translationMode.title
+                value: model.translationMode.title,
+                action: openTranslationSettings
             )
             arrow
             stage(
@@ -244,6 +263,29 @@ private struct OverviewPipeline: View {
     }
 
     private func stage(
+        symbol: String,
+        label: String,
+        value: String,
+        action: (() -> Void)? = nil
+    ) -> some View {
+        Group {
+            if let action {
+                Button(action: action) {
+                    stageContent(symbol: symbol, label: label, value: value)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(label)，\(value)")
+                .accessibilityHint("打开翻译设置")
+                .help("\(label)：\(value)。打开翻译设置")
+            } else {
+                stageContent(symbol: symbol, label: label, value: value)
+                    .accessibilityElement(children: .combine)
+                    .help("\(label)：\(value)")
+            }
+        }
+    }
+
+    private func stageContent(
         symbol: String,
         label: String,
         value: String
@@ -271,7 +313,7 @@ private struct OverviewPipeline: View {
             .quaternary.opacity(0.45),
             in: RoundedRectangle(cornerRadius: 9, style: .continuous)
         )
-        .accessibilityElement(children: .combine)
+        .contentShape(Rectangle())
     }
 
     private var arrow: some View {

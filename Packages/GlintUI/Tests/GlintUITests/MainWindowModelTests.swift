@@ -336,6 +336,11 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(model.translationModelStatusModelID, broken.id)
         XCTAssertEqual(model.translationModelStatusText, "模型加载失败")
         XCTAssertTrue(model.translationModelStatusIsError)
+        XCTAssertEqual(
+            model.translationAttentionMessage,
+            "翻译模型需要检查，请在插件与模型中查看。"
+        )
+        XCTAssertEqual(model.translationAttentionDetail, "模型加载失败")
         XCTAssertEqual(activationCalls, [broken.id, previous.id])
 
         await model.uninstallPlugin(broken)
