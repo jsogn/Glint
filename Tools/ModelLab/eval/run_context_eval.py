@@ -16,9 +16,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import psutil
-
-
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CASES_PATH = ROOT / "eval" / "context_cases.json"
 RESULTS_DIR = ROOT / "results"
@@ -68,6 +65,8 @@ class ContextCase:
 
 
 def rss_mb() -> float:
+    import psutil
+
     return psutil.Process().memory_info().rss / (1024 * 1024)
 
 
