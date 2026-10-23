@@ -209,9 +209,9 @@ GlintCore
   - `canJoinAllSpaces` + `fullScreenAuxiliary`；
   - 不抢焦点，不改变候选选择。
 - 候选 reader 输出 `AXCandidateGeometry`，分别说明横向锚点和纵向边界来自
-  `window`、`list`、`item` 还是 `text` 节点。文字节点补足候选胶囊的视觉留白，
-  `window` 节点去除默认皮肤约 `8pt` 的透明上下边距，其余控件节点保持原始
-  frame；HUD 只消费归一化后的边界。
+  `window`、`list`、`item` 还是 `text` 节点。Reader 先按自身语义生成最终
+  presentation frame，几何层不再暗中应用输入法专属偏移；HUD 只消费归一化后的
+  边界。
 - HUD 的用户间距从上述归一化边界计算；屏幕边缘优先翻边，避免为了贴边而静默
   压缩间距。
 - 主窗口和 HUD 都通过 `AppEnvironment` 获取状态，不直接互相调用。
@@ -269,8 +269,10 @@ MainWindowModel → MainWindowView
   和 frame。公开 AX 不提供高亮项，因此默认“选中”模式使用首候选，并返回
   `selectionIsExact=false`；用户选择“一栏”时翻译可见候选但不伪造选中高亮。
 - `AXCandidateGeometry`：统一候选几何语义。横向锚点和纵向边界可以来自不同节点；
-  文字节点与控件节点使用不同视觉补偿，避免把输入法名称写进 HUD 布局分支。
-  `window` 的固定内缩以搜狗默认皮肤为基线；第三方皮肤不单独检测，由用户间距兜底。
+  视觉校准由 reader 在生成 frame 时完成，避免把搜狗或微信的假设泄漏到通用层。
+  第三方皮肤不单独检测，由用户间距兜底。
+- `AXReadSession`：统一 AX 消息超时、最大属性调用数和单调时钟截止时间。标准、
+  搜狗、微信和后台探测都必须通过同一读取预算，预算耗尽后返回无候选。
 - `CandidateTranslationPipeline`：无状态并发编排；选中项优先，整栏结果按
   revision 发布，旧任务由监控层取消。
 - `TranslationRuntime`/`TranslationMemo`：actor；模型加载、推理和缓存请求串行化。

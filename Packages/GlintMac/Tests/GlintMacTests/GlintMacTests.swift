@@ -1,5 +1,6 @@
 import CoreGraphics
 import Carbon
+import ApplicationServices
 import Dispatch
 import Foundation
 import XCTest
@@ -800,18 +801,14 @@ final class GlintMacTests: XCTestCase {
 
     func testTextFrameAddsLeadingVisualInsetWithoutMovingTrailingEdge() {
         let raw = CGRect(x: 108, y: 216, width: 46, height: 28)
-        let geometry = AXCandidateGeometry(
-            horizontalFrame: raw,
-            horizontalSource: .text,
-            verticalFrame: raw,
-            verticalSource: .text
-        )
+        let presentation =
+            AXCandidateTextFrame.presentationFrame(for: raw)
 
         XCTAssertEqual(
-            geometry.horizontalAnchor,
+            presentation,
             CGRect(x: 103, y: 216, width: 51, height: 28)
         )
-        XCTAssertEqual(geometry.horizontalAnchor.maxX, raw.maxX)
+        XCTAssertEqual(presentation.maxX, raw.maxX)
     }
 
     func testControlFramesDoNotReceiveTextVisualInset() {
@@ -821,6 +818,7 @@ final class GlintMacTests: XCTestCase {
             AXCandidateFrameKind.window,
             .list,
             .item,
+            .text,
         ] {
             let geometry = AXCandidateGeometry(
                 horizontalFrame: frame,
@@ -835,10 +833,12 @@ final class GlintMacTests: XCTestCase {
     func testSogouUsesTextAnchorAndTrimmedWindowVerticalBounds() {
         let selected = CGRect(x: 180, y: 260, width: 50, height: 28)
         let container = CGRect(x: 120, y: 200, width: 400, height: 118)
+        let presentationSelected =
+            AXCandidateTextFrame.presentationFrame(for: selected)
         let geometry = AXCandidateGeometry(
-            horizontalFrame: selected,
+            horizontalFrame: presentationSelected,
             horizontalSource: .text,
-            verticalFrame: container,
+            verticalFrame: container.insetBy(dx: 0, dy: 8),
             verticalSource: .window
         )
 
@@ -862,16 +862,18 @@ final class GlintMacTests: XCTestCase {
                 options: [
                     AXCandidateOption(
                         text: "输入法",
-                        frame: selected,
+                        frame: presentationSelected,
                         isSelected: false
                     ),
                     AXCandidateOption(
                         text: "输入",
-                        frame: CGRect(
-                            x: 250,
-                            y: 260,
-                            width: 50,
-                            height: 28
+                        frame: AXCandidateTextFrame.presentationFrame(
+                            for: CGRect(
+                                x: 250,
+                                y: 260,
+                                width: 50,
+                                height: 28
+                            )
                         ),
                         isSelected: false
                     ),
@@ -1488,6 +1490,36 @@ final class WeTypeCandidateParserTests: XCTestCase {
         )
     }
 
+    func testParserSkipsLeadingNonCandidateMetadata() throws {
+        let observations =
+            [
+                observation("pinyin", x: 0, brightness: nil)
+            ]
+            + makeObservations(
+                texts: ["one", "two"],
+                selectedShortcutIndex: 0
+            )
+
+        let groups = try XCTUnwrap(
+            WeTypeCandidateParser.groups(
+                from: observations
+            )
+        )
+
+        XCTAssertEqual(groups.map(\.text), ["one", "two"])
+    }
+
+    func testParserRejectsTextWithoutShortcutPairs() {
+        XCTAssertNil(
+            WeTypeCandidateParser.groups(
+                from: [
+                    observation("not-a-candidate", x: 0, brightness: 1),
+                    observation("also-not-a-candidate", x: 80, brightness: 0.7),
+                ]
+            )
+        )
+    }
+
     private func makeObservations(
         texts: [String],
         selectedShortcutIndex: Int?
@@ -1515,7 +1547,7 @@ final class WeTypeCandidateParserTests: XCTestCase {
         _ text: String,
         x: CGFloat,
         y: CGFloat = 10,
-        brightness: Double
+        brightness: Double?
     ) -> WeTypeCandidateObservation {
         WeTypeCandidateObservation(
             text: text,
@@ -1955,6 +1987,78 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         XCTAssertNotNil(second.requestDiscovery(for: identity))
     }
 
+    func testPersistedProfileInvalidatesAfterSustainedMisses()
+        async throws
+    {
+        let suiteName =
+            "GlintMacTests.ProfileInvalidation.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: suiteName)
+        )
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        let clock = OSAllocatedUnfairLock<UInt64>(initialState: 0)
+        let persistence = CandidateProfilePersistence(
+            defaults: defaults,
+            storageKey: "profiles"
+        )
+        let identity = identity()
+        let cache = CandidateProfileCache(
+            clock: { clock.withLock { $0 } },
+            applicationVersion: { _ in "1.0" },
+            persistence: persistence,
+            discover: { _ in .isolatedCandidateList }
+        )
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedCandidateList
+        )
+
+        cache.recordProfileMiss(for: identity)
+        clock.withLock { $0 = 1_000_000_000 }
+        cache.recordProfileMiss(for: identity)
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedCandidateList
+        )
+
+        clock.withLock { $0 = 2_000_000_000 }
+        cache.recordProfileMiss(for: identity)
+        XCTAssertNil(cache.profile(for: identity))
+
+        let reloaded = CandidateProfileCache(
+            clock: { 3_000_000_000 },
+            applicationVersion: { _ in "1.0" },
+            persistence: persistence,
+            discover: { _ in nil }
+        )
+        XCTAssertNil(reloaded.profile(for: identity))
+    }
+
+    func testSuccessfulProfileReadClearsTransientFailures() async {
+        let clock = OSAllocatedUnfairLock<UInt64>(initialState: 0)
+        let identity = identity()
+        let cache = CandidateProfileCache(
+            clock: { clock.withLock { $0 } },
+            applicationVersion: { _ in "1.0" },
+            discover: { _ in .isolatedCandidateList }
+        )
+        await cache.requestDiscovery(for: identity)?.value
+
+        cache.recordProfileMiss(for: identity)
+        cache.recordProfileMiss(for: identity)
+        cache.recordProfileHit(for: identity)
+        clock.withLock { $0 = 3_000_000_000 }
+        cache.recordProfileMiss(for: identity)
+
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedCandidateList
+        )
+    }
+
     private func identity() -> InputMethodIdentity {
         InputMethodIdentity(
             bundleIdentifier: "com.example.inputmethod.unknown",
@@ -1990,6 +2094,94 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
             candidateListFrame: nil,
             selectedIndex: 0,
             selectionIsExact: selectionIsExact
+        )
+    }
+}
+
+final class AXReadSessionTests: XCTestCase {
+    func testStopsReadingAfterAttributeBudgetIsExhausted() {
+        let session = AXReadSession(
+            limits: AXAccessLimits(
+                messagingTimeout: 0.01,
+                maximumAttributeCalls: 2,
+                maximumDuration: .seconds(1)
+            )
+        )
+        let element = AXUIElementCreateSystemWide()
+
+        _ = session.attribute(element, kAXRoleAttribute)
+        _ = session.attribute(element, kAXRoleAttribute)
+        let third = session.attribute(element, kAXRoleAttribute)
+
+        XCTAssertEqual(session.attributeCalls, 2)
+        XCTAssertTrue(session.isExhausted)
+        XCTAssertNil(third)
+    }
+
+    func testCandidateWindowSelectorPrefersVisibleWindow() {
+        let hidden = AXCandidateWindowSnapshot(
+            candidateCount: 9,
+            snapshot: snapshot(candidateCount: 9, hasWindowFrame: true),
+            isVisible: false
+        )
+        let visible = AXCandidateWindowSnapshot(
+            candidateCount: 5,
+            snapshot: snapshot(candidateCount: 5, hasWindowFrame: true),
+            isVisible: true
+        )
+
+        XCTAssertEqual(
+            AXCandidateWindowSelector.preferred(
+                from: [hidden, visible]
+            )?.text,
+            visible.snapshot.text
+        )
+    }
+
+    func testCandidateWindowSelectorPrefersFramedAndRicherWindow() {
+        let framed = AXCandidateWindowSnapshot(
+            candidateCount: 3,
+            snapshot: snapshot(candidateCount: 3, hasWindowFrame: true),
+            isVisible: true
+        )
+        let frameless = AXCandidateWindowSnapshot(
+            candidateCount: 9,
+            snapshot: snapshot(candidateCount: 9, hasWindowFrame: false),
+            isVisible: true
+        )
+        let richer = AXCandidateWindowSnapshot(
+            candidateCount: 5,
+            snapshot: snapshot(candidateCount: 5, hasWindowFrame: true),
+            isVisible: true
+        )
+
+        XCTAssertEqual(
+            AXCandidateWindowSelector.preferred(
+                from: [frameless, framed]
+            )?.text,
+            framed.snapshot.text
+        )
+        XCTAssertEqual(
+            AXCandidateWindowSelector.preferred(
+                from: [framed, richer]
+            )?.text,
+            richer.snapshot.text
+        )
+    }
+
+    private func snapshot(
+        candidateCount: Int,
+        hasWindowFrame: Bool
+    ) -> AXCandidateSnapshot {
+        AXCandidateSnapshot(
+            text: "candidate-\(candidateCount)",
+            visibleTexts: [],
+            frame: CGRect(x: 10, y: 20, width: 40, height: 28),
+            candidateWindowFrame:
+                hasWindowFrame
+                ? CGRect(x: 0, y: 0, width: 200, height: 80)
+                : nil,
+            candidateListFrame: nil
         )
     }
 }

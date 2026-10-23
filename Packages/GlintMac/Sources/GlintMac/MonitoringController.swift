@@ -153,6 +153,18 @@ extension FocusMonitor: FocusReading {}
 extension AXCandidateReader: AXCandidateReading {}
 
 public actor MonitoringController {
+    private struct CandidateObservation {
+        let snapshot: AXCandidateSnapshot
+        let selectedFrame: CGRect
+        let displayFrame: CGRect
+        let displayAnchor: CandidateRegion
+    }
+
+    private enum CandidateReadOutcome {
+        case found(CandidateObservation)
+        case miss(String)
+    }
+
     private let inputSource: any InputSourceReading
     private let focus: any FocusReading
     private let candidateReaders: any CandidateReaderRouting
@@ -360,50 +372,24 @@ public actor MonitoringController {
         }
 
         let observationStartedAt = ContinuousClock.now
-        // Both translation scopes need visible-row evidence so an expanded
-        // candidate grid is rejected before translation or HUD presentation.
-        let candidateReader = candidateReaders.reader(
-            for: activeInputSource,
-            allowProfileDiscovery:
-                snapshot.compositionState == .composing
+        let outcome = readCandidate(
+            source: activeInputSource,
+            focus: snapshot
         )
-        guard
-            let axCandidate = candidateReader.snapshot(
-                processIdentifier: snapshot.processIdentifier,
-                includeVisibleCandidates: true,
-                includeVisibleTexts: translationScope == .row
-            )
-        else {
+        let observation: CandidateObservation
+        switch outcome {
+        case .found(let candidate):
+            observation = candidate
+        case .miss(let status):
             return observeCandidateMiss(
-                status: "未检测到候选",
+                status: status,
                 pollInterval: 60_000_000
             )
         }
-        guard
-            let candidateFrame = axCandidate.frame
-                ?? axCandidate.candidateWindowFrame
-                ?? axCandidate.candidateListFrame,
-            let displayFrame = Self.candidateDisplayFrame(
-                scope: translationScope,
-                selectedFrame: candidateFrame,
-                options: axCandidate.options,
-                geometry: axCandidate.geometry
-                    ?? AXCandidateGeometry(
-                        horizontalFrame: candidateFrame,
-                        horizontalSource: .item,
-                        verticalFrame: candidateFrame,
-                        verticalSource: .item
-                    )
-            ),
-            let displayAnchor = Self.candidateRegion(
-                for: displayFrame
-            )
-        else {
-            return observeCandidateMiss(
-                status: "未找到候选位置",
-                pollInterval: 60_000_000
-            )
-        }
+        let axCandidate = observation.snapshot
+        let candidateFrame = observation.selectedFrame
+        let displayFrame = observation.displayFrame
+        let displayAnchor = observation.displayAnchor
         candidateMissDebouncer.observeCandidate()
         latestCandidateHighlight = displayAnchor
 
@@ -511,6 +497,57 @@ public actor MonitoringController {
             )
         }
         return nextCandidatePollInterval(after: observationTimestamp)
+    }
+
+    private func readCandidate(
+        source: ActiveInputSource,
+        focus: FocusSnapshot
+    ) -> CandidateReadOutcome {
+        // Both translation scopes need visible-row evidence so an expanded
+        // candidate grid is rejected before translation or HUD presentation.
+        let candidateReader = candidateReaders.reader(
+            for: source,
+            allowProfileDiscovery: focus.compositionState == .composing
+        )
+        guard
+            let candidate = candidateReader.snapshot(
+                processIdentifier: focus.processIdentifier,
+                includeVisibleCandidates: true,
+                includeVisibleTexts: translationScope == .row
+            )
+        else {
+            return .miss("未检测到候选")
+        }
+        guard
+            let selectedFrame = candidate.frame
+                ?? candidate.candidateWindowFrame
+                ?? candidate.candidateListFrame,
+            let displayFrame = Self.candidateDisplayFrame(
+                scope: translationScope,
+                selectedFrame: selectedFrame,
+                options: candidate.options,
+                geometry: candidate.geometry
+                    ?? AXCandidateGeometry(
+                        horizontalFrame: selectedFrame,
+                        horizontalSource: .item,
+                        verticalFrame: selectedFrame,
+                        verticalSource: .item
+                    )
+            ),
+            let displayAnchor = Self.candidateRegion(
+                for: displayFrame
+            )
+        else {
+            return .miss("未找到候选位置")
+        }
+        return .found(
+            CandidateObservation(
+                snapshot: candidate,
+                selectedFrame: selectedFrame,
+                displayFrame: displayFrame,
+                displayAnchor: displayAnchor
+            )
+        )
     }
 
     private func nextCandidatePollInterval(after timestamp: UInt64) -> UInt64 {
@@ -901,12 +938,7 @@ public actor MonitoringController {
                 let rowFrame = rowFrames.reduce(
                     nil,
                     { partial, frame in
-                        let normalized =
-                            geometry.normalizedHorizontalFrame(
-                                frame
-                            )
-                        return partial?.union(normalized)
-                            ?? normalized
+                        partial?.union(frame) ?? frame
                     })
             else {
                 return candidateDisplayFrame(

@@ -206,9 +206,11 @@ public final class AXCandidateReader {
         includeVisibleCandidates: Bool = false,
         includeVisibleTexts: Bool = true
     ) -> AXCandidateSnapshot? {
+        let session = AXReadSession(limits: .interactive)
         guard
             let application = applicationElement(
-                processIdentifier: processIdentifier
+                processIdentifier: processIdentifier,
+                session: session
             )
         else {
             return nil
@@ -218,12 +220,11 @@ public final class AXCandidateReader {
             ?? Self.processIdentifier(
                 of: application
             )
-        guard
-            let windows = Self.elementsAttribute(
-                application,
-                kAXWindowsAttribute
-            )
-        else {
+        let windows = session.elementsAttribute(
+            application,
+            kAXWindowsAttribute
+        )
+        guard !windows.isEmpty else {
             clearCandidateCache()
             return nil
         }
@@ -235,26 +236,33 @@ public final class AXCandidateReader {
             }),
             Self.candidateList(
                 cachedCandidateList,
-                belongsTo: cachedCandidateWindow
+                belongsTo: cachedCandidateWindow,
+                session: session
             )
         {
             if let snapshot = Self.snapshot(
                 from: cachedCandidateList,
                 candidateWindow: cachedCandidateWindow,
                 includeVisibleCandidates: includeVisibleCandidates,
-                includeVisibleTexts: includeVisibleTexts
+                includeVisibleTexts: includeVisibleTexts,
+                session: session
             ) {
                 return snapshot
             }
         }
         clearCandidateCache()
         for window in windows {
-            guard let list = Self.candidateList(in: window),
+            guard
+                let list = Self.candidateList(
+                    in: window,
+                    session: session
+                ),
                 let snapshot = Self.snapshot(
                     from: list,
                     candidateWindow: window,
                     includeVisibleCandidates: includeVisibleCandidates,
-                    includeVisibleTexts: includeVisibleTexts
+                    includeVisibleTexts: includeVisibleTexts,
+                    session: session
                 )
             else {
                 continue
@@ -274,11 +282,12 @@ public final class AXCandidateReader {
     }
 
     private func applicationElement(
-        processIdentifier: pid_t?
+        processIdentifier: pid_t?,
+        session: AXReadSession
     ) -> AXUIElement? {
         guard
             let resolvedPID = processIdentifier
-                ?? Self.focusedProcessIdentifier()
+                ?? Self.focusedProcessIdentifier(session: session)
         else {
             return nil
         }
@@ -293,36 +302,38 @@ public final class AXCandidateReader {
         return cachedApplication
     }
 
-    private static func focusedProcessIdentifier() -> pid_t? {
+    private static func focusedProcessIdentifier(
+        session: AXReadSession
+    ) -> pid_t? {
         let system = AXUIElementCreateSystemWide()
-        AXUIElementSetMessagingTimeout(system, 0.25)
-        if let application = Self.elementAttribute(
+        if let application = session.elementAttribute(
             system,
             kAXFocusedApplicationAttribute
         ) {
             return processIdentifier(of: application)
         }
-        if let focusedElement = elementAttribute(
+        if let focusedElement = session.elementAttribute(
             system,
             kAXFocusedUIElementAttribute
         ) {
-            AXUIElementSetMessagingTimeout(focusedElement, 0.25)
             var element = focusedElement
             for _ in 0..<64 {
-                if attribute(element, kAXRoleAttribute) as? String
+                if session.stringAttribute(
+                    element,
+                    kAXRoleAttribute
+                )
                     == kAXApplicationRole as String
                 {
                     return processIdentifier(of: element)
                 }
                 guard
-                    let parent = elementAttribute(
+                    let parent = session.elementAttribute(
                         element,
                         kAXParentAttribute
                     )
                 else {
                     break
                 }
-                AXUIElementSetMessagingTimeout(parent, 0.25)
                 element = parent
             }
         }
@@ -338,28 +349,34 @@ public final class AXCandidateReader {
     }
 
     private static func isCandidateList(
-        _ element: AXUIElement
+        _ element: AXUIElement,
+        session: AXReadSession
     ) -> Bool {
-        attribute(
+        session.stringAttribute(
             element,
             kAXIdentifierAttribute
-        ) as? String == candidateListIdentifier
+        ) == candidateListIdentifier
     }
 
     private static func candidateList(
-        in window: AXUIElement
+        in window: AXUIElement,
+        session: AXReadSession
     ) -> AXUIElement? {
-        for child in elementsAttribute(
+        for child in session.elementsAttribute(
             window,
             kAXChildrenAttribute
-        ) ?? [] {
-            if isCandidateList(child) {
+        ) {
+            if isCandidateList(child, session: session) {
                 return child
             }
-            for grandchild in elementsAttribute(
+            for grandchild in session.elementsAttribute(
                 child,
                 kAXChildrenAttribute
-            ) ?? [] where isCandidateList(grandchild) {
+            )
+            where isCandidateList(
+                grandchild,
+                session: session
+            ) {
                 return grandchild
             }
         }
@@ -368,19 +385,20 @@ public final class AXCandidateReader {
 
     private static func candidateList(
         _ list: AXUIElement,
-        belongsTo window: AXUIElement
+        belongsTo window: AXUIElement,
+        session: AXReadSession
     ) -> Bool {
-        for child in elementsAttribute(
+        for child in session.elementsAttribute(
             window,
             kAXChildrenAttribute
-        ) ?? [] {
+        ) {
             if CFEqual(child, list) {
                 return true
             }
-            if (elementsAttribute(
+            if (session.elementsAttribute(
                 child,
                 kAXChildrenAttribute
-            ) ?? []).contains(where: {
+            )).contains(where: {
                 CFEqual($0, list)
             }) {
                 return true
@@ -393,33 +411,38 @@ public final class AXCandidateReader {
         from list: AXUIElement,
         candidateWindow: AXUIElement,
         includeVisibleCandidates: Bool,
-        includeVisibleTexts: Bool
+        includeVisibleTexts: Bool,
+        session: AXReadSession
     ) -> AXCandidateSnapshot? {
         let selectedElements =
-            elementsAttribute(
+            session.elementsAttribute(
                 list,
                 kAXSelectedChildrenAttribute
-            ) ?? []
+            )
         let visibleElements =
-            elementsAttribute(
+            session.elementsAttribute(
                 list,
                 kAXVisibleChildrenAttribute
-            ) ?? []
+            )
         let selectionIsExact = !selectedElements.isEmpty
         let fallbackCandidates =
             visibleElements.isEmpty
-            ? elementsAttribute(
+            ? session.elementsAttribute(
                 list,
                 kAXChildrenAttribute
-            ) ?? []
+            )
             : visibleElements
         if !includeVisibleCandidates,
             let selectedElement =
                 selectedElements.first
                 ?? firstCandidateElement(
-                    in: fallbackCandidates
+                    in: fallbackCandidates,
+                    session: session
                 ),
-            let selected = candidateItem(of: selectedElement)
+            let selected = candidateItem(
+                of: selectedElement,
+                session: session
+            )
         {
             return AXCandidateSnapshot(
                 text: selected.text,
@@ -437,22 +460,32 @@ public final class AXCandidateReader {
             let selectedElement =
                 selectedElements.first
                 ?? firstCandidateElement(
-                    in: fallbackCandidates
+                    in: fallbackCandidates,
+                    session: session
                 ),
-            let selected = candidateItem(of: selectedElement)
+            let selected = candidateItem(
+                of: selectedElement,
+                session: session
+            )
         else {
             return nil
         }
-        let candidateWindowFrame = frame(of: candidateWindow)
-        let candidateListFrame = frame(of: list)
+        let candidateWindowFrame = session.frame(of: candidateWindow)
+        let candidateListFrame = session.frame(of: list)
         let visibleItems = visibleElements.compactMap { element in
             if CFEqual(element, selectedElement) {
                 return selected
             }
             if includeVisibleTexts {
-                return candidateItem(of: element)
+                return candidateItem(
+                    of: element,
+                    session: session
+                )
             }
-            return candidateFrameItem(of: element)
+            return candidateFrameItem(
+                of: element,
+                session: session
+            )
         }
         guard
             let row = AXCandidateVisibleRowSelector.select(
@@ -500,100 +533,37 @@ public final class AXCandidateReader {
     }
 
     private static func firstCandidateElement(
-        in elements: [AXUIElement]
+        in elements: [AXUIElement],
+        session: AXReadSession
     ) -> AXUIElement? {
         elements.first {
-            candidateText(of: $0) != nil
+            session.text(of: $0) != nil
         }
     }
 
     private static func candidateItem(
-        of element: AXUIElement
+        of element: AXUIElement,
+        session: AXReadSession
     ) -> AXCandidateItem? {
-        guard let text = candidateText(of: element) else {
+        guard let text = session.text(of: element) else {
             return nil
         }
-        return AXCandidateItem(text: text, frame: frame(of: element))
+        return AXCandidateItem(
+            text: text,
+            frame: session.frame(of: element)
+        )
     }
 
     private static func candidateFrameItem(
-        of element: AXUIElement
+        of element: AXUIElement,
+        session: AXReadSession
     ) -> AXCandidateItem? {
-        guard let frame = frame(of: element),
+        guard let frame = session.frame(of: element),
             frame.width > 0,
             frame.height > 0
         else {
             return nil
         }
         return AXCandidateItem(text: "", frame: frame)
-    }
-
-    private static func candidateText(
-        of element: AXUIElement
-    ) -> String? {
-        for name in [
-            kAXTitleAttribute,
-            kAXValueAttribute,
-            kAXDescriptionAttribute,
-            "AXValueDescription",
-        ] {
-            guard let value = attribute(element, name) as? String else {
-                continue
-            }
-            let text = value.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
-            if !text.isEmpty {
-                return text
-            }
-        }
-        return nil
-    }
-
-    private static func frame(of element: AXUIElement) -> CGRect? {
-        if let frame = AXValueReader.rect(attribute(element, "AXFrame")) {
-            return frame
-        }
-
-        guard
-            let positionValue = attribute(
-                element,
-                kAXPositionAttribute
-            ),
-            let sizeValue = attribute(element, kAXSizeAttribute),
-            let position = AXValueReader.point(positionValue),
-            let size = AXValueReader.size(sizeValue)
-        else {
-            return nil
-        }
-        return CGRect(origin: position, size: size)
-    }
-
-    private static func elementsAttribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> [AXUIElement]? {
-        attribute(element, name) as? [AXUIElement]
-    }
-
-    private static func elementAttribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> AXUIElement? {
-        AXValueReader.element(attribute(element, name))
-    }
-
-    private static func attribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> Any? {
-        var value: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(
-            element,
-            name as CFString,
-            &value
-        )
-        guard result == .success else { return nil }
-        return value
     }
 }

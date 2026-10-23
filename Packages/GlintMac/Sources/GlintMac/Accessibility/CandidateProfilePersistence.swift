@@ -144,6 +144,26 @@ final class CandidateProfilePersistence: @unchecked Sendable {
                 )
             }
         }
+        persist(records)
+    }
+
+    func remove(_ key: CandidateProfileKey) {
+        let records = profiles.withLock { profiles -> [Record] in
+            profiles.removeValue(forKey: key)
+            return profiles.map { key, profile in
+                Record(
+                    bundleIdentifier: key.bundleIdentifier,
+                    inputSourceIdentifier:
+                        key.inputSourceIdentifier,
+                    applicationVersion: key.applicationVersion,
+                    profile: profile.rawValue
+                )
+            }
+        }
+        persist(records)
+    }
+
+    private func persist(_ records: [Record]) {
         guard let data = try? JSONEncoder().encode(records)
         else {
             return

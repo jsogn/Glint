@@ -50,6 +50,8 @@ final class CandidateProfileCache: @unchecked Sendable {
         var profile: CandidateReadProfile?
         var failedAttempts = 0
         var retryAfter: UInt64 = 0
+        var profileFailureCount = 0
+        var profileFailureStartedAt: UInt64?
     }
 
     private struct State: Sendable {
@@ -61,6 +63,9 @@ final class CandidateProfileCache: @unchecked Sendable {
     private static let minimumCooldown: UInt64 = 10 * 60 * 1_000_000_000
     private static let maximumCooldown: UInt64 = 60 * 60 * 1_000_000_000
     private static let failuresBeforeCooldown = 2
+    private static let failuresBeforeProfileInvalidation = 3
+    private static let minimumProfileFailureDuration: UInt64 =
+        2 * 1_000_000_000
 
     private let lock: OSAllocatedUnfairLock<State>
     private let clock: @Sendable () -> UInt64
@@ -145,6 +150,67 @@ final class CandidateProfileCache: @unchecked Sendable {
         }
     }
 
+    func recordProfileHit(
+        for identity: InputMethodIdentity
+    ) {
+        guard let key = profileKey(for: identity) else {
+            return
+        }
+        lock.withLock { state in
+            guard var entry = state.entries[key],
+                entry.profile != nil
+            else {
+                return
+            }
+            entry.profileFailureCount = 0
+            entry.profileFailureStartedAt = nil
+            state.entries[key] = entry
+        }
+    }
+
+    func recordProfileMiss(
+        for identity: InputMethodIdentity
+    ) {
+        guard let key = profileKey(for: identity) else {
+            return
+        }
+        let now = clock()
+        let invalidated = lock.withLock { state -> Bool in
+            guard var entry = state.entries[key],
+                entry.profile != nil
+            else {
+                return false
+            }
+            if entry.profileFailureStartedAt == nil {
+                entry.profileFailureStartedAt = now
+            }
+            entry.profileFailureCount += 1
+            let failureStartedAt =
+                entry.profileFailureStartedAt ?? now
+            let duration =
+                now >= failureStartedAt
+                ? now - failureStartedAt
+                : 0
+            guard
+                entry.profileFailureCount
+                    >= Self.failuresBeforeProfileInvalidation,
+                duration >= Self.minimumProfileFailureDuration
+            else {
+                state.entries[key] = entry
+                return false
+            }
+            state.entries[key] = Entry()
+            return true
+        }
+        guard invalidated else {
+            return
+        }
+        persistence?.remove(key)
+        candidateProfileLogger.notice(
+            "profile invalidated source=\(key.inputSourceIdentifier, privacy: .public)"
+        )
+    }
+
     private func completeDiscovery(
         for key: CandidateProfileKey,
         profile: CandidateReadProfile?
@@ -224,14 +290,18 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
         includeVisibleCandidates: Bool,
         includeVisibleTexts: Bool
     ) -> AXCandidateSnapshot? {
-        if let profile = profiles.profile(for: source.identity),
-            let candidate = candidateReader(for: profile).snapshot(
+        if let profile = profiles.profile(for: source.identity) {
+            if let candidate = candidateReader(for: profile).snapshot(
                 processIdentifier: processIdentifier,
                 includeVisibleCandidates: includeVisibleCandidates,
                 includeVisibleTexts: includeVisibleTexts
-            )
-        {
-            return candidate
+            ) {
+                profiles.recordProfileHit(for: source.identity)
+                return candidate
+            }
+            if allowsProfileDiscovery {
+                profiles.recordProfileMiss(for: source.identity)
+            }
         }
         let fallbackSnapshot = fallback.snapshot(
             processIdentifier: processIdentifier,
@@ -267,7 +337,6 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
 }
 
 enum CandidateProfileDetector {
-    private static let discoveryTimeout: Float = 0.05
     private static let maximumWindowCount = 2
     private static let maximumNodeCount = 16
 
@@ -286,7 +355,7 @@ enum CandidateProfileDetector {
         }
         let listReader = SogouCandidateReader(
             bundleIdentifier: key.bundleIdentifier,
-            messagingTimeout: discoveryTimeout,
+            accessLimits: .discovery,
             maximumWindowCount: maximumWindowCount,
             maximumNodeCount: maximumNodeCount
         )
@@ -296,7 +365,7 @@ enum CandidateProfileDetector {
         )
         let textReader = WeTypeCandidateReader(
             bundleIdentifier: key.bundleIdentifier,
-            messagingTimeout: discoveryTimeout,
+            accessLimits: .discovery,
             maximumWindowCount: maximumWindowCount,
             maximumNodeCount: maximumNodeCount
         )

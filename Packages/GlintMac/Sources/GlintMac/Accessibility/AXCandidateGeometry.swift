@@ -8,8 +8,6 @@ public enum AXCandidateFrameKind: String, Sendable, Equatable {
 }
 
 public struct AXCandidateGeometry: Sendable, Equatable {
-    private static let windowVerticalInset: CGFloat = 8
-
     public let horizontalAnchor: CGRect
     public let verticalBounds: CGRect
     public let horizontalSource: AXCandidateFrameKind
@@ -23,21 +21,8 @@ public struct AXCandidateGeometry: Sendable, Equatable {
     ) {
         self.horizontalSource = horizontalSource
         self.verticalSource = verticalSource
-        horizontalAnchor = Self.normalizedHorizontalFrame(
-            horizontalFrame,
-            source: horizontalSource
-        )
-        verticalBounds = Self.normalizedVerticalFrame(
-            verticalFrame,
-            source: verticalSource
-        )
-    }
-
-    func normalizedHorizontalFrame(_ frame: CGRect) -> CGRect {
-        Self.normalizedHorizontalFrame(
-            frame,
-            source: horizontalSource
-        )
+        horizontalAnchor = horizontalFrame
+        verticalBounds = verticalFrame
     }
 
     func displayFrame(horizontalFrame: CGRect) -> CGRect {
@@ -57,14 +42,11 @@ public struct AXCandidateGeometry: Sendable, Equatable {
         verticalSource == .window || verticalSource == .list
     }
 
-    private static func normalizedHorizontalFrame(
-        _ frame: CGRect,
-        source: AXCandidateFrameKind
-    ) -> CGRect {
-        guard source == .text,
-            frame.width > 0,
-            frame.height > 0
-        else {
+}
+
+enum AXCandidateTextFrame {
+    static func presentationFrame(for frame: CGRect) -> CGRect {
+        guard frame.width > 0, frame.height > 0 else {
             return frame
         }
         let leadingInset = min(
@@ -76,21 +58,6 @@ public struct AXCandidateGeometry: Sendable, Equatable {
             y: frame.minY,
             width: frame.width + leadingInset,
             height: frame.height
-        )
-    }
-
-    private static func normalizedVerticalFrame(
-        _ frame: CGRect,
-        source: AXCandidateFrameKind
-    ) -> CGRect {
-        guard source == .window,
-            frame.height > windowVerticalInset * 2
-        else {
-            return frame
-        }
-        return frame.insetBy(
-            dx: 0,
-            dy: windowVerticalInset
         )
     }
 }

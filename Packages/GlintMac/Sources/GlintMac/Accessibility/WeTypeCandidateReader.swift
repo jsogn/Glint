@@ -36,13 +36,21 @@ enum WeTypeCandidateParser {
 
         var groups: [WeTypeCandidateGroup] = []
         var index = 0
-        while index + 1 < sorted.count {
+        while index < sorted.count {
+            guard isShortcut(sorted[index].text),
+                index + 1 < sorted.count
+            else {
+                index += 1
+                continue
+            }
             let shortcut = sorted[index]
             let candidate = sorted[index + 1]
-            guard isShortcut(shortcut.text),
+            guard
+                !isShortcut(candidate.text),
                 candidate.frame.minX >= shortcut.frame.minX
             else {
-                break
+                index += 1
+                continue
             }
             groups.append(
                 WeTypeCandidateGroup(
@@ -53,22 +61,6 @@ enum WeTypeCandidateParser {
                 )
             )
             index += 2
-        }
-
-        if groups.isEmpty,
-            let firstCandidate = sorted.first(where: {
-                !isShortcut($0.text)
-            }) ?? sorted.first
-        {
-            groups.append(
-                WeTypeCandidateGroup(
-                    text: firstCandidate.text,
-                    frame: firstCandidate.frame,
-                    shortcutBrightness: nil,
-                    candidateBrightness:
-                        firstCandidate.foregroundBrightness
-                )
-            )
         }
         return groups.isEmpty ? nil : groups
     }
@@ -150,18 +142,39 @@ public final class WeTypeCandidateReader {
         InputMethodIdentifier.weTypePinyinMode
 
     private let bundleIdentifier: String
-    private let messagingTimeout: Float
+    private let accessLimits: AXAccessLimits
     private let maximumWindowCount: Int
     private let maximumNodeCount: Int
 
-    public init(
+    public convenience init(
         bundleIdentifier: String = InputMethodIdentifier.weTypeBundle,
         messagingTimeout: Float = 0.25,
         maximumWindowCount: Int = 3,
         maximumNodeCount: Int = 36
     ) {
+        self.init(
+            bundleIdentifier: bundleIdentifier,
+            accessLimits: AXAccessLimits(
+                messagingTimeout: messagingTimeout,
+                maximumAttributeCalls:
+                    AXAccessLimits.interactive
+                    .maximumAttributeCalls,
+                maximumDuration:
+                    AXAccessLimits.interactive.maximumDuration
+            ),
+            maximumWindowCount: maximumWindowCount,
+            maximumNodeCount: maximumNodeCount
+        )
+    }
+
+    init(
+        bundleIdentifier: String,
+        accessLimits: AXAccessLimits,
+        maximumWindowCount: Int,
+        maximumNodeCount: Int
+    ) {
         self.bundleIdentifier = bundleIdentifier
-        self.messagingTimeout = messagingTimeout
+        self.accessLimits = accessLimits
         self.maximumWindowCount = max(1, maximumWindowCount)
         self.maximumNodeCount = max(1, maximumNodeCount)
     }
@@ -184,34 +197,51 @@ public final class WeTypeCandidateReader {
         let appElement = AXUIElementCreateApplication(
             application.processIdentifier
         )
-        AXUIElementSetMessagingTimeout(appElement, messagingTimeout)
-        let windows = Self.elementsAttribute(
+        let session = AXReadSession(limits: accessLimits)
+        let windows = session.elementsAttribute(
             appElement,
             kAXWindowsAttribute
         )
-        let snapshots = windows.prefix(maximumWindowCount).compactMap {
-            snapshot(
-                from: $0,
-                includeVisibleCandidates: includeVisibleCandidates,
-                includeVisibleTexts: includeVisibleTexts
-            )
-        }
-        return snapshots.max {
-            $0.candidateCount < $1.candidateCount
-        }?.snapshot
+        let candidates = windows.prefix(maximumWindowCount)
+            .compactMap { window -> AXCandidateWindowSnapshot? in
+                guard
+                    let candidate = snapshot(
+                        from: window,
+                        includeVisibleCandidates:
+                            includeVisibleCandidates,
+                        includeVisibleTexts: includeVisibleTexts,
+                        session: session
+                    )
+                else {
+                    return nil
+                }
+                return AXCandidateWindowSnapshot(
+                    candidateCount: candidate.candidateCount,
+                    snapshot: candidate.snapshot,
+                    isVisible:
+                        !(session.boolAttribute(
+                            window,
+                            kAXHiddenAttribute
+                        ) ?? false)
+                )
+            }
+        return AXCandidateWindowSelector.preferred(from: candidates)
     }
 
     private func snapshot(
         from window: AXUIElement,
         includeVisibleCandidates: Bool,
-        includeVisibleTexts: Bool
+        includeVisibleTexts: Bool,
+        session: AXReadSession
     ) -> (candidateCount: Int, snapshot: AXCandidateSnapshot)? {
-        let observations = Self.elementsAttribute(
+        let observations = session.elementsAttribute(
             window,
             kAXChildrenAttribute
         )
         .prefix(maximumNodeCount)
-        .compactMap(Self.observation)
+        .compactMap {
+            Self.observation($0, session: session)
+        }
         guard observations.count >= 2,
             let groups = WeTypeCandidateParser.groups(
                 from: observations
@@ -229,16 +259,21 @@ public final class WeTypeCandidateReader {
         }
         let selected = groups[selectedIndex]
         let selectedFrame = selected.frame
-        let candidateWindowFrame = Self.frame(of: window)
+        let presentationFrames = groups.map {
+            AXCandidateTextFrame.presentationFrame(for: $0.frame)
+        }
+        let selectedPresentationFrame =
+            presentationFrames[selectedIndex]
+        let candidateWindowFrame = session.frame(of: window)
         let candidateListFrame = groups.dropFirst().reduce(
             groups[0].frame
         ) {
             $0.union($1.frame)
         }
         let geometry = AXCandidateGeometry(
-            horizontalFrame: selectedFrame,
+            horizontalFrame: selectedPresentationFrame,
             horizontalSource: .text,
-            verticalFrame: selectedFrame,
+            verticalFrame: selectedPresentationFrame,
             verticalSource: .text
         )
         if !includeVisibleCandidates {
@@ -263,7 +298,7 @@ public final class WeTypeCandidateReader {
                     includeVisibleTexts || index == selectedIndex
                     ? group.text
                     : "",
-                frame: group.frame,
+                frame: presentationFrames[index],
                 isSelected:
                     selection.isExact
                     && index == selectedIndex
@@ -289,13 +324,14 @@ public final class WeTypeCandidateReader {
     }
 
     private static func observation(
-        _ element: AXUIElement
+        _ element: AXUIElement,
+        session: AXReadSession
     ) -> WeTypeCandidateObservation? {
         guard
-            stringAttribute(element, kAXRoleAttribute)
+            session.stringAttribute(element, kAXRoleAttribute)
                 == kAXStaticTextRole as String,
-            let text = text(of: element),
-            let frame = frame(of: element)
+            let text = session.text(of: element),
+            let frame = session.frame(of: element)
         else {
             return nil
         }
@@ -305,41 +341,20 @@ public final class WeTypeCandidateReader {
             foregroundBrightness:
                 foregroundBrightness(
                     of: element,
-                    textLength: text.count
+                    textLength: text.count,
+                    session: session
                 )
         )
     }
 
-    private static func text(
-        of element: AXUIElement
-    ) -> String? {
-        for name in [
-            kAXValueAttribute,
-            kAXTitleAttribute,
-            kAXDescriptionAttribute,
-            "AXValueDescription",
-        ] {
-            guard let value = attribute(element, name) as? String
-            else {
-                continue
-            }
-            let normalized = value.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
-            if !normalized.isEmpty {
-                return normalized
-            }
-        }
-        return nil
-    }
-
     private static func foregroundBrightness(
         of element: AXUIElement,
-        textLength: Int
+        textLength: Int,
+        session: AXReadSession
     ) -> Double? {
         var range =
             AXValueReader.range(
-                attribute(
+                session.attribute(
                     element,
                     "AXVisibleCharacterRange"
                 )
@@ -349,16 +364,12 @@ public final class WeTypeCandidateReader {
         else {
             return nil
         }
-        var value: CFTypeRef?
         guard
-            AXUIElementCopyParameterizedAttributeValue(
+            let attributed = session.parameterizedAttribute(
                 element,
-                kAXAttributedStringForRangeParameterizedAttribute
-                    as CFString,
-                parameter,
-                &value
-            ) == .success,
-            let attributed = value as? NSAttributedString
+                kAXAttributedStringForRangeParameterizedAttribute,
+                parameter
+            ) as? NSAttributedString
         else {
             return nil
         }
@@ -398,58 +409,6 @@ public final class WeTypeCandidateReader {
             maximum = max(maximum ?? -1, brightness)
         }
         return maximum
-    }
-
-    private static func frame(
-        of element: AXUIElement
-    ) -> CGRect? {
-        if let frame = AXValueReader.rect(
-            attribute(element, "AXFrame")
-        ) {
-            return frame
-        }
-        guard
-            let position = AXValueReader.point(
-                attribute(element, kAXPositionAttribute)
-            ),
-            let size = AXValueReader.size(
-                attribute(element, kAXSizeAttribute)
-            )
-        else {
-            return nil
-        }
-        return CGRect(origin: position, size: size)
-    }
-
-    private static func stringAttribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> String? {
-        attribute(element, name) as? String
-    }
-
-    private static func elementsAttribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> [AXUIElement] {
-        attribute(element, name) as? [AXUIElement] ?? []
-    }
-
-    private static func attribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> Any? {
-        var value: CFTypeRef?
-        guard
-            AXUIElementCopyAttributeValue(
-                element,
-                name as CFString,
-                &value
-            ) == .success
-        else {
-            return nil
-        }
-        return value
     }
 }
 

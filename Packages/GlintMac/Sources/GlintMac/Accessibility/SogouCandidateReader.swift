@@ -59,20 +59,42 @@ enum SogouCandidateParser {
 public final class SogouCandidateReader {
     public static let inputSourceID =
         InputMethodIdentifier.sogouPinyinMode
+    private static let windowVerticalInset: CGFloat = 8
 
     private let bundleIdentifier: String
-    private let messagingTimeout: Float
+    private let accessLimits: AXAccessLimits
     private let maximumWindowCount: Int
     private let maximumNodeCount: Int
 
-    public init(
+    public convenience init(
         bundleIdentifier: String = InputMethodIdentifier.sogouBundle,
         messagingTimeout: Float = 0.25,
         maximumWindowCount: Int = 3,
         maximumNodeCount: Int = 24
     ) {
+        self.init(
+            bundleIdentifier: bundleIdentifier,
+            accessLimits: AXAccessLimits(
+                messagingTimeout: messagingTimeout,
+                maximumAttributeCalls:
+                    AXAccessLimits.interactive
+                    .maximumAttributeCalls,
+                maximumDuration:
+                    AXAccessLimits.interactive.maximumDuration
+            ),
+            maximumWindowCount: maximumWindowCount,
+            maximumNodeCount: maximumNodeCount
+        )
+    }
+
+    init(
+        bundleIdentifier: String,
+        accessLimits: AXAccessLimits,
+        maximumWindowCount: Int,
+        maximumNodeCount: Int
+    ) {
         self.bundleIdentifier = bundleIdentifier
-        self.messagingTimeout = messagingTimeout
+        self.accessLimits = accessLimits
         self.maximumWindowCount = max(1, maximumWindowCount)
         self.maximumNodeCount = max(1, maximumNodeCount)
     }
@@ -95,39 +117,51 @@ public final class SogouCandidateReader {
         let appElement = AXUIElementCreateApplication(
             application.processIdentifier
         )
-        AXUIElementSetMessagingTimeout(appElement, messagingTimeout)
-        let windows = Self.elementsAttribute(
+        let session = AXReadSession(limits: accessLimits)
+        let windows = session.elementsAttribute(
             appElement,
             kAXWindowsAttribute
         )
-        return windows.prefix(maximumWindowCount)
-            .compactMap {
-                snapshot(
-                    from: $0,
-                    includeVisibleCandidates:
-                        includeVisibleCandidates,
-                    includeVisibleTexts: includeVisibleTexts
+        let candidates = windows.prefix(maximumWindowCount)
+            .compactMap { window -> AXCandidateWindowSnapshot? in
+                guard
+                    let candidate = snapshot(
+                        from: window,
+                        includeVisibleCandidates:
+                            includeVisibleCandidates,
+                        includeVisibleTexts: includeVisibleTexts,
+                        session: session
+                    )
+                else {
+                    return nil
+                }
+                return AXCandidateWindowSnapshot(
+                    candidateCount: candidate.candidateCount,
+                    snapshot: candidate.snapshot,
+                    isVisible:
+                        !(session.boolAttribute(
+                            window,
+                            kAXHiddenAttribute
+                        ) ?? false)
                 )
             }
-            .max {
-                $0.candidateCount < $1.candidateCount
-            }?
-            .snapshot
+        return AXCandidateWindowSelector.preferred(from: candidates)
     }
 
     private func snapshot(
         from window: AXUIElement,
         includeVisibleCandidates: Bool,
-        includeVisibleTexts: Bool
+        includeVisibleTexts: Bool,
+        session: AXReadSession
     ) -> (candidateCount: Int, snapshot: AXCandidateSnapshot)? {
-        for list in candidateLists(in: window) {
-            let visibleElements = Self.elementsAttribute(
+        for list in candidateLists(in: window, session: session) {
+            let visibleElements = session.elementsAttribute(
                 list,
                 kAXVisibleChildrenAttribute
             )
             let candidateElements =
                 visibleElements.isEmpty
-                ? Self.elementsAttribute(
+                ? session.elementsAttribute(
                     list,
                     kAXChildrenAttribute
                 )
@@ -135,7 +169,9 @@ public final class SogouCandidateReader {
             let observations =
                 candidateElements
                 .prefix(maximumNodeCount)
-                .compactMap(Self.observation)
+                .compactMap {
+                    Self.observation($0, session: session)
+                }
             guard
                 let candidates = SogouCandidateParser.candidates(
                     from: observations
@@ -144,10 +180,13 @@ public final class SogouCandidateReader {
             else {
                 continue
             }
-            let candidateWindowFrame = Self.frame(of: window)
-            let candidateListFrame = Self.frame(of: list)
+            let candidateWindowFrame = session.frame(of: window)
+            let candidateListFrame = session.frame(of: list)
+            let presentationFrames = candidates.map {
+                AXCandidateTextFrame.presentationFrame(for: $0.frame)
+            }
             let geometry = Self.geometry(
-                selectedFrame: first.frame,
+                selectedFrame: presentationFrames[0],
                 candidateWindowFrame: candidateWindowFrame,
                 candidateListFrame: candidateListFrame
             )
@@ -175,7 +214,7 @@ public final class SogouCandidateReader {
                         includeVisibleTexts || index == 0
                         ? candidate.text
                         : "",
-                    frame: candidate.frame,
+                    frame: presentationFrames[index],
                     isSelected: false
                 )
             }
@@ -201,24 +240,25 @@ public final class SogouCandidateReader {
     }
 
     private func candidateLists(
-        in window: AXUIElement
+        in window: AXUIElement,
+        session: AXReadSession
     ) -> [AXUIElement] {
         var result: [AXUIElement] = []
-        for child in Self.elementsAttribute(
+        for child in session.elementsAttribute(
             window,
             kAXChildrenAttribute
         ).prefix(maximumNodeCount) {
-            if Self.stringAttribute(
+            if session.stringAttribute(
                 child,
                 kAXRoleAttribute
             ) == kAXListRole as String {
                 result.append(child)
             }
-            for grandchild in Self.elementsAttribute(
+            for grandchild in session.elementsAttribute(
                 child,
                 kAXChildrenAttribute
             ).prefix(maximumNodeCount)
-            where Self.stringAttribute(
+            where session.stringAttribute(
                 grandchild,
                 kAXRoleAttribute
             ) == kAXListRole as String {
@@ -236,7 +276,14 @@ public final class SogouCandidateReader {
         let verticalFrame: CGRect
         let verticalSource: AXCandidateFrameKind
         if let candidateWindowFrame {
-            verticalFrame = candidateWindowFrame
+            verticalFrame =
+                candidateWindowFrame.height
+                    > windowVerticalInset * 2
+                ? candidateWindowFrame.insetBy(
+                    dx: 0,
+                    dy: windowVerticalInset
+                )
+                : candidateWindowFrame
             verticalSource = .window
         } else if let candidateListFrame {
             verticalFrame = candidateListFrame
@@ -254,13 +301,14 @@ public final class SogouCandidateReader {
     }
 
     private static func observation(
-        _ element: AXUIElement
+        _ element: AXUIElement,
+        session: AXReadSession
     ) -> SogouCandidateObservation? {
         guard
-            stringAttribute(element, kAXRoleAttribute)
+            session.stringAttribute(element, kAXRoleAttribute)
                 == kAXStaticTextRole as String,
-            let text = text(of: element),
-            let frame = frame(of: element),
+            let text = session.text(of: element),
+            let frame = session.frame(of: element),
             frame.width > 0,
             frame.height > 0
         else {
@@ -270,81 +318,6 @@ public final class SogouCandidateReader {
             text: text,
             frame: frame
         )
-    }
-
-    private static func text(
-        of element: AXUIElement
-    ) -> String? {
-        for name in [
-            kAXValueAttribute,
-            kAXTitleAttribute,
-            kAXDescriptionAttribute,
-            "AXValueDescription",
-        ] {
-            guard let value = attribute(element, name) as? String
-            else {
-                continue
-            }
-            let normalized = value.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
-            if !normalized.isEmpty {
-                return normalized
-            }
-        }
-        return nil
-    }
-
-    private static func frame(
-        of element: AXUIElement
-    ) -> CGRect? {
-        if let frame = AXValueReader.rect(
-            attribute(element, "AXFrame")
-        ) {
-            return frame
-        }
-        guard
-            let position = AXValueReader.point(
-                attribute(element, kAXPositionAttribute)
-            ),
-            let size = AXValueReader.size(
-                attribute(element, kAXSizeAttribute)
-            )
-        else {
-            return nil
-        }
-        return CGRect(origin: position, size: size)
-    }
-
-    private static func stringAttribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> String? {
-        attribute(element, name) as? String
-    }
-
-    private static func elementsAttribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> [AXUIElement] {
-        attribute(element, name) as? [AXUIElement] ?? []
-    }
-
-    private static func attribute(
-        _ element: AXUIElement,
-        _ name: String
-    ) -> Any? {
-        var value: CFTypeRef?
-        guard
-            AXUIElementCopyAttributeValue(
-                element,
-                name as CFString,
-                &value
-            ) == .success
-        else {
-            return nil
-        }
-        return value
     }
 }
 

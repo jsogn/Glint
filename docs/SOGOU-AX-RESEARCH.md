@@ -58,9 +58,10 @@ frame。候选序号由搜狗自行绘制，不是独立 AX 节点。
 - `AXAttributedStringForRange` 参数化属性
 - 选择变化时可用于读取高亮项的通知载荷
 
-方向键会改变搜狗候选栏中橙色序号的视觉位置，但上述 AX 结构不变。候选居中、
-左右定位和上下边界现在只依赖 `AXCandidateGeometry` 的节点来源，不需要
-`MonitoringController` 增加搜狗专用判断。
+方向键会改变搜狗候选栏中橙色序号的视觉位置，但上述 AX 结构不变。搜狗 reader
+自行生成文字 presentation frame 和去除默认皮肤透明边距的窗口边界；
+`AXCandidateGeometry` 只承载最终结果，不需要 `MonitoringController` 增加搜狗
+专用判断。
 
 ## 搜狗桌面端差异
 
