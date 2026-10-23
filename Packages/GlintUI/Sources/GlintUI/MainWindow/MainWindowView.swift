@@ -1041,6 +1041,7 @@ private struct PrivacyNoticeCard: View {
 
 private struct AboutPage: View {
     private let repositoryURL = URL(string: "https://github.com/jsogn/Glint")!
+    private let issuesURL = URL(string: "https://github.com/jsogn/Glint/issues")!
 
     private var version: String {
         Bundle.main.object(
@@ -1063,15 +1064,17 @@ private struct AboutPage: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Glint")
                                 .font(.title3.weight(.semibold))
-                            Text("在你的输入旁，看到英文翻译，将学习融入日常。")
+                            Text("输入中文时，在候选旁看到自然的英文表达。")
                                 .foregroundStyle(.secondary)
                             Text("版本 \(version)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Link("查看 GitHub 项目", destination: repositoryURL)
-                                .font(.callout)
                         }
                     }
+
+                    Text("Glint 不替换输入法，只读取当前输入法候选，并在本机完成翻译。")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
 
                     Divider()
 
@@ -1080,6 +1083,12 @@ private struct AboutPage: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("macOS 26+ · Apple 芯片")
+                    }
+                    .font(.callout)
+
+                    HStack(spacing: 16) {
+                        Link("GitHub 项目", destination: repositoryURL)
+                        Link("问题反馈", destination: issuesURL)
                     }
                     .font(.callout)
                 }
