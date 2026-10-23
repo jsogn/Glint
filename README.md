@@ -46,14 +46,30 @@ Glint 支持单词、短语和短句。单词会尽量给出简洁、常用的�
 
 ## 安装说明
 
-当前发布包要求 **macOS 26 或更高版本**，仅支持 **Apple Silicon Mac**。
+需要 **macOS 26 或更高版本**，仅支持 **Apple Silicon Mac**。
 
-发布包目前使用 ad-hoc 签名，没有经过 Apple 公证，只适合开发和已知测试者。
-GitHub 的 Latest 标记表示这是项目最新构建，不代表已经面向普通用户或通过
-Gatekeeper 验证。
+1. 打开下载的 DMG，将其中的 Glint 拖入“应用程序”文件夹。
+2. 打开“访达 → 应用程序”，双击 Glint。请不要直接从 DMG 或“下载”目录运行。
+3. 如果提示无法验证 Glint，打开 **系统设置 → 隐私与安全性 → 安全性**，点击
+   “仍要打开”，验证密码或 Touch ID，再点击“打开”。
+4. 如果没有“仍要打开”按钮，按 `Command + Space`，打开“终端”，执行：
 
-请先将 Glint 移入“应用程序”文件夹，再从该位置启动。如果 macOS 首次打开时
-无法验证应用，请在“系统设置 → 隐私与安全性”中确认一次。
+   ```bash
+   xattr -r -d com.apple.quarantine "/Applications/Glint.app"
+   open "/Applications/Glint.app"
+   ```
+
+   如果提示权限不足，改用：
+
+   ```bash
+   sudo xattr -r -d com.apple.quarantine "/Applications/Glint.app"
+   open "/Applications/Glint.app"
+   ```
+
+5. 在 **系统设置 → 隐私与安全性 → 辅助功能** 中打开 Glint 的开关，然后重新打开
+   Glint。
+6. 切换到苹果拼音 `Pinyin - Simplified`，输入 `nihao`；候选栏旁出现英文翻译
+   即表示安装成功。
 
 ## 从源码构建
 
