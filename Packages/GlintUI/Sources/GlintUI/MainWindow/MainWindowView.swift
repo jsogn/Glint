@@ -909,9 +909,9 @@ extension CandidateTranslationScope {
     var explanation: String {
         switch self {
         case .selected:
-            "只显示当前高亮候选的英文，展开更多候选后隐藏。"
+            "只显示当前高亮候选的对应英文翻译，展开更多候选后隐藏。"
         case .row:
-            "仅在单行候选栏显示首栏英文，展开更多候选后隐藏。"
+            "仅在单行候选栏显示首栏候选的对应英文翻译，展开更多候选后隐藏。"
         }
     }
 }
@@ -1064,17 +1064,13 @@ private struct AboutPage: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Glint")
                                 .font(.title3.weight(.semibold))
-                            Text("输入中文时，在候选旁看到自然的英文表达。")
+                            Text("输入中文时，在候选旁查看对应的英文翻译。")
                                 .foregroundStyle(.secondary)
                             Text("版本 \(version)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
-
-                    Text("Glint 不替换输入法，只读取当前输入法候选，并在本机完成翻译。")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
 
                     Divider()
 

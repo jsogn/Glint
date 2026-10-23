@@ -346,9 +346,9 @@ private enum OverviewRuntimeState {
     var detail: String {
         switch self {
         case .running:
-            "在输入法候选栏旁显示单行英文提示。"
+            "在输入法候选栏旁显示对应英文翻译。"
         case .paused:
-            "开启后，输入中文时会显示单行英文提示。"
+            "开启后，停留苹果拼音候选会显示对应英文翻译。"
         case .permissions(let message):
             message
         case .attention(let message):
