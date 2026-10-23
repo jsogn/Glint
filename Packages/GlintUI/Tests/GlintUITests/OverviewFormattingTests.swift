@@ -15,7 +15,7 @@ final class OverviewFormattingTests: XCTestCase {
                 hudFontSize: 15,
                 candidateSpacing: 5
             ),
-            "不透明度 80% · 字号 15 pt · 间距 5 pt"
+            "背景不透明度 80% · 字号 15 pt · 间距 5 pt"
         )
         XCTAssertEqual(
             OverviewFormatting.appearance(
@@ -23,7 +23,7 @@ final class OverviewFormattingTests: XCTestCase {
                 hudFontSize: 13,
                 candidateSpacing: 0
             ),
-            "不透明度 100% · 字号 13 pt · 间距 0 pt"
+            "背景不透明度 100% · 字号 13 pt · 间距 0 pt"
         )
     }
 

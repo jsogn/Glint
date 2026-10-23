@@ -9,7 +9,7 @@ struct OverviewPage: View {
 
     var body: some View {
         PageContainer {
-            OverviewStatusCard(model: model, selection: $selection)
+            OverviewStatusCard(model: model)
 
             LazyVGrid(
                 columns: [
@@ -89,7 +89,6 @@ struct OverviewPage: View {
 
 private struct OverviewStatusCard: View {
     let model: MainWindowModel
-    @Binding var selection: SidebarItem?
 
     private var state: OverviewRuntimeState {
         let missingPermissions = missingPermissionText
@@ -103,7 +102,7 @@ private struct OverviewStatusCard: View {
     }
 
     private var missingPermissionText: String? {
-        model.accessibilityGranted ? nil : "需要辅助功能权限。"
+        model.accessibilityGranted ? nil : permissionAction.guidance
     }
 
     private var attentionMessage: String? {
@@ -294,6 +293,7 @@ private struct OverviewInfoCard: View {
                 Image(systemName: symbol)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
+                    .frame(width: 16)
                     .accessibilityHidden(true)
                 Text(title)
                     .font(.headline)
@@ -320,6 +320,8 @@ private struct OverviewInfoCard: View {
                         Spacer(minLength: 8)
                         Text(row.value)
                             .multilineTextAlignment(.trailing)
+                            .lineLimit(2)
+                            .help(row.value)
                     }
                     .font(.callout)
                     .accessibilityElement(children: .combine)
@@ -379,10 +381,20 @@ private enum OverviewRuntimeState {
 
 }
 
+private enum OverviewPreviewState: Equatable {
+    case running
+    case paused
+    case permission
+    case attention
+}
+
 private struct OverviewPagePreview: View {
     @State private var model: MainWindowModel
+    private let width: CGFloat
 
-    init(isRunning: Bool) {
+    init(_ state: OverviewPreviewState, width: CGFloat = 729) {
+        self.width = width
+
         let suite = "Glint.OverviewPagePreview"
         let defaults = UserDefaults(suiteName: suite) ?? .standard
         defaults.removePersistentDomain(forName: suite)
@@ -417,15 +429,18 @@ private struct OverviewPagePreview: View {
             catalogURL: nil,
             defaults: defaults
         )
-        model.accessibilityGranted = isRunning
-        model.isMonitoring = isRunning
+        model.accessibilityGranted = state != .permission
+        model.isMonitoring = state == .running || state == .attention
+        if state == .attention {
+            model.statusText = "翻译模型暂时不可用，请检查插件与模型。"
+        }
         model.setTranslationMode(.modelFirst)
         _model = State(initialValue: model)
     }
 
     var body: some View {
         OverviewPage(model: model, selection: .constant(.overview))
-            .frame(width: 729, height: 640)
+            .frame(width: width, height: 640)
     }
 }
 
@@ -462,11 +477,26 @@ private enum OverviewPreviewManifests {
 }
 
 #Preview("概览 · 运行中") {
-    OverviewPagePreview(isRunning: true)
+    OverviewPagePreview(.running)
         .preferredColorScheme(.dark)
 }
 
-#Preview("概览 · 需要权限") {
-    OverviewPagePreview(isRunning: false)
+#Preview("概览 · 未开启") {
+    OverviewPagePreview(.paused)
         .preferredColorScheme(.light)
+}
+
+#Preview("概览 · 需要权限") {
+    OverviewPagePreview(.permission)
+        .preferredColorScheme(.light)
+}
+
+#Preview("概览 · 需要检查") {
+    OverviewPagePreview(.attention)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("概览 · 最窄内容宽") {
+    OverviewPagePreview(.running, width: 700)
+        .preferredColorScheme(.dark)
 }

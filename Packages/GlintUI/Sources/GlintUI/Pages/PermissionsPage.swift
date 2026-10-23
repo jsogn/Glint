@@ -37,7 +37,7 @@ struct PermissionsPage: View {
                         Spacer()
                     }
 
-                    Text(permissionGuidance)
+                    Text(permissionAction.guidance)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -55,13 +55,6 @@ struct PermissionsPage: View {
 
     private var hasMissingPermissions: Bool {
         !model.accessibilityGranted
-    }
-
-    private var permissionGuidance: String {
-        if model.hasRequestedAccessibilityPermission {
-            return "在系统设置中开启 Glint，返回后会自动更新状态。"
-        }
-        return "macOS 会请求你允许 Glint 使用辅助功能。"
     }
 }
 

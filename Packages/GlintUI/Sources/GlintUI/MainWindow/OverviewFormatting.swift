@@ -11,7 +11,7 @@ enum OverviewFormatting {
         candidateSpacing: Double
     ) -> String {
         String(
-            format: "不透明度 %.0f%% · 字号 %.0f pt · 间距 %.0f pt",
+            format: "背景不透明度 %.0f%% · 字号 %.0f pt · 间距 %.0f pt",
             hudOpacity * 100,
             hudFontSize,
             candidateSpacing

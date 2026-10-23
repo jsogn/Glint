@@ -17,6 +17,10 @@ final class AccessibilityPermissionActionTests: XCTestCase {
         let action = AccessibilityPermissionAction(model: model)
         XCTAssertEqual(action.title, "授权辅助功能")
         XCTAssertEqual(action.symbol, "lock.open")
+        XCTAssertEqual(
+            action.guidance,
+            "macOS 会请求你允许 Glint 使用辅助功能。"
+        )
 
         action.perform()
 
@@ -38,6 +42,10 @@ final class AccessibilityPermissionActionTests: XCTestCase {
         let action = AccessibilityPermissionAction(model: model)
         XCTAssertEqual(action.title, "打开辅助功能设置")
         XCTAssertEqual(action.symbol, "gearshape")
+        XCTAssertEqual(
+            action.guidance,
+            "在系统设置中开启 Glint，返回后会自动更新状态。"
+        )
 
         action.perform()
 
