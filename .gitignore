@@ -8,6 +8,7 @@ DerivedData/
 *.xcuserstate
 *.xcuserdatad/
 .firecrawl/
+Artifacts/
 Glint.xcodeproj/xcuserdata/
 Glint.xcodeproj/project.xcworkspace/xcuserdata/
 Tools/ModelLab/.venv/
