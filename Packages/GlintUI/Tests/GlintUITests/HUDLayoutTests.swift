@@ -182,6 +182,52 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertFalse(placement.placesBelow)
     }
 
+    func testExplicitBelowFlipsAboveWhenBottomHasNoRoom() {
+        let nearBottom = CGRect(
+            x: 300,
+            y: 20,
+            width: 180,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: nearBottom,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .below,
+            spacing: 7
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.minY - nearBottom.maxY,
+            7,
+            accuracy: 0.001
+        )
+    }
+
+    func testExplicitAboveFlipsBelowWhenTopHasNoRoom() {
+        let nearTop = CGRect(
+            x: 300,
+            y: 860,
+            width: 180,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: nearTop,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .above,
+            spacing: 7
+        )
+
+        XCTAssertTrue(placement.placesBelow)
+        XCTAssertEqual(
+            nearTop.minY - placement.frame.maxY,
+            7,
+            accuracy: 0.001
+        )
+    }
+
     @MainActor
     func testAnchoredPanelWidthIsLimitedToRemainingScreenSpace() {
         XCTAssertEqual(

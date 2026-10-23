@@ -37,6 +37,7 @@ public final class MainWindowModel {
     public var accessibilityGranted = false
     public var hasRequestedAccessibilityPermission = false
     public var statusText = ""
+    public private(set) var activeInputMethodName = "检测中"
     public private(set) var installedPlugins: [PluginManifest] = []
     public private(set) var isLoadingPlugins = false
     public private(set) var availablePlugins: [PluginManifest] = []
@@ -161,6 +162,14 @@ public final class MainWindowModel {
 
     public var candidateSummary: String {
         "系统候选词"
+    }
+
+    public func updateActiveInputMethod(
+        _ identity: InputMethodIdentity?
+    ) {
+        let name = identity?.displayName ?? "输入法"
+        guard activeInputMethodName != name else { return }
+        activeInputMethodName = name
     }
 
     public func startMonitoring() {

@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var sessionState: MonitoringSessionState = .idle
     private var permissionRequestPending = false
     private var permissionRequestWasIssued = false
+    private var selectedInputSourceObserver: NSObjectProtocol?
     private var startupPreparationTask: Task<Void, Never>?
     private var shouldStartMonitoringAfterPreparation = false
     private var shouldRequestPermissionAfterPreparation = false
@@ -49,6 +50,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         configureWindowModel()
+        observeInputSourceChanges()
+        refreshActiveInputMethodName()
         setupStatusItem()
         mainWindowController = MainWindowController(model: windowModel)
         mainWindowController.show()
@@ -97,6 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        refreshActiveInputMethodName()
         let wasGranted = windowModel.accessibilityGranted
         refreshPermissionState()
         if !wasGranted, windowModel.accessibilityGranted {
@@ -123,6 +127,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if let selectedInputSourceObserver {
+            DistributedNotificationCenter.default()
+                .removeObserver(selectedInputSourceObserver)
+        }
         stopMonitoring()
     }
 
@@ -269,6 +277,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showMainWindow() {
+        refreshActiveInputMethodName()
         NSApp.unhide(nil)
         mainWindowController.show()
     }
@@ -373,6 +382,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch event {
         case .status(let status):
             windowModel.statusText = isActionableStatus(status) ? status : ""
+        case .inputSourceChanged(let identity):
+            windowModel.updateActiveInputMethod(identity)
         case .candidateChanged:
             hudEventCoordinator.candidateChanged()
         case .selectionChanged(let index, let revision):
@@ -431,6 +442,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshPermissionState() {
         windowModel.accessibilityGranted = FocusMonitor.isAccessibilityTrusted()
+    }
+
+    private func observeInputSourceChanges() {
+        guard selectedInputSourceObserver == nil else {
+            return
+        }
+        selectedInputSourceObserver =
+            DistributedNotificationCenter.default().addObserver(
+                forName:
+                    InputSourceMonitor
+                    .selectedInputSourceDidChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.refreshActiveInputMethodName()
+                }
+            }
+    }
+
+    private func refreshActiveInputMethodName() {
+        windowModel.updateActiveInputMethod(
+            InputSourceMonitor()
+                .currentInputSource()
+                .identity
+        )
     }
 
     private func markRuntimeReady() {

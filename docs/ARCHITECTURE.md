@@ -28,7 +28,7 @@ Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构�
 | 主窗口 | AppKit `NSWindow` + SwiftUI `NSHostingController` |
 | HUD | AppKit `NSPanel` + SwiftUI `NSHostingView` |
 | UI | 系统 AppKit/SwiftUI 控件，不引入第三方 UI 组件库 |
-| 候选读取 | Accessibility `InputMethodCandidateList` |
+| 候选读取 | Accessibility `InputMethodCandidateList` + 微信输入法专用 AX 样式解析 |
 | 上下文 | 当前不读取输入框正文；如后续启用，必须单独评审隐私边界 |
 | 输入状态 | Carbon TIS + Accessibility API |
 | 词典 | 系统 SQLite3，CC-CEDICT，ECDICT 作为反查/词频辅助 |
@@ -208,14 +208,25 @@ GlintCore
   - popUpMenu level；
   - `canJoinAllSpaces` + `fullScreenAuxiliary`；
   - 不抢焦点，不改变候选选择。
+- 候选 reader 输出 `AXCandidateGeometry`，分别说明横向锚点和纵向边界来自
+  `window`、`list`、`item` 还是 `text` 节点。文字节点补足候选胶囊的视觉留白，
+  `window` 节点去除默认皮肤约 `8pt` 的透明上下边距，其余控件节点保持原始
+  frame；HUD 只消费归一化后的边界。
+- HUD 的用户间距从上述归一化边界计算；屏幕边缘优先翻边，避免为了贴边而静默
+  压缩间距。
 - 主窗口和 HUD 都通过 `AppEnvironment` 获取状态，不直接互相调用。
 
 ## 7. 运行时数据流
 
 ```text
 InputSourceMonitor (TIS)
+  → InputMethodIdentity + InputSourceKind
   → FocusMonitor (AX)
-  → AXCandidateReader (selected and visible candidate titles + frames)
+  → CandidateReaderRouter
+      ├─ AXCandidateReader (standard candidate list)
+      ├─ WeTypeCandidateReader (WeChat-specific AX structure)
+      ├─ SogouCandidateReader (Sogou anonymous candidate list)
+      └─ AdaptiveUnknownCandidateReader (background discovered Profile)
   → SmartRouter (GlintCore)
       ├─ DictionaryEngine (GlintDictionary)
       └─ TranslationEngine (GlintInference)
@@ -241,6 +252,25 @@ MainWindowModel → MainWindowView
 - `AXCandidateReader`：候选识别主路径；只识别具有输入法候选语义的
   `InputMethodCandidateList`，不读取普通 `AXList`。通过 FocusSnapshot 的
   focused PID 复用焦点解析结果，避免每次轮询重新查找 focused application。
+- `InputMethodIdentity`：GlintCore 中的系统输入法身份，包含 bundle ID、input
+  source ID、source type 和本地化名称。UI 展示使用 TIS 的本地化名称，不用内部
+  ID 猜测输入法名称。
+- `CandidateReaderRouter`：按 bundle ID / input source ID 把输入法路由到专用
+  candidate reader；未知输入法使用标准 reader。新增搜狗等输入法只需注册 reader
+  和 adapter，不增加 `MonitoringController` 分支。
+- `AdaptiveUnknownCandidateReader`：组合输入中标准 reader 未命中时异步探测当前
+  输入法进程；只接受已验证的独立单行列表或文字样式 Profile。探测不阻塞候选轮询，
+  一个进程内全局最多执行一个探测，并按输入源缓存正向或负向结果。成功 Profile
+  以输入法版本为边界持久化到 `UserDefaults`，失败结果只在内存中保留冷却。
+- `WeTypeCandidateReader`：微信输入法专用候选路径；从 `WeType` 进程读取候选
+  文本、frame 和 `AXAttributedStringForRange` 前景亮度。唯一亮色数字对应的组
+  作为高亮候选；无法判断样式时使用首候选，不截图且不申请屏幕录制权限。
+- `SogouCandidateReader`：从 `SogouInput` 进程的匿名 `AXList` 读取单行可见候选
+  和 frame。公开 AX 不提供高亮项，因此默认“选中”模式使用首候选，并返回
+  `selectionIsExact=false`；用户选择“一栏”时翻译可见候选但不伪造选中高亮。
+- `AXCandidateGeometry`：统一候选几何语义。横向锚点和纵向边界可以来自不同节点；
+  文字节点与控件节点使用不同视觉补偿，避免把输入法名称写进 HUD 布局分支。
+  `window` 的固定内缩以搜狗默认皮肤为基线；第三方皮肤不单独检测，由用户间距兜底。
 - `CandidateTranslationPipeline`：无状态并发编排；选中项优先，整栏结果按
   revision 发布，旧任务由监控层取消。
 - `TranslationRuntime`/`TranslationMemo`：actor；模型加载、推理和缓存请求串行化。
@@ -248,6 +278,9 @@ MainWindowModel → MainWindowView
   下载、导入和安装进度通过闭包回到主 actor。
 - `MainWindowModel`/`HUDController`：`@MainActor`；只接收不可变的展示状态。
 - 缓存：内存 LRU；不落盘；候选变化时取消旧请求。
+
+未知输入法的 Profile 探测、缓存和限流细节见
+`docs/GENERIC-INPUT-METHOD-ADAPTATION.md`。
 
 ## 9. 插件与模型
 

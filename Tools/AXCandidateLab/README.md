@@ -64,3 +64,27 @@ Tools/GlintEval/.build/debug/CandidateAXProbe --pid <目标 App PID>
 `AXRoleDescription` 是“结构的结，如果的果”这类汉字说明。因此当前 AX
 接口不能满足拼音消歧；当前候选兼容边界见
 `docs/AX-CANDIDATE-VALIDATION.md`。
+
+## 微信输入法结构探针
+
+`WeTypeAXProbe` 从 `WeType` 独立进程读取候选窗口，不依赖宿主 App 的
+`InputMethodCandidateList`。探针默认只输出角色、属性名、文本长度、选择状态和
+frame，不输出候选原文。
+
+先让微信输入法候选栏保持显示，再执行：
+
+```bash
+swift build --package-path Tools/GlintEval --product WeTypeAXProbe
+Tools/GlintEval/.build/debug/WeTypeAXProbe --seconds 20
+```
+
+固定进程调试可使用：
+
+```bash
+Tools/GlintEval/.build/debug/WeTypeAXProbe --pid <WeType PID>
+```
+
+重点查看 `selectedSemanticsAvailable` 和
+`styleSelectedCandidateIndex`。当前微信输入法没有原生选中节点，但候选数字和
+文字的 `AXForegroundColor` 会随高亮切换；探针根据唯一更亮的数字组推导索引。
+完整实验记录见 `docs/WETYPE-AX-RESEARCH.md`。

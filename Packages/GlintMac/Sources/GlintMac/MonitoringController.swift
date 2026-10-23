@@ -80,6 +80,7 @@ struct CandidateScanGate: Sendable {
 
 public enum MonitoringEvent: Sendable {
     case status(String)
+    case inputSourceChanged(InputMethodIdentity)
     case candidateChanged(revision: UInt64)
     case selectionChanged(index: Int, revision: UInt64)
     case candidateEnded(immediate: Bool)
@@ -149,34 +150,12 @@ protocol FocusReading {
 
 extension FocusMonitor: FocusReading {}
 
-protocol AXCandidateReading {
-    func snapshot(
-        processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool,
-        includeVisibleTexts: Bool
-    ) -> AXCandidateSnapshot?
-}
-
-extension AXCandidateReading {
-    func snapshot(
-        processIdentifier: pid_t? = nil,
-        includeVisibleCandidates: Bool = false,
-        includeVisibleTexts: Bool = true
-    ) -> AXCandidateSnapshot? {
-        snapshot(
-            processIdentifier: processIdentifier,
-            includeVisibleCandidates: includeVisibleCandidates,
-            includeVisibleTexts: includeVisibleTexts
-        )
-    }
-}
-
 extension AXCandidateReader: AXCandidateReading {}
 
 public actor MonitoringController {
     private let inputSource: any InputSourceReading
     private let focus: any FocusReading
-    private let axCandidates: any AXCandidateReading
+    private let candidateReaders: any CandidateReaderRouting
     private let accessibilityIsTrusted: @Sendable () -> Bool
     private let secureInputIsEnabled: @Sendable () -> Bool
     private let router: SmartRouter
@@ -202,8 +181,10 @@ public actor MonitoringController {
     private var lastStatus = ""
     private var cachedInputSource: ActiveInputSource?
     private var lastInputSourceCheck: UInt64 = 0
+    private var lastReportedInputMethod: InputMethodIdentity?
     private var candidateSessionActive = false
     private var selectedCandidateIndex: Int?
+    private var selectedCandidateIndexIsExact = false
     private var latestCandidateHighlight: CandidateRegion?
     private var dictionaryPrefetchRevision: UInt64?
     private var dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>] = [:]
@@ -216,7 +197,8 @@ public actor MonitoringController {
             router: router,
             inputSource: InputSourceMonitor(),
             focus: FocusMonitor(),
-            axCandidates: AXCandidateReader(),
+            candidateReaders:
+                CandidateReaderConfiguration.standard(),
             accessibilityIsTrusted: {
                 FocusMonitor.isAccessibilityTrusted()
             },
@@ -230,13 +212,13 @@ public actor MonitoringController {
         router: SmartRouter,
         inputSource: any InputSourceReading,
         focus: any FocusReading,
-        axCandidates: any AXCandidateReading,
+        candidateReaders: any CandidateReaderRouting,
         accessibilityIsTrusted: @escaping @Sendable () -> Bool,
         secureInputIsEnabled: @escaping @Sendable () -> Bool
     ) {
         self.inputSource = inputSource
         self.focus = focus
-        self.axCandidates = axCandidates
+        self.candidateReaders = candidateReaders
         self.accessibilityIsTrusted = accessibilityIsTrusted
         self.secureInputIsEnabled = secureInputIsEnabled
         self.router = router
@@ -282,6 +264,7 @@ public actor MonitoringController {
         lastStatus = ""
         cachedInputSource = nil
         lastInputSourceCheck = 0
+        lastReportedInputMethod = nil
         translationAttempts = 0
         cancelledTranslationAttempts = 0
         monitoringLogger.info("monitor start requested")
@@ -329,6 +312,9 @@ public actor MonitoringController {
             }
         }
         let activeInputSource = await currentInputSource()
+        reportInputSourceIfNeeded(
+            activeInputSource.identity
+        )
         if activeInputSource.kind == .keyboardLayout {
             invalidateCandidate(immediate: true)
             emitStatus("等待中文输入")
@@ -376,8 +362,13 @@ public actor MonitoringController {
         let observationStartedAt = ContinuousClock.now
         // Both translation scopes need visible-row evidence so an expanded
         // candidate grid is rejected before translation or HUD presentation.
+        let candidateReader = candidateReaders.reader(
+            for: activeInputSource,
+            allowProfileDiscovery:
+                snapshot.compositionState == .composing
+        )
         guard
-            let axCandidate = axCandidates.snapshot(
+            let axCandidate = candidateReader.snapshot(
                 processIdentifier: snapshot.processIdentifier,
                 includeVisibleCandidates: true,
                 includeVisibleTexts: translationScope == .row
@@ -395,7 +386,14 @@ public actor MonitoringController {
             let displayFrame = Self.candidateDisplayFrame(
                 scope: translationScope,
                 selectedFrame: candidateFrame,
-                options: axCandidate.options
+                options: axCandidate.options,
+                geometry: axCandidate.geometry
+                    ?? AXCandidateGeometry(
+                        horizontalFrame: candidateFrame,
+                        horizontalSource: .item,
+                        verticalFrame: candidateFrame,
+                        verticalSource: .item
+                    )
             ),
             let displayAnchor = Self.candidateRegion(
                 for: displayFrame
@@ -438,6 +436,8 @@ public actor MonitoringController {
         )
         let previousSelectedIndex = selectedCandidateIndex
         selectedCandidateIndex = selectedIndex
+        selectedCandidateIndexIsExact =
+            axCandidate.selectionIsExact
         let observationTimestamp = DispatchTime.now().uptimeNanoseconds
         let activity = typingTracker.observe(
             text: trackingIdentity.text,
@@ -488,6 +488,8 @@ public actor MonitoringController {
             startTranslation(
                 candidates: candidates,
                 selectedIndex: selectedIndex,
+                selectionIsExact:
+                    axCandidate.selectionIsExact,
                 highlight: displayAnchor,
                 revision: revision,
                 dictionaryPrefetchTasks: dictionaryPrefetchTasks,
@@ -498,6 +500,7 @@ public actor MonitoringController {
         }
         if candidateSessionActive,
             !candidateChanged,
+            selectedCandidateIndexIsExact,
             previousSelectedIndex != selectedIndex
         {
             continuation.yield(
@@ -535,6 +538,18 @@ public actor MonitoringController {
         cachedInputSource = source
         lastInputSourceCheck = now
         return source
+    }
+
+    private func reportInputSourceIfNeeded(
+        _ identity: InputMethodIdentity
+    ) {
+        guard identity != lastReportedInputMethod else {
+            return
+        }
+        lastReportedInputMethod = identity
+        continuation.yield(
+            .inputSourceChanged(identity)
+        )
     }
 
     static func shouldPrefetchDictionary(
@@ -600,6 +615,7 @@ public actor MonitoringController {
     private func startTranslation(
         candidates: [Candidate],
         selectedIndex: Int,
+        selectionIsExact: Bool,
         highlight: CandidateRegion,
         revision: UInt64,
         dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>],
@@ -623,6 +639,7 @@ public actor MonitoringController {
                 memo,
                 candidates,
                 selectedIndex,
+                selectionIsExact,
                 configurationToken,
                 dictionaryPrefetchTasks,
                 cachedPrefetchResults,
@@ -634,6 +651,7 @@ public actor MonitoringController {
             let presentations = await CandidateTranslationPipeline.translate(
                 candidates,
                 selectedIndex: selectedIndex,
+                selectionIsExact: selectionIsExact,
                 mode: mode,
                 configurationToken: configurationToken,
                 router: router,
@@ -745,7 +763,9 @@ public actor MonitoringController {
                 index: item.index,
                 candidateText: item.candidateText,
                 translation: item.translation,
-                isSelected: item.index == latestSelectedIndex
+                isSelected:
+                    selectedCandidateIndexIsExact
+                    && item.index == latestSelectedIndex
             )
         }
 
@@ -768,6 +788,7 @@ public actor MonitoringController {
         candidateMissDebouncer.reset()
         compositionTransitions.reset()
         selectedCandidateIndex = nil
+        selectedCandidateIndexIsExact = false
         latestCandidateHighlight = nil
         cancelDictionaryPrefetch()
         handledRevision = nil
@@ -868,30 +889,46 @@ public actor MonitoringController {
     static func candidateDisplayFrame(
         scope: CandidateTranslationScope,
         selectedFrame: CGRect,
-        options: [AXCandidateOption]
+        options: [AXCandidateOption],
+        geometry: AXCandidateGeometry
     ) -> CGRect? {
-        guard scope == .row else {
-            return selectedFrame.width > 0 && selectedFrame.height > 0
-                ? selectedFrame
-                : nil
+        let horizontalFrame: CGRect
+        if scope == .row {
+            let rowFrames = options.compactMap(\.frame).filter {
+                $0.width > 0 && $0.height > 0
+            }
+            guard
+                let rowFrame = rowFrames.reduce(
+                    nil,
+                    { partial, frame in
+                        let normalized =
+                            geometry.normalizedHorizontalFrame(
+                                frame
+                            )
+                        return partial?.union(normalized)
+                            ?? normalized
+                    })
+            else {
+                return candidateDisplayFrame(
+                    scope: .selected,
+                    selectedFrame: selectedFrame,
+                    options: [],
+                    geometry: geometry
+                )
+            }
+            horizontalFrame = rowFrame
+        } else {
+            guard
+                selectedFrame.width > 0,
+                selectedFrame.height > 0
+            else {
+                return nil
+            }
+            horizontalFrame = geometry.horizontalAnchor
         }
-        let rowFrames = options.compactMap(\.frame).filter {
-            $0.width > 0 && $0.height > 0
-        }
-        guard
-            let rowFrame = rowFrames.reduce(
-                nil,
-                { partial, frame in
-                    partial?.union(frame) ?? frame
-                })
-        else {
-            return candidateDisplayFrame(
-                scope: .selected,
-                selectedFrame: selectedFrame,
-                options: []
-            )
-        }
-        return rowFrame
+        return geometry.displayFrame(
+            horizontalFrame: horizontalFrame
+        )
     }
 
 }

@@ -1,4 +1,6 @@
 import Carbon
+import Foundation
+import GlintCore
 
 public enum InputSourceKind: String, Sendable {
     case applePinyin
@@ -8,19 +10,46 @@ public enum InputSourceKind: String, Sendable {
 }
 
 public struct ActiveInputSource: Sendable, Equatable {
-    public let id: String
+    public let identity: InputMethodIdentity
     public let kind: InputSourceKind
+
+    public var id: String {
+        identity.inputSourceIdentifier
+    }
+
+    public init(
+        identity: InputMethodIdentity,
+        kind: InputSourceKind
+    ) {
+        self.identity = identity
+        self.kind = kind
+    }
 
     public init(
         id: String,
-        kind: InputSourceKind
+        kind: InputSourceKind,
+        bundleIdentifier: String? = nil,
+        sourceType: String = "",
+        localizedName: String? = nil
     ) {
-        self.id = id
-        self.kind = kind
+        self.init(
+            identity: InputMethodIdentity(
+                bundleIdentifier: bundleIdentifier,
+                inputSourceIdentifier: id,
+                sourceType: sourceType,
+                localizedName: localizedName
+            ),
+            kind: kind
+        )
     }
 }
 
 public struct InputSourceMonitor: Sendable {
+    public static let selectedInputSourceDidChangeNotification =
+        Notification.Name(
+            kTISNotifySelectedKeyboardInputSourceChanged as String
+        )
+
     public init() {}
 
     @MainActor
@@ -36,17 +65,26 @@ public struct InputSourceMonitor: Sendable {
                 kind: .unknown
             )
         }
-        let type =
+        let sourceType =
             Self.stringProperty(
                 source,
                 kTISPropertyInputSourceType
             ) ?? ""
-        return ActiveInputSource(
-            id: identifier,
-            kind: Self.inputSourceKind(
-                identifier: identifier,
-                type: type
+        let identity = InputMethodIdentity(
+            bundleIdentifier: Self.stringProperty(
+                source,
+                kTISPropertyBundleID
+            ),
+            inputSourceIdentifier: identifier,
+            sourceType: sourceType,
+            localizedName: Self.stringProperty(
+                source,
+                kTISPropertyLocalizedName
             )
+        )
+        return ActiveInputSource(
+            identity: identity,
+            kind: Self.inputSourceKind(identity: identity)
         )
     }
 
@@ -63,25 +101,40 @@ public struct InputSourceMonitor: Sendable {
 
     static func inputSourceKind(
         identifier: String,
-        type: String
+        type: String,
+        bundleIdentifier: String? = nil
+    ) -> InputSourceKind {
+        inputSourceKind(
+            identity: InputMethodIdentity(
+                bundleIdentifier: bundleIdentifier,
+                inputSourceIdentifier: identifier,
+                sourceType: type,
+                localizedName: nil
+            )
+        )
+    }
+
+    static func inputSourceKind(
+        identity: InputMethodIdentity
     ) -> InputSourceKind {
         if [
-            "com.apple.inputmethod.SCIM.ITABC",
-            "com.apple.inputmethod.SCIM",
-        ].contains(identifier) {
+            InputMethodIdentifier.applePinyinInputMode,
+            InputMethodIdentifier.appleInputMethodBundle,
+        ].contains(identity.inputSourceIdentifier) {
             return .applePinyin
         }
         if [
             kTISTypeKeyboardInputMode as String,
             kTISTypeKeyboardInputMethodWithoutModes as String,
             kTISTypeKeyboardInputMethodModeEnabled as String,
-        ].contains(type) {
+        ].contains(identity.sourceType) {
             return .otherInputMethod
         }
-        if type == kTISTypeKeyboardLayout as String {
+        if identity.sourceType == kTISTypeKeyboardLayout as String {
             return .keyboardLayout
         }
-        return identifier.localizedCaseInsensitiveContains("inputmethod")
+        return identity.inputSourceIdentifier
+            .localizedCaseInsensitiveContains("inputmethod")
             ? .otherInputMethod
             : .unknown
     }

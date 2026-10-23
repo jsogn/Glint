@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import Darwin
 import Foundation
+import GlintCore
 import GlintInference
 import GlintMac
 
@@ -13,9 +14,21 @@ enum Diagnostics {
             let inputSource = InputSourceMonitor()
             let activeInputSource = inputSource.currentInputSource()
             let focus = FocusMonitor().snapshot()
-            let candidate = AXCandidateReader().snapshot(
-                includeVisibleCandidates: true
-            )
+            let candidate: AXCandidateSnapshot?
+            switch activeInputSource.identity.bundleIdentifier {
+            case InputMethodIdentifier.weTypeBundle:
+                candidate = WeTypeCandidateReader().snapshot(
+                    includeVisibleCandidates: true
+                )
+            case InputMethodIdentifier.sogouBundle:
+                candidate = SogouCandidateReader().snapshot(
+                    includeVisibleCandidates: true
+                )
+            default:
+                candidate = AXCandidateReader().snapshot(
+                    includeVisibleCandidates: true
+                )
+            }
             let frontmost = NSWorkspace.shared.frontmostApplication
 
             print("glint.version=\(bundle.version)")
@@ -30,6 +43,19 @@ enum Diagnostics {
                     + String(FocusMonitor.isAccessibilityTrusted())
             )
             print("input.source=\(activeInputSource.id)")
+            print(
+                "input.bundle="
+                    + (activeInputSource.identity.bundleIdentifier
+                        ?? "<unknown>")
+            )
+            print(
+                "input.name="
+                    + activeInputSource.identity.displayName
+            )
+            print(
+                "input.type="
+                    + activeInputSource.identity.sourceType
+            )
             print("input.kind=\(activeInputSource.kind.rawValue)")
             print(
                 "input.applePinyin="
@@ -57,6 +83,8 @@ enum Diagnostics {
                     + " options=\(candidate?.options.count ?? 0)"
                     + " visible=\(candidate?.visibleTexts.count ?? 0)"
                     + " hasFrame=\(candidate?.frame != nil)"
+                    + " selectionExact="
+                    + "\(candidate?.selectionIsExact ?? false)"
             )
             print(
                 "translation.ct2="

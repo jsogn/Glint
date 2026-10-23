@@ -234,7 +234,11 @@ private struct OverviewPipeline: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            stage(symbol: "keyboard", label: "输入", value: "系统输入法")
+            stage(
+                symbol: "keyboard",
+                label: "输入",
+                value: model.activeInputMethodName
+            )
             arrow
             stage(
                 symbol: "text.cursor",

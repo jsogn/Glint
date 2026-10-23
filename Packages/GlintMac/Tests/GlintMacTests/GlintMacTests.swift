@@ -1,5 +1,7 @@
 import CoreGraphics
 import Carbon
+import Dispatch
+import Foundation
 import XCTest
 import GlintCore
 import os
@@ -10,6 +12,10 @@ private struct StubInputSource: InputSourceReading {
 
     nonisolated init(active: Bool) {
         self.init(kind: active ? .applePinyin : .keyboardLayout)
+    }
+
+    nonisolated init(source: ActiveInputSource) {
+        self.source = source
     }
 
     nonisolated init(kind: InputSourceKind) {
@@ -68,6 +74,31 @@ private struct StubCandidates: AXCandidateReading {
         includeVisibleTexts: Bool
     ) -> AXCandidateSnapshot? {
         nil
+    }
+}
+
+private struct FixedSnapshotCandidates: AXCandidateReading {
+    let candidate: AXCandidateSnapshot
+
+    func snapshot(
+        processIdentifier: pid_t?,
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
+    ) -> AXCandidateSnapshot? {
+        candidate
+    }
+}
+
+private struct FixedCandidateReaderRouter:
+    CandidateReaderRouting
+{
+    let sourceReader: any AXCandidateReading
+
+    func reader(
+        for source: ActiveInputSource,
+        allowProfileDiscovery: Bool
+    ) -> any AXCandidateReading {
+        sourceReader
     }
 }
 
@@ -210,7 +241,9 @@ final class GlintMacTests: XCTestCase {
             ),
             inputSource: StubInputSource(active: false),
             focus: StubFocus(),
-            axCandidates: StubCandidates(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
             accessibilityIsTrusted: { true },
             secureInputIsEnabled: { false }
         )
@@ -218,6 +251,45 @@ final class GlintMacTests: XCTestCase {
         let interval = await controller.tick()
 
         XCTAssertEqual(interval, 250_000_000)
+    }
+
+    func testEmitsSystemInputMethodIdentityOnFirstTick() async {
+        let identity = InputMethodIdentity(
+            bundleIdentifier:
+                InputMethodIdentifier.weTypeBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.weTypePinyinMode,
+            sourceType: kTISTypeKeyboardInputMode as String,
+            localizedName: "微信输入法"
+        )
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(
+                source: ActiveInputSource(
+                    identity: identity,
+                    kind: .otherInputMethod
+                )
+            ),
+            focus: StubFocus(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+        var iterator = await controller.events.makeAsyncIterator()
+
+        _ = await controller.tick()
+        let event = await iterator.next()
+
+        guard case .inputSourceChanged(let received) = event
+        else {
+            return XCTFail("Expected input source event")
+        }
+        XCTAssertEqual(received, identity)
     }
 
     func testMonitoringRechecksAccessibilityAfterInitialDenial() async throws {
@@ -229,7 +301,9 @@ final class GlintMacTests: XCTestCase {
             ),
             inputSource: StubInputSource(active: false),
             focus: StubFocus(),
-            axCandidates: StubCandidates(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
             accessibilityIsTrusted: {
                 accessibility.isTrusted
             },
@@ -255,7 +329,9 @@ final class GlintMacTests: XCTestCase {
             ),
             inputSource: StubInputSource(active: true),
             focus: VisibleCaretFocus(),
-            axCandidates: candidates,
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
             accessibilityIsTrusted: { true },
             secureInputIsEnabled: { false }
         )
@@ -276,7 +352,9 @@ final class GlintMacTests: XCTestCase {
             ),
             inputSource: StubInputSource(active: true),
             focus: VisibleCaretFocus(),
-            axCandidates: candidates,
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
             accessibilityIsTrusted: { true },
             secureInputIsEnabled: { false }
         )
@@ -298,7 +376,9 @@ final class GlintMacTests: XCTestCase {
             ),
             inputSource: StubInputSource(kind: .otherInputMethod),
             focus: VisibleCaretFocus(),
-            axCandidates: candidates,
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
             accessibilityIsTrusted: { true },
             secureInputIsEnabled: { false }
         )
@@ -307,6 +387,57 @@ final class GlintMacTests: XCTestCase {
 
         XCTAssertEqual(interval, 60_000_000)
         XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
+    }
+
+    func testWeTypeUsesDedicatedCandidatePath() async {
+        let genericCandidates = RecordingCandidates()
+        let weTypeCandidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(
+                source: ActiveInputSource(
+                    identity: InputMethodIdentity(
+                        bundleIdentifier:
+                            InputMethodIdentifier.weTypeBundle,
+                        inputSourceIdentifier:
+                            InputMethodIdentifier.weTypePinyinMode,
+                        sourceType:
+                            kTISTypeKeyboardInputMode as String,
+                        localizedName: "微信输入法"
+                    ),
+                    kind: .otherInputMethod
+                )
+            ),
+            focus: VisibleCaretFocus(),
+            candidateReaders: CandidateReaderRouter(
+                fallback: genericCandidates,
+                registrations: [
+                    CandidateReaderRegistration(
+                        bundleIdentifiers: [
+                            InputMethodIdentifier.weTypeBundle
+                        ],
+                        inputSourceIdentifiers: [],
+                        reader: weTypeCandidates
+                    )
+                ]
+            ),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        let interval = await controller.tick()
+
+        XCTAssertEqual(interval, 60_000_000)
+        XCTAssertTrue(
+            genericCandidates.requestedVisibleCandidates.isEmpty
+        )
+        XCTAssertEqual(
+            weTypeCandidates.requestedVisibleCandidates,
+            [true]
+        )
     }
 
     func testKeyboardLayoutDoesNotScanCandidates() async {
@@ -318,7 +449,9 @@ final class GlintMacTests: XCTestCase {
             ),
             inputSource: StubInputSource(kind: .keyboardLayout),
             focus: VisibleCaretFocus(),
-            axCandidates: candidates,
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
             accessibilityIsTrusted: { true },
             secureInputIsEnabled: { false }
         )
@@ -390,6 +523,29 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(
             presentations.first?.translation,
             "primary"
+        )
+    }
+
+    func testInexactSelectionDoesNotHighlightFallbackCandidate() async {
+        let presentations = await CandidateTranslationPipeline.translate(
+            [
+                Candidate(text: "one", kind: .word),
+                Candidate(text: "two", kind: .word),
+            ],
+            selectedIndex: 0,
+            selectionIsExact: false,
+            mode: .modelFirst,
+            configurationToken: "model-a",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: ImmediateTranslation()
+            ),
+            memo: TranslationMemo()
+        )
+
+        XCTAssertEqual(
+            presentations.map(\.isSelected),
+            [false, false]
         )
     }
 
@@ -547,7 +703,15 @@ final class GlintMacTests: XCTestCase {
                         frame: CGRect(x: 80, y: 80, width: 70, height: 28),
                         isSelected: true
                     ),
-                ]
+                ],
+                geometry: itemGeometry(
+                    frame: CGRect(
+                        x: 180,
+                        y: 80,
+                        width: 50,
+                        height: 28
+                    )
+                )
             )
         )
 
@@ -568,7 +732,15 @@ final class GlintMacTests: XCTestCase {
                         frame: CGRect(x: 40, y: 170, width: 50, height: 28),
                         isSelected: true
                     )
-                ]
+                ],
+                geometry: itemGeometry(
+                    frame: CGRect(
+                        x: 40,
+                        y: 170,
+                        width: 50,
+                        height: 28
+                    )
+                )
             )
         )
 
@@ -594,7 +766,15 @@ final class GlintMacTests: XCTestCase {
                         ),
                         isSelected: true
                     )
-                ]
+                ],
+                geometry: itemGeometry(
+                    frame: CGRect(
+                        x: 420,
+                        y: 80,
+                        width: 80,
+                        height: 28
+                    )
+                )
             )
         )
 
@@ -611,9 +791,123 @@ final class GlintMacTests: XCTestCase {
             MonitoringController.candidateDisplayFrame(
                 scope: .selected,
                 selectedFrame: selected,
-                options: []
+                options: [],
+                geometry: itemGeometry(frame: selected)
             ),
             selected
+        )
+    }
+
+    func testTextFrameAddsLeadingVisualInsetWithoutMovingTrailingEdge() {
+        let raw = CGRect(x: 108, y: 216, width: 46, height: 28)
+        let geometry = AXCandidateGeometry(
+            horizontalFrame: raw,
+            horizontalSource: .text,
+            verticalFrame: raw,
+            verticalSource: .text
+        )
+
+        XCTAssertEqual(
+            geometry.horizontalAnchor,
+            CGRect(x: 103, y: 216, width: 51, height: 28)
+        )
+        XCTAssertEqual(geometry.horizontalAnchor.maxX, raw.maxX)
+    }
+
+    func testControlFramesDoNotReceiveTextVisualInset() {
+        let frame = CGRect(x: 108, y: 216, width: 46, height: 28)
+
+        for source in [
+            AXCandidateFrameKind.window,
+            .list,
+            .item,
+        ] {
+            let geometry = AXCandidateGeometry(
+                horizontalFrame: frame,
+                horizontalSource: source,
+                verticalFrame: frame,
+                verticalSource: source
+            )
+            XCTAssertEqual(geometry.horizontalAnchor, frame)
+        }
+    }
+
+    func testSogouUsesTextAnchorAndTrimmedWindowVerticalBounds() {
+        let selected = CGRect(x: 180, y: 260, width: 50, height: 28)
+        let container = CGRect(x: 120, y: 200, width: 400, height: 118)
+        let geometry = AXCandidateGeometry(
+            horizontalFrame: selected,
+            horizontalSource: .text,
+            verticalFrame: container,
+            verticalSource: .window
+        )
+
+        XCTAssertEqual(
+            geometry.verticalBounds,
+            CGRect(x: 120, y: 208, width: 400, height: 102)
+        )
+        XCTAssertEqual(
+            MonitoringController.candidateDisplayFrame(
+                scope: .selected,
+                selectedFrame: selected,
+                options: [],
+                geometry: geometry
+            ),
+            CGRect(x: 175, y: 208, width: 55, height: 102)
+        )
+        XCTAssertEqual(
+            MonitoringController.candidateDisplayFrame(
+                scope: .row,
+                selectedFrame: selected,
+                options: [
+                    AXCandidateOption(
+                        text: "输入法",
+                        frame: selected,
+                        isSelected: false
+                    ),
+                    AXCandidateOption(
+                        text: "输入",
+                        frame: CGRect(
+                            x: 250,
+                            y: 260,
+                            width: 50,
+                            height: 28
+                        ),
+                        isSelected: false
+                    ),
+                ],
+                geometry: geometry
+            ),
+            CGRect(x: 175, y: 208, width: 125, height: 102)
+        )
+    }
+
+    func testNonWindowVerticalBoundsRemainUnchanged() {
+        let frame = CGRect(x: 120, y: 200, width: 400, height: 118)
+
+        for source in [
+            AXCandidateFrameKind.list,
+            .item,
+            .text,
+        ] {
+            let geometry = AXCandidateGeometry(
+                horizontalFrame: frame,
+                horizontalSource: .item,
+                verticalFrame: frame,
+                verticalSource: source
+            )
+            XCTAssertEqual(geometry.verticalBounds, frame)
+        }
+    }
+
+    private func itemGeometry(
+        frame: CGRect
+    ) -> AXCandidateGeometry {
+        AXCandidateGeometry(
+            horizontalFrame: frame,
+            horizontalSource: .item,
+            verticalFrame: frame,
+            verticalSource: .item
         )
     }
 
@@ -1055,10 +1349,647 @@ final class GlintMacTests: XCTestCase {
         )
         XCTAssertEqual(
             InputSourceMonitor.inputSourceKind(
+                identifier: WeTypeCandidateReader.inputSourceID,
+                type: kTISTypeKeyboardInputMode as String,
+                bundleIdentifier:
+                    InputMethodIdentifier.weTypeBundle
+            ),
+            .otherInputMethod
+        )
+        XCTAssertEqual(
+            InputSourceMonitor.inputSourceKind(
                 identifier: "com.apple.keylayout.ABC",
                 type: kTISTypeKeyboardLayout as String
             ),
             .keyboardLayout
+        )
+    }
+}
+
+final class WeTypeCandidateParserTests: XCTestCase {
+    func testParserPairsCandidatesAndSelectsBrightShortcut() throws {
+        let observations = makeObservations(
+            texts: ["one", "two", "three"],
+            selectedShortcutIndex: 1
+        )
+
+        let groups = try XCTUnwrap(
+            WeTypeCandidateParser.groups(
+                from: observations
+            )
+        )
+
+        XCTAssertEqual(
+            groups.map(\.text),
+            ["one", "two", "three"]
+        )
+        XCTAssertEqual(
+            WeTypeCandidateParser.selectedIndex(in: groups),
+            1
+        )
+        XCTAssertTrue(
+            WeTypeCandidateParser.selection(
+                in: groups
+            ).isExact
+        )
+        XCTAssertEqual(
+            groups[1].frame,
+            CGRect(x: 60, y: 10, width: 22, height: 20)
+        )
+    }
+
+    func testParserFallsBackToFirstCandidateWithoutStyleContrast() throws {
+        let observations = makeObservations(
+            texts: ["one", "two"],
+            selectedShortcutIndex: nil
+        )
+        let groups = try XCTUnwrap(
+            WeTypeCandidateParser.groups(
+                from: observations
+            )
+        )
+
+        XCTAssertEqual(
+            WeTypeCandidateParser.selectedIndex(in: groups),
+            0
+        )
+        XCTAssertFalse(
+            WeTypeCandidateParser.selection(
+                in: groups
+            ).isExact
+        )
+    }
+
+    func testParserFallsBackWhenMaximumBrightnessIsAmbiguous() throws {
+        let observations = [
+            observation(
+                "1",
+                x: 0,
+                brightness: 1
+            ),
+            observation(
+                "one",
+                x: 12,
+                brightness: 1
+            ),
+            observation(
+                "2",
+                x: 60,
+                brightness: 1
+            ),
+            observation(
+                "two",
+                x: 72,
+                brightness: 1
+            ),
+        ]
+        let groups = try XCTUnwrap(
+            WeTypeCandidateParser.groups(
+                from: observations
+            )
+        )
+
+        XCTAssertEqual(
+            WeTypeCandidateParser.selectedIndex(in: groups),
+            0
+        )
+    }
+
+    func testParserRejectsMultipleVisibleRows() {
+        let observations = [
+            observation(
+                "1",
+                x: 0,
+                brightness: 1
+            ),
+            observation(
+                "one",
+                x: 12,
+                brightness: 1
+            ),
+            observation(
+                "2",
+                x: 60,
+                y: 40,
+                brightness: 0.54
+            ),
+            observation(
+                "two",
+                x: 72,
+                y: 40,
+                brightness: 0.78
+            ),
+        ]
+
+        XCTAssertNil(
+            WeTypeCandidateParser.groups(
+                from: observations
+            )
+        )
+    }
+
+    private func makeObservations(
+        texts: [String],
+        selectedShortcutIndex: Int?
+    ) -> [WeTypeCandidateObservation] {
+        texts.enumerated().flatMap { index, text in
+            let x = CGFloat(index * 60)
+            return [
+                observation(
+                    "\(index + 1)",
+                    x: x,
+                    brightness:
+                        selectedShortcutIndex == index ? 1 : 0.54
+                ),
+                observation(
+                    text,
+                    x: x + 12,
+                    brightness:
+                        selectedShortcutIndex == index ? 1 : 0.78
+                ),
+            ]
+        }
+    }
+
+    private func observation(
+        _ text: String,
+        x: CGFloat,
+        y: CGFloat = 10,
+        brightness: Double
+    ) -> WeTypeCandidateObservation {
+        WeTypeCandidateObservation(
+            text: text,
+            frame: CGRect(
+                x: x,
+                y: y,
+                width: 10,
+                height: 20
+            ),
+            foregroundBrightness: brightness
+        )
+    }
+}
+
+final class SogouCandidateParserTests: XCTestCase {
+    func testParserSortsOneVisibleCandidateRow() throws {
+        let observations = [
+            observation("two", x: 80),
+            observation("one", x: 20),
+            observation("three", x: 140),
+        ]
+
+        let candidates = try XCTUnwrap(
+            SogouCandidateParser.candidates(
+                from: observations
+            )
+        )
+
+        XCTAssertEqual(
+            candidates.map(\.text),
+            ["one", "two", "three"]
+        )
+    }
+
+    func testParserRejectsExpandedCandidateRows() {
+        let observations = [
+            observation("one", x: 20),
+            observation("two", x: 80),
+            observation("three", x: 20, y: 50),
+        ]
+
+        XCTAssertNil(
+            SogouCandidateParser.candidates(
+                from: observations
+            )
+        )
+    }
+
+    func testParserRejectsMoreThanNineCandidates() {
+        let observations = (0..<10).map {
+            observation(
+                "candidate-\($0)",
+                x: CGFloat($0 * 60)
+            )
+        }
+
+        XCTAssertNil(
+            SogouCandidateParser.candidates(
+                from: observations
+            )
+        )
+    }
+
+    private func observation(
+        _ text: String,
+        x: CGFloat,
+        y: CGFloat = 10
+    ) -> SogouCandidateObservation {
+        SogouCandidateObservation(
+            text: text,
+            frame: CGRect(
+                x: x,
+                y: y,
+                width: 40,
+                height: 26
+            )
+        )
+    }
+}
+
+final class CandidateReaderRouterTests: XCTestCase {
+    func testRoutesWeTypeByBundleIdentifier() {
+        let fallback = RecordingCandidates()
+        let weType = RecordingCandidates()
+        let router = CandidateReaderRouter(
+            fallback: fallback,
+            registrations: [
+                CandidateReaderRegistration(
+                    bundleIdentifiers: [
+                        InputMethodIdentifier.weTypeBundle
+                    ],
+                    inputSourceIdentifiers: [],
+                    reader: weType
+                )
+            ]
+        )
+
+        let reader = router.reader(
+            for: source(
+                bundleIdentifier:
+                    InputMethodIdentifier.weTypeBundle,
+                inputSourceIdentifier:
+                    InputMethodIdentifier.weTypePinyinMode
+            )
+        )
+
+        XCTAssertTrue(
+            (reader as? RecordingCandidates) === weType
+        )
+    }
+
+    func testUnknownInputMethodUsesStandardFallback() {
+        let fallback = RecordingCandidates()
+        let weType = RecordingCandidates()
+        let router = CandidateReaderRouter(
+            fallback: fallback,
+            registrations: [
+                CandidateReaderRegistration(
+                    bundleIdentifiers: [
+                        InputMethodIdentifier.weTypeBundle
+                    ],
+                    inputSourceIdentifiers: [],
+                    reader: weType
+                )
+            ]
+        )
+
+        let reader = router.reader(
+            for: source(
+                bundleIdentifier:
+                    "com.example.inputmethod.sogou",
+                inputSourceIdentifier:
+                    "com.example.inputmethod.sogou.pinyin"
+            )
+        )
+
+        XCTAssertTrue(
+            (reader as? RecordingCandidates) === fallback
+        )
+    }
+
+    func testUnknownInputMethodUsesAdaptiveProfileReader() {
+        let router = CandidateReaderRouter(
+            fallback: RecordingCandidates(),
+            registrations: [],
+            adaptiveProfiles: CandidateProfileCache(
+                discover: { _ in nil }
+            )
+        )
+
+        let reader = router.reader(
+            for: source(
+                bundleIdentifier:
+                    "com.example.inputmethod.unknown",
+                inputSourceIdentifier:
+                    "com.example.inputmethod.unknown.pinyin"
+            )
+        )
+
+        XCTAssertTrue(reader is AdaptiveUnknownCandidateReader)
+    }
+
+    func testProfileDiscoveryIsDisabledOutsideComposition() throws {
+        let router = CandidateReaderRouter(
+            fallback: RecordingCandidates(),
+            registrations: [],
+            adaptiveProfiles: CandidateProfileCache(
+                discover: { _ in nil }
+            )
+        )
+
+        let reader = router.reader(
+            for: source(
+                bundleIdentifier:
+                    "com.example.inputmethod.unknown",
+                inputSourceIdentifier:
+                    "com.example.inputmethod.unknown.pinyin"
+            ),
+            allowProfileDiscovery: false
+        )
+        let adaptive = try XCTUnwrap(
+            reader as? AdaptiveUnknownCandidateReader
+        )
+
+        XCTAssertFalse(adaptive.allowsProfileDiscovery)
+    }
+
+    func testStandardConfigurationRoutesSogou() {
+        let router = CandidateReaderConfiguration.standard()
+        let reader = router.reader(
+            for: source(
+                bundleIdentifier:
+                    InputMethodIdentifier.sogouBundle,
+                inputSourceIdentifier:
+                    InputMethodIdentifier.sogouPinyinMode
+            )
+        )
+
+        XCTAssertTrue(reader is SogouCandidateReader)
+    }
+
+    private func source(
+        bundleIdentifier: String,
+        inputSourceIdentifier: String
+    ) -> ActiveInputSource {
+        ActiveInputSource(
+            identity: InputMethodIdentity(
+                bundleIdentifier: bundleIdentifier,
+                inputSourceIdentifier: inputSourceIdentifier,
+                sourceType: "TISTypeKeyboardInputMode",
+                localizedName: nil
+            ),
+            kind: .otherInputMethod
+        )
+    }
+}
+
+final class CandidateProfileDiscoveryTests: XCTestCase {
+    func testProfileClassifierSeparatesListAndStyledTextShapes() {
+        XCTAssertEqual(
+            CandidateProfileDetector.classify(
+                listSnapshot: snapshot(
+                    candidateCount: 5,
+                    selectionIsExact: false
+                ),
+                textSnapshot: snapshot(
+                    candidateCount: 5,
+                    selectionIsExact: true
+                )
+            ),
+            .isolatedCandidateList
+        )
+        XCTAssertEqual(
+            CandidateProfileDetector.classify(
+                listSnapshot: nil,
+                textSnapshot: snapshot(
+                    candidateCount: 3,
+                    selectionIsExact: true
+                )
+            ),
+            .isolatedStyledText
+        )
+    }
+
+    func testProfileClassifierRejectsSingleOrInexactCandidates() {
+        XCTAssertNil(
+            CandidateProfileDetector.classify(
+                listSnapshot: snapshot(
+                    candidateCount: 1,
+                    selectionIsExact: false
+                ),
+                textSnapshot: nil
+            )
+        )
+        XCTAssertNil(
+            CandidateProfileDetector.classify(
+                listSnapshot: nil,
+                textSnapshot: snapshot(
+                    candidateCount: 3,
+                    selectionIsExact: false
+                )
+            )
+        )
+    }
+
+    func testDiscoveredProfileIsReusedWithoutAnotherProbe() async {
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            discover: { _ in .isolatedCandidateList }
+        )
+        let identity = identity()
+
+        let task = cache.requestDiscovery(for: identity)
+        await task?.value
+
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedCandidateList
+        )
+        XCTAssertNil(cache.requestDiscovery(for: identity))
+    }
+
+    func testFailedDiscoveryRetriesQuicklyThenUsesLongCooldown() async {
+        let clock = OSAllocatedUnfairLock<UInt64>(initialState: 0)
+        let cache = CandidateProfileCache(
+            clock: { clock.withLock { $0 } },
+            discover: { _ in nil }
+        )
+        let identity = identity()
+
+        let first = cache.requestDiscovery(for: identity)
+        await first?.value
+        XCTAssertNil(cache.requestDiscovery(for: identity))
+
+        clock.withLock { $0 = 600_000_000 }
+        let second = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(second)
+        await second?.value
+        XCTAssertNil(cache.requestDiscovery(for: identity))
+
+        clock.withLock { $0 = 600_000_000 + 10 * 60 * 1_000_000_000 }
+        let third = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(third)
+        await third?.value
+    }
+
+    func testOnlyOneProfileDiscoveryRunsAtATime() async {
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            discover: { _ in
+                Thread.sleep(forTimeInterval: 0.05)
+                return .isolatedStyledText
+            }
+        )
+        let identity = identity()
+
+        let first = cache.requestDiscovery(for: identity)
+        XCTAssertNil(cache.requestDiscovery(for: identity))
+        await first?.value
+    }
+
+    func testStandardFallbackSuccessDoesNotStartProfileProbe() {
+        let identity = identity()
+        let probeCalls = OSAllocatedUnfairLock(initialState: 0)
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            discover: { _ in
+                probeCalls.withLock { $0 += 1 }
+                return .isolatedCandidateList
+            }
+        )
+        let reader = AdaptiveUnknownCandidateReader(
+            source: ActiveInputSource(
+                identity: identity,
+                kind: .otherInputMethod
+            ),
+            fallback: FixedSnapshotCandidates(
+                candidate: AXCandidateSnapshot(
+                    text: "candidate",
+                    visibleTexts: [],
+                    frame: CGRect(x: 10, y: 20, width: 30, height: 30),
+                    candidateListFrame: nil
+                )
+            ),
+            profiles: cache,
+            allowsProfileDiscovery: true
+        )
+
+        XCTAssertNotNil(
+            reader.snapshot(
+                processIdentifier: 42,
+                includeVisibleCandidates: true,
+                includeVisibleTexts: false
+            )
+        )
+        XCTAssertEqual(probeCalls.withLock { $0 }, 0)
+    }
+
+    func testPersistedProfileSurvivesCacheRecreationAndVersionBoundsIt()
+        async throws
+    {
+        let suiteName =
+            "GlintMacTests.ProfilePersistence.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: suiteName)
+        )
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        let identity = identity()
+        let persistence = CandidateProfilePersistence(
+            defaults: defaults,
+            storageKey: "profiles"
+        )
+        let first = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "1.0" },
+            persistence: persistence,
+            discover: { _ in .isolatedCandidateList }
+        )
+        await first.requestDiscovery(for: identity)?.value
+
+        let probeCalls = OSAllocatedUnfairLock(initialState: 0)
+        let sameVersion = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "1.0" },
+            persistence: persistence,
+            discover: { _ in
+                probeCalls.withLock { $0 += 1 }
+                return nil
+            }
+        )
+        XCTAssertEqual(
+            sameVersion.profile(for: identity),
+            .isolatedCandidateList
+        )
+        XCTAssertEqual(probeCalls.withLock { $0 }, 0)
+
+        let newVersion = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "2.0" },
+            persistence: persistence,
+            discover: { _ in nil }
+        )
+        XCTAssertNil(newVersion.profile(for: identity))
+    }
+
+    func testFailedDiscoveryIsNotPersisted() async throws {
+        let suiteName =
+            "GlintMacTests.ProfileFailure.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: suiteName)
+        )
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        let persistence = CandidateProfilePersistence(
+            defaults: defaults,
+            storageKey: "profiles"
+        )
+        let identity = identity()
+        let first = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "1.0" },
+            persistence: persistence,
+            discover: { _ in nil }
+        )
+        await first.requestDiscovery(for: identity)?.value
+
+        let second = CandidateProfileCache(
+            clock: { 10 * 60 * 1_000_000_000 },
+            applicationVersion: { _ in "1.0" },
+            persistence: persistence,
+            discover: { _ in nil }
+        )
+        XCTAssertNil(second.profile(for: identity))
+        XCTAssertNotNil(second.requestDiscovery(for: identity))
+    }
+
+    private func identity() -> InputMethodIdentity {
+        InputMethodIdentity(
+            bundleIdentifier: "com.example.inputmethod.unknown",
+            inputSourceIdentifier:
+                "com.example.inputmethod.unknown.pinyin",
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: nil
+        )
+    }
+
+    private func snapshot(
+        candidateCount: Int,
+        selectionIsExact: Bool
+    ) -> AXCandidateSnapshot {
+        let options = (0..<candidateCount).map { index in
+            AXCandidateOption(
+                text: "candidate-\(index)",
+                frame: CGRect(
+                    x: CGFloat(index * 50),
+                    y: 10,
+                    width: 40,
+                    height: 28
+                ),
+                isSelected:
+                    selectionIsExact && index == 0
+            )
+        }
+        return AXCandidateSnapshot(
+            text: options[0].text,
+            visibleTexts: options.map(\.text),
+            options: options,
+            frame: options[0].frame,
+            candidateListFrame: nil,
+            selectedIndex: 0,
+            selectionIsExact: selectionIsExact
         )
     }
 }
@@ -1073,7 +2004,9 @@ final class MonitoringSessionTests: XCTestCase {
             ),
             inputSource: StubInputSource(active: true),
             focus: PIDCaretFocus(),
-            axCandidates: candidates,
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
             accessibilityIsTrusted: { true },
             secureInputIsEnabled: { false }
         )
@@ -1095,7 +2028,9 @@ final class MonitoringSessionTests: XCTestCase {
             ),
             inputSource: StubInputSource(kind: .keyboardLayout),
             focus: StubFocus(),
-            axCandidates: StubCandidates(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
             accessibilityIsTrusted: { true },
             secureInputIsEnabled: { false }
         )
@@ -1192,7 +2127,9 @@ final class MonitoringSessionTests: XCTestCase {
             ),
             inputSource: StubInputSource(kind: .keyboardLayout),
             focus: StubFocus(),
-            axCandidates: StubCandidates(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
             accessibilityIsTrusted: { true },
             secureInputIsEnabled: { false }
         )

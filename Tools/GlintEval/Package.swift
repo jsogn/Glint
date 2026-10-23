@@ -8,6 +8,7 @@ let package = Package(
         .package(path: "../../Packages/GlintCore"),
         .package(path: "../../Packages/GlintDictionary"),
         .package(path: "../../Packages/GlintInference"),
+        .package(path: "../../Packages/GlintMac"),
     ],
     targets: [
         .executableTarget(
@@ -37,6 +38,15 @@ let package = Package(
         ),
         .executableTarget(
             name: "CandidateAXProbe"
+        ),
+        .executableTarget(
+            name: "WeTypeAXProbe"
+        ),
+        .executableTarget(
+            name: "CandidateProfileProbe",
+            dependencies: [
+                .product(name: "GlintMac", package: "GlintMac")
+            ]
         ),
     ],
     swiftLanguageModes: [.v6]

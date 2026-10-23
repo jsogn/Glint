@@ -245,6 +245,39 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(openSettingsCount, 1)
     }
 
+    @MainActor
+    func testActiveInputMethodUsesSystemDisplayName() throws {
+        let suiteName =
+            "GlintInputMethodDisplayTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: suiteName)
+        )
+        defer {
+            defaults.removePersistentDomain(
+                forName: suiteName
+            )
+        }
+        let model = MainWindowModel(
+            catalogURL: nil,
+            defaults: defaults
+        )
+        let identity = InputMethodIdentity(
+            bundleIdentifier:
+                InputMethodIdentifier.weTypeBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.weTypePinyinMode,
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: "微信输入法"
+        )
+
+        model.updateActiveInputMethod(identity)
+
+        XCTAssertEqual(
+            model.activeInputMethodName,
+            "微信输入法"
+        )
+    }
+
     func testCatalogUpdatePolicyHonorsSuccessAndFailureCooldowns() {
         let now = Date(timeIntervalSince1970: 1_000_000)
 

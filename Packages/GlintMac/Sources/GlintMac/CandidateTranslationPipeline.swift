@@ -5,6 +5,7 @@ enum CandidateTranslationPipeline {
     static func translate(
         _ candidates: [Candidate],
         selectedIndex: Int,
+        selectionIsExact: Bool = true,
         mode: TranslationMode,
         configurationToken: String,
         router: SmartRouter,
@@ -58,6 +59,7 @@ enum CandidateTranslationPipeline {
                             candidates: candidates,
                             results: results,
                             selectedIndex: selectedIndex,
+                            selectionIsExact: selectionIsExact,
                             displayOptionLimit: displayOptionLimit
                         )
                     }
@@ -71,6 +73,7 @@ enum CandidateTranslationPipeline {
                 candidates: candidates,
                 results: results,
                 selectedIndex: selectedIndex,
+                selectionIsExact: selectionIsExact,
                 displayOptionLimit: displayOptionLimit
             )
         }
@@ -148,6 +151,7 @@ enum CandidateTranslationPipeline {
         candidates: [Candidate],
         results: [TranslationResult?],
         selectedIndex: Int,
+        selectionIsExact: Bool,
         displayOptionLimit: Int
     ) -> CandidateTranslationPresentation {
         let translation: String? = results[index].flatMap { result -> String? in
@@ -162,7 +166,9 @@ enum CandidateTranslationPipeline {
             index: index,
             candidateText: candidates[index].text,
             translation: translation,
-            isSelected: index == selectedIndex
+            isSelected:
+                selectionIsExact
+                && index == selectedIndex
         )
     }
 

@@ -21,7 +21,9 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
     public let frame: CGRect?
     public let candidateWindowFrame: CGRect?
     public let candidateListFrame: CGRect?
+    public let geometry: AXCandidateGeometry?
     public let selectedIndex: Int?
+    public let selectionIsExact: Bool
 
     public init(
         text: String,
@@ -30,7 +32,9 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
         frame: CGRect?,
         candidateWindowFrame: CGRect? = nil,
         candidateListFrame: CGRect?,
-        selectedIndex: Int? = nil
+        geometry: AXCandidateGeometry? = nil,
+        selectedIndex: Int? = nil,
+        selectionIsExact: Bool = true
     ) {
         self.text = text
         self.visibleTexts = visibleTexts
@@ -38,7 +42,9 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
         self.frame = frame
         self.candidateWindowFrame = candidateWindowFrame
         self.candidateListFrame = candidateListFrame
+        self.geometry = geometry
         self.selectedIndex = selectedIndex
+        self.selectionIsExact = selectionIsExact
     }
 }
 
@@ -394,8 +400,25 @@ public final class AXCandidateReader {
                 list,
                 kAXSelectedChildrenAttribute
             ) ?? []
+        let visibleElements =
+            elementsAttribute(
+                list,
+                kAXVisibleChildrenAttribute
+            ) ?? []
+        let selectionIsExact = !selectedElements.isEmpty
+        let fallbackCandidates =
+            visibleElements.isEmpty
+            ? elementsAttribute(
+                list,
+                kAXChildrenAttribute
+            ) ?? []
+            : visibleElements
         if !includeVisibleCandidates,
-            let selectedElement = selectedElements.first,
+            let selectedElement =
+                selectedElements.first
+                ?? firstCandidateElement(
+                    in: fallbackCandidates
+                ),
             let selected = candidateItem(of: selectedElement)
         {
             return AXCandidateSnapshot(
@@ -405,21 +428,23 @@ public final class AXCandidateReader {
                 frame: selected.frame,
                 candidateWindowFrame: nil,
                 candidateListFrame: nil,
-                selectedIndex: 0
+                geometry: Self.geometry(for: selected.frame),
+                selectedIndex: 0,
+                selectionIsExact: selectionIsExact
             )
         }
-        guard let selectedElement = selectedElements.first,
+        guard
+            let selectedElement =
+                selectedElements.first
+                ?? firstCandidateElement(
+                    in: fallbackCandidates
+                ),
             let selected = candidateItem(of: selectedElement)
         else {
             return nil
         }
         let candidateWindowFrame = frame(of: candidateWindow)
         let candidateListFrame = frame(of: list)
-        let visibleElements =
-            elementsAttribute(
-                list,
-                kAXVisibleChildrenAttribute
-            ) ?? []
         let visibleItems = visibleElements.compactMap { element in
             if CFEqual(element, selectedElement) {
                 return selected
@@ -441,7 +466,9 @@ public final class AXCandidateReader {
             AXCandidateOption(
                 text: item.text,
                 frame: item.frame,
-                isSelected: index == row.selectedIndex
+                isSelected:
+                    selectionIsExact
+                    && index == row.selectedIndex
             )
         }
         let selectedItem = row.items[row.selectedIndex]
@@ -452,8 +479,32 @@ public final class AXCandidateReader {
             frame: selectedItem.frame,
             candidateWindowFrame: candidateWindowFrame,
             candidateListFrame: candidateListFrame,
-            selectedIndex: row.selectedIndex
+            geometry: Self.geometry(for: selectedItem.frame),
+            selectedIndex: row.selectedIndex,
+            selectionIsExact: selectionIsExact
         )
+    }
+
+    private static func geometry(
+        for selectedFrame: CGRect?
+    ) -> AXCandidateGeometry? {
+        guard let selectedFrame else {
+            return nil
+        }
+        return AXCandidateGeometry(
+            horizontalFrame: selectedFrame,
+            horizontalSource: .item,
+            verticalFrame: selectedFrame,
+            verticalSource: .item
+        )
+    }
+
+    private static func firstCandidateElement(
+        in elements: [AXUIElement]
+    ) -> AXUIElement? {
+        elements.first {
+            candidateText(of: $0) != nil
+        }
     }
 
     private static func candidateItem(
