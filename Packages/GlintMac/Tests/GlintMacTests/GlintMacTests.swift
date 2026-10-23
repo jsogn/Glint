@@ -1138,6 +1138,84 @@ final class MonitoringSessionTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(recorder.statuses.count, 2)
     }
 
+    func testStopDuringStartSettlesIdleAndCanRestart() async throws {
+        let harness = makeSession()
+        defer { harness.collector.cancel() }
+        let recorder = harness.recorder
+
+        await harness.session.start(testSettings)
+        await harness.session.stop()
+        try await waitUntil { recorder.states.last == .idle }
+
+        await harness.session.start(testSettings)
+        try await waitUntil {
+            recorder.states.filter { $0 == .running }.count >= 2
+        }
+        try await waitUntil { recorder.statuses.count >= 1 }
+
+        XCTAssertEqual(recorder.states.last, .running)
+    }
+
+    func testSessionSurvivesRepeatedStopStartCycles() async throws {
+        let harness = makeSession()
+        defer { harness.collector.cancel() }
+        let recorder = harness.recorder
+
+        let cycles = 3
+        for cycle in 1...cycles {
+            await harness.session.start(testSettings)
+            try await waitUntil {
+                recorder.states.filter { $0 == .running }.count == cycle
+            }
+            try await waitUntil { recorder.statuses.count >= cycle }
+
+            await harness.session.stop()
+            try await waitUntil { recorder.states.last == .idle }
+        }
+
+        XCTAssertEqual(
+            recorder.states.filter { $0 == .running }.count,
+            cycles
+        )
+        XCTAssertGreaterThanOrEqual(recorder.statuses.count, cycles)
+    }
+
+    private func makeSession() -> (
+        session: MonitoringSession,
+        recorder: SessionEventRecorder,
+        collector: Task<Void, Never>
+    ) {
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(kind: .keyboardLayout),
+            focus: StubFocus(),
+            axCandidates: StubCandidates(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+        let session = MonitoringSession(controller: controller)
+        let recorder = SessionEventRecorder()
+        let collector = Task {
+            let events = await session.events
+            for await event in events {
+                recorder.record(event)
+            }
+        }
+        return (session, recorder, collector)
+    }
+
+    private var testSettings: MonitoringSettings {
+        MonitoringSettings(
+            mode: .modelFirst,
+            candidateDwellDuration: 0.08,
+            translationScope: .selected,
+            configurationToken: "test"
+        )
+    }
+
     private func waitUntil(
         timeout: TimeInterval = 2,
         _ condition: @escaping @Sendable () -> Bool
