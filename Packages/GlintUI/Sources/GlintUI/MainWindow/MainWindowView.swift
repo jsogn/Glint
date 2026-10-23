@@ -25,7 +25,6 @@ public struct MainWindowView: View {
             ToolbarItem(placement: .navigation) {
                 PageTitle(title: pageTitle)
             }
-            .sharedBackgroundVisibility(.hidden)
         }
         .task {
             await model.refreshInstalledPlugins()
