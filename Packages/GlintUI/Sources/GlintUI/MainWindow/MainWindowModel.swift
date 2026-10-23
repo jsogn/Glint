@@ -138,6 +138,24 @@ public final class MainWindowModel {
         return "未安装"
     }
 
+    public var translationSourceSummary: String {
+        guard
+            let plugin = translationPlugins.first(where: {
+                $0.id == activeModelID
+            })
+        else {
+            return "未安装"
+        }
+        switch plugin.source {
+        case .bundled:
+            return "内置"
+        case .catalog:
+            return "已下载"
+        case .local:
+            return "本地导入"
+        }
+    }
+
     public var candidateSummary: String {
         "系统候选词"
     }

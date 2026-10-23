@@ -1,4 +1,6 @@
+import Foundation
 import GlintCore
+import GlintPlugins
 import SwiftUI
 
 struct OverviewPage: View {
@@ -6,84 +8,81 @@ struct OverviewPage: View {
     @Binding var selection: SidebarItem?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                OverviewStatusCard(model: model, selection: $selection)
+        PageContainer {
+            OverviewStatusCard(model: model, selection: $selection)
 
-                LazyVGrid(
-                    columns: [
-                        GridItem(.flexible(), spacing: 16),
-                        GridItem(.flexible(), spacing: 16),
-                    ],
-                    alignment: .leading,
-                    spacing: 16
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 16),
+                    GridItem(.flexible(), spacing: 16),
+                ],
+                alignment: .leading,
+                spacing: 16
+            ) {
+                OverviewInfoCard(
+                    symbol: "rectangle.on.rectangle",
+                    title: "显示与触发",
+                    actionTitle: "调整",
+                    rows: [
+                        OverviewInfoRow(
+                            label: "位置",
+                            value: model.displayPreferences.position.title
+                        ),
+                        OverviewInfoRow(
+                            label: "停留",
+                            value: OverviewFormatting.dwellDuration(
+                                model.displayPreferences
+                                    .candidateDwellDuration
+                            )
+                        ),
+                        OverviewInfoRow(
+                            label: "外观",
+                            value: OverviewFormatting.appearance(
+                                hudOpacity: model.displayPreferences
+                                    .hudOpacity,
+                                hudFontSize: model.displayPreferences
+                                    .hudFontSize,
+                                candidateSpacing: model.displayPreferences
+                                    .candidateSpacing
+                            )
+                        ),
+                    ]
                 ) {
-                    OverviewInfoCard(
-                        symbol: "rectangle.on.rectangle",
-                        title: "显示与触发",
-                        actionTitle: "调整",
-                        rows: [
-                            OverviewInfoRow(
-                                label: "位置",
-                                value: model.displayPreferences.position.title
-                            ),
-                            OverviewInfoRow(
-                                label: "停留",
-                                value: String(
-                                    format: "%.0f ms",
-                                    model.displayPreferences
-                                        .candidateDwellDuration * 1_000
-                                )
-                            ),
-                            OverviewInfoRow(
-                                label: "外观",
-                                value: String(
-                                    format: "透明度 %.0f%% · 间距 %.0f pt",
-                                    model.displayPreferences.hudOpacity * 100,
-                                    model.displayPreferences.candidateSpacing
-                                )
-                            ),
-                        ]
-                    ) {
-                        selection = .display
-                    }
-
-                    OverviewInfoCard(
-                        symbol: "shippingbox",
-                        title: "本地能力",
-                        actionTitle: "管理",
-                        rows: [
-                            OverviewInfoRow(
-                                label: "识别",
-                                value: model.candidateSummary
-                            ),
-                            OverviewInfoRow(
-                                label: "翻译",
-                                value: model.translationSummary
-                            ),
-                            OverviewInfoRow(
-                                label: "词典",
-                                value: "\(model.dictionaryPlugins.count) 个"
-                            ),
-                        ]
-                    ) {
-                        selection = .plugins
-                    }
+                    selection = .display
                 }
 
-                Label(
-                    "仅识别输入法候选区域，不读取输入框正文。",
-                    systemImage: "lock.shield"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
+                OverviewInfoCard(
+                    symbol: "shippingbox",
+                    title: "本地能力",
+                    actionTitle: "管理",
+                    rows: [
+                        OverviewInfoRow(
+                            label: "翻译模型",
+                            value: model.translationSummary
+                        ),
+                        OverviewInfoRow(
+                            label: "模型来源",
+                            value: model.translationSourceSummary
+                        ),
+                        OverviewInfoRow(
+                            label: "词典",
+                            value: OverviewFormatting.dictionaryCount(
+                                model.dictionaryPlugins.count
+                            )
+                        ),
+                    ]
+                ) {
+                    selection = .plugins
+                }
             }
-            .frame(maxWidth: 1_200, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 30)
-            .padding(.top, 10)
-            .padding(.bottom, 32)
+
+            Label(
+                "仅识别输入法候选区域，不读取输入框正文。",
+                systemImage: "lock.shield"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 4)
         }
     }
 }
@@ -120,13 +119,14 @@ private struct OverviewStatusCard: View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .center, spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 11)
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
                         .fill(Color.accentColor.opacity(0.16))
                     Image(systemName: state.symbol)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(.tint)
                 }
                 .frame(width: 42, height: 42)
+                .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
@@ -137,8 +137,10 @@ private struct OverviewStatusCard: View {
                                 color: state.statusColor.opacity(0.45),
                                 radius: 3
                             )
+                            .accessibilityHidden(true)
                         Text(state.title)
                             .font(.title3.weight(.semibold))
+                            .accessibilityAddTraits(.isHeader)
                     }
                     Text(state.detail)
                         .font(.callout)
@@ -153,6 +155,7 @@ private struct OverviewStatusCard: View {
                 .tint(actionTint)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .accessibilityLabel(actionTitle)
             }
 
             Divider()
@@ -163,21 +166,13 @@ private struct OverviewStatusCard: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(.separator.opacity(0.6), lineWidth: 1)
-        }
+        .padding(16)
+        .cardSurface()
     }
 
     private func primaryAction() {
         if missingPermissionText != nil {
-            if model.hasRequestedAccessibilityPermission {
-                model.openAccessibilitySettings()
-            } else {
-                model.requestPermissions()
-            }
+            permissionAction.perform()
         } else if model.isMonitoring {
             model.stopMonitoring()
         } else {
@@ -185,27 +180,27 @@ private struct OverviewStatusCard: View {
         }
     }
 
+    private var permissionAction: AccessibilityPermissionAction {
+        AccessibilityPermissionAction(model: model)
+    }
+
     private var actionTitle: String {
         if missingPermissionText != nil {
-            return model.hasRequestedAccessibilityPermission
-                ? "打开系统设置"
-                : "授权辅助功能"
+            return permissionAction.title
         }
         return model.isMonitoring ? "关闭翻译显示" : "开启翻译显示"
     }
 
     private var actionSymbol: String {
         if missingPermissionText != nil {
-            return model.hasRequestedAccessibilityPermission
-                ? "gearshape"
-                : "lock.open"
+            return permissionAction.symbol
         }
         return model.isMonitoring ? "stop.circle" : "play.circle"
     }
 
     private var actionTint: Color {
         model.isMonitoring && missingPermissionText == nil
-            ? .red
+            ? .orange
             : .accentColor
     }
 }
@@ -215,7 +210,7 @@ private struct OverviewPipeline: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            stage(symbol: "keyboard", label: "输入", value: "拼音输入")
+            stage(symbol: "keyboard", label: "输入", value: "系统输入法")
             arrow
             stage(
                 symbol: "text.cursor",
@@ -232,9 +227,14 @@ private struct OverviewPipeline: View {
             stage(
                 symbol: "text.bubble",
                 label: "翻译",
-                value: model.translationSummary
+                value: translationModelName
             )
+            .help(model.translationSummary)
         }
+    }
+
+    private var translationModelName: String {
+        OverviewFormatting.compactModelName(model.translationSummary)
     }
 
     private func stage(
@@ -247,6 +247,7 @@ private struct OverviewPipeline: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
                 .frame(width: 16)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.caption2)
@@ -254,13 +255,17 @@ private struct OverviewPipeline: View {
                 Text(value)
                     .font(.callout.weight(.medium))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .truncationMode(.middle)
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 9))
+        .background(
+            .quaternary.opacity(0.45),
+            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
     }
 
     private var arrow: some View {
@@ -271,11 +276,9 @@ private struct OverviewPipeline: View {
     }
 }
 
-private struct OverviewInfoRow: Identifiable {
+private struct OverviewInfoRow {
     let label: String
     let value: String
-
-    var id: String { label }
 }
 
 private struct OverviewInfoCard: View {
@@ -291,22 +294,26 @@ private struct OverviewInfoCard: View {
                 Image(systemName: symbol)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                 Text(title)
                     .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button(action: action) {
                     HStack(spacing: 3) {
                         Text(actionTitle)
                         Image(systemName: "chevron.right")
                             .font(.caption2.weight(.semibold))
+                            .accessibilityHidden(true)
                     }
                 }
                 .buttonStyle(.borderless)
                 .font(.callout)
+                .accessibilityLabel("\(actionTitle)\(title)")
             }
 
             VStack(spacing: 8) {
-                ForEach(rows) { row in
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
                         Text(row.label)
                             .foregroundStyle(.secondary)
@@ -315,16 +322,13 @@ private struct OverviewInfoCard: View {
                             .multilineTextAlignment(.trailing)
                     }
                     .font(.callout)
+                    .accessibilityElement(children: .combine)
                 }
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(.separator.opacity(0.6), lineWidth: 1)
-        }
+        .cardSurface()
     }
 }
 
@@ -348,7 +352,7 @@ private enum OverviewRuntimeState {
         case .running:
             "在输入法候选栏旁显示对应英文翻译。"
         case .paused:
-            "开启后，输入中文拼音会显示对应英文翻译。"
+            "开启后，输入中文会显示对应英文翻译。"
         case .permissions(let message):
             message
         case .attention(let message):
@@ -367,10 +371,102 @@ private enum OverviewRuntimeState {
 
     var statusColor: Color {
         switch self {
-        case .running: .blue
+        case .running: .accentColor
         case .paused: .secondary
         case .permissions, .attention: .orange
         }
     }
 
+}
+
+private struct OverviewPagePreview: View {
+    @State private var model: MainWindowModel
+
+    init(isRunning: Bool) {
+        let suite = "Glint.OverviewPagePreview"
+        let defaults = UserDefaults(suiteName: suite) ?? .standard
+        defaults.removePersistentDomain(forName: suite)
+
+        let preferences = DisplayPreferences(defaults: defaults)
+        preferences.hudOpacity = 0.8
+        preferences.candidateSpacing = 5
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "Glint.OverviewPagePreview",
+                isDirectory: true
+            )
+        let model = MainWindowModel(
+            displayPreferences: preferences,
+            pluginManager: PluginManager(baseDirectory: root),
+            builtInPlugins: [
+                OverviewPreviewManifests.translation,
+                OverviewPreviewManifests.dictionary(
+                    id: "dict-cedict",
+                    name: "CC-CEDICT"
+                ),
+                OverviewPreviewManifests.dictionary(
+                    id: "dict-ecdict",
+                    name: "ECDICT Rank Index"
+                ),
+                OverviewPreviewManifests.dictionary(
+                    id: "dict-wiktionary",
+                    name: "Wiktionary Chinese-English"
+                ),
+            ],
+            catalogURL: nil,
+            defaults: defaults
+        )
+        model.accessibilityGranted = isRunning
+        model.isMonitoring = isRunning
+        model.setTranslationMode(.modelFirst)
+        _model = State(initialValue: model)
+    }
+
+    var body: some View {
+        OverviewPage(model: model, selection: .constant(.overview))
+            .frame(width: 729, height: 640)
+    }
+}
+
+private enum OverviewPreviewManifests {
+    static let translation = PluginManifest(
+        id: TranslationModelSelection.defaultModelID,
+        type: .translation,
+        name: "OPUS-MT Chinese-English",
+        version: "0.1.0",
+        runtime: "ctranslate2",
+        sizeBytes: 0,
+        sha256: "PREVIEW",
+        url: URL(fileURLWithPath: "/preview/mt-opus-zh-en"),
+        license: "CC-BY-4.0",
+        minRAMBytes: 0,
+        source: .bundled
+    )
+
+    static func dictionary(id: String, name: String) -> PluginManifest {
+        PluginManifest(
+            id: id,
+            type: .dictionary,
+            name: name,
+            version: "0.1.0",
+            runtime: "sqlite-v1",
+            sizeBytes: 0,
+            sha256: "PREVIEW",
+            url: URL(fileURLWithPath: "/preview/\(id)"),
+            license: "CC-BY-4.0",
+            minRAMBytes: 0,
+            source: .bundled
+        )
+    }
+}
+
+#Preview("概览 · 运行中") {
+    OverviewPagePreview(isRunning: true)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("概览 · 需要权限") {
+    OverviewPagePreview(isRunning: false)
+        .preferredColorScheme(.light)
 }

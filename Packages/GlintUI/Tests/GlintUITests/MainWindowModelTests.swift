@@ -81,6 +81,7 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(model.translationPlugins.map(\.id), [manifest.id])
         XCTAssertEqual(model.activeModelID, manifest.id)
         XCTAssertEqual(model.translationSummary, manifest.name)
+        XCTAssertEqual(model.translationSourceSummary, "内置")
         XCTAssertTrue(model.availablePlugins.isEmpty)
 
         await model.uninstallPlugin(manifest)
