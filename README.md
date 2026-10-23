@@ -1,12 +1,13 @@
-![Glint：停留苹果拼音候选，在候选栏旁查看对应英文翻译](docs/assets/glint-hero.png)
+![Glint：输入中文拼音时，在候选栏旁查看对应英文翻译](docs/assets/glint-hero.png)
 
 <p align="center">
-  <code>macOS 26+</code> &nbsp; <code>Apple Silicon</code> &nbsp; <code>本地离线</code>
+  <img alt="macOS 26+" src="https://img.shields.io/badge/macOS-26%2B-24292F?logo=apple&logoColor=white&style=flat-square">
+  <img alt="Apple Silicon" src="https://img.shields.io/badge/Apple_Silicon-arm64-57606A?style=flat-square">
+  <img alt="本地离线" src="https://img.shields.io/badge/privacy-local_%26_offline-2F7DFF?style=flat-square">
 </p>
 
-Glint 是一款为 macOS 打造的英文学习工具。使用苹果拼音输入中文时，在候选上稍作
-停留，就能在不打断输入的情况下看到对应的英文翻译。它不替换输入法，也不会改变
-你的输入习惯。
+Glint 是一款为 macOS 打造的英文学习工具。输入中文拼音时，对应的英文翻译会出现在
+候选栏旁，不打断输入。它不替换输入法，也不会改变你的输入习惯。
 
 ![在苹果拼音候选栏旁显示对应英文翻译](docs/assets/glint-usage.png)
 
@@ -16,7 +17,7 @@ Glint 是一款为 macOS 打造的英文学习工具。使用苹果拼音输入�
    安装 Glint。
 2. 首次启动时，按提示授予辅助功能权限。
 3. 切换到苹果拼音 `Pinyin - Simplified`，正常输入中文。
-4. 停在一个候选上片刻，对应英文翻译会出现在候选栏旁。
+4. 输入中文拼音，对应英文翻译会出现在候选栏旁。
 
 Glint 支持单词、短语和短句。单词会尽量给出简洁、常用的英文对应词，短句则显示
 自然翻译。
