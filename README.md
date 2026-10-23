@@ -51,5 +51,5 @@ cd Glint
 ./scripts/run.sh
 ```
 
-首次构建会准备并校验内置的轻量翻译模型。架构、发布和验证说明见
-[`docs/`](docs/README.md)。
+首次构建会准备并校验内置的轻量翻译模型。修改代码前，建议先阅读
+[架构设计](docs/ARCHITECTURE.md)。
