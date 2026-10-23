@@ -12,7 +12,7 @@
 Glint 是一款为 macOS 打造的英文学习工具。输入中文拼音时，对应的英文翻译会出现在
 候选栏旁，不打断输入。它不替换输入法，也不会改变你的输入习惯。
 
-https://github.com/user-attachments/assets/55ef2332-d131-4253-ab24-23aa94d5b8d0
+[![Glint 45 秒产品演示](docs/assets/glint-video-cover.jpg)](https://www.bilibili.com/video/BV1spnb6kEtW/)
 
 ## 使用方式
 
