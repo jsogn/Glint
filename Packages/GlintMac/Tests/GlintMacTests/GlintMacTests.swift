@@ -64,7 +64,8 @@ private struct StubFocus: FocusReading {
 private struct StubCandidates: AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
     ) -> AXCandidateSnapshot? {
         nil
     }
@@ -85,19 +86,22 @@ private final class RecordingCandidates: AXCandidateReading, Sendable {
     private struct Request: Sendable {
         let processIdentifier: pid_t?
         let includeVisibleCandidates: Bool
+        let includeVisibleTexts: Bool
     }
 
     private let state = OSAllocatedUnfairLock<[Request]>(initialState: [])
 
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
     ) -> AXCandidateSnapshot? {
         state.withLock {
             $0.append(
                 Request(
                     processIdentifier: processIdentifier,
-                    includeVisibleCandidates: includeVisibleCandidates
+                    includeVisibleCandidates: includeVisibleCandidates,
+                    includeVisibleTexts: includeVisibleTexts
                 )
             )
         }
@@ -106,6 +110,10 @@ private final class RecordingCandidates: AXCandidateReading, Sendable {
 
     var requestedVisibleCandidates: [Bool] {
         state.withLock { $0.map(\.includeVisibleCandidates) }
+    }
+
+    var requestedVisibleTexts: [Bool] {
+        state.withLock { $0.map(\.includeVisibleTexts) }
     }
 
     var requestedProcessIdentifiers: [pid_t?] {
@@ -256,6 +264,29 @@ final class GlintMacTests: XCTestCase {
 
         XCTAssertEqual(interval, 60_000_000)
         XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
+        XCTAssertEqual(candidates.requestedVisibleTexts, [false])
+    }
+
+    func testRowScopeRequestsVisibleCandidateTexts() async {
+        let candidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: true),
+            focus: VisibleCaretFocus(),
+            axCandidates: candidates,
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        await controller.setTranslationScope(.row)
+        let interval = await controller.tick()
+
+        XCTAssertEqual(interval, 60_000_000)
+        XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
+        XCTAssertEqual(candidates.requestedVisibleTexts, [true])
     }
 
     func testOtherInputMethodStillUsesVerifiedCandidatePath() async {
@@ -1147,5 +1178,32 @@ private extension MonitoringSessionEvent {
     var monitoringStatus: String? {
         if case .monitoring(.status(let status)) = self { return status }
         return nil
+    }
+}
+
+final class AXCandidateRowSelectionTests: XCTestCase {
+    func testFrameOnlyVisibleItemsStillProduceSelectedRow() {
+        let selected = AXCandidateItem(
+            text: "你",
+            frame: CGRect(x: 40, y: 0, width: 20, height: 20)
+        )
+        let row = AXCandidateVisibleRowSelector.select(
+            selected: selected,
+            visible: [
+                AXCandidateItem(
+                    text: "",
+                    frame: CGRect(x: 10, y: 0, width: 20, height: 20)
+                ),
+                selected,
+                AXCandidateItem(
+                    text: "",
+                    frame: CGRect(x: 70, y: 0, width: 20, height: 20)
+                ),
+            ]
+        )
+
+        XCTAssertEqual(row?.items.count, 3)
+        XCTAssertEqual(row?.selectedIndex, 1)
+        XCTAssertEqual(row?.items.map(\.text), ["", "你", ""])
     }
 }

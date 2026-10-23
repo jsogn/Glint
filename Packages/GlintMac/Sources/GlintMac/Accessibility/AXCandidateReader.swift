@@ -197,7 +197,8 @@ public final class AXCandidateReader {
 
     public func snapshot(
         processIdentifier: pid_t? = nil,
-        includeVisibleCandidates: Bool = false
+        includeVisibleCandidates: Bool = false,
+        includeVisibleTexts: Bool = true
     ) -> AXCandidateSnapshot? {
         guard
             let application = applicationElement(
@@ -234,7 +235,8 @@ public final class AXCandidateReader {
             if let snapshot = Self.snapshot(
                 from: cachedCandidateList,
                 candidateWindow: cachedCandidateWindow,
-                includeVisibleCandidates: includeVisibleCandidates
+                includeVisibleCandidates: includeVisibleCandidates,
+                includeVisibleTexts: includeVisibleTexts
             ) {
                 return snapshot
             }
@@ -245,7 +247,8 @@ public final class AXCandidateReader {
                 let snapshot = Self.snapshot(
                     from: list,
                     candidateWindow: window,
-                    includeVisibleCandidates: includeVisibleCandidates
+                    includeVisibleCandidates: includeVisibleCandidates,
+                    includeVisibleTexts: includeVisibleTexts
                 )
             else {
                 continue
@@ -383,7 +386,8 @@ public final class AXCandidateReader {
     private static func snapshot(
         from list: AXUIElement,
         candidateWindow: AXUIElement,
-        includeVisibleCandidates: Bool
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
     ) -> AXCandidateSnapshot? {
         let selectedElements =
             elementsAttribute(
@@ -416,7 +420,15 @@ public final class AXCandidateReader {
                 list,
                 kAXVisibleChildrenAttribute
             ) ?? []
-        let visibleItems = visibleElements.compactMap(candidateItem)
+        let visibleItems = visibleElements.compactMap { element in
+            if CFEqual(element, selectedElement) {
+                return selected
+            }
+            if includeVisibleTexts {
+                return candidateItem(of: element)
+            }
+            return candidateFrameItem(of: element)
+        }
         guard
             let row = AXCandidateVisibleRowSelector.select(
                 selected: selected,
@@ -451,6 +463,18 @@ public final class AXCandidateReader {
             return nil
         }
         return AXCandidateItem(text: text, frame: frame(of: element))
+    }
+
+    private static func candidateFrameItem(
+        of element: AXUIElement
+    ) -> AXCandidateItem? {
+        guard let frame = frame(of: element),
+            frame.width > 0,
+            frame.height > 0
+        else {
+            return nil
+        }
+        return AXCandidateItem(text: "", frame: frame)
     }
 
     private static func candidateText(

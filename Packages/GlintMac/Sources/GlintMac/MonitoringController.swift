@@ -152,18 +152,21 @@ extension FocusMonitor: FocusReading {}
 protocol AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t?,
-        includeVisibleCandidates: Bool
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
     ) -> AXCandidateSnapshot?
 }
 
 extension AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t? = nil,
-        includeVisibleCandidates: Bool = false
+        includeVisibleCandidates: Bool = false,
+        includeVisibleTexts: Bool = true
     ) -> AXCandidateSnapshot? {
         snapshot(
             processIdentifier: processIdentifier,
-            includeVisibleCandidates: includeVisibleCandidates
+            includeVisibleCandidates: includeVisibleCandidates,
+            includeVisibleTexts: includeVisibleTexts
         )
     }
 }
@@ -376,7 +379,8 @@ public actor MonitoringController {
         guard
             let axCandidate = axCandidates.snapshot(
                 processIdentifier: snapshot.processIdentifier,
-                includeVisibleCandidates: true
+                includeVisibleCandidates: true,
+                includeVisibleTexts: translationScope == .row
             )
         else {
             return observeCandidateMiss(
