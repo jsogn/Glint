@@ -74,8 +74,13 @@ hdiutil create \
   -format UDZO \
   "$dmg_path"
 hdiutil verify -quiet "$dmg_path"
-shasum -a 256 "$dmg_path" > "$dmg_path.sha256"
+(
+  cd "$package_root"
+  dmg_name="$(basename "$dmg_path")"
+  shasum -a 256 "$dmg_name" > "$dmg_name.sha256"
+  shasum -a 256 -c "$dmg_name.sha256"
+)
 
 echo "dmg=$dmg_path"
-echo "sha256=$(cut -d ' ' -f 1 "$dmg_path.sha256")"
+echo "sha256=$(cut -d ' ' -f 1 "$package_root/$(basename "$dmg_path").sha256")"
 echo "signature=ad-hoc (not notarized)"
