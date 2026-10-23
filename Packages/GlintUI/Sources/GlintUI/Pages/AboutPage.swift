@@ -8,7 +8,7 @@ struct AboutPage: View {
     private var version: String {
         Bundle.main.object(
             forInfoDictionaryKey: "CFBundleShortVersionString"
-        ) as? String ?? "0.1.0"
+        ) as? String ?? "未知"
     }
 
     var body: some View {
