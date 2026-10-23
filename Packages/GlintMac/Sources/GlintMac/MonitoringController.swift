@@ -469,7 +469,7 @@ public actor MonitoringController {
             dwellDetectedAt = .now
             dwellConfirmedAtNanoseconds = observationTimestamp
             if let candidateChangedAtNanoseconds {
-                monitoringLogger.notice(
+                monitoringLogger.debug(
                     "perf latency phase=dwell revision=\(revision, privacy: .public) scope=\(self.translationScope.rawValue, privacy: .public) mode=\(self.mode.rawValue, privacy: .public) row_count=\(candidates.count, privacy: .public) dwell_ms=\(Self.elapsedMilliseconds(from: candidateChangedAtNanoseconds, to: observationTimestamp), privacy: .public)"
                 )
             }
@@ -657,7 +657,7 @@ public actor MonitoringController {
                 from: dwellConfirmedAtNanoseconds,
                 to: now
             )
-            monitoringLogger.notice(
+            monitoringLogger.debug(
                 "perf latency phase=selected_ready revision=\(revision, privacy: .public) scope=\(self.translationScope.rawValue, privacy: .public) mode=\(self.mode.rawValue, privacy: .public) row_count=\(translations.count, privacy: .public) dwell_ms=\(Self.dwellLatencyMilliseconds(from: self.candidateChangedAtNanoseconds, to: self.dwellConfirmedAtNanoseconds), privacy: .public) route_ms=\(Self.elapsedMilliseconds(translationStartedAt.duration(to: .now)), privacy: .public) dwell_to_selected_ms=\(dwell, privacy: .public) total_to_selected_ms=\(total, privacy: .public) attempts=\(self.translationAttempts, privacy: .public) cancelled=\(self.cancelledTranslationAttempts, privacy: .public)"
             )
         }
@@ -701,7 +701,7 @@ public actor MonitoringController {
             let resultCount = translations.filter {
                 $0.translation != nil
             }.count
-            monitoringLogger.notice(
+            monitoringLogger.debug(
                 "perf latency phase=\(phase, privacy: .public) revision=\(revision, privacy: .public) scope=\(self.translationScope.rawValue, privacy: .public) mode=\(self.mode.rawValue, privacy: .public) row_count=\(translations.count, privacy: .public) result_count=\(resultCount, privacy: .public) dwell_ms=\(Self.dwellLatencyMilliseconds(from: self.candidateChangedAtNanoseconds, to: self.dwellConfirmedAtNanoseconds), privacy: .public) route_ms=\(Self.elapsedMilliseconds(translationStartedAt.duration(to: finishedAt)), privacy: .public) dwell_to_ready_ms=\(dwell, privacy: .public) total_to_ready_ms=\(total, privacy: .public) attempts=\(self.translationAttempts, privacy: .public) cancelled=\(self.cancelledTranslationAttempts, privacy: .public)"
             )
         }

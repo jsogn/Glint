@@ -1,15 +1,28 @@
 import AppKit
 
-if CommandLine.arguments.contains("--ax-candidate-probe") {
-    AXCandidateProbe.run()
-} else if CommandLine.arguments.contains("--diagnose") {
-    Diagnostics.run()
-} else if CommandLine.arguments.contains("--selfcheck") {
-    SelfCheck.run()
-} else {
+@MainActor
+func runApplication() {
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate
     app.setActivationPolicy(.accessory)
     app.run()
 }
+
+#if DEBUG
+    if CommandLine.arguments.contains("--ax-candidate-probe") {
+        AXCandidateProbe.run()
+    } else if CommandLine.arguments.contains("--selfcheck") {
+        SelfCheck.run()
+    } else if CommandLine.arguments.contains("--diagnose") {
+        Diagnostics.run()
+    } else {
+        runApplication()
+    }
+#else
+    if CommandLine.arguments.contains("--diagnose") {
+        Diagnostics.run()
+    } else {
+        runApplication()
+    }
+#endif

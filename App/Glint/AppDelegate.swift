@@ -326,7 +326,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch event {
         case .status(let status):
             windowModel.statusText = isActionableStatus(status) ? status : ""
-            appLogger.info("status=\(status, privacy: .public)")
         case .candidateChanged:
             hudEventCoordinator.candidateChanged()
         case .selectionChanged(let index, let revision):

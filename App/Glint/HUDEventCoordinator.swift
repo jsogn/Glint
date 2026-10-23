@@ -81,7 +81,7 @@ final class HUDEventCoordinator {
             candidateChangedAt.map {
                 Self.elapsedMilliseconds($0.duration(to: .now))
             } ?? 0
-        hudLatencyLogger.notice(
+        hudLatencyLogger.debug(
             "perf latency phase=\(phase, privacy: .public) revision=\(revision, privacy: .public) visible_items=\(items.count, privacy: .public) event_to_visible_ms=\(eventToVisible, privacy: .public)"
         )
     }
