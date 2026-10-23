@@ -1,8 +1,8 @@
 ![Glint：输入中文拼音时，在候选栏旁查看对应英文翻译](docs/assets/glint-hero.png)
 
 <p align="center">
-  <a href="https://github.com/jsogn/Glint/releases">
-    <img alt="下载 Glint Beta" src="https://img.shields.io/github/v/release/jsogn/Glint?include_prereleases&amp;label=Download%20beta&amp;style=flat-square&amp;color=2F7DFF">
+  <a href="https://github.com/jsogn/Glint/releases/latest">
+    <img alt="下载 Glint 最新发布" src="https://img.shields.io/github/v/release/jsogn/Glint?label=Download&amp;style=flat-square&amp;color=2F7DFF">
   </a>
   <img alt="macOS 26+" src="https://img.shields.io/badge/macOS-26%2B-24292F?logo=apple&logoColor=white&style=flat-square">
   <img alt="Apple Silicon" src="https://img.shields.io/badge/Apple_Silicon-arm64-57606A?style=flat-square">
@@ -44,7 +44,11 @@ Glint 支持单词、短语和短句。单词会尽量给出简洁、常用的�
 
 ## 安装说明
 
-当前测试版要求 **macOS 26 或更高版本**，仅支持 **Apple Silicon Mac**。
+当前发布包要求 **macOS 26 或更高版本**，仅支持 **Apple Silicon Mac**。
+
+发布包目前使用 ad-hoc 签名，没有经过 Apple 公证，只适合开发和已知测试者。
+GitHub 的 Latest 标记表示这是项目最新构建，不代表已经面向普通用户或通过
+Gatekeeper 验证。
 
 请先将 Glint 移入“应用程序”文件夹，再从该位置启动。如果 macOS 首次打开时
 无法验证应用，请在“系统设置 → 隐私与安全性”中确认一次。
@@ -61,3 +65,8 @@ cd Glint
 
 首次构建会准备并校验内置的轻量翻译模型。修改代码前，建议先阅读
 [架构设计](docs/ARCHITECTURE.md)。
+
+## 许可证
+
+Glint 源代码采用 [MIT License](LICENSE)。内置词典、翻译模型和第三方运行库
+继续遵循各自随附的许可证与署名要求。

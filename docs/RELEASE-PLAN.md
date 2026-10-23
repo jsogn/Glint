@@ -76,10 +76,13 @@ Team ID，运行时库校验会拒绝嵌套动态库。它只适用于已知测�
 - `.github/workflows/ci.yml`：在 push 到 `main` 和 Pull Request 时执行 Swift
   格式检查、完整 Swift 测试和 Python 工具测试；
 - `.github/workflows/release.yml`：推送 `v*` 标签时重复质量门禁，构建
-  ad-hoc DMG 和 SHA-256 文件，并创建 GitHub Pre-release。
+  ad-hoc DMG 和 SHA-256 文件，并创建 GitHub Latest 发布。
+
+当前 GitHub Latest 是面向开发和已知测试者的发布包，不等于正式公开版；
+ad-hoc 包仍不能通过 Gatekeeper。Latest 只表示这是仓库最新的非草稿版本。
 
 发布版本必须与 `project.yml` 中的 `MARKETING_VERSION` 一致。例如版本为
-`0.1.0` 时推送 `v0.1.0`。CI 运行器当前使用 `macos-26`。
+`0.2.0` 时推送 `v0.2.0`。CI 运行器当前使用 `macos-26`。
 
 ### 开发签名与 TCC
 
@@ -132,9 +135,9 @@ TCC 流程稳定后，再接入 Sparkle 2：
 - 每个版本递增 `CFBundleVersion`；
 - 更新不得替换 Bundle ID 或签名 Team。
 
-## 6. Release Gate
+## 6. 正式公开版 Release Gate
 
-发布前至少满足：
+面向普通用户公开签名、公证版本前至少满足：
 
 - 完整 `./scripts/test.sh` 通过；
 - `run.sh` 连续三轮 readiness 握手通过；

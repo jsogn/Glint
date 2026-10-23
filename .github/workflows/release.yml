@@ -43,7 +43,7 @@ jobs:
       - name: Run Python tool tests
         run: zsh ./scripts/test_python_tools.sh
 
-      - name: Build ad-hoc test DMG
+      - name: Build ad-hoc developer DMG
         run: ./scripts/package_test_dmg.sh
 
       - name: Validate tag and package version
@@ -60,7 +60,7 @@ jobs:
             exit 1
           fi
 
-      - name: Publish GitHub pre-release
+      - name: Publish GitHub latest release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -70,6 +70,6 @@ jobs:
             "$dmg_path" \
             "$checksum_path" \
             --verify-tag \
+            --latest \
             --title "Glint ${GITHUB_REF_NAME#v}" \
-            --notes-file Resources/Distribution/GITHUB-RELEASE-NOTES.md \
-            --prerelease
+            --notes-file Resources/Distribution/GITHUB-RELEASE-NOTES.md

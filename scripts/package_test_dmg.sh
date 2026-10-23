@@ -63,6 +63,7 @@ ditto "$app_bundle" "$stage_dir/Glint.app"
 ln -s /Applications "$stage_dir/Applications"
 cp Resources/Distribution/TEST-INSTALL.txt "$stage_dir/安装说明.txt"
 cp Resources/Distribution/Diagnose.command "$stage_dir/诊断.command"
+cp LICENSE "$stage_dir/LICENSE.txt"
 chmod +x "$stage_dir/诊断.command"
 
 dmg_path="$package_root/Glint-$version-macOS26-arm64.dmg"
