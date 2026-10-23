@@ -69,30 +69,37 @@ public actor LocalModelImportService {
         guard relativePaths.contains("config.json") else {
             throw LocalModelImportError.missingConfig
         }
-        guard entries.contains(where: {
-            $0.relativePath.hasSuffix(".safetensors")
-        }) else {
+        guard
+            entries.contains(where: {
+                $0.relativePath.hasSuffix(".safetensors")
+            })
+        else {
             throw LocalModelImportError.missingWeights
         }
-        guard entries.contains(where: {
-            let name = URL(fileURLWithPath: $0.relativePath).lastPathComponent
-            return name == "tokenizer.json"
-                || name == "tokenizer.model"
-                || name.hasSuffix(".spm")
-        }) else {
+        guard
+            entries.contains(where: {
+                let name = URL(fileURLWithPath: $0.relativePath).lastPathComponent
+                return name == "tokenizer.json"
+                    || name == "tokenizer.model"
+                    || name.hasSuffix(".spm")
+            })
+        else {
             throw LocalModelImportError.missingTokenizer
         }
 
         let configData = try Data(
             contentsOf: directory.appendingPathComponent("config.json")
         )
-        guard let config = try JSONSerialization.jsonObject(
-            with: configData
-        ) as? [String: Any] else {
+        guard
+            let config = try JSONSerialization.jsonObject(
+                with: configData
+            ) as? [String: Any]
+        else {
             throw LocalModelImportError.invalidConfig
         }
         let architectures = config["architectures"] as? [String] ?? []
-        let modelType = (config["model_type"] as? String)
+        let modelType =
+            (config["model_type"] as? String)
             ?? architectures.first
             ?? "unknown"
 
@@ -100,10 +107,12 @@ public actor LocalModelImportService {
             $0.relativePath.hasSuffix(".safetensors.index.json")
         }) {
             let indexData = try Data(contentsOf: indexEntry.source)
-            guard let index = try JSONSerialization.jsonObject(
-                with: indexData
-            ) as? [String: Any],
-                  let weightMap = index["weight_map"] as? [String: String] else {
+            guard
+                let index = try JSONSerialization.jsonObject(
+                    with: indexData
+                ) as? [String: Any],
+                let weightMap = index["weight_map"] as? [String: String]
+            else {
                 throw LocalModelImportError.invalidConfig
             }
             for shard in Set(weightMap.values) where !relativePaths.contains(shard) {
@@ -121,10 +130,11 @@ public actor LocalModelImportService {
         )
         var hasChatTemplate = relativePaths.contains("chat_template.jinja")
         if let data = try? Data(contentsOf: tokenizerConfig),
-           let tokenizer = try? JSONSerialization.jsonObject(
-               with: data
-           ) as? [String: Any],
-           let template = tokenizer["chat_template"] as? String {
+            let tokenizer = try? JSONSerialization.jsonObject(
+                with: data
+            ) as? [String: Any],
+            let template = tokenizer["chat_template"] as? String
+        {
             hasChatTemplate = hasChatTemplate || !template.isEmpty
         }
         guard hasChatTemplate else {
@@ -203,21 +213,25 @@ public actor LocalModelImportService {
     private func modelEntries(in directory: URL) throws -> [FileEntry] {
         let root = directory.resolvingSymlinksInPath()
         var isDirectory: ObjCBool = false
-        guard fileManager.fileExists(
-            atPath: root.path,
-            isDirectory: &isDirectory
-        ), isDirectory.boolValue else {
+        guard
+            fileManager.fileExists(
+                atPath: root.path,
+                isDirectory: &isDirectory
+            ), isDirectory.boolValue
+        else {
             throw LocalModelImportError.notADirectory
         }
-        guard let enumerator = fileManager.enumerator(
-            at: root,
-            includingPropertiesForKeys: [
-                .isRegularFileKey,
-                .isSymbolicLinkKey,
-                .fileSizeKey,
-            ],
-            options: [.skipsHiddenFiles]
-        ) else {
+        guard
+            let enumerator = fileManager.enumerator(
+                at: root,
+                includingPropertiesForKeys: [
+                    .isRegularFileKey,
+                    .isSymbolicLinkKey,
+                    .fileSizeKey,
+                ],
+                options: [.skipsHiddenFiles]
+            )
+        else {
             return []
         }
 
@@ -346,7 +360,8 @@ public actor LocalModelImportService {
             try? output.close()
         }
         while let data = try input.read(upToCount: 8 * 1_048_576),
-              !data.isEmpty {
+            !data.isEmpty
+        {
             try Task.checkCancellation()
             try output.write(contentsOf: data)
         }

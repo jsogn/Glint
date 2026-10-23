@@ -584,10 +584,11 @@ private struct PluginsPage: View {
 
     @ViewBuilder
     private func pluginPanel(kind: PluginKind) -> some View {
-        let installed: [PluginManifest] = switch kind {
-        case .dictionary: model.dictionaryPlugins
-        case .translation: model.translationPlugins
-        }
+        let installed: [PluginManifest] =
+            switch kind {
+            case .dictionary: model.dictionaryPlugins
+            case .translation: model.translationPlugins
+            }
         let available = model.availablePlugins.filter {
             guard $0.type == kind else { return false }
             guard model.installedVersion(for: $0.id) != nil else {
@@ -624,8 +625,10 @@ private struct PluginsPage: View {
                                 .foregroundStyle(.secondary)
                             } else {
                                 Button("导入模型…") {
-                                    if let directory = LocalModelDirectoryPicker
-                                        .chooseModelDirectory() {
+                                    if let directory =
+                                        LocalModelDirectoryPicker
+                                        .chooseModelDirectory()
+                                    {
                                         model.importLocalTranslationModel(
                                             from: directory
                                         )
@@ -725,7 +728,8 @@ private struct PluginsPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if model.translationModelStatusModelID == plugin.id,
-                   let status = model.translationModelStatusText {
+                    let status = model.translationModelStatusText
+                {
                     Text(status)
                         .font(.caption)
                         .foregroundStyle(
@@ -1015,9 +1019,9 @@ private struct PermissionStatusRow: View {
                     ? "checkmark.circle.fill"
                     : "exclamationmark.circle.fill"
             )
-                .foregroundStyle(granted ? Color.secondary : Color.orange)
-                .labelStyle(.titleAndIcon)
-                .font(.callout)
+            .foregroundStyle(granted ? Color.secondary : Color.orange)
+            .labelStyle(.titleAndIcon)
+            .font(.callout)
         }
         .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
@@ -1112,7 +1116,7 @@ private struct HUDPreview: View {
         switch preferences.translationScope {
         case .selected:
             return [
-                HUDItem(id: 0, text: "Hello · hi · ciao"),
+                HUDItem(id: 0, text: "Hello · hi · ciao")
             ]
         case .row:
             return [

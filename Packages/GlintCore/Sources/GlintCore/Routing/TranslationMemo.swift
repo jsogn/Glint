@@ -59,9 +59,10 @@ private struct LRUCache<Key: Hashable, Value> {
         cost: Int
     ) -> Bool {
         guard capacity > 0,
-              maximumCost > 0,
-              cost > 0,
-              cost <= maximumCost else {
+            maximumCost > 0,
+            cost > 0,
+            cost <= maximumCost
+        else {
             return false
         }
         if nodes[key] != nil {
@@ -121,7 +122,8 @@ private struct LRUCache<Key: Hashable, Value> {
 
     private mutating func moveToNewest(_ key: Key) {
         guard newest != key,
-              let node = nodes[key] else {
+            let node = nodes[key]
+        else {
             return
         }
         if let previous = node.previous {
@@ -232,10 +234,11 @@ public actor TranslationMemo {
 
         let result = try await waitForTask(task, key: key)
         if let result,
-           !result.displayText.trimmingCharacters(
+            !result.displayText.trimmingCharacters(
                 in: .whitespacesAndNewlines
-           ).isEmpty,
-           cache.value(for: key) == nil {
+            ).isEmpty,
+            cache.value(for: key) == nil
+        {
             store(result, for: key)
         }
         return result
@@ -333,7 +336,8 @@ public actor TranslationMemo {
         for key: TranslationMemoKey,
         result: TranslationResult
     ) -> Int {
-        let keyBytes = key.text.utf8.count
+        let keyBytes =
+            key.text.utf8.count
             + key.configuration.utf8.count
             + 96
         let optionBytes = result.options.reduce(0) { partial, option in

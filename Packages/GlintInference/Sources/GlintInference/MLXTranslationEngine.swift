@@ -352,15 +352,18 @@ public actor MLXTranslationEngine: TranslationEngine {
     static func containsModelFiles(_ directory: URL) -> Bool {
         let directory = directory.resolvingSymlinksInPath()
         let fileManager = FileManager.default
-        guard let files = try? fileManager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles]
-        ) else {
+        guard
+            let files = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            )
+        else {
             return false
         }
         let names = Set(files.map(\.lastPathComponent))
-        let hasTokenizer = names.contains("tokenizer.json")
+        let hasTokenizer =
+            names.contains("tokenizer.json")
             || names.contains("tokenizer.model")
             || names.contains { $0.hasSuffix(".spm") }
         let hasWeights = names.contains { $0.hasSuffix(".safetensors") }
@@ -379,10 +382,13 @@ public actor MLXTranslationEngine: TranslationEngine {
         guard !value.contains("<think>") else {
             return nil
         }
-        guard let firstLine = value
-            .split(whereSeparator: \.isNewline)
-            .map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
-            .first(where: { !$0.isEmpty }) else {
+        guard
+            let firstLine =
+                value
+                .split(whereSeparator: \.isNewline)
+                .map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
+                .first(where: { !$0.isEmpty })
+        else {
             return nil
         }
 
@@ -425,16 +431,18 @@ public actor MLXTranslationEngine: TranslationEngine {
             throw MLXTranslationError.invalidOutput
         }
 
-        let lines = value
+        let lines =
+            value
             .split(whereSeparator: \.isNewline)
             .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         var numbered: [Int: String] = [:]
         for line in lines {
             guard let (index, translation) = numberedLine(line),
-                  (1...expectedCount).contains(index),
-                  numbered[index] == nil,
-                  let cleaned = clean(translation) else {
+                (1...expectedCount).contains(index),
+                numbered[index] == nil,
+                let cleaned = clean(translation)
+            else {
                 continue
             }
             numbered[index] = cleaned
@@ -462,16 +470,19 @@ public actor MLXTranslationEngine: TranslationEngine {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             break
         }
-        guard let separatorIndex = line.firstIndex(where: {
-            [".", ")", "、", ":", "：", "-", "—"].contains($0)
-        }) else {
+        guard
+            let separatorIndex = line.firstIndex(where: {
+                [".", ")", "、", ":", "：", "-", "—"].contains($0)
+            })
+        else {
             return nil
         }
         let prefix = line[..<separatorIndex]
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prefix.isEmpty,
-              prefix.allSatisfy(\.isNumber),
-              let index = Int(prefix) else {
+            prefix.allSatisfy(\.isNumber),
+            let index = Int(prefix)
+        else {
             return nil
         }
         let content = line[line.index(after: separatorIndex)...]

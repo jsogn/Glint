@@ -17,9 +17,10 @@ final class AppEnvironment {
             if let manifest = BundledPluginResources.manifest(
                 for: modelID
             ),
-               let pluginDirectory = BundledPluginResources.directory(
-                   for: modelID
-               ) {
+                let pluginDirectory = BundledPluginResources.directory(
+                    for: modelID
+                )
+            {
                 let directory = pluginDirectory.appendingPathComponent(
                     "model",
                     isDirectory: true

@@ -47,6 +47,10 @@ cd Glint
 产物位于 `build-release/`，使用 ad-hoc 签名，因此仍需在目标 Mac 上通过
 “隐私与安全性”手动允许首次打开。
 
+预构建测试包会发布在
+[GitHub Releases](https://github.com/jsogn/Glint/releases)。当前测试包要求
+macOS 26 和 Apple Silicon，并且尚未签名公证。
+
 架构、发布和验证文档统一从 [`docs/`](docs/README.md) 进入。
 
 ## 开始使用

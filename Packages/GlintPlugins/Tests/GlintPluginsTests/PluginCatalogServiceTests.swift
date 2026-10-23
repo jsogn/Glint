@@ -113,14 +113,15 @@ final class PluginCatalogServiceTests: XCTestCase {
         StubURLProtocol.handler = { request in
             guard let url = request.url else { return nil }
             if request.value(forHTTPHeaderField: "If-None-Match")
-                == "\"catalog-v1\"" {
+                == "\"catalog-v1\""
+            {
                 return (
                     HTTPURLResponse(
                         url: url,
                         statusCode: 304,
                         httpVersion: nil,
                         headerFields: [
-                            "ETag": "\"catalog-v1\"",
+                            "ETag": "\"catalog-v1\""
                         ]
                     )!,
                     Data()
@@ -315,8 +316,7 @@ final class PluginCatalogServiceTests: XCTestCase {
 }
 
 private final class StubURLProtocol: URLProtocol {
-    nonisolated(unsafe) static var handler:
-        ((URLRequest) -> (HTTPURLResponse, Data)?)?
+    nonisolated(unsafe) static var handler: ((URLRequest) -> (HTTPURLResponse, Data)?)?
 
     override class func canInit(with request: URLRequest) -> Bool {
         true
@@ -328,7 +328,8 @@ private final class StubURLProtocol: URLProtocol {
 
     override func startLoading() {
         guard let handler = Self.handler,
-              let (response, data) = handler(request) else {
+            let (response, data) = handler(request)
+        else {
             client?.urlProtocol(
                 self,
                 didFailWithError: URLError(.cannotConnectToHost)

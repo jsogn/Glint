@@ -24,9 +24,10 @@ struct DictionaryChoices {
     static func main() async throws {
         let arguments = CommandLine.arguments
         guard let casesIndex = arguments.firstIndex(of: "--cases"),
-              arguments.indices.contains(casesIndex + 1),
-              let outputIndex = arguments.firstIndex(of: "--output"),
-              arguments.indices.contains(outputIndex + 1) else {
+            arguments.indices.contains(casesIndex + 1),
+            let outputIndex = arguments.firstIndex(of: "--output"),
+            arguments.indices.contains(outputIndex + 1)
+        else {
             fputs(
                 "usage: DictionaryChoices --cases <json> --output <json>\n",
                 stderr

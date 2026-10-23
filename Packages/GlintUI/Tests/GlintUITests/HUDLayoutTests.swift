@@ -209,12 +209,12 @@ final class HUDLayoutTests: XCTestCase {
         let nineItems = HUDItemRow.minimumPanelWidth(for: 9)
         let sixMinimum =
             metrics.multiItemHorizontalPadding * 2
-                + 6 * metrics.minimumItemWidth
-                + 5 * metrics.itemSpacing
+            + 6 * metrics.minimumItemWidth
+            + 5 * metrics.itemSpacing
         let nineMinimum =
             metrics.multiItemHorizontalPadding * 2
-                + 9 * metrics.minimumItemWidth
-                + 8 * metrics.itemSpacing
+            + 9 * metrics.minimumItemWidth
+            + 8 * metrics.itemSpacing
 
         XCTAssertGreaterThanOrEqual(
             sixItems,
@@ -252,7 +252,7 @@ final class HUDLayoutTests: XCTestCase {
     @MainActor
     func testAppearanceUpdatesHUDHeightAndTextMeasurementWidth() {
         let items = [
-            HUDItem(id: 0, text: "a complete sentence for measurement"),
+            HUDItem(id: 0, text: "a complete sentence for measurement")
         ]
         let standard = HUDAppearance()
         let enlarged = HUDAppearance(
@@ -339,11 +339,12 @@ final class HUDLayoutTests: XCTestCase {
                 ).width
             )
             if let number = item.number {
-                width += ceil(
-                    ("\(number)" as NSString).size(
-                        withAttributes: [.font: numberFont]
-                    ).width
-                ) + metrics.numberSpacing
+                width +=
+                    ceil(
+                        ("\(number)" as NSString).size(
+                            withAttributes: [.font: numberFont]
+                        ).width
+                    ) + metrics.numberSpacing
             }
             width += metrics.itemHorizontalPadding * 2
             return max(width, metrics.minimumItemWidth)
@@ -352,7 +353,7 @@ final class HUDLayoutTests: XCTestCase {
             metrics.multiItemHorizontalPadding * 2
                 + expectedItemWidths.reduce(0, +)
                 + CGFloat(items.count - 1)
-                    * metrics.itemSpacing
+                * metrics.itemSpacing
                 + metrics.measurementSafetyPadding
         )
 
@@ -458,9 +459,10 @@ final class HUDLayoutTests: XCTestCase {
             maximumWidth: 600,
             selectedOnly: true
         )
-        let widestSingleItem = items.map {
-            HUDItemRow.naturalPanelWidth(for: [$0])
-        }.max() ?? 120
+        let widestSingleItem =
+            items.map {
+                HUDItemRow.naturalPanelWidth(for: [$0])
+            }.max() ?? 120
 
         XCTAssertGreaterThanOrEqual(size.width, widestSingleItem)
         XCTAssertLessThanOrEqual(size.width, 600)

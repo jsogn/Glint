@@ -29,8 +29,8 @@ struct HUDHorizontalAnchor: Equatable {
     func resolvedHUDOriginX(candidateOriginX: CGFloat) -> CGFloat {
         let acceptedCandidateOriginX =
             shouldFollow(candidateOriginX: candidateOriginX)
-                ? candidateOriginX
-                : self.candidateOriginX
+            ? candidateOriginX
+            : self.candidateOriginX
         return acceptedCandidateOriginX + offsetX
     }
 
@@ -138,7 +138,8 @@ public final class HUDController {
         if reduceMotion {
             panel.alphaValue = 1
         } else if !entryAnimationIsActive,
-                  panel.alphaValue < 0.999 {
+            panel.alphaValue < 0.999
+        {
             animate(
                 duration: Timing.enter,
                 alpha: 1,
@@ -146,7 +147,8 @@ public final class HUDController {
             )
         }
         guard stalePresentationTask == nil,
-              contentModel.textOpacity >= 0.999 else {
+            contentModel.textOpacity >= 0.999
+        else {
             return
         }
         beginStalePresentation()
@@ -253,10 +255,12 @@ public final class HUDController {
     private func resolveLayout(
         for request: PresentationRequest
     ) -> PresentationLayout? {
-        guard let mainScreen = NSScreen.screens.first(where: {
-            $0.frame.origin == .zero
-        })
-            ?? NSScreen.main else {
+        guard
+            let mainScreen = NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            })
+                ?? NSScreen.main
+        else {
             return nil
         }
         let appKitRect = CGRect(
@@ -265,9 +269,10 @@ public final class HUDController {
             width: request.screenRect.width,
             height: request.screenRect.height
         )
-        let targetScreen = NSScreen.screens.first {
-            $0.frame.contains(NSPoint(x: appKitRect.midX, y: appKitRect.midY))
-        } ?? mainScreen
+        let targetScreen =
+            NSScreen.screens.first {
+                $0.frame.contains(NSPoint(x: appKitRect.midX, y: appKitRect.midY))
+            } ?? mainScreen
         let candidateOriginX = appKitRect.minX
         // Follow meaningful candidate-row movement while ignoring IME jitter.
         let fixedOriginX = horizontalAnchor.flatMap { anchor -> CGFloat? in
@@ -279,8 +284,8 @@ public final class HUDController {
             )
             let availableWidth =
                 targetScreen.visibleFrame.maxX
-                    - HUDLayout.screenEdgeInset
-                    - hudOriginX
+                - HUDLayout.screenEdgeInset
+                - hudOriginX
             return availableWidth >= 120 ? hudOriginX : nil
         }
         let maximumWidth = Self.maximumPanelWidth(
@@ -301,8 +306,8 @@ public final class HUDController {
         let resolvedPanelSize = proposedPanelSize
         let preferredSide =
             horizontalAnchor?.screenFrame == targetScreen.frame
-                ? preferredPlacesBelow
-                : nil
+            ? preferredPlacesBelow
+            : nil
         let layout = HUDLayout.placement(
             near: appKitRect,
             panelSize: resolvedPanelSize,
@@ -335,7 +340,8 @@ public final class HUDController {
             animatesText: false
         )
         let entryOffset: CGFloat = layout.placesBelow ? 2 : -2
-        let entryFrame = reduceMotion
+        let entryFrame =
+            reduceMotion
             ? layout.targetFrame
             : layout.targetFrame.offsetBy(dx: 0, dy: entryOffset)
         panel.setFrame(entryFrame, display: false)
@@ -368,7 +374,8 @@ public final class HUDController {
 
     private func finishEntryAnimation(generation: Int) {
         guard generation == entryAnimationGeneration,
-              entryAnimationIsActive else {
+            entryAnimationIsActive
+        else {
             return
         }
         entryAnimationIsActive = false
@@ -387,7 +394,8 @@ public final class HUDController {
         if reduceMotion {
             panel.alphaValue = 1
         } else if !entryAnimationIsActive,
-                  panel.alphaValue < 0.999 {
+            panel.alphaValue < 0.999
+        {
             animate(
                 duration: Timing.enter,
                 alpha: 1,
@@ -396,7 +404,8 @@ public final class HUDController {
         } else {
             panel.alphaValue = 1
         }
-        let animatesText = update == .transition
+        let animatesText =
+            update == .transition
             && contentModel.textOpacity < 0.999
         applyContent(
             layout.request,
@@ -412,8 +421,9 @@ public final class HUDController {
         }
         let candidateOriginX = layout.request.screenRect.minX
         if layout.usesHorizontalAnchor,
-           let anchor = horizontalAnchor,
-           anchor.screenFrame == layout.screenFrame {
+            let anchor = horizontalAnchor,
+            anchor.screenFrame == layout.screenFrame
+        {
             horizontalAnchor = anchor.following(
                 candidateOriginX: candidateOriginX
             )
@@ -494,8 +504,9 @@ public final class HUDController {
                     nanoseconds: Timing.staleDimNanoseconds
                 )
                 guard let self,
-                      self.stalePresentationGeneration == generation,
-                      self.panel.isVisible else {
+                    self.stalePresentationGeneration == generation,
+                    self.panel.isVisible
+                else {
                     return
                 }
                 self.animateTextOpacity(Timing.staleOpacity)
@@ -572,8 +583,9 @@ public final class HUDController {
     ) -> HUDContentUpdate {
         guard isVisible else { return .entry }
         guard let displayedRevision,
-              let incomingRevision,
-              displayedRevision == incomingRevision else {
+            let incomingRevision,
+            displayedRevision == incomingRevision
+        else {
             return .transition
         }
         return .patch
@@ -602,12 +614,13 @@ public final class HUDController {
         let widthLimit = max(120, maximumWidth)
         let width: CGFloat
         if selectedOnly {
-            width = items.map {
-                HUDItemRow.naturalPanelWidth(
-                    for: [$0],
-                    appearance: appearance
-                )
-            }.max() ?? 120
+            width =
+                items.map {
+                    HUDItemRow.naturalPanelWidth(
+                        for: [$0],
+                        appearance: appearance
+                    )
+                }.max() ?? 120
         } else {
             width = HUDItemRow.naturalPanelWidth(
                 for: items,

@@ -5,7 +5,7 @@ let package = Package(
     name: "GlintBenchmark",
     platforms: [.macOS("26.0")],
     products: [
-        .executable(name: "GlintBenchmark", targets: ["GlintBenchmark"]),
+        .executable(name: "GlintBenchmark", targets: ["GlintBenchmark"])
     ],
     dependencies: [
         .package(path: "../GlintCore"),
@@ -18,7 +18,7 @@ let package = Package(
                 .product(name: "GlintCore", package: "GlintCore"),
                 .product(name: "GlintDictionary", package: "GlintDictionary"),
             ]
-        ),
+        )
     ],
     swiftLanguageModes: [.v6]
 )

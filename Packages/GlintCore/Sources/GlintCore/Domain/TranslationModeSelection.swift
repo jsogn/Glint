@@ -5,7 +5,8 @@ public enum TranslationModeSelection {
 
     public static func selected(in defaults: UserDefaults = .standard) -> TranslationMode {
         guard let stored = defaults.string(forKey: defaultsKey),
-              let mode = TranslationMode(rawValue: stored) else {
+            let mode = TranslationMode(rawValue: stored)
+        else {
             return .dictionaryFirst
         }
         return mode

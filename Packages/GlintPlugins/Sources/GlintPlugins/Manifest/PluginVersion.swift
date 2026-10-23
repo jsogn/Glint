@@ -50,7 +50,8 @@ public enum PluginVersion {
         let prerelease: [String]?
 
         init(_ value: String) {
-            let withoutBuild = value
+            let withoutBuild =
+                value
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
                 .split(
@@ -68,7 +69,8 @@ public enum PluginVersion {
                 omittingEmptySubsequences: false
             )
             let parsedCore = coreParts.compactMap { Int($0) }
-            self.core = parsedCore.count == coreParts.count && !parsedCore.isEmpty
+            self.core =
+                parsedCore.count == coreParts.count && !parsedCore.isEmpty
                 ? parsedCore
                 : nil
             if parts.count == 2, !parts[1].isEmpty {

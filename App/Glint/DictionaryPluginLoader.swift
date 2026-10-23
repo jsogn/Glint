@@ -41,10 +41,12 @@ enum DictionaryPluginLoader {
         if let baseDirectory {
             pluginsDirectory = baseDirectory
         } else {
-            guard let support = fileManager.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first else {
+            guard
+                let support = fileManager.urls(
+                    for: .applicationSupportDirectory,
+                    in: .userDomainMask
+                ).first
+            else {
                 return bundledRoutes
             }
             pluginsDirectory = support.appendingPathComponent(
@@ -53,11 +55,13 @@ enum DictionaryPluginLoader {
             )
         }
 
-        guard let directories = try? fileManager.contentsOfDirectory(
-            at: pluginsDirectory,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) else {
+        guard
+            let directories = try? fileManager.contentsOfDirectory(
+                at: pluginsDirectory,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            )
+        else {
             return bundledRoutes
         }
 
@@ -77,14 +81,16 @@ enum DictionaryPluginLoader {
         directories
             .enumerated()
             .compactMap { index, directory in
-                guard let manifest = try? PluginManifest.load(
-                    from: directory
-                ),
-                manifest.type == .dictionary,
-                let engine = engine(
-                    for: manifest,
-                    in: directory
-                ) else {
+                guard
+                    let manifest = try? PluginManifest.load(
+                        from: directory
+                    ),
+                    manifest.type == .dictionary,
+                    let engine = engine(
+                        for: manifest,
+                        in: directory
+                    )
+                else {
                     return nil
                 }
                 return DictionaryRoute(

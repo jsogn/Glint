@@ -103,7 +103,7 @@ final class DictionaryRouterTests: XCTestCase {
                     id: "example",
                     priority: 0,
                     engine: OrderedDictionary(value: "should not appear")
-                ),
+                )
             ],
             blocked: ["打"]
         )
@@ -118,7 +118,7 @@ final class DictionaryRouterTests: XCTestCase {
                 id: "example",
                 priority: 0,
                 engine: OrderedDictionary(value: "result")
-            ),
+            )
         ])
 
         let legitimate = await router.lookup(

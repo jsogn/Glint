@@ -137,10 +137,12 @@ public actor PluginCatalogService {
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> PluginManifest {
         try Task.checkCancellation()
-        guard PluginRuntimePolicy.supportsDownloadedRuntime(
-            type: manifest.type,
-            runtime: manifest.runtime
-        ) else {
+        guard
+            PluginRuntimePolicy.supportsDownloadedRuntime(
+                type: manifest.type,
+                runtime: manifest.runtime
+            )
+        else {
             throw PluginCatalogError.unsupportedRuntime
         }
         guard manifest.url.isFileURL || Self.isAllowedRemoteURL(manifest.url) else {
@@ -178,7 +180,8 @@ public actor PluginCatalogService {
             )
             try Task.checkCancellation()
             guard let http = response as? HTTPURLResponse,
-                  (200..<300).contains(http.statusCode) else {
+                (200..<300).contains(http.statusCode)
+            else {
                 throw PluginCatalogError.invalidResponse
             }
             try fileManager.moveItem(at: temporaryURL, to: archiveURL)
@@ -223,20 +226,25 @@ public actor PluginCatalogService {
             throw PluginCatalogError.manifestNotFound
         }
         let pluginDirectory = manifestURL.deletingLastPathComponent()
-        guard let embedded = try? PluginManifest.load(
-            from: pluginDirectory
-        ) else {
+        guard
+            let embedded = try? PluginManifest.load(
+                from: pluginDirectory
+            )
+        else {
             throw PluginCatalogError.manifestNotFound
         }
         guard embedded.id == manifest.id,
-              embedded.type == manifest.type,
-              embedded.version == manifest.version else {
+            embedded.type == manifest.type,
+            embedded.version == manifest.version
+        else {
             throw PluginCatalogError.manifestMismatch
         }
-        guard Self.hasRequiredRuntimeFiles(
-            for: embedded,
-            in: pluginDirectory
-        ) else {
+        guard
+            Self.hasRequiredRuntimeFiles(
+                for: embedded,
+                in: pluginDirectory
+            )
+        else {
             throw PluginCatalogError.runtimeFilesMissing
         }
 
@@ -255,10 +263,12 @@ public actor PluginCatalogService {
     }
 
     private func findManifest(in directory: URL) -> URL? {
-        guard let enumerator = fileManager.enumerator(
-            at: directory,
-            includingPropertiesForKeys: nil
-        ) else {
+        guard
+            let enumerator = fileManager.enumerator(
+                at: directory,
+                includingPropertiesForKeys: nil
+            )
+        else {
             return nil
         }
         for case let url as URL in enumerator
@@ -269,14 +279,16 @@ public actor PluginCatalogService {
     }
 
     private func validatePluginContents(in directory: URL) throws {
-        guard let enumerator = fileManager.enumerator(
-            at: directory,
-            includingPropertiesForKeys: [
-                .isRegularFileKey,
-                .isSymbolicLinkKey,
-            ],
-            options: []
-        ) else {
+        guard
+            let enumerator = fileManager.enumerator(
+                at: directory,
+                includingPropertiesForKeys: [
+                    .isRegularFileKey,
+                    .isSymbolicLinkKey,
+                ],
+                options: []
+            )
+        else {
             throw PluginCatalogError.extractionFailed
         }
         let rejectedExtensions: Set<String> = [
@@ -296,7 +308,8 @@ public actor PluginCatalogService {
             }
             guard values.isRegularFile == true else { continue }
             if fileManager.isExecutableFile(atPath: url.path)
-                || Self.hasExecutableMagic(url) {
+                || Self.hasExecutableMagic(url)
+            {
                 throw PluginCatalogError.unsafeContent
             }
         }
@@ -308,7 +321,8 @@ public actor PluginCatalogService {
         }
         defer { try? handle.close() }
         guard let data = try? handle.read(upToCount: 4),
-              data.count == 4 else {
+            data.count == 4
+        else {
             return false
         }
         let bytes = Array(data)
@@ -412,15 +426,18 @@ public actor PluginCatalogService {
         into directory: URL,
         progress: (@Sendable (Double) -> Void)?
     ) async throws {
-        guard let apiURL = URL(
-            string: "\(endpoint.absoluteString)/api/models/\(repository)/revision/\(revision)?blobs=true"
-        ) else {
+        guard
+            let apiURL = URL(
+                string: "\(endpoint.absoluteString)/api/models/\(repository)/revision/\(revision)?blobs=true"
+            )
+        else {
             throw PluginCatalogError.invalidModelRepository
         }
         let (data, response) = try await session.data(from: apiURL)
         try Task.checkCancellation()
         guard let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode) else {
+            (200..<300).contains(http.statusCode)
+        else {
             throw PluginCatalogError.invalidResponse
         }
         let snapshot = try JSONDecoder().decode(HuggingFaceSnapshot.self, from: data)
@@ -432,9 +449,10 @@ public actor PluginCatalogService {
         }
 
         let expectedBytes = files.reduce(Int64(0)) { $0 + ($1.size ?? 0) }
-        let available = try directory.resourceValues(
-            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
-        ).volumeAvailableCapacityForImportantUsage ?? 0
+        let available =
+            try directory.resourceValues(
+                forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+            ).volumeAvailableCapacityForImportantUsage ?? 0
         if expectedBytes > 0, available > 0, available < expectedBytes * 2 {
             throw PluginCatalogError.insufficientDiskSpace
         }
@@ -442,20 +460,24 @@ public actor PluginCatalogService {
         var completedBytes = Int64(0)
         for (index, file) in files.enumerated() {
             try Task.checkCancellation()
-            guard let destination = Self.safeDestination(
-                for: file.rfilename,
-                in: directory
-            ) else {
+            guard
+                let destination = Self.safeDestination(
+                    for: file.rfilename,
+                    in: directory
+                )
+            else {
                 throw PluginCatalogError.invalidModelSnapshot
             }
             try fileManager.createDirectory(
                 at: destination.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            guard let downloadURL = URL(
-                string: "\(endpoint.absoluteString)/\(repository)/resolve/\(revision)/"
-                    + file.rfilename
-            ) else {
+            guard
+                let downloadURL = URL(
+                    string: "\(endpoint.absoluteString)/\(repository)/resolve/\(revision)/"
+                        + file.rfilename
+                )
+            else {
                 throw PluginCatalogError.invalidModelRepository
             }
 
@@ -477,19 +499,22 @@ public actor PluginCatalogService {
             )
             try Task.checkCancellation()
             guard let http = response as? HTTPURLResponse,
-                  (200..<300).contains(http.statusCode) else {
+                (200..<300).contains(http.statusCode)
+            else {
                 throw PluginCatalogError.invalidResponse
             }
             try fileManager.moveItem(at: temporaryURL, to: destination)
 
-            let actualBytes = try destination.resourceValues(
-                forKeys: [.fileSizeKey]
-            ).fileSize ?? 0
+            let actualBytes =
+                try destination.resourceValues(
+                    forKeys: [.fileSizeKey]
+                ).fileSize ?? 0
             if fileBytes > 0, actualBytes != fileBytes {
                 throw PluginCatalogError.invalidModelSnapshot
             }
             if let expectedSHA = file.lfs?.sha256,
-               try Self.sha256(of: destination) != expectedSHA.lowercased() {
+                try Self.sha256(of: destination) != expectedSHA.lowercased()
+            {
                 throw PluginCatalogError.invalidModelSnapshot
             }
             try Task.checkCancellation()
@@ -535,7 +560,8 @@ public actor PluginCatalogService {
             return true
         }
         guard scheme == "http",
-              let host = url.host?.lowercased() else {
+            let host = url.host?.lowercased()
+        else {
             return false
         }
         return ["localhost", "127.0.0.1", "::1"].contains(host)
@@ -543,9 +569,10 @@ public actor PluginCatalogService {
 
     private static func shouldInstallModelFile(_ name: String) -> Bool {
         guard !name.hasPrefix("."),
-              !name.hasPrefix("README"),
-              !name.contains("/."),
-              !name.split(separator: "/").contains("..") else {
+            !name.hasPrefix("README"),
+            !name.contains("/."),
+            !name.split(separator: "/").contains("..")
+        else {
             return false
         }
         return name.hasSuffix(".safetensors")
@@ -584,7 +611,8 @@ public actor PluginCatalogService {
     ) -> Bool {
         let names = Set(files.map(\.rfilename))
         let hasWeights = names.contains { $0.hasSuffix(".safetensors") }
-        let hasTokenizer = names.contains("tokenizer.json")
+        let hasTokenizer =
+            names.contains("tokenizer.json")
             || names.contains { $0.hasSuffix(".model") }
             || names.contains { $0.hasSuffix(".spm") }
         return names.contains("config.json") && hasWeights && hasTokenizer
@@ -593,7 +621,8 @@ public actor PluginCatalogService {
     private static func safeDestination(for path: String, in root: URL) -> URL? {
         let components = path.split(separator: "/", omittingEmptySubsequences: true)
         guard !components.isEmpty,
-              !components.contains(where: { $0 == ".." }) else {
+            !components.contains(where: { $0 == ".." })
+        else {
             return nil
         }
         return components.reduce(root) { partial, component in
@@ -606,7 +635,8 @@ public actor PluginCatalogService {
         defer { try? handle.close() }
         var hasher = SHA256()
         while let data = try handle.read(upToCount: 4 * 1024 * 1024),
-              !data.isEmpty {
+            !data.isEmpty
+        {
             hasher.update(data: data)
         }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()

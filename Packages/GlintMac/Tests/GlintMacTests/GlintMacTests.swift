@@ -323,7 +323,7 @@ final class GlintMacTests: XCTestCase {
                 Candidate(
                     text: "方案",
                     kind: .word
-                ),
+                )
             ],
             selectedIndex: 0,
             mode: .modelFirst,
@@ -380,7 +380,7 @@ final class GlintMacTests: XCTestCase {
                 Candidate(
                     text: "方案",
                     kind: .word
-                ),
+                )
             ],
             selectedIndex: 0,
             mode: .modelFirst,
@@ -403,7 +403,7 @@ final class GlintMacTests: XCTestCase {
                 Candidate(
                     text: "方案",
                     kind: .word
-                ),
+                )
             ],
             selectedIndex: 0,
             mode: .modelFirst,
@@ -518,7 +518,7 @@ final class GlintMacTests: XCTestCase {
                         text: "逆",
                         frame: CGRect(x: 40, y: 170, width: 50, height: 28),
                         isSelected: true
-                    ),
+                    )
                 ]
             )
         )
@@ -544,7 +544,7 @@ final class GlintMacTests: XCTestCase {
                             height: 28
                         ),
                         isSelected: true
-                    ),
+                    )
                 ]
             )
         )
@@ -790,7 +790,7 @@ final class GlintMacTests: XCTestCase {
             AXCandidateItem(
                 text: "other",
                 frame: CGRect(x: 80, y: 80, width: 50, height: 28)
-            ),
+            )
         ]
 
         XCTAssertEqual(

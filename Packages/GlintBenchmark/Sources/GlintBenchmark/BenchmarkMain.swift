@@ -32,11 +32,14 @@ private struct BenchmarkReport: Encodable {
 struct BenchmarkMain {
     static func main() async throws {
         let arguments = CommandLine.arguments
-        let root = value(after: "--root", in: arguments)
+        let root =
+            value(after: "--root", in: arguments)
             ?? FileManager.default.currentDirectoryPath
-        let casesPath = value(after: "--cases", in: arguments)
+        let casesPath =
+            value(after: "--cases", in: arguments)
             ?? "\(root)/Resources/Evaluation/dictionary-benchmark.json"
-        let outputPath = value(after: "--output", in: arguments)
+        let outputPath =
+            value(after: "--output", in: arguments)
             ?? "\(root)/build/dictionary-benchmark.json"
 
         let data = try Data(contentsOf: URL(fileURLWithPath: casesPath))
@@ -99,10 +102,12 @@ struct BenchmarkMain {
             let options = result?.options.map(\.text) ?? []
             let expected = benchmarkCase.expected.map(normalize)
             let actual = options.map(normalize)
-            let top1 = !expected.isEmpty
+            let top1 =
+                !expected.isEmpty
                 && !actual.isEmpty
                 && expected.contains(actual[0])
-            let top3 = !expected.isEmpty
+            let top3 =
+                !expected.isEmpty
                 && !actual.isEmpty
                 && actual.prefix(3).contains { expected.contains($0) }
             let blockedPass = expected.isEmpty && actual.isEmpty
@@ -121,7 +126,8 @@ struct BenchmarkMain {
         }
 
         latencies.sort()
-        let p95 = latencies.isEmpty
+        let p95 =
+            latencies.isEmpty
             ? 0
             : latencies[min(latencies.count - 1, Int(Double(latencies.count) * 0.95))]
         let report = BenchmarkReport(
@@ -153,7 +159,8 @@ struct BenchmarkMain {
 
     private static func value(after flag: String, in arguments: [String]) -> String? {
         guard let index = arguments.firstIndex(of: flag),
-              arguments.indices.contains(index + 1) else {
+            arguments.indices.contains(index + 1)
+        else {
             return nil
         }
         return arguments[index + 1]

@@ -28,11 +28,13 @@ private enum AXReader {
         _ name: String
     ) -> CFTypeRef? {
         var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(
-            element,
-            name as CFString,
-            &value
-        ) == .success else {
+        guard
+            AXUIElementCopyAttributeValue(
+                element,
+                name as CFString,
+                &value
+            ) == .success
+        else {
             return nil
         }
         return value
@@ -56,10 +58,12 @@ private enum AXReader {
         _ element: AXUIElement
     ) -> [String] {
         var names: CFArray?
-        guard AXUIElementCopyAttributeNames(
-            element,
-            &names
-        ) == .success else {
+        guard
+            AXUIElementCopyAttributeNames(
+                element,
+                &names
+            ) == .success
+        else {
             return []
         }
         return names as? [String] ?? []
@@ -89,7 +93,8 @@ private enum AXReader {
         depth: Int = 0
     ) -> AXUIElement? {
         if stringAttribute(element, kAXIdentifierAttribute)
-            == "InputMethodCandidateList" {
+            == "InputMethodCandidateList"
+        {
             return element
         }
         guard depth < 8 else { return nil }
@@ -177,9 +182,10 @@ struct CandidateAXProbe {
         )
 
         while Date() < deadline {
-            let pid = options.pid
+            let pid =
+                options.pid
                 ?? NSWorkspace.shared.frontmostApplication?
-                    .processIdentifier
+                .processIdentifier
             guard let pid else {
                 Thread.sleep(forTimeInterval: 0.2)
                 continue

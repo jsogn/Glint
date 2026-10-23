@@ -54,20 +54,26 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         self.builtin = builtin
         self.ranker = ranker
 
-        let resolvedDatabase = databaseURL ?? Self.locateResource(
-            name: "cedict",
-            extension: "sqlite3"
-        )
-        let resolvedOverrides = overridesURL ?? Self.locateResource(
-            name: "overrides",
-            extension: "json"
-        )
+        let resolvedDatabase =
+            databaseURL
+            ?? Self.locateResource(
+                name: "cedict",
+                extension: "sqlite3"
+            )
+        let resolvedOverrides =
+            overridesURL
+            ?? Self.locateResource(
+                name: "overrides",
+                extension: "json"
+            )
 
         if let resolvedOverrides,
-           let data = try? Data(contentsOf: resolvedOverrides),
-           let decoded = try? JSONDecoder().decode(Overrides.self, from: data) {
+            let data = try? Data(contentsOf: resolvedOverrides),
+            let decoded = try? JSONDecoder().decode(Overrides.self, from: data)
+        {
             self.overrides = decoded.overrides.mapValues { $0.values }
-            self.retiredOverrides = decoded.retiredOverrides?
+            self.retiredOverrides =
+                decoded.retiredOverrides?
                 .mapValues { $0.values } ?? [:]
         } else {
             self.overrides = [:]
@@ -116,7 +122,8 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
     public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
         let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty,
-              !DictionaryPolicy.blockedTerms.contains(text) else {
+            !DictionaryPolicy.blockedTerms.contains(text)
+        else {
             return nil
         }
 
@@ -126,7 +133,8 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 term: text,
                 senses: senses
             )
-            let options = dictionaryOptions
+            let options =
+                dictionaryOptions
                 + fallbackOptions(for: text, after: dictionaryOptions)
             guard !options.isEmpty else { return nil }
             return TranslationResult(options: options)
@@ -149,7 +157,8 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         guard !values.isEmpty else {
             return []
         }
-        let ceiling = dictionaryOptions.isEmpty
+        let ceiling =
+            dictionaryOptions.isEmpty
             ? 0.75
             : (dictionaryOptions.map(\.score).min() ?? 0.75) - 0.0001
         return values.enumerated().map { index, value in
@@ -221,7 +230,8 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
 
         var options: [TranslationOption] = []
         for sense in senses {
-            let orderPenalty = Double(sense.lineOrder) * 0.00000001
+            let orderPenalty =
+                Double(sense.lineOrder) * 0.00000001
                 + Double(sense.senseOrder) * 0.000000001
             for (index, value) in glossCandidates(
                 from: sense.gloss
@@ -273,7 +283,7 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first?
-            .appendingPathComponent("Glint/plugins/dict-cedict", isDirectory: true)
+        .appendingPathComponent("Glint/plugins/dict-cedict", isDirectory: true)
         let pluginURL = support?.appendingPathComponent("\(name).\(ext)")
         if let pluginURL, FileManager.default.fileExists(atPath: pluginURL.path) {
             return pluginURL
@@ -285,9 +295,9 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 subdirectory: "dict-cedict"
             )
             ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-                .appendingPathComponent(
-                    "Resources/Plugins/dict-cedict/\(name).\(ext)"
-                )
+            .appendingPathComponent(
+                "Resources/Plugins/dict-cedict/\(name).\(ext)"
+            )
     }
 
     public static let builtin: [String: String] = [

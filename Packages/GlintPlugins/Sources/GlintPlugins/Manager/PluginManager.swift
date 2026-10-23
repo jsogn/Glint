@@ -38,15 +38,19 @@ public actor PluginManager {
         fileManager: FileManager = .default
     ) {
         self.fileManager = fileManager
-        let applicationSupport = fileManager.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first ?? fileManager.homeDirectoryForCurrentUser
+        let applicationSupport =
+            fileManager.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first
+            ?? fileManager.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Application Support", isDirectory: true)
-        let support = baseDirectory ?? applicationSupport.appendingPathComponent(
-            "Glint",
-            isDirectory: true
-        )
+        let support =
+            baseDirectory
+            ?? applicationSupport.appendingPathComponent(
+                "Glint",
+                isDirectory: true
+            )
         self.pluginsDirectory = support.appendingPathComponent("plugins", isDirectory: true)
         try? fileManager.createDirectory(
             at: pluginsDirectory,
@@ -56,11 +60,13 @@ public actor PluginManager {
 
     public func installedPlugins() -> [PluginManifest] {
         recoverInterruptedInstalls()
-        guard let directories = try? fileManager.contentsOfDirectory(
-            at: pluginsDirectory,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) else {
+        guard
+            let directories = try? fileManager.contentsOfDirectory(
+                at: pluginsDirectory,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            )
+        else {
             installed = []
             return []
         }
@@ -132,7 +138,8 @@ public actor PluginManager {
                 try? fileManager.removeItem(at: upgradeMarkerURL)
             }
             if hadExistingInstall,
-               !fileManager.fileExists(atPath: target.path) {
+                !fileManager.fileExists(atPath: target.path)
+            {
                 try? fileManager.moveItem(at: backup, to: target)
             }
             throw error
@@ -179,7 +186,8 @@ public actor PluginManager {
             try fileManager.moveItem(at: pendingUpgrade.backupURL, to: target)
         } catch {
             if fileManager.fileExists(atPath: failed.path),
-               !fileManager.fileExists(atPath: target.path) {
+                !fileManager.fileExists(atPath: target.path)
+            {
                 try? fileManager.moveItem(at: failed, to: target)
             }
             throw error
@@ -228,11 +236,13 @@ public actor PluginManager {
         recoverPersistedUpgrade()
         // Hidden entries are normally skipped. This pass is intentionally
         // explicit so stale staging and backup folders can be recovered.
-        guard let allDirectories = try? fileManager.contentsOfDirectory(
-            at: pluginsDirectory,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: []
-        ) else {
+        guard
+            let allDirectories = try? fileManager.contentsOfDirectory(
+                at: pluginsDirectory,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: []
+            )
+        else {
             return
         }
 
@@ -248,8 +258,9 @@ public actor PluginManager {
             }
             guard name.hasPrefix(".backup-") else { continue }
             if let pendingUpgrade,
-               directory.lastPathComponent
-                == pendingUpgrade.backupURL.lastPathComponent {
+                directory.lastPathComponent
+                    == pendingUpgrade.backupURL.lastPathComponent
+            {
                 continue
             }
             guard let manifest = try? PluginManifest.load(from: directory) else {
@@ -286,14 +297,15 @@ public actor PluginManager {
 
     private func recoverPersistedUpgrade() {
         guard let data = try? Data(contentsOf: upgradeMarkerURL),
-              let state = try? JSONDecoder().decode(
-                  PersistedUpgrade.self,
-                  from: data
-              ),
-              Self.isValidPluginID(state.id),
-              !state.backupName.contains("/"),
-              !state.backupName.contains("\\"),
-              state.backupName.hasPrefix(".backup-") else {
+            let state = try? JSONDecoder().decode(
+                PersistedUpgrade.self,
+                from: data
+            ),
+            Self.isValidPluginID(state.id),
+            !state.backupName.contains("/"),
+            !state.backupName.contains("\\"),
+            state.backupName.hasPrefix(".backup-")
+        else {
             try? fileManager.removeItem(at: upgradeMarkerURL)
             return
         }
@@ -325,7 +337,8 @@ public actor PluginManager {
             pendingUpgrade = nil
         } catch {
             if !fileManager.fileExists(atPath: target.path),
-               fileManager.fileExists(atPath: failed.path) {
+                fileManager.fileExists(atPath: failed.path)
+            {
                 try? fileManager.moveItem(at: failed, to: target)
             }
         }

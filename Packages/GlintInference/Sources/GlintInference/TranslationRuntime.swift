@@ -33,7 +33,8 @@ public actor TranslationRuntime: TranslationEngine {
     public func prepare(modelID: String) async -> String? {
         let error = await load(modelID: modelID)
         if error != nil,
-           modelID != TranslationModelSelection.defaultModelID {
+            modelID != TranslationModelSelection.defaultModelID
+        {
             failedSelectedModelID = modelID
             let originalError = error
             let fallbackError = await load(
@@ -44,10 +45,9 @@ public actor TranslationRuntime: TranslationEngine {
                     "\(originalError ?? "所选模型不可用")（已回退到内置模型）"
                 return lastError
             }
-            lastError = (
-                "\(originalError ?? "所选模型不可用")"
-                    + "（内置模型回退失败：\(fallbackError ?? "unknown")）"
-            )
+            lastError =
+                ("\(originalError ?? "所选模型不可用")"
+                    + "（内置模型回退失败：\(fallbackError ?? "unknown")）")
             return lastError
         } else if error == nil {
             failedSelectedModelID = nil
@@ -93,7 +93,8 @@ public actor TranslationRuntime: TranslationEngine {
     public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
         try Task.checkCancellation()
         if activeModel?.modelID != selectedModelID,
-           failedSelectedModelID != selectedModelID {
+            failedSelectedModelID != selectedModelID
+        {
             await prepareSelectedModel()
         }
 

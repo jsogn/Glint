@@ -26,19 +26,21 @@ public struct InputSourceMonitor: Sendable {
     @MainActor
     public func currentInputSource() -> ActiveInputSource {
         guard let source = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue(),
-              let identifier = Self.stringProperty(
-                  source,
-                  kTISPropertyInputSourceID
-              ) else {
+            let identifier = Self.stringProperty(
+                source,
+                kTISPropertyInputSourceID
+            )
+        else {
             return ActiveInputSource(
                 id: "",
                 kind: .unknown
             )
         }
-        let type = Self.stringProperty(
-            source,
-            kTISPropertyInputSourceType
-        ) ?? ""
+        let type =
+            Self.stringProperty(
+                source,
+                kTISPropertyInputSourceType
+            ) ?? ""
         return ActiveInputSource(
             id: identifier,
             kind: Self.inputSourceKind(

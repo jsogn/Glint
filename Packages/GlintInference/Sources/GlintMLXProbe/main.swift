@@ -13,18 +13,21 @@ struct GlintMLXProbe {
                 at: URL(fileURLWithPath: metalLibraryPath)
             )
         }
-        let directory = arguments.first.map {
-            URL(fileURLWithPath: $0, isDirectory: true)
-        } ?? MLXTranslationEngine.availableModelDirectory()
+        let directory =
+            arguments.first.map {
+                URL(fileURLWithPath: $0, isDirectory: true)
+            } ?? MLXTranslationEngine.availableModelDirectory()
         guard let directory else {
             fputs("MLX model directory not found\n", stderr)
             exit(2)
         }
 
-        let input = arguments.count > 1
+        let input =
+            arguments.count > 1
             ? arguments.dropFirst().joined(separator: " ")
             : "这个功能什么时候上线"
-        let modelID = ProcessInfo.processInfo.environment["GLINT_MLX_MODEL_ID"]
+        let modelID =
+            ProcessInfo.processInfo.environment["GLINT_MLX_MODEL_ID"]
             ?? "llm-qwen3-1.7b"
         let engine = MLXTranslationEngine(
             modelDirectory: directory,
@@ -33,7 +36,8 @@ struct GlintMLXProbe {
 
         do {
             if arguments.count > 1,
-               arguments[1] == "--batch" {
+                arguments[1] == "--batch"
+            {
                 try await runBatch(
                     engine: engine,
                     directory: directory,
@@ -49,7 +53,8 @@ struct GlintMLXProbe {
                 )
             )
             let elapsed = started.duration(to: .now)
-            let seconds = Double(elapsed.components.seconds)
+            let seconds =
+                Double(elapsed.components.seconds)
                 + Double(elapsed.components.attoseconds) / 1e18
             let load = await engine.loadSeconds
             print("model=\(directory.path)")
@@ -67,10 +72,12 @@ struct GlintMLXProbe {
         directory: URL,
         payload: String
     ) async throws {
-        let rawInputs = payload.isEmpty
+        let rawInputs =
+            payload.isEmpty
             ? "学习|学校|学生|学|学术|学习用品"
             : payload
-        let inputs = rawInputs
+        let inputs =
+            rawInputs
             .split(separator: "|")
             .map {
                 String($0).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -99,7 +106,8 @@ struct GlintMLXProbe {
         let sequentialMilliseconds = milliseconds(
             sequentialStarted.duration(to: .now)
         )
-        let speedup = batchMilliseconds > 0
+        let speedup =
+            batchMilliseconds > 0
             ? sequentialMilliseconds / batchMilliseconds
             : 0
         let load = await engine.loadSeconds
@@ -117,7 +125,8 @@ struct GlintMLXProbe {
         )
         print("speedup=\(String(format: "%.2f", speedup))")
         for (index, input) in inputs.enumerated() {
-            let batched = batch.indices.contains(index)
+            let batched =
+                batch.indices.contains(index)
                 ? batch[index]?.text ?? "<not found>"
                 : "<missing>"
             print("\(index + 1). \(input) -> \(batched)")

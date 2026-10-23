@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  test-release:
+    runs-on: macos-26
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out tagged revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install XcodeGen
+        run: command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+
+      - name: Cache OPUS conversion inputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            Tools/ModelLab/.cache
+          key: opus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Tools/ModelLab/prepare_opus_model.py', 'Tools/ModelLab/requirements-opus-conversion.txt', 'Resources/Plugins/mt-opus-zh-en/model-lock.json') }}
+
+      - name: Lint Swift
+        run: git ls-files '*.swift' -z | xargs -0 swift format lint --strict --configuration .swift-format
+
+      - name: Run release gate
+        run: ./scripts/test.sh
+
+      - name: Run Python tool tests
+        run: zsh ./scripts/test_python_tools.sh
+
+      - name: Build ad-hoc test DMG
+        run: ./scripts/package_test_dmg.sh
+
+      - name: Validate tag and package version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          dmg_path="$(find build-release -maxdepth 1 -name 'Glint-*-macOS26-arm64.dmg' -print -quit)"
+          if [[ -z "$dmg_path" ]]; then
+            echo "DMG was not produced." >&2
+            exit 1
+          fi
+          dmg_version="$(basename "$dmg_path" | sed -E 's/^Glint-(.*)-macOS26-arm64\.dmg$/\1/')"
+          if [[ "$dmg_version" != "$tag_version" ]]; then
+            echo "Tag version $tag_version does not match app version $dmg_version." >&2
+            exit 1
+          fi
+
+      - name: Publish GitHub pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dmg_path="$(find build-release -maxdepth 1 -name 'Glint-*-macOS26-arm64.dmg' -print -quit)"
+          checksum_path="$dmg_path.sha256"
+          gh release create "$GITHUB_REF_NAME" \
+            "$dmg_path" \
+            "$checksum_path" \
+            --verify-tag \
+            --title "Glint ${GITHUB_REF_NAME#v}" \
+            --notes-file Resources/Distribution/GITHUB-RELEASE-NOTES.md \
+            --prerelease

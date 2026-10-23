@@ -32,14 +32,16 @@ public struct SmartRouter: Sendable {
             return try await translation.translate(candidate)
         case .modelFirst:
             if let modelResult = try? await translation.translate(candidate),
-               !modelResult.options.isEmpty {
+                !modelResult.options.isEmpty
+            {
                 guard includesAlternatives,
-                      candidate.kind != .sentence,
-                      let dictionaryResult = await dictionaryResult(
-                          for: candidate,
-                          prefetch: dictionaryPrefetch
-                      ),
-                      !dictionaryResult.options.isEmpty else {
+                    candidate.kind != .sentence,
+                    let dictionaryResult = await dictionaryResult(
+                        for: candidate,
+                        prefetch: dictionaryPrefetch
+                    ),
+                    !dictionaryResult.options.isEmpty
+                else {
                     return modelResult
                 }
                 return Self.modelFirstMerged(

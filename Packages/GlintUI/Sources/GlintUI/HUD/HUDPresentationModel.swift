@@ -48,8 +48,10 @@ struct HUDLiveView: View {
         guard model.showsOnlySelectedItem else {
             return model.items
         }
-        guard let selected = model.items.first(where: \.isSelected)
-                ?? model.items.first else {
+        guard
+            let selected = model.items.first(where: \.isSelected)
+                ?? model.items.first
+        else {
             return []
         }
         return [
@@ -58,7 +60,7 @@ struct HUDLiveView: View {
                 number: selected.number,
                 text: selected.text,
                 isSelected: true
-            ),
+            )
         ]
     }
 }

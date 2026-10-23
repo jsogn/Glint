@@ -2,7 +2,8 @@
 
 ## 1. Current Status
 
-Glint 当前是可稳定运行的开发版本，但还不是可分发包。
+Glint 当前是可稳定运行的开发版本。没有 Developer ID 时可以发布明确标注的
+ad-hoc 测试包，但还不能提供通过 Gatekeeper 的正式公开版本。
 
 | 项目 | 当前状态 | 发行要求 |
 | --- | --- | --- |
@@ -67,6 +68,18 @@ Release 构建不得使用 `CODE_SIGNING_ALLOWED=NO`。签名顺序应先内层�
 
 这种包不能被 `spctl` 接受，也不能启用可用的 Hardened Runtime：ad-hoc 签名没有
 Team ID，运行时库校验会拒绝嵌套动态库。它只适用于已知测试者的内部验证。
+
+### GitHub 自动发布
+
+仓库提供两个 GitHub Actions 工作流：
+
+- `.github/workflows/ci.yml`：在 push 到 `main` 和 Pull Request 时执行 Swift
+  格式检查、完整 Swift 测试和 Python 工具测试；
+- `.github/workflows/release.yml`：推送 `v*` 标签时重复质量门禁，构建
+  ad-hoc DMG 和 SHA-256 文件，并创建 GitHub Pre-release。
+
+发布版本必须与 `project.yml` 中的 `MARKETING_VERSION` 一致。例如版本为
+`0.1.0` 时推送 `v0.1.0`。CI 运行器当前使用 `macos-26`。
 
 ### 开发签名与 TCC
 

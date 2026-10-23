@@ -201,8 +201,7 @@ public actor MonitoringController {
     private var selectedCandidateIndex: Int?
     private var latestCandidateHighlight: CandidateRegion?
     private var dictionaryPrefetchRevision: UInt64?
-    private var dictionaryPrefetchTasks:
-        [Int: Task<TranslationResult?, Never>] = [:]
+    private var dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>] = [:]
     private var cachedPrefetchResults: [Int: TranslationResult] = [:]
     private var candidateMissDebouncer = CandidateMissDebouncer()
     private var compositionTransitions = CompositionTransitionTracker()
@@ -309,7 +308,8 @@ public actor MonitoringController {
 
     func tick() async -> UInt64 {
         let permissionCheckTimestamp = DispatchTime.now().uptimeNanoseconds
-        let shouldCheckPermissions = lastPermissionCheck == 0
+        let shouldCheckPermissions =
+            lastPermissionCheck == 0
             || permissionCheckTimestamp >= lastPermissionCheck
                 && permissionCheckTimestamp - lastPermissionCheck
                     >= 1_000_000_000
@@ -348,11 +348,13 @@ public actor MonitoringController {
             emitStatus("候选会话已结束")
             return 40_000_000
         }
-        guard CandidateScanGate.allowsScanning(
-            compositionState: snapshot.compositionState,
-            isEditableTextInput: snapshot.isEditableTextInput,
-            hasCaret: snapshot.caretRect != nil
-        ) else {
+        guard
+            CandidateScanGate.allowsScanning(
+                compositionState: snapshot.compositionState,
+                isEditableTextInput: snapshot.isEditableTextInput,
+                hasCaret: snapshot.caretRect != nil
+            )
+        else {
             invalidateCandidate(immediate: true)
             emitStatus("已跳过非文本控件")
             return 200_000_000
@@ -367,25 +369,29 @@ public actor MonitoringController {
         let observationStartedAt = ContinuousClock.now
         // Both translation scopes need visible-row evidence so an expanded
         // candidate grid is rejected before translation or HUD presentation.
-        guard let axCandidate = axCandidates.snapshot(
-            includeVisibleCandidates: true
-        ) else {
+        guard
+            let axCandidate = axCandidates.snapshot(
+                includeVisibleCandidates: true
+            )
+        else {
             return observeCandidateMiss(
                 status: "未检测到候选",
                 pollInterval: 60_000_000
             )
         }
-        guard let candidateFrame = axCandidate.frame
+        guard
+            let candidateFrame = axCandidate.frame
                 ?? axCandidate.candidateWindowFrame
                 ?? axCandidate.candidateListFrame,
-              let displayFrame = Self.candidateDisplayFrame(
-                  scope: translationScope,
-                  selectedFrame: candidateFrame,
-                  options: axCandidate.options
-              ),
-              let displayAnchor = Self.candidateRegion(
-                  for: displayFrame
-              ) else {
+            let displayFrame = Self.candidateDisplayFrame(
+                scope: translationScope,
+                selectedFrame: candidateFrame,
+                options: axCandidate.options
+            ),
+            let displayAnchor = Self.candidateRegion(
+                for: displayFrame
+            )
+        else {
             return observeCandidateMiss(
                 status: "未找到候选位置",
                 pollInterval: 60_000_000
@@ -394,8 +400,9 @@ public actor MonitoringController {
         candidateMissDebouncer.observeCandidate()
         latestCandidateHighlight = displayAnchor
 
-        let candidateTexts = translationScope == .row
-            && !axCandidate.visibleTexts.isEmpty
+        let candidateTexts =
+            translationScope == .row
+                && !axCandidate.visibleTexts.isEmpty
             ? axCandidate.visibleTexts
             : [axCandidate.text]
         let selectedIndex = min(
@@ -481,8 +488,9 @@ public actor MonitoringController {
             break
         }
         if candidateSessionActive,
-           !candidateChanged,
-           previousSelectedIndex != selectedIndex {
+            !candidateChanged,
+            previousSelectedIndex != selectedIndex
+        {
             continuation.yield(
                 .selectionChanged(
                     index: selectedIndex,
@@ -495,10 +503,12 @@ public actor MonitoringController {
 
     private func nextCandidatePollInterval(after timestamp: UInt64) -> UInt64 {
         let regularInterval: UInt64 = 24_000_000
-        guard let remaining = typingTracker.nanosecondsUntilDwell(
-            at: timestamp,
-            dwellDurationNanoseconds: candidateDwellNanoseconds
-        ) else {
+        guard
+            let remaining = typingTracker.nanosecondsUntilDwell(
+                at: timestamp,
+                dwellDurationNanoseconds: candidateDwellNanoseconds
+            )
+        else {
             return regularInterval
         }
         return min(regularInterval, max(4_000_000, remaining))
@@ -569,9 +579,7 @@ public actor MonitoringController {
         selectedIndex: Int,
         highlight: CandidateRegion,
         revision: UInt64,
-        dictionaryPrefetchTasks: [
-            Int: Task<TranslationResult?, Never>
-        ],
+        dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>],
         cachedPrefetchResults: [Int: TranslationResult]
     ) {
         let mode = mode
@@ -633,16 +641,18 @@ public actor MonitoringController {
         revision: UInt64
     ) {
         guard revision == typingTracker.revision,
-              typingTracker.isDwelling,
-              translations.contains(where: { $0.translation != nil }) else {
+            typingTracker.isDwelling,
+            translations.contains(where: { $0.translation != nil })
+        else {
             return
         }
         let presentationHighlight = latestCandidateHighlight ?? highlight
         if let translationStartedAt {
             let now = DispatchTime.now().uptimeNanoseconds
-            let total = candidateChangedAtNanoseconds.map {
-                Self.elapsedMilliseconds(from: $0, to: now)
-            } ?? 0
+            let total =
+                candidateChangedAtNanoseconds.map {
+                    Self.elapsedMilliseconds(from: $0, to: now)
+                } ?? 0
             let dwell = Self.elapsedMilliseconds(
                 from: dwellConfirmedAtNanoseconds,
                 to: now
@@ -667,7 +677,8 @@ public actor MonitoringController {
         revision: UInt64
     ) {
         guard revision == typingTracker.revision,
-              typingTracker.isDwelling else {
+            typingTracker.isDwelling
+        else {
             return
         }
         let presentationHighlight = latestCandidateHighlight ?? highlight
@@ -675,12 +686,14 @@ public actor MonitoringController {
         let finishedAt = ContinuousClock.now
         if let translationStartedAt {
             let now = DispatchTime.now().uptimeNanoseconds
-            let phase = translationScope == .row
+            let phase =
+                translationScope == .row
                 ? "row_ready"
                 : "selected_ready"
-            let total = candidateChangedAtNanoseconds.map {
-                Self.elapsedMilliseconds(from: $0, to: now)
-            } ?? 0
+            let total =
+                candidateChangedAtNanoseconds.map {
+                    Self.elapsedMilliseconds(from: $0, to: now)
+                } ?? 0
             let dwell = Self.elapsedMilliseconds(
                 from: dwellConfirmedAtNanoseconds,
                 to: now
@@ -780,7 +793,8 @@ public actor MonitoringController {
         to dwellConfirmedAt: UInt64?
     ) -> Double {
         guard let candidateChangedAt,
-              let dwellConfirmedAt else {
+            let dwellConfirmedAt
+        else {
             return 0
         }
         return elapsedMilliseconds(
@@ -841,9 +855,13 @@ public actor MonitoringController {
         let rowFrames = options.compactMap(\.frame).filter {
             $0.width > 0 && $0.height > 0
         }
-        guard let rowFrame = rowFrames.reduce(nil, { partial, frame in
-            partial?.union(frame) ?? frame
-        }) else {
+        guard
+            let rowFrame = rowFrames.reduce(
+                nil,
+                { partial, frame in
+                    partial?.union(frame) ?? frame
+                })
+        else {
             return candidateDisplayFrame(
                 scope: .selected,
                 selectedFrame: selectedFrame,

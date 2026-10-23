@@ -42,7 +42,7 @@ struct HUDView: View {
         backgroundOpacity: Double = 0.8
     ) {
         self.items = [
-            HUDItem(id: 0, text: text),
+            HUDItem(id: 0, text: text)
         ]
         self.appearance = appearance
         self.backgroundOpacity = backgroundOpacity
@@ -95,25 +95,25 @@ struct HUDItemRow: View {
                     )
             }
         }
-            .padding(
-                .horizontal,
-                items.count > 1
-                    ? metrics.multiItemHorizontalPadding
-                    : metrics.singleItemHorizontalPadding
+        .padding(
+            .horizontal,
+            items.count > 1
+                ? metrics.multiItemHorizontalPadding
+                : metrics.singleItemHorizontalPadding
+        )
+        .padding(
+            .vertical,
+            items.count > 1
+                ? metrics.multiItemVerticalPadding
+                : metrics.singleItemVerticalPadding
+        )
+        .modifier(
+            HUDSurfaceStyle(
+                appearance: appearance,
+                backgroundOpacity: backgroundOpacity,
+                animatesBackground: animatesBackground
             )
-            .padding(
-                .vertical,
-                items.count > 1
-                    ? metrics.multiItemVerticalPadding
-                    : metrics.singleItemVerticalPadding
-            )
-            .modifier(
-                HUDSurfaceStyle(
-                    appearance: appearance,
-                    backgroundOpacity: backgroundOpacity,
-                    animatesBackground: animatesBackground
-                )
-            )
+        )
     }
 
     static func minimumPanelWidth(
@@ -142,7 +142,8 @@ struct HUDItemRow: View {
             ofSize: metrics.numberFontSize,
             weight: .medium
         )
-        let horizontalPadding = items.count > 1
+        let horizontalPadding =
+            items.count > 1
             ? metrics.multiItemHorizontalPadding
             : metrics.singleItemHorizontalPadding
         var width = horizontalPadding * 2
@@ -153,11 +154,12 @@ struct HUDItemRow: View {
                 ).width
             )
             if let number = item.number {
-                itemWidth += ceil(
-                    ("\(number)" as NSString).size(
-                        withAttributes: [.font: numberFont]
-                    ).width
-                ) + metrics.numberSpacing
+                itemWidth +=
+                    ceil(
+                        ("\(number)" as NSString).size(
+                            withAttributes: [.font: numberFont]
+                        ).width
+                    ) + metrics.numberSpacing
             }
             if items.count > 1 {
                 itemWidth += metrics.itemHorizontalPadding * 2
@@ -252,8 +254,8 @@ private struct HUDSurfaceStyle: ViewModifier {
                         backgroundStyle: appearance.backgroundStyle,
                         blendingMode: materialBlendingMode
                     )
-                        .opacity(backgroundOpacity)
-                        .clipShape(Capsule())
+                    .opacity(backgroundOpacity)
+                    .clipShape(Capsule())
                 }
                 .overlay {
                     Capsule().strokeBorder(.separator, lineWidth: 1)

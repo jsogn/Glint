@@ -28,8 +28,9 @@ public enum DictionarySurface {
             in: .whitespacesAndNewlines.union(.punctuationCharacters)
         )
         guard !value.isEmpty,
-              !containsHan(value),
-              !isMetadata(value) else {
+            !containsHan(value),
+            !isMetadata(value)
+        else {
             return nil
         }
         return value

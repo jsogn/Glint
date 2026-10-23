@@ -26,14 +26,16 @@ public enum CTranslate2EngineError: LocalizedError {
 }
 
 public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
-    private typealias CreateFn = @convention(c) (
-        UnsafePointer<CChar>,
-        UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
-    ) -> UnsafeMutableRawPointer?
-    private typealias TranslateFn = @convention(c) (
-        UnsafeMutableRawPointer?,
-        UnsafePointer<CChar>
-    ) -> UnsafeMutablePointer<CChar>?
+    private typealias CreateFn =
+        @convention(c) (
+            UnsafePointer<CChar>,
+            UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+        ) -> UnsafeMutableRawPointer?
+    private typealias TranslateFn =
+        @convention(c) (
+            UnsafeMutableRawPointer?,
+            UnsafePointer<CChar>
+        ) -> UnsafeMutablePointer<CChar>?
     private typealias FreeStringFn = @convention(c) (UnsafeMutablePointer<CChar>?) -> Void
     private typealias DestroyFn = @convention(c) (UnsafeMutableRawPointer?) -> Void
 
@@ -60,9 +62,12 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
         guard FileManager.default.fileExists(atPath: modelDirectory.path) else {
             throw CTranslate2EngineError.modelNotFound(modelDirectory.path)
         }
-        guard let libraryURL = libraryURL ?? Self.locateLibrary(
-            near: modelDirectory
-        ) else {
+        guard
+            let libraryURL = libraryURL
+                ?? Self.locateLibrary(
+                    near: modelDirectory
+                )
+        else {
             throw CTranslate2EngineError.libraryNotFound(
                 modelDirectory.deletingLastPathComponent()
                     .appendingPathComponent("bin/libglintct2.dylib")
@@ -78,9 +83,10 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
         self.dlHandle = dlHandle
 
         guard let createSymbol = dlsym(dlHandle, "glint_ct2_create"),
-              let translateSymbol = dlsym(dlHandle, "glint_ct2_translate"),
-              let freeSymbol = dlsym(dlHandle, "glint_ct2_free_string"),
-              let destroySymbol = dlsym(dlHandle, "glint_ct2_destroy") else {
+            let translateSymbol = dlsym(dlHandle, "glint_ct2_translate"),
+            let freeSymbol = dlsym(dlHandle, "glint_ct2_free_string"),
+            let destroySymbol = dlsym(dlHandle, "glint_ct2_destroy")
+        else {
             dlclose(dlHandle)
             self.dlHandle = nil
             throw CTranslate2EngineError.symbolsMissing
@@ -164,7 +170,8 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
             forResource: "mt-opus-zh-en",
             withExtension: nil
         )?.appendingPathComponent("model", isDirectory: true),
-           FileManager.default.fileExists(atPath: bundled.path) {
+            FileManager.default.fileExists(atPath: bundled.path)
+        {
             return bundled
         }
         return nil

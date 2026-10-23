@@ -11,14 +11,17 @@ public final class ECDICTDictionary: DictionaryEngine, @unchecked Sendable {
     public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
         let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty,
-              !DictionaryPolicy.blockedTerms.contains(text) else {
+            !DictionaryPolicy.blockedTerms.contains(text)
+        else {
             return nil
         }
-        guard let values = ranker?.fallbackCandidates(
-            term: text,
-            maxFrequency: 100_000,
-            limit: 3
-        ), !values.isEmpty else {
+        guard
+            let values = ranker?.fallbackCandidates(
+                term: text,
+                maxFrequency: 100_000,
+                limit: 3
+            ), !values.isEmpty
+        else {
             return nil
         }
         let options = values.enumerated().map { index, value in

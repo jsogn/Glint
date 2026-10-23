@@ -9,7 +9,7 @@ let package = Package(
         .executable(name: "glint-plugin-probe", targets: ["GlintPluginProbe"]),
     ],
     dependencies: [
-        .package(path: "../GlintCore"),
+        .package(path: "../GlintCore")
     ],
     targets: [
         .target(

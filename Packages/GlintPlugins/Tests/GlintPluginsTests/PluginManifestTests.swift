@@ -4,21 +4,21 @@ import XCTest
 final class PluginManifestTests: XCTestCase {
     func testManifestDecoding() throws {
         let json = """
-        {
-          "id": "dict-cedict",
-          "type": "dictionary",
-          "name": "CC-CEDICT",
-          "version": "2026.10",
-          "runtime": "sqlite",
-          "sizeBytes": 20000000,
-          "sha256": "abc",
-          "url": "https://example.invalid/dict-cedict.zip",
-          "license": "CC-BY-SA-4.0",
-          "minRAMBytes": 0,
-          "source": "bundled",
-          "revision": "abc123"
-        }
-        """
+            {
+              "id": "dict-cedict",
+              "type": "dictionary",
+              "name": "CC-CEDICT",
+              "version": "2026.10",
+              "runtime": "sqlite",
+              "sizeBytes": 20000000,
+              "sha256": "abc",
+              "url": "https://example.invalid/dict-cedict.zip",
+              "license": "CC-BY-SA-4.0",
+              "minRAMBytes": 0,
+              "source": "bundled",
+              "revision": "abc123"
+            }
+            """
         let manifest = try JSONDecoder().decode(
             PluginManifest.self,
             from: Data(json.utf8)

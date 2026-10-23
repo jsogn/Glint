@@ -164,9 +164,11 @@ final class MainWindowModelTests: XCTestCase {
             id: "dict-optional-test",
             source: .catalog
         )
-        try await install(manifest, using: PluginManager(
-            baseDirectory: root
-        ), root: root)
+        try await install(
+            manifest,
+            using: PluginManager(
+                baseDirectory: root
+            ), root: root)
         let manager = PluginManager(baseDirectory: root)
         let model = MainWindowModel(
             pluginManager: manager,

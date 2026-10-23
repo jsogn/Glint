@@ -20,7 +20,8 @@ struct CatalogUpdatePolicy {
     ) -> Bool {
         if force { return true }
         if let lastFailure,
-           now.timeIntervalSince(lastFailure) < failureInterval {
+            now.timeIntervalSince(lastFailure) < failureInterval
+        {
             return false
         }
         guard let lastSuccess else { return true }
@@ -85,18 +86,15 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var openAccessibilitySettingsAction: @MainActor () -> Void = {}
     @ObservationIgnored
-    public var activateTranslationModelAction:
-        @MainActor (String) async -> String? = { _ in nil }
+    public var activateTranslationModelAction: @MainActor (String) async -> String? = { _ in nil }
     @ObservationIgnored
-    public var releaseTranslationModelAction:
-        @MainActor (String) async -> Void = { _ in }
+    public var releaseTranslationModelAction: @MainActor (String) async -> Void = { _ in }
     @ObservationIgnored
     public var translationModeAction: @MainActor (TranslationMode) -> Void = { _ in }
     @ObservationIgnored
     public var translationConfigurationChangedAction: @MainActor () -> Void = {}
     @ObservationIgnored
-    public var dictionaryConfigurationChangedAction:
-        @MainActor () async -> Void = {}
+    public var dictionaryConfigurationChangedAction: @MainActor () async -> Void = {}
 
     public init(
         displayPreferences: DisplayPreferences? = nil,
@@ -112,9 +110,11 @@ public final class MainWindowModel {
         self.installedPlugins = builtInPlugins.sorted {
             $0.name < $1.name
         }
-        self.catalogURL = catalogURL ?? Self.defaultCatalogURL(
-            defaults: defaults
-        )
+        self.catalogURL =
+            catalogURL
+            ?? Self.defaultCatalogURL(
+                defaults: defaults
+            )
         self.defaults = defaults
         self.now = now
         self.activeModelID = TranslationModelSelection.selected(in: defaults)
@@ -166,10 +166,9 @@ public final class MainWindowModel {
         isLoadingPlugins = true
         let managedPlugins = await pluginLifecycle.installedPlugins()
         let builtInIDs = Set(builtInPlugins.map(\.id))
-        installedPlugins = (
-            builtInPlugins
-                + managedPlugins.filter { !builtInIDs.contains($0.id) }
-        ).sorted { $0.name < $1.name }
+        installedPlugins =
+            (builtInPlugins
+            + managedPlugins.filter { !builtInIDs.contains($0.id) }).sorted { $0.name < $1.name }
         reconcileActiveTranslationModel()
         isLoadingPlugins = false
         translationConfigurationChangedAction()
@@ -182,12 +181,14 @@ public final class MainWindowModel {
         }
         guard !isLoadingCatalog else { return }
         let currentDate = now()
-        guard CatalogUpdatePolicy.shouldCheck(
-            force: force,
-            now: currentDate,
-            lastSuccess: lastCatalogSuccessAt,
-            lastFailure: lastCatalogFailureAt
-        ) else {
+        guard
+            CatalogUpdatePolicy.shouldCheck(
+                force: force,
+                now: currentDate,
+                lastSuccess: lastCatalogSuccessAt,
+                lastFailure: lastCatalogFailureAt
+            )
+        else {
             return
         }
 
@@ -204,8 +205,8 @@ public final class MainWindowModel {
                 availablePlugins = result.plugins
                     .filter { !builtInIDs.contains($0.id) }
                     .sorted {
-                    $0.name < $1.name
-                }
+                        $0.name < $1.name
+                    }
             }
             catalogETag = result.etag
             catalogLastModified = result.lastModified
@@ -218,7 +219,8 @@ public final class MainWindowModel {
 
     public func checkForCatalogUpdatesAfterLaunch() async {
         guard lastCatalogSuccessAt == nil,
-              lastCatalogFailureAt == nil else {
+            lastCatalogFailureAt == nil
+        else {
             return
         }
         await checkForCatalogUpdates(force: true)
@@ -374,10 +376,9 @@ public final class MainWindowModel {
         if recoveryErrors.isEmpty {
             return "导入失败，已恢复原模型：\(error)"
         }
-        return (
-            "导入失败：\(error)"
-                + "（\(recoveryErrors.joined(separator: "；"))）"
-        )
+        return
+            ("导入失败：\(error)"
+            + "（\(recoveryErrors.joined(separator: "；"))）")
     }
 
     public func cancelLocalModelImport() {
@@ -385,7 +386,8 @@ public final class MainWindowModel {
     }
 
     private func performInstallation(_ plugin: PluginManifest) async {
-        let wasActiveTranslation = plugin.type == .translation
+        let wasActiveTranslation =
+            plugin.type == .translation
             && activeModelID == plugin.id
         var hadPendingUpgrade = false
         defer {
@@ -530,10 +532,11 @@ public final class MainWindowModel {
 
     public func update(for plugin: PluginManifest) -> PluginUpdateInfo? {
         guard let installedVersion = installedVersion(for: plugin.id),
-              PluginVersion.isNewer(
+            PluginVersion.isNewer(
                 plugin.version,
                 than: installedVersion
-              ) else {
+            )
+        else {
             return nil
         }
         return PluginUpdateInfo(
@@ -570,9 +573,10 @@ public final class MainWindowModel {
     private func reconcileActiveTranslationModel() {
         let models = installedPlugins.filter { $0.type == .translation }
         guard !models.contains(where: { $0.id == activeModelID }) else { return }
-        let fallback = models.first {
-            $0.id == TranslationModelSelection.defaultModelID
-        } ?? models.first
+        let fallback =
+            models.first {
+                $0.id == TranslationModelSelection.defaultModelID
+            } ?? models.first
         if let fallback {
             activateTranslationModel(fallback)
         } else {
@@ -595,7 +599,8 @@ public final class MainWindowModel {
                 translationModelStatusIsError = true
                 translationModelStatusModelID = modelID
                 if let previousModelID,
-                   previousModelID != modelID {
+                    previousModelID != modelID
+                {
                     activeModelID = previousModelID
                     TranslationModelSelection.select(
                         previousModelID,
@@ -616,18 +621,20 @@ public final class MainWindowModel {
         defaults: UserDefaults
     ) -> URL? {
         if let value = ProcessInfo.processInfo.environment["GLINT_PLUGIN_CATALOG_URL"],
-           let url = URL(string: value) {
+            let url = URL(string: value)
+        {
             return url
         }
         if let value = defaults.string(forKey: "plugin.catalogURL"),
-           let url = URL(string: value) {
+            let url = URL(string: value)
+        {
             return url
         }
         let catalogURL = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first?
-            .appendingPathComponent("Glint/catalog.json")
+        .appendingPathComponent("Glint/catalog.json")
         if let catalogURL, FileManager.default.fileExists(atPath: catalogURL.path) {
             return catalogURL
         }

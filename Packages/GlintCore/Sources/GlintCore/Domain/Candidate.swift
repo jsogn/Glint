@@ -36,7 +36,8 @@ public struct TranslationResult: Sendable, Equatable {
 
     public init(options: [TranslationOption]) {
         var seen: Set<String> = []
-        self.options = options
+        self.options =
+            options
             .filter { !$0.text.isEmpty }
             .sorted { lhs, rhs in
                 if lhs.score == rhs.score {

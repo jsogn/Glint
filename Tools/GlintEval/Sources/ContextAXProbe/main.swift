@@ -38,15 +38,18 @@ private enum AXReader {
         _ name: String
     ) -> CFRange? {
         guard let value = attribute(element, name),
-              CFGetTypeID(value as CFTypeRef) == AXValueGetTypeID() else {
+            CFGetTypeID(value as CFTypeRef) == AXValueGetTypeID()
+        else {
             return nil
         }
         var range = CFRange()
-        guard AXValueGetValue(
-            value as! AXValue,
-            .cfRange,
-            &range
-        ), range.location != kCFNotFound else {
+        guard
+            AXValueGetValue(
+                value as! AXValue,
+                .cfRange,
+                &range
+            ), range.location != kCFNotFound
+        else {
             return nil
         }
         return range
@@ -60,13 +63,15 @@ private enum AXReader {
         for app: AXUIElement
     ) -> AXUIElement? {
         if let value = attribute(app, kAXFocusedUIElementAttribute),
-           CFGetTypeID(value as CFTypeRef) == AXUIElementGetTypeID() {
+            CFGetTypeID(value as CFTypeRef) == AXUIElementGetTypeID()
+        {
             return (value as! AXUIElement)
         }
-        let windows = attribute(
-            app,
-            kAXWindowsAttribute
-        ) as? [AXUIElement] ?? []
+        let windows =
+            attribute(
+                app,
+                kAXWindowsAttribute
+            ) as? [AXUIElement] ?? []
         for window in windows {
             if let element = focusedTextElement(
                 in: window,
@@ -83,13 +88,15 @@ private enum AXReader {
         depth: Int
     ) -> AXUIElement? {
         let role = attribute(element, kAXRoleAttribute) as? String
-        let focused = attribute(
-            element,
-            kAXFocusedAttribute
-        ) as? Bool ?? false
+        let focused =
+            attribute(
+                element,
+                kAXFocusedAttribute
+            ) as? Bool ?? false
         if focused,
-           role == kAXTextFieldRole as String
-                || role == kAXTextAreaRole as String {
+            role == kAXTextFieldRole as String
+                || role == kAXTextAreaRole as String
+        {
             return element
         }
         guard depth < 12 else { return nil }
@@ -108,10 +115,12 @@ private enum AXReader {
         _ element: AXUIElement
     ) -> [String] {
         var names: CFArray?
-        guard AXUIElementCopyParameterizedAttributeNames(
-            element,
-            &names
-        ) == .success else {
+        guard
+            AXUIElementCopyParameterizedAttributeNames(
+                element,
+                &names
+            ) == .success
+        else {
             return []
         }
         return names as? [String] ?? []
@@ -122,10 +131,12 @@ private enum AXReader {
         range: CFRange
     ) -> String? {
         var range = range
-        guard let parameter = AXValueCreate(
-            .cfRange,
-            &range
-        ) else {
+        guard
+            let parameter = AXValueCreate(
+                .cfRange,
+                &range
+            )
+        else {
             return nil
         }
         var value: CFTypeRef?
@@ -210,11 +221,13 @@ struct ContextAXProbe {
             element,
             "AXTextInputMarkedRange"
         )
-        let characterCount = AXReader.attribute(
-            element,
-            kAXNumberOfCharactersAttribute
-        ) as? Int
-        let anchor = markedRange?.length ?? 0 > 0
+        let characterCount =
+            AXReader.attribute(
+                element,
+                kAXNumberOfCharactersAttribute
+            ) as? Int
+        let anchor =
+            markedRange?.length ?? 0 > 0
             ? markedRange
             : selectedRange
 
@@ -257,18 +270,21 @@ struct ContextAXProbe {
                 max(0, (characterCount ?? afterStart + options.after) - afterStart)
             )
         )
-        let before: String? = beforeRange.length > 0
+        let before: String? =
+            beforeRange.length > 0
             ? AXReader.string(element, range: beforeRange)
             : ""
-        let after: String? = afterRange.length > 0
+        let after: String? =
+            afterRange.length > 0
             ? AXReader.string(element, range: afterRange)
             : ""
         let supported = before != nil || after != nil
-        let reason: String? = if before != nil && after != nil {
-            nil
-        } else {
-            "partial_context"
-        }
+        let reason: String? =
+            if before != nil && after != nil {
+                nil
+            } else {
+                "partial_context"
+            }
 
         try write(
             ProbeResult(

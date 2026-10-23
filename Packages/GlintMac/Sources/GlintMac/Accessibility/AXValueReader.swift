@@ -36,7 +36,8 @@ enum AXValueReader {
 
     static func element(_ value: Any?) -> AXUIElement? {
         guard let value,
-              CFGetTypeID(value as CFTypeRef) == AXUIElementGetTypeID() else {
+            CFGetTypeID(value as CFTypeRef) == AXUIElementGetTypeID()
+        else {
             return nil
         }
         return (value as! AXUIElement)
@@ -47,7 +48,8 @@ enum AXValueReader {
         type: AXValueType
     ) -> AXValue? {
         guard let value,
-              CFGetTypeID(value as CFTypeRef) == AXValueGetTypeID() else {
+            CFGetTypeID(value as CFTypeRef) == AXValueGetTypeID()
+        else {
             return nil
         }
         let axValue = value as! AXValue

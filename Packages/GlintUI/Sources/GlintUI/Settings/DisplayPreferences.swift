@@ -40,8 +40,7 @@ public final class DisplayPreferences {
     @ObservationIgnored
     public var candidateDwellDurationDidChange: (@MainActor (Double) -> Void)?
     @ObservationIgnored
-    public var translationScopeDidChange:
-        (@MainActor (CandidateTranslationScope) -> Void)?
+    public var translationScopeDidChange: (@MainActor (CandidateTranslationScope) -> Void)?
 
     public var position: HUDPosition {
         didSet {
@@ -187,9 +186,10 @@ public final class DisplayPreferences {
         let storedPosition = defaults.string(forKey: Key.position)
         self.position = HUDPosition(rawValue: storedPosition ?? "") ?? .automatic
 
-        let storedDwellDuration = defaults.object(
-            forKey: Key.candidateDwellDuration
-        ) as? Double
+        let storedDwellDuration =
+            defaults.object(
+                forKey: Key.candidateDwellDuration
+            ) as? Double
         let dwellDuration = Self.clampedDwellDuration(
             storedDwellDuration ?? 0.12
         )
@@ -204,21 +204,25 @@ public final class DisplayPreferences {
         let storedBackgroundStyle = defaults.string(
             forKey: Key.hudBackgroundStyle
         )
-        self.hudBackgroundStyle = storedBackgroundStyle.flatMap(
-            HUDBackgroundStyle.init(rawValue:)
-        ) ?? .darkGlass
+        self.hudBackgroundStyle =
+            storedBackgroundStyle.flatMap(
+                HUDBackgroundStyle.init(rawValue:)
+            ) ?? .darkGlass
 
-        let storedUsesCustomTextColor = defaults.object(
-            forKey: Key.hudUsesCustomTextColor
-        ) as? Bool
+        let storedUsesCustomTextColor =
+            defaults.object(
+                forKey: Key.hudUsesCustomTextColor
+            ) as? Bool
         self.hudUsesCustomTextColor = storedUsesCustomTextColor ?? false
 
-        let storedGlassOpacity = defaults.object(
-            forKey: Key.hudGlassOpacity
-        ) as? Double
-        let storedSolidOpacity = defaults.object(
-            forKey: Key.hudSolidOpacity
-        ) as? Double
+        let storedGlassOpacity =
+            defaults.object(
+                forKey: Key.hudGlassOpacity
+            ) as? Double
+        let storedSolidOpacity =
+            defaults.object(
+                forKey: Key.hudSolidOpacity
+            ) as? Double
         self.hudGlassOpacity = Self.clampedOpacity(
             storedGlassOpacity ?? 0.8
         )
@@ -226,29 +230,34 @@ public final class DisplayPreferences {
             storedSolidOpacity ?? 0.8
         )
 
-        self.hudTextColor = Self.storedColor(
-            forKey: Key.hudTextColor,
-            defaults: defaults
-        ) ?? HUDAppearance.defaultTextColor
-        self.hudBackgroundColor = Self.storedColor(
-            forKey: Key.hudBackgroundColor,
-            defaults: defaults
-        ) ?? HUDAppearance.defaultBackgroundColor
-        let storedFontSize = defaults.object(
-            forKey: Key.hudFontSize
-        ) as? Double
+        self.hudTextColor =
+            Self.storedColor(
+                forKey: Key.hudTextColor,
+                defaults: defaults
+            ) ?? HUDAppearance.defaultTextColor
+        self.hudBackgroundColor =
+            Self.storedColor(
+                forKey: Key.hudBackgroundColor,
+                defaults: defaults
+            ) ?? HUDAppearance.defaultBackgroundColor
+        let storedFontSize =
+            defaults.object(
+                forKey: Key.hudFontSize
+            ) as? Double
         self.hudFontSize = Self.clampedFontSize(storedFontSize ?? 14)
         let storedDensity = defaults.string(forKey: Key.hudDensity)
-        self.hudDensity = HUDDensity(
-            rawValue: storedDensity ?? ""
-        ) ?? .standard
+        self.hudDensity =
+            HUDDensity(
+                rawValue: storedDensity ?? ""
+            ) ?? .standard
 
         let storedTranslationScope = defaults.string(
             forKey: Key.translationScope
         )
-        self.translationScope = CandidateTranslationScope(
-            rawValue: storedTranslationScope ?? ""
-        ) ?? .selected
+        self.translationScope =
+            CandidateTranslationScope(
+                rawValue: storedTranslationScope ?? ""
+            ) ?? .selected
     }
 
     public func resetHUDAppearance() {

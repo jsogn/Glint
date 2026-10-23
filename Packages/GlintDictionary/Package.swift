@@ -5,10 +5,10 @@ let package = Package(
     name: "GlintDictionary",
     platforms: [.macOS("26.0")],
     products: [
-        .library(name: "GlintDictionary", targets: ["GlintDictionary"]),
+        .library(name: "GlintDictionary", targets: ["GlintDictionary"])
     ],
     dependencies: [
-        .package(path: "../GlintCore"),
+        .package(path: "../GlintCore")
     ],
     targets: [
         .target(

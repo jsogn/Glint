@@ -11,7 +11,8 @@ enum AXCandidateProbe {
         let targetPID = probePID()
         let reader = AXCandidateReader()
         let focus = FocusMonitor()
-        let deadline = DispatchTime.now().uptimeNanoseconds
+        let deadline =
+            DispatchTime.now().uptimeNanoseconds
             + UInt64(seconds * 1_000_000_000)
         var latencies: [Double] = []
         var lastState = ""
@@ -23,9 +24,10 @@ enum AXCandidateProbe {
         while DispatchTime.now().uptimeNanoseconds < deadline {
             let startedAt = DispatchTime.now().uptimeNanoseconds
             let candidate = reader.snapshot(processIdentifier: targetPID)
-            let elapsed = Double(
-                DispatchTime.now().uptimeNanoseconds - startedAt
-            ) / 1_000_000
+            let elapsed =
+                Double(
+                    DispatchTime.now().uptimeNanoseconds - startedAt
+                ) / 1_000_000
             latencies.append(elapsed)
 
             let frontmost = NSWorkspace.shared.frontmostApplication
@@ -89,9 +91,11 @@ enum AXCandidateProbe {
     }
 
     private static func probePID() -> pid_t? {
-        guard let raw = ProcessInfo.processInfo.environment[
-            "GLINT_AX_PROBE_PID"
-        ], let pid = Int32(raw) else {
+        guard
+            let raw = ProcessInfo.processInfo.environment[
+                "GLINT_AX_PROBE_PID"
+            ], let pid = Int32(raw)
+        else {
             return nil
         }
         return pid

@@ -267,7 +267,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         refreshPermissionState()
         if !windowModel.accessibilityGranted,
-           requestPermissionIfNeeded {
+            requestPermissionIfNeeded
+        {
             beginPermissionRequest()
         }
         monitoringTask = Task { [weak self] in
@@ -374,13 +375,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 "\($0.id)@\($0.version)#\($0.revision ?? $0.sha256)"
             }
             .sorted()
-        return (
-            [
+        return
+            ([
                 "model=\(windowModel.activeModelID)",
                 "prompt=1",
             ]
-                + pluginVersions
-        ).joined(separator: "|")
+            + pluginVersions).joined(separator: "|")
     }
 
     private func refreshPermissionState() {
@@ -411,7 +411,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         from arguments: [String]
     ) -> String? {
         guard let flagIndex = arguments.firstIndex(of: "--readiness-token"),
-              arguments.indices.contains(flagIndex + 1) else {
+            arguments.indices.contains(flagIndex + 1)
+        else {
             return nil
         }
         let token = arguments[flagIndex + 1]
@@ -468,9 +469,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openAccessibilitySettings() {
-        guard let url = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        ) else {
+        guard
+            let url = URL(
+                string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+            )
+        else {
             return
         }
         NSWorkspace.shared.open(url)

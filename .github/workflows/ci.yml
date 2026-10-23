@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 75
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+
+      - name: Cache OPUS conversion inputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            Tools/ModelLab/.cache
+          key: opus-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Tools/ModelLab/prepare_opus_model.py', 'Tools/ModelLab/requirements-opus-conversion.txt', 'Resources/Plugins/mt-opus-zh-en/model-lock.json') }}
+
+      - name: Lint Swift
+        run: git ls-files '*.swift' -z | xargs -0 swift format lint --strict --configuration .swift-format
+
+      - name: Run Swift tests
+        run: ./scripts/test.sh
+
+      - name: Run Python tool tests
+        run: zsh ./scripts/test_python_tools.sh

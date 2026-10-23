@@ -109,7 +109,8 @@ private struct OverviewStatusCard: View {
 
     private var attentionMessage: String? {
         if model.translationModelStatusIsError,
-           let message = model.translationModelStatusText {
+            let message = model.translationModelStatusText
+        {
             return message
         }
         return model.statusText.isEmpty ? nil : model.statusText

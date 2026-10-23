@@ -5,7 +5,7 @@ let package = Package(
     name: "GlintCore",
     platforms: [.macOS("26.0")],
     products: [
-        .library(name: "GlintCore", targets: ["GlintCore"]),
+        .library(name: "GlintCore", targets: ["GlintCore"])
     ],
     targets: [
         .target(name: "GlintCore"),

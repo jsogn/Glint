@@ -5,16 +5,16 @@ let package = Package(
     name: "GlintMac",
     platforms: [.macOS("26.0")],
     products: [
-        .library(name: "GlintMac", targets: ["GlintMac"]),
+        .library(name: "GlintMac", targets: ["GlintMac"])
     ],
     dependencies: [
-        .package(path: "../GlintCore"),
+        .package(path: "../GlintCore")
     ],
     targets: [
         .target(
             name: "GlintMac",
             dependencies: [
-                .product(name: "GlintCore", package: "GlintCore"),
+                .product(name: "GlintCore", package: "GlintCore")
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),

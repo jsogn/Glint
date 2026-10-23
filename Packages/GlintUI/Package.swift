@@ -5,7 +5,7 @@ let package = Package(
     name: "GlintUI",
     platforms: [.macOS("26.0")],
     products: [
-        .library(name: "GlintUI", targets: ["GlintUI"]),
+        .library(name: "GlintUI", targets: ["GlintUI"])
     ],
     dependencies: [
         .package(path: "../GlintCore"),

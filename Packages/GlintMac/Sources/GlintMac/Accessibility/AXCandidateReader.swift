@@ -95,8 +95,9 @@ enum AXCandidateVisibleRowSelector {
         let framed: [(item: AXCandidateItem, frame: CGRect)] =
             unique.compactMap { item in
                 guard let frame = item.frame,
-                      frame.width > 0,
-                      frame.height > 0 else {
+                    frame.width > 0,
+                    frame.height > 0
+                else {
                     return nil
                 }
                 return (item: item, frame: frame)
@@ -105,11 +106,12 @@ enum AXCandidateVisibleRowSelector {
             return fallbackRow(selected: selected)
         }
         guard visibleRowCount(for: framed.map { $0.frame }) == 1,
-              framed.count <= maximumRowCount,
-              let matchedIndex = selectedIndex(
-                  in: framed.map { $0.item },
-                  selected: selected
-              ) else {
+            framed.count <= maximumRowCount,
+            let matchedIndex = selectedIndex(
+                in: framed.map { $0.item },
+                selected: selected
+            )
+        else {
             return nil
         }
         let sorted = framed.enumerated().sorted { lhs, rhs in
@@ -118,9 +120,10 @@ enum AXCandidateVisibleRowSelector {
             }
             return lhs.offset < rhs.offset
         }
-        let sortedSelectedIndex = sorted.firstIndex {
-            $0.offset == matchedIndex
-        } ?? 0
+        let sortedSelectedIndex =
+            sorted.firstIndex {
+                $0.offset == matchedIndex
+            } ?? 0
         return AXCandidateVisibleRow(
             items: sorted.map { $0.element.item },
             selectedIndex: sortedSelectedIndex
@@ -196,31 +199,38 @@ public final class AXCandidateReader {
         processIdentifier: pid_t? = nil,
         includeVisibleCandidates: Bool = false
     ) -> AXCandidateSnapshot? {
-        guard let application = applicationElement(
-            processIdentifier: processIdentifier
-        ) else {
+        guard
+            let application = applicationElement(
+                processIdentifier: processIdentifier
+            )
+        else {
             return nil
         }
-        let applicationPID = processIdentifier ?? Self.processIdentifier(
-            of: application
-        )
-        guard let windows = Self.elementsAttribute(
-            application,
-            kAXWindowsAttribute
-        ) else {
+        let applicationPID =
+            processIdentifier
+            ?? Self.processIdentifier(
+                of: application
+            )
+        guard
+            let windows = Self.elementsAttribute(
+                application,
+                kAXWindowsAttribute
+            )
+        else {
             clearCandidateCache()
             return nil
         }
         if cachedCandidateListPID == applicationPID,
-           let cachedCandidateWindow,
-           let cachedCandidateList,
-           windows.contains(where: {
-               CFEqual($0, cachedCandidateWindow)
-           }),
-           Self.candidateList(
-               cachedCandidateList,
-               belongsTo: cachedCandidateWindow
-           ) {
+            let cachedCandidateWindow,
+            let cachedCandidateList,
+            windows.contains(where: {
+                CFEqual($0, cachedCandidateWindow)
+            }),
+            Self.candidateList(
+                cachedCandidateList,
+                belongsTo: cachedCandidateWindow
+            )
+        {
             if let snapshot = Self.snapshot(
                 from: cachedCandidateList,
                 candidateWindow: cachedCandidateWindow,
@@ -232,11 +242,12 @@ public final class AXCandidateReader {
         clearCandidateCache()
         for window in windows {
             guard let list = Self.candidateList(in: window),
-                  let snapshot = Self.snapshot(
-                      from: list,
-                      candidateWindow: window,
-                      includeVisibleCandidates: includeVisibleCandidates
-                  ) else {
+                let snapshot = Self.snapshot(
+                    from: list,
+                    candidateWindow: window,
+                    includeVisibleCandidates: includeVisibleCandidates
+                )
+            else {
                 continue
             }
             cachedCandidateWindow = window
@@ -256,12 +267,15 @@ public final class AXCandidateReader {
     private func applicationElement(
         processIdentifier: pid_t?
     ) -> AXUIElement? {
-        guard let resolvedPID = processIdentifier
-                ?? Self.focusedProcessIdentifier() else {
+        guard
+            let resolvedPID = processIdentifier
+                ?? Self.focusedProcessIdentifier()
+        else {
             return nil
         }
         if cachedApplicationPID != resolvedPID
-            || cachedApplication == nil {
+            || cachedApplication == nil
+        {
             let application = AXUIElementCreateApplication(resolvedPID)
             AXUIElementSetMessagingTimeout(application, 0.25)
             cachedApplication = application
@@ -285,13 +299,16 @@ public final class AXCandidateReader {
             var element = focusedElement
             for _ in 0..<64 {
                 if attribute(element, kAXRoleAttribute) as? String
-                    == kAXApplicationRole as String {
+                    == kAXApplicationRole as String
+                {
                     return processIdentifier(of: element)
                 }
-                guard let parent = elementAttribute(
-                    element,
-                    kAXParentAttribute
-                ) else {
+                guard
+                    let parent = elementAttribute(
+                        element,
+                        kAXParentAttribute
+                    )
+                else {
                     break
                 }
                 element = parent
@@ -365,13 +382,15 @@ public final class AXCandidateReader {
         candidateWindow: AXUIElement,
         includeVisibleCandidates: Bool
     ) -> AXCandidateSnapshot? {
-        let selectedElements = elementsAttribute(
-            list,
-            kAXSelectedChildrenAttribute
-        ) ?? []
+        let selectedElements =
+            elementsAttribute(
+                list,
+                kAXSelectedChildrenAttribute
+            ) ?? []
         if !includeVisibleCandidates,
-           let selectedElement = selectedElements.first,
-           let selected = candidateItem(of: selectedElement) {
+            let selectedElement = selectedElements.first,
+            let selected = candidateItem(of: selectedElement)
+        {
             return AXCandidateSnapshot(
                 text: selected.text,
                 visibleTexts: [],
@@ -383,20 +402,24 @@ public final class AXCandidateReader {
             )
         }
         guard let selectedElement = selectedElements.first,
-              let selected = candidateItem(of: selectedElement) else {
+            let selected = candidateItem(of: selectedElement)
+        else {
             return nil
         }
         let candidateWindowFrame = frame(of: candidateWindow)
         let candidateListFrame = frame(of: list)
-        let visibleElements = elementsAttribute(
-            list,
-            kAXVisibleChildrenAttribute
-        ) ?? []
+        let visibleElements =
+            elementsAttribute(
+                list,
+                kAXVisibleChildrenAttribute
+            ) ?? []
         let visibleItems = visibleElements.compactMap(candidateItem)
-        guard let row = AXCandidateVisibleRowSelector.select(
-            selected: selected,
-            visible: visibleItems
-        ) else {
+        guard
+            let row = AXCandidateVisibleRowSelector.select(
+                selected: selected,
+                visible: visibleItems
+            )
+        else {
             return nil
         }
         let options = row.items.enumerated().map { index, item in
@@ -454,13 +477,14 @@ public final class AXCandidateReader {
             return frame
         }
 
-        guard let positionValue = attribute(
-                  element,
-                  kAXPositionAttribute
-              ),
-              let sizeValue = attribute(element, kAXSizeAttribute),
-              let position = AXValueReader.point(positionValue),
-              let size = AXValueReader.size(sizeValue)
+        guard
+            let positionValue = attribute(
+                element,
+                kAXPositionAttribute
+            ),
+            let sizeValue = attribute(element, kAXSizeAttribute),
+            let position = AXValueReader.point(positionValue),
+            let size = AXValueReader.size(sizeValue)
         else {
             return nil
         }

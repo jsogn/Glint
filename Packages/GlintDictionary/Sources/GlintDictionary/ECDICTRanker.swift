@@ -102,9 +102,9 @@ public final class ECDICTRanker: @unchecked Sendable {
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first?
-            .appendingPathComponent(
-                "Glint/plugins/dict-ecdict/ecdict_rank.sqlite3"
-            )
+        .appendingPathComponent(
+            "Glint/plugins/dict-ecdict/ecdict_rank.sqlite3"
+        )
         if let support, FileManager.default.fileExists(atPath: support.path) {
             return support
         }

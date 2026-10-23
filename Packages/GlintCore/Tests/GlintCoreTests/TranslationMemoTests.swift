@@ -101,7 +101,7 @@ final class TranslationMemoTests: XCTestCase {
                         TranslationOption(
                             text: String(repeating: "x", count: 100),
                             score: 1
-                        ),
+                        )
                     ]
                 )
             }

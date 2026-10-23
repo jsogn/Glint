@@ -6,7 +6,8 @@ struct GlintPluginProbe {
     static func main() async {
         let arguments = Array(CommandLine.arguments.dropFirst())
         guard arguments.count >= 3,
-              let pluginID = arguments.dropFirst(2).first else {
+            let pluginID = arguments.dropFirst(2).first
+        else {
             fputs("usage: glint-plugin-probe <catalog> <install-dir> <plugin-id>\n", stderr)
             exit(2)
         }

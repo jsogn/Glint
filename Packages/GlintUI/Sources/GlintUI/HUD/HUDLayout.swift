@@ -38,7 +38,7 @@ enum HUDLayout {
             let belowFits = below >= visibleFrame.minY + screenEdgeInset
             let aboveFits =
                 above + panelSize.height
-                    <= visibleFrame.maxY - screenEdgeInset
+                <= visibleFrame.maxY - screenEdgeInset
             if let preferredPlacesBelow {
                 if preferredPlacesBelow, belowFits {
                     placesBelow = true

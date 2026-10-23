@@ -70,15 +70,17 @@ final class HUDEventCoordinator {
         )
         let phase: String
         if model.displayPreferences.translationScope == .row,
-           items.count > 1,
-           !isProgressive {
+            items.count > 1,
+            !isProgressive
+        {
             phase = "row_visible"
         } else {
             phase = "selected_visible"
         }
-        let eventToVisible = candidateChangedAt.map {
-            Self.elapsedMilliseconds($0.duration(to: .now))
-        } ?? 0
+        let eventToVisible =
+            candidateChangedAt.map {
+                Self.elapsedMilliseconds($0.duration(to: .now))
+            } ?? 0
         hudLatencyLogger.notice(
             "perf latency phase=\(phase, privacy: .public) revision=\(revision, privacy: .public) visible_items=\(items.count, privacy: .public) event_to_visible_ms=\(eventToVisible, privacy: .public)"
         )

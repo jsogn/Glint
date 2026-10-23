@@ -35,9 +35,10 @@ public struct FocusMonitor: Sendable {
     public init() {}
 
     public static func isAccessibilityTrusted(prompt: Bool = false) -> Bool {
-        let options = [
-            "AXTrustedCheckOptionPrompt": prompt,
-        ] as CFDictionary
+        let options =
+            [
+                "AXTrustedCheckOptionPrompt": prompt
+            ] as CFDictionary
         return AXIsProcessTrustedWithOptions(options)
     }
 
@@ -70,7 +71,8 @@ public struct FocusMonitor: Sendable {
             selectedRange,
             markedRange: markedRange
         )
-        let caret = hasTextSelection
+        let caret =
+            hasTextSelection
             ? nil
             : selectedRange.flatMap { Self.caretRect(for: $0, in: element) }
         let frame = Self.elementFrame(of: element)
@@ -95,7 +97,8 @@ public struct FocusMonitor: Sendable {
 
     private static func rangeValue(_ value: Any?) -> NSRange? {
         guard let range = AXValueReader.range(value),
-              range.location != NSNotFound else {
+            range.location != NSNotFound
+        else {
             return nil
         }
         return NSRange(location: range.location, length: max(0, range.length))
@@ -124,9 +127,10 @@ public struct FocusMonitor: Sendable {
         // IME composition also exposes a non-empty selected range. Only
         // selections outside the marked-text range are real user selections.
         guard let markedRange,
-              markedRange.length > 0,
-              selectedRange.location >= markedRange.location,
-              NSMaxRange(selectedRange) <= NSMaxRange(markedRange) else {
+            markedRange.length > 0,
+            selectedRange.location >= markedRange.location,
+            NSMaxRange(selectedRange) <= NSMaxRange(markedRange)
+        else {
             return true
         }
         return false
@@ -179,8 +183,9 @@ public struct FocusMonitor: Sendable {
             &value
         )
         guard result == .success,
-              let rect = AXValueReader.rect(value),
-              rect.height > 0 else {
+            let rect = AXValueReader.rect(value),
+            rect.height > 0
+        else {
             return nil
         }
         return rect
@@ -192,9 +197,10 @@ public struct FocusMonitor: Sendable {
         }
 
         guard let positionValue = axAttribute(element, kAXPositionAttribute),
-              let sizeValue = axAttribute(element, kAXSizeAttribute),
-              let point = AXValueReader.point(positionValue),
-              let size = AXValueReader.size(sizeValue) else {
+            let sizeValue = axAttribute(element, kAXSizeAttribute),
+            let point = AXValueReader.point(positionValue),
+            let size = AXValueReader.size(sizeValue)
+        else {
             return nil
         }
         return CGRect(origin: point, size: size)

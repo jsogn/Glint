@@ -10,9 +10,7 @@ enum CandidateTranslationPipeline {
         router: SmartRouter,
         memo: TranslationMemo,
         displayOptionLimit: Int = 3,
-        dictionaryPrefetchTasks: [
-            Int: Task<TranslationResult?, Never>
-        ] = [:],
+        dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>] = [:],
         cachedPrefetchResults: [Int: TranslationResult] = [:],
         publishProgress: (
             @Sendable ([CandidateTranslationPresentation]) async -> Void
@@ -49,9 +47,10 @@ enum CandidateTranslationPipeline {
             for await (index, result) in group {
                 results[index] = result
                 if candidates.count > 1,
-                   index == selectedIndex,
-                   !selectedWasPublished,
-                   result != nil {
+                    index == selectedIndex,
+                    !selectedWasPublished,
+                    result != nil
+                {
                     selectedWasPublished = true
                     let partialPresentations = candidates.indices.map {
                         presentation(
@@ -102,12 +101,14 @@ enum CandidateTranslationPipeline {
         selectedIndex: Int
     ) -> [Int] {
         guard candidateCount > 0,
-              (0..<candidateCount).contains(selectedIndex) else {
+            (0..<candidateCount).contains(selectedIndex)
+        else {
             return []
         }
-        return [selectedIndex] + (0..<candidateCount).filter {
-            $0 != selectedIndex
-        }
+        return [selectedIndex]
+            + (0..<candidateCount).filter {
+                $0 != selectedIndex
+            }
     }
 
     private static func translateCandidate(
@@ -151,7 +152,8 @@ enum CandidateTranslationPipeline {
     ) -> CandidateTranslationPresentation {
         let translation: String? = results[index].flatMap { result -> String? in
             guard isDisplayable(result) else { return nil }
-            let text = displayOptionLimit <= 1
+            let text =
+                displayOptionLimit <= 1
                 ? result.text
                 : result.displayText
             return text.isEmpty ? nil : text

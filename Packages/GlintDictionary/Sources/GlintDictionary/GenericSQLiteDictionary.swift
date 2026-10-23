@@ -78,13 +78,15 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
 
         var statement: OpaquePointer?
         defer { sqlite3_finalize(statement) }
-        guard sqlite3_prepare_v2(
-            db,
-            "PRAGMA table_info(entries)",
-            -1,
-            &statement,
-            nil
-        ) == SQLITE_OK else {
+        guard
+            sqlite3_prepare_v2(
+                db,
+                "PRAGMA table_info(entries)",
+                -1,
+                &statement,
+                nil
+            ) == SQLITE_OK
+        else {
             return false
         }
 

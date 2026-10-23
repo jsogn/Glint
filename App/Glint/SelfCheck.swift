@@ -47,23 +47,25 @@ enum SelfCheck {
             let environment = ProcessInfo.processInfo.environment
             let mlxModel: (URL, String)?
             if let path = environment["GLINT_MLX_MODEL"],
-               let modelID = environment["GLINT_MLX_MODEL_ID"] {
+                let modelID = environment["GLINT_MLX_MODEL_ID"]
+            {
                 mlxModel = (
                     URL(fileURLWithPath: path, isDirectory: true),
                     modelID
                 )
             } else {
-                mlxModel = [
-                    TranslationModelSelection.selected(),
-                    "mt-hy-mt2-1.8b",
-                    "mt-index-translate-2b",
-                    "llm-qwen3-1.7b",
-                    "llm-qwen3-4b",
-                    "llm-qwen3-0.6b",
-                ].lazy.compactMap { modelID in
-                    MLXTranslationEngine.availableModelDirectory(modelID: modelID)
-                        .map { ($0, modelID) }
-                }.first
+                mlxModel =
+                    [
+                        TranslationModelSelection.selected(),
+                        "mt-hy-mt2-1.8b",
+                        "mt-index-translate-2b",
+                        "llm-qwen3-1.7b",
+                        "llm-qwen3-4b",
+                        "llm-qwen3-0.6b",
+                    ].lazy.compactMap { modelID in
+                        MLXTranslationEngine.availableModelDirectory(modelID: modelID)
+                            .map { ($0, modelID) }
+                    }.first
             }
             if let (mlxDirectory, modelID) = mlxModel {
                 let engine = MLXTranslationEngine(

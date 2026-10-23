@@ -219,33 +219,40 @@ private struct Options {
         let values = Array(arguments.dropFirst())
         func value(after name: String) -> String? {
             guard let index = values.firstIndex(of: name),
-                  values.indices.contains(index + 1) else {
+                values.indices.contains(index + 1)
+            else {
                 return nil
             }
             return values[index + 1]
         }
-        let applicationSupport = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first ?? FileManager.default.homeDirectoryForCurrentUser
+        let applicationSupport =
+            FileManager.default.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first
+            ?? FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Application Support", isDirectory: true)
         let support = applicationSupport.appendingPathComponent(
             "Glint/plugins",
             isDirectory: true
         )
-        casesPath = value(after: "--cases")
+        casesPath =
+            value(after: "--cases")
             ?? "Tools/ModelLab/eval/cases.json"
-        mlxPath = value(after: "--mlx")
+        mlxPath =
+            value(after: "--mlx")
             ?? support.appendingPathComponent(
                 "mt-hy-mt2-1.8b/model",
                 isDirectory: true
             ).path
-        ct2Path = value(after: "--ct2")
+        ct2Path =
+            value(after: "--ct2")
             ?? support.appendingPathComponent(
                 "mt-opus-zh-en/model",
                 isDirectory: true
             ).path
-        mlxModelID = value(after: "--mlx-model-id")
+        mlxModelID =
+            value(after: "--mlx-model-id")
             ?? "mt-hy-mt2-1.8b"
         metalLibrary = value(after: "--metallib")
         rounds = max(2, Int(value(after: "--rounds") ?? "3") ?? 3)
@@ -286,7 +293,8 @@ private func quality(
     references: [String]
 ) -> (exact: Double, f1: Double) {
     guard predictions.count == references.count,
-          !predictions.isEmpty else {
+        !predictions.isEmpty
+    else {
         return (0, 0)
     }
     var exactCount = 0
@@ -303,7 +311,8 @@ private func quality(
             $0 + min($1.value, expectedCounts[$1.key, default: 0])
         }
         let denominator = predicted.count + expected.count
-        f1Sum += denominator == 0
+        f1Sum +=
+            denominator == 0
             ? 1
             : 2 * Double(overlap) / Double(denominator)
     }

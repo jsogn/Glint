@@ -56,9 +56,10 @@ final class PluginManagerUpgradeTests: XCTestCase {
             at: plugins,
             includingPropertiesForKeys: nil
         )
-        XCTAssertFalse(contents.contains {
-            $0.lastPathComponent.hasPrefix(".backup-")
-        })
+        XCTAssertFalse(
+            contents.contains {
+                $0.lastPathComponent.hasPrefix(".backup-")
+            })
     }
 
     func testRestartRollsBackUncommittedUpgrade() async throws {

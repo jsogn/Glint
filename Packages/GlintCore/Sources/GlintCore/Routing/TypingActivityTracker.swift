@@ -26,7 +26,8 @@ public struct TypingActivityTracker: Sendable {
     private var consecutiveMatches = 0
 
     public init(positionTolerance: CGFloat = 2) {
-        self.positionTolerance = positionTolerance.isFinite
+        self.positionTolerance =
+            positionTolerance.isFinite
             ? max(0, positionTolerance)
             : 2
     }
@@ -50,11 +51,13 @@ public struct TypingActivityTracker: Sendable {
             )
         }
 
-        guard Self.matches(
-            sample,
-            nextSample,
-            tolerance: positionTolerance
-        ) else {
+        guard
+            Self.matches(
+                sample,
+                nextSample,
+                tolerance: positionTolerance
+            )
+        else {
             return beginRevision(
                 nextSample,
                 timestamp: timestamp
@@ -62,13 +65,15 @@ public struct TypingActivityTracker: Sendable {
         }
 
         consecutiveMatches += 1
-        let elapsed = timestamp >= changeTimestamp
+        let elapsed =
+            timestamp >= changeTimestamp
             ? timestamp - changeTimestamp
             : 0
 
         if !isDwelling,
-           consecutiveMatches >= 2,
-           elapsed >= dwellDurationNanoseconds {
+            consecutiveMatches >= 2,
+            elapsed >= dwellDurationNanoseconds
+        {
             isDwelling = true
             return .dwelling(revision: revision)
         }
@@ -90,11 +95,13 @@ public struct TypingActivityTracker: Sendable {
         dwellDurationNanoseconds: UInt64
     ) -> UInt64? {
         guard sample != nil,
-              !isDwelling,
-              consecutiveMatches >= 2 else {
+            !isDwelling,
+            consecutiveMatches >= 2
+        else {
             return nil
         }
-        let elapsed = timestamp >= changeTimestamp
+        let elapsed =
+            timestamp >= changeTimestamp
             ? timestamp - changeTimestamp
             : 0
         guard elapsed < dwellDurationNanoseconds else { return 0 }
