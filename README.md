@@ -1,4 +1,6 @@
-![Glint：输入中文拼音时，在候选栏旁查看对应英文翻译](docs/assets/glint-hero.png)
+<p align="center">
+  <img src="docs/assets/glint-logo.png" width="160" alt="Glint">
+</p>
 
 <p align="center">
   <a href="https://github.com/jsogn/Glint/releases/latest">
