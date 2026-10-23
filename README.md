@@ -1,9 +1,12 @@
 ![Glint：输入中文拼音时，在候选栏旁查看对应英文翻译](docs/assets/glint-hero.png)
 
 <p align="center">
+  <a href="https://github.com/jsogn/Glint/releases">
+    <img alt="下载 Glint Beta" src="https://img.shields.io/github/v/release/jsogn/Glint?include_prereleases&amp;label=Download%20beta&amp;style=flat-square&amp;color=2F7DFF">
+  </a>
   <img alt="macOS 26+" src="https://img.shields.io/badge/macOS-26%2B-24292F?logo=apple&logoColor=white&style=flat-square">
   <img alt="Apple Silicon" src="https://img.shields.io/badge/Apple_Silicon-arm64-57606A?style=flat-square">
-  <img alt="本地离线" src="https://img.shields.io/badge/privacy-local_%26_offline-2F7DFF?style=flat-square">
+  <img alt="本地离线" src="https://img.shields.io/badge/privacy-local_%26_offline-30363D?style=flat-square">
 </p>
 
 Glint 是一款为 macOS 打造的英文学习工具。输入中文拼音时，对应的英文翻译会出现在
