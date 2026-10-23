@@ -27,8 +27,11 @@ final class OverviewFormattingTests: XCTestCase {
         )
     }
 
-    func testDictionaryCountUsesChineseCounter() {
-        XCTAssertEqual(OverviewFormatting.dictionaryCount(3), "3 个")
+    func testDictionaryCoverageDescribesCoreRoles() {
+        XCTAssertEqual(
+            OverviewFormatting.dictionaryCoverage,
+            "基础释义 · 词频排序 · 扩展词条"
+        )
     }
 
     func testCompactModelNameDropsRedundantLanguagePair() {

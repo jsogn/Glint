@@ -61,7 +61,8 @@ final class MainWindowModelTests: XCTestCase {
 
         let manifest = translationManifest(
             id: TranslationModelSelection.defaultModelID,
-            source: .bundled
+            source: .bundled,
+            summary: "内置测试模型"
         )
         let catalogURL = root.appendingPathComponent("catalog.json")
         try JSONEncoder().encode(
@@ -81,7 +82,10 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(model.translationPlugins.map(\.id), [manifest.id])
         XCTAssertEqual(model.activeModelID, manifest.id)
         XCTAssertEqual(model.translationSummary, manifest.name)
-        XCTAssertEqual(model.translationSourceSummary, "内置")
+        XCTAssertEqual(
+            model.translationCharacterSummary,
+            "内置测试模型"
+        )
         XCTAssertTrue(model.availablePlugins.isEmpty)
 
         await model.uninstallPlugin(manifest)
@@ -486,7 +490,8 @@ final class MainWindowModelTests: XCTestCase {
         id: String,
         version: String = "1.0",
         runtime: String = "mlx",
-        source: PluginSource = .catalog
+        source: PluginSource = .catalog,
+        summary: String? = nil
     ) -> PluginManifest {
         PluginManifest(
             id: id,
@@ -499,6 +504,7 @@ final class MainWindowModelTests: XCTestCase {
             url: URL(string: "https://example.invalid/\(id).zip")!,
             license: "MIT",
             minRAMBytes: 0,
+            summary: summary,
             source: source
         )
     }

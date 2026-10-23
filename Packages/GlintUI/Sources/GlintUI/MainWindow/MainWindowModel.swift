@@ -131,30 +131,22 @@ public final class MainWindowModel {
     }
 
     public var translationSummary: String {
-        if let plugin = translationPlugins.first(where: {
-            $0.id == activeModelID
-        }) {
-            return plugin.name
-        }
-        return "未安装"
+        activeTranslationPlugin?.name ?? "未安装"
     }
 
-    public var translationSourceSummary: String {
-        guard
-            let plugin = translationPlugins.first(where: {
-                $0.id == activeModelID
-            })
-        else {
+    public var translationCharacterSummary: String {
+        guard let plugin = activeTranslationPlugin else {
             return "未安装"
         }
-        switch plugin.source {
-        case .bundled:
-            return "内置"
-        case .catalog:
-            return "已下载"
-        case .local:
-            return "本地导入"
-        }
+        let summary =
+            plugin.summary?.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ) ?? ""
+        return summary.isEmpty ? "本地翻译模型" : summary
+    }
+
+    private var activeTranslationPlugin: PluginManifest? {
+        translationPlugins.first { $0.id == activeModelID }
     }
 
     public var candidateSummary: String {

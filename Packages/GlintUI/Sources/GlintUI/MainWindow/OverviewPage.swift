@@ -61,14 +61,12 @@ struct OverviewPage: View {
                             value: model.translationSummary
                         ),
                         OverviewInfoRow(
-                            label: "模型来源",
-                            value: model.translationSourceSummary
+                            label: "模型特点",
+                            value: model.translationCharacterSummary
                         ),
                         OverviewInfoRow(
-                            label: "词典",
-                            value: OverviewFormatting.dictionaryCount(
-                                model.dictionaryPlugins.count
-                            )
+                            label: "词典覆盖",
+                            value: OverviewFormatting.dictionaryCoverage
                         ),
                     ]
                 ) {
@@ -473,6 +471,7 @@ private enum OverviewPreviewManifests {
         url: URL(fileURLWithPath: "/preview/mt-opus-zh-en"),
         license: "CC-BY-4.0",
         minRAMBytes: 0,
+        summary: "速度快、占用低，适合轻量日常翻译。",
         source: .bundled
     )
 

@@ -18,9 +18,7 @@ enum OverviewFormatting {
         )
     }
 
-    static func dictionaryCount(_ count: Int) -> String {
-        "\(count) 个"
-    }
+    static let dictionaryCoverage = "基础释义 · 词频排序 · 扩展词条"
 
     /// Keeps the flow stage on one line; the full name stays in the card.
     static func compactModelName(
