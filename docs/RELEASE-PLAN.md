@@ -69,6 +69,11 @@ Release 构建不得使用 `CODE_SIGNING_ALLOWED=NO`。签名顺序应先内层�
 这种包不能被 `spctl` 接受，也不能启用可用的 Hardened Runtime：ad-hoc 签名没有
 Team ID，运行时库校验会拒绝嵌套动态库。它只适用于已知测试者的内部验证。
 
+面向普通测试用户时优先运行 `scripts/package_test_pkg.sh` 生成直接安装的 PKG。
+PKG 内嵌 App，通过标准 macOS Installer 复制到 `/Applications`；postinstall 只在
+已安装的 Glint.app 上清除 quarantine，随后校验、注册并尝试启动 App。PKG 仍需
+首次 Gatekeeper 用户确认，不能替代 Developer ID 与 Apple 公证。
+
 ### GitHub 自动发布
 
 仓库提供两个 GitHub Actions 工作流：
@@ -76,7 +81,7 @@ Team ID，运行时库校验会拒绝嵌套动态库。它只适用于已知测�
 - `.github/workflows/ci.yml`：在 push 到 `main` 和 Pull Request 时执行 Swift
   格式检查、完整 Swift 测试和 Python 工具测试；
 - `.github/workflows/release.yml`：推送 `v*` 标签时重复质量门禁，构建
-  ad-hoc DMG 和 SHA-256 文件，并创建 GitHub Latest 发布。
+  ad-hoc PKG、DMG 和对应 SHA-256 文件，并创建 GitHub Latest 发布。
 
 当前 GitHub Latest 是面向开发和已知测试者的发布包，不等于正式公开版；
 ad-hoc 包仍不能通过 Gatekeeper。Latest 只表示这是仓库最新的非草稿版本。

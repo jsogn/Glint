@@ -1,0 +1,35 @@
+#!/bin/zsh
+set -euo pipefail
+
+target_volume="${3:-/}"
+target_prefix="${target_volume%/}"
+app_path="$target_prefix/Applications/Glint.app"
+
+if [[ ! -d "$app_path" ]]; then
+  echo "Glint.app was not installed at the expected location." >&2
+  exit 1
+fi
+
+/usr/bin/xattr -dr com.apple.quarantine "$app_path" 2>/dev/null || true
+/usr/bin/codesign --verify --deep --strict "$app_path"
+
+if [[ "$target_volume" != "/" ]]; then
+  exit 0
+fi
+
+lsregister="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+if [[ -x "$lsregister" ]]; then
+  "$lsregister" -f "$app_path" >/dev/null 2>&1 || true
+fi
+
+console_user="$(/usr/bin/stat -f '%Su' /dev/console 2>/dev/null || true)"
+if [[ -n "$console_user" && "$console_user" != "root" && "$console_user" != "loginwindow" ]]; then
+  console_uid="$(/usr/bin/id -u "$console_user" 2>/dev/null || true)"
+  if [[ -n "$console_uid" ]]; then
+    /bin/launchctl asuser "$console_uid" \
+      /usr/bin/sudo -u "$console_user" \
+      /usr/bin/open -a "$app_path" >/dev/null 2>&1 || true
+  fi
+fi
+
+exit 0

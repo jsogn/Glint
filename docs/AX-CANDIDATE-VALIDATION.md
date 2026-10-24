@@ -143,6 +143,8 @@ Safari 地址栏也完成了相同验证：
 - 候选 revision 变化时旧译文先保持 80ms，随后进入 30% 淡化占位作为组合过渡；
 - HUD 宽度覆盖 SwiftUI `NSHostingView` 的实际拟合宽度；槽位、字体和间距使用
   共享度量，避免短候选项触发最小宽度后挤压长译文；
+- HUD panel 与可见胶囊共享同一高度，并关闭 `NSHostingView` 的窗口尺寸拟合；
+  防止窗口显示后按内容高度非对称收缩，导致候选栏上方间距大于下方；
 - 候选定位使用 `AXCandidateGeometry` 区分 `window`、`list`、`item` 和 `text`
   节点。文字胶囊补偿和搜狗默认皮肤窗口内缩由对应 reader 在生成 presentation
   frame 时完成，通用几何层不再包含输入法专属数值；第三方皮肤由用户间距兜底；
@@ -192,8 +194,24 @@ Chrome 回归中，空格确认后再执行剪切/粘贴，探针从候选“你
    Profile。探测不进入候选读取关键路径，首次组合可能暂不支持；采用全局单任务、
    节点上限和指数退避，避免输入法进程重启形成扫描风暴。
 9. 正式接入仍保留安全输入检查、真实文字选区检查和候选停留触发。
-10. 豆包等 App 的进程级焦点 fallback 本轮未实现，留待 AX 主链路稳定后的专项
-   测试决定。
+10. 2026-10-24 实现进程级焦点 fallback：直接焦点元素不可用时，对苹果标准候选、
+    微信/搜狗专用 reader 和已缓存验证 Profile 使用前台应用 PID 继续读取候选。
+    网易云音乐实测直接焦点不可用但候选存在；fallback 后候选识别、停留、翻译和
+    HUD 显示链路正常。没有候选节点时仍静默跳过。
+11. 2026-10-24 确认：同一正式版在开发机与测试机上表现不同，原因是飞书的
+    `AXEnhancedUserInterface` 分别为 `true` 和 `false`。开发工具可能提前开启
+    完整 AX 树；干净机器上的 Chromium/Electron App 通常保持精简树。
+12. `AXUIElementSetAttributeValue` 在 Feishu 和全新 Chrome 进程上可能返回
+    `-25208`（未实现），但回读 `AXEnhancedUserInterface` 已变为 `true`，Chrome
+    随后生成 `AXWebArea`。正式实现不能只依据返回码判失败，必须在写入后回读。
+    该流程只使用既有辅助功能权限；仅在苹果拼音候选读取失败时按 PID 激活一次，
+    不读取输入框正文。
+13. 宿主兼容缓存使用“PID + Bundle ID + 启动时间 + 可执行路径”的进程会话身份，
+    不再用裸 PID 判断，避免 PID 复用后继承旧进程状态。写入与回读通过可替换
+    seam 覆盖 `-25208 + 回读 true`、已开启和未生效三条测试路径。
+14. 深层候选缓存命中通过 `AXParent` 链做低成本归属验证，不再在候选稳定期间重复
+    执行深层树扫描。AX timeout、`cannotComplete` 等临时读取失败使用 2 秒重试；
+    只有 `attributeUnsupported` 或 `noValue` 才按永久不支持处理。
 
 ## 建议
 
@@ -203,12 +221,16 @@ Chrome 回归中，空格确认后再执行剪切/粘贴，探针从候选“你
 2. 使用候选 `AXTitle` 和 `AXFrame` 驱动分类、停留、HUD 位置和翻译；
 3. AX 不存在时静默跳过，不因读取失败弹窗；
 4. 不截图、不执行 OCR、不请求屏幕录制权限；
-5. 进程级焦点 fallback 和通用列表猜测暂不实现，不使用针对特定 App 的特例。
+5. 进程级焦点 fallback 只对 `CandidateReaderRouter` 标记为可用的输入法开放：
+   苹果标准候选、微信/搜狗显式 reader 和已缓存验证 Profile；未知输入法不开放。
+   深度候选搜索只匹配 `InputMethodCandidateList`，受 64 节点、8 层和 120ms
+   冷却约束，不做通用 `AXList` 猜测，不使用针对特定 App 的特例。
 
 ## 自动化验证
 
-- 2026-10-23：完整 `./scripts/test.sh` 通过；
+- 2026-10-24：完整 `./scripts/test.sh` 通过；
 - Debug 和 Release arm64 构建通过；
 - `./scripts/dev.sh` 通过 readiness token 确认唯一实例启动；
+- 网易云音乐直接焦点不可用时，进程级 fallback 成功识别候选、完成翻译并触发 HUD；
 - 概览页显示“拼音输入”，关于页显示 macOS 26+、Apple 芯片；
 - 诊断命令只输出权限、输入源、焦点和候选结构状态，不输出候选原文。

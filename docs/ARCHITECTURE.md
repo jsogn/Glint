@@ -82,6 +82,7 @@ Glint/
 │   ├── dev.sh
 │   ├── launch.sh
 │   ├── package_test_dmg.sh
+│   ├── package_test_pkg.sh
 │   ├── prepare_opus_model.sh
 │   ├── run.sh
 │   ├── test.sh
@@ -212,8 +213,13 @@ GlintCore
   `window`、`list`、`item` 还是 `text` 节点。Reader 先按自身语义生成最终
   presentation frame，几何层不再暗中应用输入法专属偏移；HUD 只消费归一化后的
   边界。
+- 监控和候选 reader 都必须拒绝 Glint 自身 PID；不得通过直接焦点或进程 fallback
+  读取自身 SwiftUI/AX 树，避免主线程 AX 服务与后台深度遍历发生重入。
 - HUD 的用户间距从上述归一化边界计算；屏幕边缘优先翻边，避免为了贴边而静默
   压缩间距。
+- HUD 的 `NSPanel` 是唯一尺寸来源；`NSHostingView` 不得按内容固有高度反向缩放
+  窗口，可见胶囊必须与 panel 同高。panel 高度按当前字体行高、候选模式密度和
+  垂直内边距计算，不使用会放大笔记本屏幕视觉负担的固定额外高度。
 - 主窗口和 HUD 都通过 `AppEnvironment` 获取状态，不直接互相调用。
 
 ## 7. 运行时数据流
@@ -252,6 +258,15 @@ MainWindowModel → MainWindowView
 - `AXCandidateReader`：候选识别主路径；只识别具有输入法候选语义的
   `InputMethodCandidateList`，不读取普通 `AXList`。通过 FocusSnapshot 的
   focused PID 复用焦点解析结果，避免每次轮询重新查找 focused application。
+  快速路径未命中时，在窗口树内以 64 个节点、8 层和统一 AX 预算为上限搜索该
+  精确标识，兼容候选窗口位于较深层级的宿主；同一 PID 的深度搜索最多每 120ms
+  执行一次。缓存命中使用已缓存候选节点和窗口父子链验证，不重新遍历整棵树。
+- `AXHostAccessibilityActivator`：苹果拼音候选首次读取失败时，若宿主 App 的
+  `AXEnhancedUserInterface` 为 `false`，通过既有辅助功能权限按 PID 请求一次
+  完整 AX 模式；成功后按 PID、Bundle ID、启动时间和可执行路径组成的进程会话
+  身份缓存。属性不支持时停止重试，临时 AX 读取失败使用 2 秒冷却，写入失败使用
+  30 秒冷却。Electron 可能在实际写入成功后返回 `kAXErrorNotImplemented`，
+  因此以回读属性值为准。
 - `InputMethodIdentity`：GlintCore 中的系统输入法身份，包含 bundle ID、input
   source ID、source type 和本地化名称。UI 展示使用 TIS 的本地化名称，不用内部
   ID 猜测输入法名称。
@@ -273,6 +288,13 @@ MainWindowModel → MainWindowView
   第三方皮肤不单独检测，由用户间距兜底。
 - `AXReadSession`：统一 AX 消息超时、最大属性调用数和单调时钟截止时间。标准、
   搜狗、微信和后台探测都必须通过同一读取预算，预算耗尽后返回无候选。
+- `FocusMonitor.processFallbackSnapshot()`：直接焦点快照不可用时返回前台应用
+  PID。是否允许使用该 fallback 由 `CandidateReaderRouter` 按能力决定：苹果
+  标准候选、微信/搜狗显式 reader 和已缓存验证 Profile 可以用；未知输入法不可用。
+  它不猜测文本框或读取正文，后续仍必须找到已验证的候选节点才会显示 HUD。安全
+  输入检查先于该 fallback。
+- `FocusResolutionPolicy`：把直接焦点是否可用、文字选区、fallback 能力和进程
+  fallback 统一为纯决策，避免监控主循环分散维护同一套焦点规则。
 - `CandidateTranslationPipeline`：无状态并发编排；选中项优先，整栏结果按
   revision 发布，旧任务由监控层取消。
 - `TranslationRuntime`/`TranslationMemo`：actor；模型加载、推理和缓存请求串行化。
@@ -313,11 +335,20 @@ MainWindowModel → MainWindowView
 
 - 安装流程：下载可选插件 → 校验 manifest 和 SHA256 → 原子替换插件目录 →
   刷新内存中的已安装清单。
+- MLX 大模型按累计有效字节计算单调进度，下载、校验和安装使用互不重叠的阶段；
+  UI 同时显示已下载大小和实时速度。关闭连接 30 秒后进入下一下载源，避免网络
+  已停滞但界面长时间只显示固定百分比。
 - 删除流程：先取消推理/卸载模型，再删除插件目录。核心词典和
   内置 OPUS-MT 不提供删除操作。
 - 不支持任意第三方 dylib、脚本或可执行文件。
 - 下载和本地导入的翻译插件只允许 MLX；词典插件只允许固定 SQLite runtime。
   CTranslate2 只从签名的 App bundle 加载。
+- MLX 模型下载顺序为 ModelScope、`hf-mirror.com`、Hugging Face。清单通过
+  `modelscopeURL` 显式声明国内仓库；Hy-MT2 与全部 Qwen3 MLX 模型使用
+  `cdn-lfs-cn-1.modelscope.cn`，文件大小与 SHA-256 必须通过 ModelScope 文件接口
+  校验。Index-Translate 当前没有可用 ModelScope 仓库，因此继续走 Hugging Face
+  回退。`hf-mirror.com` 不保证权重留在国内，Hy-MT2 的权重仍会重定向到 XetHub，
+  因此只作为第二来源。
 - 不支持用户添加的远程翻译接口；候选和翻译内容只进入受支持的本地运行时。
 - 插件升级使用持久化事务标记；未完成激活的升级在下次启动时回滚到旧版本。
 - 产品语言固定为简体中文到英文；清单不重复保存 capabilities、语言或质量档位。

@@ -1,0 +1,19 @@
+#!/bin/zsh
+set -euo pipefail
+
+target_volume="${3:-/}"
+if [[ "$target_volume" != "/" ]]; then
+  exit 0
+fi
+
+app_executable="/Applications/Glint.app/Contents/MacOS/Glint"
+if [[ -x "$app_executable" ]]; then
+  /usr/bin/pkill -TERM -f "$app_executable" 2>/dev/null || true
+  for _ in {1..20}; do
+    /usr/bin/pgrep -f "$app_executable" >/dev/null 2>&1 || exit 0
+    /bin/sleep 0.25
+  done
+  /usr/bin/pkill -KILL -f "$app_executable" 2>/dev/null || true
+fi
+
+exit 0
