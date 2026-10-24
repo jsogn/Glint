@@ -1,3 +1,4 @@
+import AppKit
 import ApplicationServices
 import Carbon
 import CoreGraphics
@@ -16,6 +17,7 @@ public struct FocusSnapshot: Sendable, Equatable {
     public let compositionState: TextCompositionState
     public let isEditableTextInput: Bool
     public let processIdentifier: pid_t?
+    public let usesProcessFallback: Bool
 
     public init(
         caretRect: CGRect?,
@@ -23,7 +25,8 @@ public struct FocusSnapshot: Sendable, Equatable {
         hasTextSelection: Bool = false,
         compositionState: TextCompositionState = .unknown,
         isEditableTextInput: Bool = false,
-        processIdentifier: pid_t? = nil
+        processIdentifier: pid_t? = nil,
+        usesProcessFallback: Bool = false
     ) {
         self.caretRect = caretRect
         self.elementFrame = elementFrame
@@ -31,6 +34,53 @@ public struct FocusSnapshot: Sendable, Equatable {
         self.compositionState = compositionState
         self.isEditableTextInput = isEditableTextInput
         self.processIdentifier = processIdentifier
+        self.usesProcessFallback = usesProcessFallback
+    }
+}
+
+struct CandidateScanGate: Sendable {
+    static func allowsScanning(
+        compositionState: TextCompositionState,
+        isEditableTextInput: Bool,
+        hasCaret: Bool,
+        allowsProcessFallback: Bool = false
+    ) -> Bool {
+        if allowsProcessFallback {
+            return true
+        }
+        switch compositionState {
+        case .composing:
+            return true
+        case .inactive, .unknown:
+            return isEditableTextInput || hasCaret
+        }
+    }
+}
+
+enum FocusResolutionPolicy {
+    static func resolve(
+        direct directSnapshot: FocusSnapshot?,
+        allowsProcessFallback: Bool,
+        fallback: () -> FocusSnapshot?
+    ) -> FocusSnapshot? {
+        if let directSnapshot,
+            !directSnapshot.hasTextSelection,
+            CandidateScanGate.allowsScanning(
+                compositionState: directSnapshot.compositionState,
+                isEditableTextInput:
+                    directSnapshot.isEditableTextInput,
+                hasCaret: directSnapshot.caretRect != nil
+            )
+        {
+            return directSnapshot
+        }
+        if allowsProcessFallback,
+            !(directSnapshot?.hasTextSelection ?? false),
+            let fallbackSnapshot = fallback()
+        {
+            return fallbackSnapshot
+        }
+        return directSnapshot
     }
 }
 
@@ -95,6 +145,42 @@ public struct FocusMonitor: Sendable {
             compositionState: compositionState,
             isEditableTextInput: isEditableTextInput,
             processIdentifier: processIdentifier > 0 ? processIdentifier : nil
+        )
+    }
+
+    public func processFallbackSnapshot() -> FocusSnapshot? {
+        let system = AXUIElementCreateSystemWide()
+        AXUIElementSetMessagingTimeout(system, 0.25)
+        let processIdentifier: pid_t?
+        if let focusedApplication = Self.axAttribute(
+            system,
+            kAXFocusedApplicationAttribute
+        ),
+            let application = AXValueReader.element(focusedApplication)
+        {
+            var pid: pid_t = 0
+            if AXUIElementGetPid(application, &pid) == .success,
+                pid > 0
+            {
+                processIdentifier = pid
+            } else {
+                processIdentifier =
+                    NSWorkspace.shared.frontmostApplication?
+                    .processIdentifier
+            }
+        } else {
+            processIdentifier =
+                NSWorkspace.shared.frontmostApplication?
+                .processIdentifier
+        }
+        guard let processIdentifier else { return nil }
+        return FocusSnapshot(
+            caretRect: nil,
+            elementFrame: nil,
+            compositionState: .unknown,
+            isEditableTextInput: false,
+            processIdentifier: processIdentifier,
+            usesProcessFallback: true
         )
     }
 

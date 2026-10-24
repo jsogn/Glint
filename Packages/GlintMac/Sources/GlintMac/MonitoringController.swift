@@ -63,21 +63,6 @@ struct CompositionTransitionTracker: Sendable {
     }
 }
 
-struct CandidateScanGate: Sendable {
-    static func allowsScanning(
-        compositionState: TextCompositionState,
-        isEditableTextInput: Bool,
-        hasCaret: Bool
-    ) -> Bool {
-        switch compositionState {
-        case .composing:
-            return true
-        case .inactive, .unknown:
-            return isEditableTextInput || hasCaret
-        }
-    }
-}
-
 public enum MonitoringEvent: Sendable {
     case status(String)
     case inputSourceChanged(InputMethodIdentity)
@@ -146,6 +131,13 @@ extension InputSourceMonitor: InputSourceReading {}
 
 protocol FocusReading {
     func snapshot() -> FocusSnapshot?
+    func processFallbackSnapshot() -> FocusSnapshot?
+}
+
+extension FocusReading {
+    func processFallbackSnapshot() -> FocusSnapshot? {
+        nil
+    }
 }
 
 extension FocusMonitor: FocusReading {}
@@ -168,8 +160,10 @@ public actor MonitoringController {
     private let inputSource: any InputSourceReading
     private let focus: any FocusReading
     private let candidateReaders: any CandidateReaderRouting
+    private let hostAccessibilityActivator: any HostAccessibilityActivating
     private let accessibilityIsTrusted: @Sendable () -> Bool
     private let secureInputIsEnabled: @Sendable () -> Bool
+    private let ownProcessIdentifier: pid_t
     private let router: SmartRouter
     private let stream: AsyncStream<MonitoringEvent>
     private let continuation: AsyncStream<MonitoringEvent>.Continuation
@@ -203,6 +197,12 @@ public actor MonitoringController {
     private var cachedPrefetchResults: [Int: TranslationResult] = [:]
     private var candidateMissDebouncer = CandidateMissDebouncer()
     private var compositionTransitions = CompositionTransitionTracker()
+    private var hostAccessibilityAttempts: [HostProcessSession: HostAccessibilityAttempt] = [:]
+
+    private struct HostAccessibilityAttempt {
+        let timestamp: UInt64
+        let outcome: HostAccessibilityActivation
+    }
 
     public init(router: SmartRouter) {
         self.init(
@@ -211,6 +211,8 @@ public actor MonitoringController {
             focus: FocusMonitor(),
             candidateReaders:
                 CandidateReaderConfiguration.standard(),
+            hostAccessibilityActivator:
+                AXHostAccessibilityActivator(),
             accessibilityIsTrusted: {
                 FocusMonitor.isAccessibilityTrusted()
             },
@@ -225,14 +227,22 @@ public actor MonitoringController {
         inputSource: any InputSourceReading,
         focus: any FocusReading,
         candidateReaders: any CandidateReaderRouting,
+        hostAccessibilityActivator:
+            any HostAccessibilityActivating =
+            DisabledHostAccessibilityActivator(),
         accessibilityIsTrusted: @escaping @Sendable () -> Bool,
-        secureInputIsEnabled: @escaping @Sendable () -> Bool
+        secureInputIsEnabled: @escaping @Sendable () -> Bool,
+        ownProcessIdentifier: pid_t =
+            ProcessInfo.processInfo.processIdentifier
     ) {
         self.inputSource = inputSource
         self.focus = focus
         self.candidateReaders = candidateReaders
+        self.hostAccessibilityActivator =
+            hostAccessibilityActivator
         self.accessibilityIsTrusted = accessibilityIsTrusted
         self.secureInputIsEnabled = secureInputIsEnabled
+        self.ownProcessIdentifier = ownProcessIdentifier
         self.router = router
         let pair = AsyncStream.makeStream(of: MonitoringEvent.self)
         self.stream = pair.stream
@@ -337,11 +347,27 @@ public actor MonitoringController {
             emitStatus("安全输入场景已跳过")
             return 500_000_000
         }
-        guard let snapshot = focus.snapshot() else {
+        guard
+            let snapshot = FocusResolutionPolicy.resolve(
+                direct: focus.snapshot(),
+                allowsProcessFallback:
+                    candidateReaders.allowsProcessFallback(
+                        for: activeInputSource
+                    ),
+                fallback: {
+                    focus.processFallbackSnapshot()
+                }
+            )
+        else {
             return observeCandidateMiss(
                 status: "未找到文本光标",
                 pollInterval: 60_000_000
             )
+        }
+        guard snapshot.processIdentifier != ownProcessIdentifier else {
+            invalidateCandidate(immediate: true)
+            emitStatus("已跳过 Glint 自身窗口")
+            return 250_000_000
         }
         guard !snapshot.hasTextSelection else {
             invalidateCandidate(immediate: true)
@@ -357,14 +383,19 @@ public actor MonitoringController {
             CandidateScanGate.allowsScanning(
                 compositionState: snapshot.compositionState,
                 isEditableTextInput: snapshot.isEditableTextInput,
-                hasCaret: snapshot.caretRect != nil
+                hasCaret: snapshot.caretRect != nil,
+                allowsProcessFallback: snapshot.usesProcessFallback
             )
         else {
             invalidateCandidate(immediate: true)
             emitStatus("已跳过非文本控件")
             return 200_000_000
         }
-        guard snapshot.caretRect != nil || snapshot.elementFrame != nil else {
+        guard
+            snapshot.usesProcessFallback
+                || snapshot.caretRect != nil
+                || snapshot.elementFrame != nil
+        else {
             return observeCandidateMiss(
                 status: "未找到文本光标",
                 pollInterval: 60_000_000
@@ -381,6 +412,12 @@ public actor MonitoringController {
         case .found(let candidate):
             observation = candidate
         case .miss(let status):
+            if await activateHostAccessibilityIfNeeded(
+                source: activeInputSource,
+                focus: snapshot
+            ) {
+                return 40_000_000
+            }
             return observeCandidateMiss(
                 status: status,
                 pollInterval: 60_000_000
@@ -497,6 +534,89 @@ public actor MonitoringController {
             )
         }
         return nextCandidatePollInterval(after: observationTimestamp)
+    }
+
+    private func activateHostAccessibilityIfNeeded(
+        source: ActiveInputSource,
+        focus: FocusSnapshot
+    ) async -> Bool {
+        guard
+            source.kind == .applePinyin,
+            let processIdentifier = focus.processIdentifier
+        else {
+            return false
+        }
+
+        let session = HostProcessSession.current(
+            processIdentifier: processIdentifier
+        )
+        let timestamp = DispatchTime.now().uptimeNanoseconds
+        if let attempt = hostAccessibilityAttempts[session] {
+            switch attempt.outcome {
+            case .activated, .alreadyEnhanced, .unavailable:
+                return false
+            case .transientFailure:
+                guard
+                    timestamp >= attempt.timestamp,
+                    timestamp - attempt.timestamp
+                        >= HostAccessibilityPolicy
+                        .transientRetryNanoseconds
+                else {
+                    return false
+                }
+            case .failed:
+                guard
+                    timestamp >= attempt.timestamp,
+                    timestamp - attempt.timestamp
+                        >= HostAccessibilityPolicy
+                        .failureRetryNanoseconds
+                else {
+                    return false
+                }
+            }
+        }
+
+        let outcome =
+            await hostAccessibilityActivator.activate(
+                processIdentifier: processIdentifier
+            )
+        recordHostAccessibilityAttempt(
+            HostAccessibilityAttempt(
+                timestamp: timestamp,
+                outcome: outcome
+            ),
+            for: session
+        )
+
+        switch outcome {
+        case .activated:
+            monitoringLogger.info(
+                "host_ax mode=enhanced action=enabled pid=\(processIdentifier, privacy: .public)"
+            )
+            return true
+        case .failed:
+            monitoringLogger.error(
+                "host_ax mode=enhanced action=failed pid=\(processIdentifier, privacy: .public)"
+            )
+            return false
+        case .transientFailure, .alreadyEnhanced, .unavailable:
+            return false
+        }
+    }
+
+    private func recordHostAccessibilityAttempt(
+        _ attempt: HostAccessibilityAttempt,
+        for session: HostProcessSession
+    ) {
+        if hostAccessibilityAttempts.count
+            >= HostAccessibilityPolicy.maximumCachedProcessCount,
+            let oldest = hostAccessibilityAttempts.min(by: {
+                $0.value.timestamp < $1.value.timestamp
+            })?.key
+        {
+            hostAccessibilityAttempts.removeValue(forKey: oldest)
+        }
+        hostAccessibilityAttempts[session] = attempt
     }
 
     private func readCandidate(

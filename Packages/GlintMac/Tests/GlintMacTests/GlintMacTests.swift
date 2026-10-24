@@ -101,6 +101,12 @@ private struct FixedCandidateReaderRouter:
     ) -> any AXCandidateReading {
         sourceReader
     }
+
+    func allowsProcessFallback(
+        for source: ActiveInputSource
+    ) -> Bool {
+        source.kind == .applePinyin
+    }
 }
 
 private struct VisibleCaretFocus: FocusReading {
@@ -153,6 +159,31 @@ private final class RecordingCandidates: AXCandidateReading, Sendable {
     }
 }
 
+private final class RecordingHostAccessibilityActivator:
+    HostAccessibilityActivating, Sendable
+{
+    private let outcome: HostAccessibilityActivation
+    private let processIdentifiers =
+        OSAllocatedUnfairLock<[pid_t]>(initialState: [])
+
+    init(outcome: HostAccessibilityActivation) {
+        self.outcome = outcome
+    }
+
+    func activate(processIdentifier: pid_t) async
+        -> HostAccessibilityActivation
+    {
+        processIdentifiers.withLock {
+            $0.append(processIdentifier)
+        }
+        return outcome
+    }
+
+    var requestedProcessIdentifiers: [pid_t] {
+        processIdentifiers.withLock { $0 }
+    }
+}
+
 private struct PIDCaretFocus: FocusReading {
     func snapshot() -> FocusSnapshot? {
         FocusSnapshot(
@@ -161,6 +192,46 @@ private struct PIDCaretFocus: FocusReading {
             compositionState: .composing,
             isEditableTextInput: true,
             processIdentifier: 4242
+        )
+    }
+}
+
+private struct ProcessFallbackFocus: FocusReading {
+    func snapshot() -> FocusSnapshot? {
+        nil
+    }
+
+    func processFallbackSnapshot() -> FocusSnapshot? {
+        FocusSnapshot(
+            caretRect: nil,
+            elementFrame: nil,
+            compositionState: .unknown,
+            isEditableTextInput: false,
+            processIdentifier: 5151,
+            usesProcessFallback: true
+        )
+    }
+}
+
+private struct NonTextFocusWithProcessFallback: FocusReading {
+    func snapshot() -> FocusSnapshot? {
+        FocusSnapshot(
+            caretRect: nil,
+            elementFrame: CGRect(x: 20, y: 30, width: 300, height: 200),
+            compositionState: .unknown,
+            isEditableTextInput: false,
+            processIdentifier: 7001
+        )
+    }
+
+    func processFallbackSnapshot() -> FocusSnapshot? {
+        FocusSnapshot(
+            caretRect: nil,
+            elementFrame: nil,
+            compositionState: .unknown,
+            isEditableTextInput: false,
+            processIdentifier: 5151,
+            usesProcessFallback: true
         )
     }
 }
@@ -390,6 +461,179 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(candidates.requestedVisibleCandidates, [true])
     }
 
+    func testApplePinyinEnablesHostAccessibilityOnceAfterMiss() async {
+        let activator = RecordingHostAccessibilityActivator(
+            outcome: .activated
+        )
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: true),
+            focus: PIDCaretFocus(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
+            hostAccessibilityActivator: activator,
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        let activationInterval = await controller.tick()
+        let repeatedMissInterval = await controller.tick()
+
+        XCTAssertEqual(activationInterval, 40_000_000)
+        XCTAssertEqual(repeatedMissInterval, 60_000_000)
+        XCTAssertEqual(
+            activator.requestedProcessIdentifiers,
+            [4242]
+        )
+    }
+
+    func testOtherInputMethodDoesNotEnableHostAccessibility() async {
+        let activator = RecordingHostAccessibilityActivator(
+            outcome: .activated
+        )
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(kind: .otherInputMethod),
+            focus: PIDCaretFocus(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
+            hostAccessibilityActivator: activator,
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        _ = await controller.tick()
+
+        XCTAssertTrue(
+            activator.requestedProcessIdentifiers.isEmpty
+        )
+    }
+
+    func testApplePinyinUsesFrontmostProcessFallback() async {
+        let candidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: true),
+            focus: ProcessFallbackFocus(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        let interval = await controller.tick()
+
+        XCTAssertEqual(interval, 60_000_000)
+        XCTAssertEqual(
+            candidates.requestedProcessIdentifiers,
+            [5151]
+        )
+    }
+
+    func testSkipsOwnProcessBeforeCandidateOrAccessibilityReads()
+        async
+    {
+        let candidates = RecordingCandidates()
+        let activator = RecordingHostAccessibilityActivator(
+            outcome: .activated
+        )
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: true),
+            focus: ProcessFallbackFocus(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
+            hostAccessibilityActivator: activator,
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false },
+            ownProcessIdentifier: 5151
+        )
+
+        let interval = await controller.tick()
+
+        XCTAssertEqual(interval, 250_000_000)
+        XCTAssertTrue(candidates.requestedProcessIdentifiers.isEmpty)
+        XCTAssertTrue(
+            activator.requestedProcessIdentifiers.isEmpty
+        )
+    }
+
+    func testCandidateReaderRejectsOwnProcess() {
+        XCTAssertNil(
+            AXCandidateReader().snapshot(
+                processIdentifier:
+                    ProcessInfo.processInfo.processIdentifier
+            )
+        )
+    }
+
+    func testOtherInputMethodDoesNotUseFrontmostProcessFallback()
+        async
+    {
+        let candidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(kind: .otherInputMethod),
+            focus: ProcessFallbackFocus(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        _ = await controller.tick()
+
+        XCTAssertTrue(
+            candidates.requestedProcessIdentifiers.isEmpty
+        )
+    }
+
+    func testNonTextFocusFallsBackToFrontmostProcessForApplePinyin()
+        async
+    {
+        let candidates = RecordingCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(active: true),
+            focus: NonTextFocusWithProcessFallback(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: candidates
+            ),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+
+        _ = await controller.tick()
+
+        XCTAssertEqual(
+            candidates.requestedProcessIdentifiers,
+            [5151]
+        )
+    }
+
     func testWeTypeUsesDedicatedCandidatePath() async {
         let genericCandidates = RecordingCandidates()
         let weTypeCandidates = RecordingCandidates()
@@ -412,7 +656,7 @@ final class GlintMacTests: XCTestCase {
                     kind: .otherInputMethod
                 )
             ),
-            focus: VisibleCaretFocus(),
+            focus: ProcessFallbackFocus(),
             candidateReaders: CandidateReaderRouter(
                 fallback: genericCandidates,
                 registrations: [
@@ -1001,6 +1245,17 @@ final class GlintMacTests: XCTestCase {
                 compositionState: .composing,
                 isEditableTextInput: false,
                 hasCaret: false
+            )
+        )
+    }
+
+    func testProcessFallbackAllowsCandidateScanningWithoutFocusEvidence() {
+        XCTAssertTrue(
+            CandidateScanGate.allowsScanning(
+                compositionState: .unknown,
+                isEditableTextInput: false,
+                hasCaret: false,
+                allowsProcessFallback: true
             )
         )
     }
@@ -1629,6 +1884,80 @@ final class SogouCandidateParserTests: XCTestCase {
 }
 
 final class CandidateReaderRouterTests: XCTestCase {
+    func testProcessFallbackUsesStandardAndVerifiedReaders() {
+        let router = CandidateReaderRouter(
+            fallback: RecordingCandidates(),
+            registrations: [
+                CandidateReaderRegistration(
+                    bundleIdentifiers: [
+                        InputMethodIdentifier.weTypeBundle
+                    ],
+                    inputSourceIdentifiers: [],
+                    reader: RecordingCandidates()
+                )
+            ]
+        )
+
+        XCTAssertTrue(
+            router.allowsProcessFallback(
+                for: ActiveInputSource(
+                    id: "com.apple.inputmethod.SCIM.ITABC",
+                    kind: .applePinyin
+                )
+            )
+        )
+        XCTAssertTrue(
+            router.allowsProcessFallback(
+                for: source(
+                    bundleIdentifier:
+                        InputMethodIdentifier.weTypeBundle,
+                    inputSourceIdentifier:
+                        InputMethodIdentifier.weTypePinyinMode
+                )
+            )
+        )
+        XCTAssertFalse(
+            router.allowsProcessFallback(
+                for: source(
+                    bundleIdentifier:
+                        "com.example.inputmethod.unknown",
+                    inputSourceIdentifier:
+                        "com.example.inputmethod.unknown.pinyin"
+                )
+            )
+        )
+    }
+
+    func testCachedVerifiedProfileAllowsProcessFallback() async {
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "1.0" },
+            discover: { _ in .isolatedCandidateList }
+        )
+        let identity = InputMethodIdentity(
+            bundleIdentifier: "com.example.inputmethod.unknown",
+            inputSourceIdentifier:
+                "com.example.inputmethod.unknown.pinyin",
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: nil
+        )
+        let router = CandidateReaderRouter(
+            fallback: RecordingCandidates(),
+            registrations: [],
+            adaptiveProfiles: cache
+        )
+        await cache.requestDiscovery(for: identity)?.value
+
+        XCTAssertTrue(
+            router.allowsProcessFallback(
+                for: ActiveInputSource(
+                    identity: identity,
+                    kind: .otherInputMethod
+                )
+            )
+        )
+    }
+
     func testRoutesWeTypeByBundleIdentifier() {
         let fallback = RecordingCandidates()
         let weType = RecordingCandidates()
@@ -1762,6 +2091,207 @@ final class CandidateReaderRouterTests: XCTestCase {
             ),
             kind: .otherInputMethod
         )
+    }
+}
+
+final class FocusResolutionPolicyTests: XCTestCase {
+    func testValidDirectFocusSkipsProcessFallback() {
+        let direct = FocusSnapshot(
+            caretRect: CGRect(x: 20, y: 30, width: 2, height: 18),
+            elementFrame: nil,
+            compositionState: .unknown,
+            isEditableTextInput: true,
+            processIdentifier: 11
+        )
+        let fallbackCalls =
+            OSAllocatedUnfairLock(initialState: 0)
+
+        let resolved = FocusResolutionPolicy.resolve(
+            direct: direct,
+            allowsProcessFallback: true,
+            fallback: {
+                fallbackCalls.withLock { $0 += 1 }
+                return Self.fallbackSnapshot
+            }
+        )
+
+        XCTAssertEqual(resolved, direct)
+        XCTAssertEqual(fallbackCalls.withLock { $0 }, 0)
+    }
+
+    func testNonTextDirectFocusUsesProcessFallback() {
+        let direct = FocusSnapshot(
+            caretRect: nil,
+            elementFrame: CGRect(x: 0, y: 0, width: 200, height: 100),
+            compositionState: .unknown,
+            isEditableTextInput: false,
+            processIdentifier: 11
+        )
+
+        let resolved = FocusResolutionPolicy.resolve(
+            direct: direct,
+            allowsProcessFallback: true,
+            fallback: { Self.fallbackSnapshot }
+        )
+
+        XCTAssertEqual(resolved, Self.fallbackSnapshot)
+    }
+
+    func testTextSelectionNeverUsesProcessFallback() {
+        let direct = FocusSnapshot(
+            caretRect: nil,
+            elementFrame: CGRect(x: 0, y: 0, width: 200, height: 100),
+            hasTextSelection: true,
+            compositionState: .unknown,
+            isEditableTextInput: true,
+            processIdentifier: 11
+        )
+        let fallbackCalls =
+            OSAllocatedUnfairLock(initialState: 0)
+
+        let resolved = FocusResolutionPolicy.resolve(
+            direct: direct,
+            allowsProcessFallback: true,
+            fallback: {
+                fallbackCalls.withLock { $0 += 1 }
+                return Self.fallbackSnapshot
+            }
+        )
+
+        XCTAssertEqual(resolved, direct)
+        XCTAssertEqual(fallbackCalls.withLock { $0 }, 0)
+    }
+
+    func testMissingDirectFocusUsesFallbackOnlyWhenAllowed() {
+        XCTAssertNil(
+            FocusResolutionPolicy.resolve(
+                direct: nil,
+                allowsProcessFallback: false,
+                fallback: { Self.fallbackSnapshot }
+            )
+        )
+        XCTAssertEqual(
+            FocusResolutionPolicy.resolve(
+                direct: nil,
+                allowsProcessFallback: true,
+                fallback: { Self.fallbackSnapshot }
+            ),
+            Self.fallbackSnapshot
+        )
+    }
+
+    private static let fallbackSnapshot = FocusSnapshot(
+        caretRect: nil,
+        elementFrame: nil,
+        compositionState: .unknown,
+        isEditableTextInput: false,
+        processIdentifier: 22,
+        usesProcessFallback: true
+    )
+}
+
+final class HostAccessibilityModeTests: XCTestCase {
+    func testVerifiedNotImplementedWriteActivatesHost() async {
+        let values = OSAllocatedUnfairLock(
+            initialState: [
+                HostAccessibilityReadState.disabled,
+                .enabled,
+            ]
+        )
+        let writeCount = OSAllocatedUnfairLock(initialState: 0)
+        let activator = AXHostAccessibilityActivator(
+            readState: { _ in
+                values.withLock { $0.removeFirst() }
+            },
+            writeEnabled: { _ in
+                writeCount.withLock { $0 += 1 }
+                return .notImplemented
+            }
+        )
+
+        let result = await activator.activate(processIdentifier: 42)
+
+        XCTAssertEqual(result, .activated)
+        XCTAssertEqual(writeCount.withLock { $0 }, 1)
+    }
+
+    func testAlreadyEnhancedHostSkipsWrite() async {
+        let writeCount = OSAllocatedUnfairLock(initialState: 0)
+        let activator = AXHostAccessibilityActivator(
+            readState: { _ in .enabled },
+            writeEnabled: { _ in
+                writeCount.withLock { $0 += 1 }
+                return .success
+            }
+        )
+
+        let result = await activator.activate(processIdentifier: 42)
+
+        XCTAssertEqual(result, .alreadyEnhanced)
+        XCTAssertEqual(writeCount.withLock { $0 }, 0)
+    }
+
+    func testUnverifiedWriteRemainsFailure() async {
+        let activator = AXHostAccessibilityActivator(
+            readState: { _ in .disabled },
+            writeEnabled: { _ in .notImplemented }
+        )
+
+        let result = await activator.activate(processIdentifier: 42)
+
+        XCTAssertEqual(result, .failed)
+    }
+
+    func testTransientReadFailureIsRetryableWithoutWrite() async {
+        let writeCount = OSAllocatedUnfairLock(initialState: 0)
+        let activator = AXHostAccessibilityActivator(
+            readState: { _ in .transientFailure },
+            writeEnabled: { _ in
+                writeCount.withLock { $0 += 1 }
+                return .success
+            }
+        )
+
+        let result = await activator.activate(processIdentifier: 42)
+
+        XCTAssertEqual(result, .transientFailure)
+        XCTAssertEqual(writeCount.withLock { $0 }, 0)
+    }
+
+    func testUnsupportedAndTransientAXErrorsAreClassified() {
+        XCTAssertEqual(
+            HostAccessibilityReadState.classify(
+                .attributeUnsupported
+            ),
+            .unsupported
+        )
+        XCTAssertEqual(
+            HostAccessibilityReadState.classify(.noValue),
+            .unsupported
+        )
+        XCTAssertEqual(
+            HostAccessibilityReadState.classify(.cannotComplete),
+            .transientFailure
+        )
+        XCTAssertEqual(
+            HostAccessibilityReadState.classify(.invalidUIElement),
+            .transientFailure
+        )
+    }
+
+    func testProcessSessionDistinguishesPIDReuse() {
+        let first = HostProcessSession(
+            processIdentifier: 42,
+            bundleIdentifier: "com.example.first",
+            launchDate: Date(timeIntervalSince1970: 100)
+        )
+        let reusedIdentifier = HostProcessSession(
+            processIdentifier: 42,
+            bundleIdentifier: "com.example.second",
+            launchDate: Date(timeIntervalSince1970: 200)
+        )
+
+        XCTAssertNotEqual(first, reusedIdentifier)
     }
 }
 

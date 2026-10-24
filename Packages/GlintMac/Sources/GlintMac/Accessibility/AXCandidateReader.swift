@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import Dispatch
 import Foundation
 
 public struct AXCandidateOption: Sendable, Equatable {
@@ -192,12 +193,27 @@ enum AXCandidateVisibleRowSelector {
 
 public final class AXCandidateReader {
     private static let candidateListIdentifier = "InputMethodCandidateList"
+    private static let ownProcessIdentifier =
+        ProcessInfo.processInfo.processIdentifier
+    private enum TraversalPolicy {
+        static let maximumDepth = 8
+        static let maximumNodeCount = 64
+        static let deepScanCooldownNanoseconds: UInt64 =
+            120_000_000
+    }
+    private struct RootedAXElement {
+        let element: AXUIElement
+        let root: AXUIElement
+        let depth: Int
+    }
 
     private var cachedApplicationPID: pid_t?
     private var cachedApplication: AXUIElement?
     private var cachedCandidateListPID: pid_t?
     private var cachedCandidateWindow: AXUIElement?
     private var cachedCandidateList: AXUIElement?
+    private var lastDeepScanPID: pid_t?
+    private var lastDeepScanTimestamp: UInt64 = 0
 
     public init() {}
 
@@ -206,6 +222,11 @@ public final class AXCandidateReader {
         includeVisibleCandidates: Bool = false,
         includeVisibleTexts: Bool = true
     ) -> AXCandidateSnapshot? {
+        if let processIdentifier,
+            processIdentifier == Self.ownProcessIdentifier
+        {
+            return nil
+        }
         let session = AXReadSession(limits: .interactive)
         guard
             let application = applicationElement(
@@ -224,10 +245,7 @@ public final class AXCandidateReader {
             application,
             kAXWindowsAttribute
         )
-        guard !windows.isEmpty else {
-            clearCandidateCache()
-            return nil
-        }
+        let roots = windows.isEmpty ? [application] : windows
         if cachedCandidateListPID == applicationPID,
             let cachedCandidateWindow,
             let cachedCandidateList,
@@ -251,7 +269,7 @@ public final class AXCandidateReader {
             }
         }
         clearCandidateCache()
-        for window in windows {
+        for window in roots {
             guard
                 let list = Self.candidateList(
                     in: window,
@@ -272,6 +290,35 @@ public final class AXCandidateReader {
             cachedCandidateListPID = applicationPID
             return snapshot
         }
+        let timestamp = DispatchTime.now().uptimeNanoseconds
+        let shouldDeepScan =
+            lastDeepScanPID != applicationPID
+            || timestamp >= lastDeepScanTimestamp
+                && timestamp - lastDeepScanTimestamp
+                    >= TraversalPolicy
+                    .deepScanCooldownNanoseconds
+        if shouldDeepScan {
+            lastDeepScanPID = applicationPID
+            lastDeepScanTimestamp = timestamp
+            if let candidate = Self.deepCandidateList(
+                in: roots,
+                session: session
+            ),
+                let snapshot = Self.snapshot(
+                    from: candidate.list,
+                    candidateWindow: candidate.window,
+                    includeVisibleCandidates:
+                        includeVisibleCandidates,
+                    includeVisibleTexts: includeVisibleTexts,
+                    session: session
+                )
+            {
+                cachedCandidateWindow = candidate.window
+                cachedCandidateList = candidate.list
+                cachedCandidateListPID = applicationPID
+                return snapshot
+            }
+        }
         return nil
     }
 
@@ -288,6 +335,12 @@ public final class AXCandidateReader {
         guard
             let resolvedPID = processIdentifier
                 ?? Self.focusedProcessIdentifier(session: session)
+        else {
+            return nil
+        }
+        guard
+            resolvedPID > 0,
+            resolvedPID != Self.ownProcessIdentifier
         else {
             return nil
         }
@@ -388,23 +441,87 @@ public final class AXCandidateReader {
         belongsTo window: AXUIElement,
         session: AXReadSession
     ) -> Bool {
-        for child in session.elementsAttribute(
-            window,
-            kAXChildrenAttribute
-        ) {
-            if CFEqual(child, list) {
+        if CFEqual(list, window) {
+            return true
+        }
+        var current = list
+        for _ in 0..<TraversalPolicy.maximumDepth {
+            guard
+                let parent = session.elementAttribute(
+                    current,
+                    kAXParentAttribute
+                )
+            else {
+                return false
+            }
+            if CFEqual(parent, window) {
                 return true
             }
-            if (session.elementsAttribute(
-                child,
-                kAXChildrenAttribute
-            )).contains(where: {
-                CFEqual($0, list)
-            }) {
-                return true
-            }
+            current = parent
         }
         return false
+    }
+
+    private static func deepCandidateList(
+        in roots: [AXUIElement],
+        session: AXReadSession
+    ) -> (list: AXUIElement, window: AXUIElement)? {
+        guard
+            let candidate = firstBoundedElement(
+                in: roots,
+                session: session,
+                matching: {
+                    isCandidateList($0, session: session)
+                }
+            )
+        else {
+            return nil
+        }
+        return (candidate.element, candidate.root)
+    }
+
+    private static func firstBoundedElement(
+        in roots: [AXUIElement],
+        session: AXReadSession,
+        matching predicate: (AXUIElement) -> Bool
+    ) -> RootedAXElement? {
+        var queue = roots.map {
+            RootedAXElement(
+                element: $0,
+                root: $0,
+                depth: 0
+            )
+        }
+        var visited = 0
+        var nextIndex = 0
+        while nextIndex < queue.count,
+            visited < TraversalPolicy.maximumNodeCount,
+            !session.isExhausted
+        {
+            let entry = queue[nextIndex]
+            nextIndex += 1
+            visited += 1
+            if predicate(entry.element) {
+                return entry
+            }
+            guard entry.depth < TraversalPolicy.maximumDepth
+            else {
+                continue
+            }
+            for child in session.elementsAttribute(
+                entry.element,
+                kAXChildrenAttribute
+            ) {
+                queue.append(
+                    RootedAXElement(
+                        element: child,
+                        root: entry.root,
+                        depth: entry.depth + 1
+                    )
+                )
+            }
+        }
+        return nil
     }
 
     private static func snapshot(

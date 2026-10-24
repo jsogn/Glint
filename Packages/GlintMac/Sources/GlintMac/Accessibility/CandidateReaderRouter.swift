@@ -28,6 +28,9 @@ protocol CandidateReaderRouting {
         for source: ActiveInputSource,
         allowProfileDiscovery: Bool
     ) -> any AXCandidateReading
+    func allowsProcessFallback(
+        for source: ActiveInputSource
+    ) -> Bool
 }
 
 extension CandidateReaderRouting {
@@ -38,6 +41,12 @@ extension CandidateReaderRouting {
             for: source,
             allowProfileDiscovery: true
         )
+    }
+
+    func allowsProcessFallback(
+        for source: ActiveInputSource
+    ) -> Bool {
+        false
     }
 }
 
@@ -96,6 +105,28 @@ struct CandidateReaderRouter: CandidateReaderRouting {
             profiles: adaptiveProfiles,
             allowsProfileDiscovery: allowProfileDiscovery
         )
+    }
+
+    func allowsProcessFallback(
+        for source: ActiveInputSource
+    ) -> Bool {
+        if source.kind == .applePinyin {
+            return true
+        }
+        if registrations.contains(where: {
+            $0.matches(source.identity)
+        }) {
+            return true
+        }
+        guard
+            source.kind == .otherInputMethod
+                || source.kind == .unknown
+        else {
+            return false
+        }
+        return adaptiveProfiles?.profile(
+            for: source.identity
+        ) != nil
     }
 }
 
