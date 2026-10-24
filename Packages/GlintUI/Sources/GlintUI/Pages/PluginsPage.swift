@@ -282,11 +282,31 @@ struct PluginsPage: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if model.isInstalling == plugin.id {
+                let currentProgress =
+                    progress
+                    ?? PluginInstallProgress(
+                        fraction: 0,
+                        phase: .preparing
+                    )
+                let progressDescription =
+                    InstallProgressFormatting.description(
+                        for: currentProgress
+                    )
                 HStack(spacing: 10) {
-                    ProgressView(value: progress ?? 0)
-                        .progressViewStyle(.linear)
-                        .frame(width: 150)
-                        .accessibilityLabel("安装进度")
+                    VStack(alignment: .leading, spacing: 3) {
+                        ProgressView(value: currentProgress.fraction)
+                            .progressViewStyle(.linear)
+                            .accessibilityLabel("安装进度")
+                            .accessibilityValue(
+                                Text(progressDescription)
+                            )
+                        Text(progressDescription)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .help(progressDescription)
+                    }
+                    .frame(width: 220, alignment: .leading)
                     Button(model.isCancellingInstallation ? "取消中…" : "取消") {
                         model.cancelInstallation()
                     }

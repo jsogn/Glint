@@ -281,7 +281,7 @@ final class HUDLayoutTests: XCTestCase {
     }
 
     @MainActor
-    func testDefaultAppearancePreservesCurrentHUDGeometry() {
+    func testDefaultAppearanceUsesCompactHUDGeometry() {
         let metrics = HUDLayoutMetrics(appearance: .default)
 
         XCTAssertEqual(metrics.textFontSize, 14)
@@ -292,7 +292,8 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(metrics.singleItemHorizontalPadding, 12)
         XCTAssertEqual(metrics.itemHorizontalPadding, 5)
         XCTAssertEqual(metrics.numberSpacing, 2)
-        XCTAssertEqual(metrics.panelHeight, 36)
+        XCTAssertEqual(metrics.singleItemHeight, 29)
+        XCTAssertEqual(metrics.multiItemHeight, 27)
     }
 
     @MainActor
@@ -333,8 +334,27 @@ final class HUDLayoutTests: XCTestCase {
             appearance: HUDAppearance(density: .spacious)
         )
 
-        XCTAssertLessThan(compact.panelHeight, standard.panelHeight)
-        XCTAssertLessThan(standard.panelHeight, spacious.panelHeight)
+        XCTAssertLessThan(
+            compact.singleItemHeight,
+            standard.singleItemHeight
+        )
+        XCTAssertLessThan(
+            standard.singleItemHeight,
+            spacious.singleItemHeight
+        )
+    }
+
+    @MainActor
+    func testCompactFifteenPointHUDStaysLaptopFriendly() {
+        let metrics = HUDLayoutMetrics(
+            appearance: HUDAppearance(
+                fontSize: 15,
+                density: .compact
+            )
+        )
+
+        XCTAssertEqual(metrics.singleItemHeight, 28)
+        XCTAssertEqual(metrics.multiItemHeight, 24)
     }
 
     @MainActor
@@ -474,13 +494,60 @@ final class HUDLayoutTests: XCTestCase {
                     hostingView.fittingSize.width,
                     "\(fontSize)pt \(density.rawValue)"
                 )
-                XCTAssertGreaterThanOrEqual(
+                XCTAssertEqual(
                     panelSize.height,
                     hostingView.fittingSize.height,
+                    accuracy: 0.001,
                     "\(fontSize)pt \(density.rawValue)"
                 )
             }
         }
+    }
+
+    @MainActor
+    func testHUDHostingViewDoesNotResizePanelAfterDisplay() {
+        let items = [
+            HUDItem(
+                id: 0,
+                text: "a complete translation",
+                isSelected: true
+            )
+        ]
+        let appearance = HUDAppearance(
+            fontSize: 15,
+            density: .standard
+        )
+        let panelSize = HUDController.panelSize(
+            for: items,
+            maximumWidth: 1_400,
+            appearance: appearance
+        )
+        let panel = NSPanel(
+            contentRect: NSRect(origin: .zero, size: panelSize),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.alphaValue = 0
+        let hostingView = NSHostingView(
+            rootView: HUDView(
+                items: items,
+                appearance: appearance
+            )
+        )
+        hostingView.sizingOptions = []
+        panel.contentView = hostingView
+        defer {
+            panel.orderOut(nil)
+            panel.close()
+        }
+
+        panel.orderFrontRegardless()
+        panel.displayIfNeeded()
+        hostingView.layoutSubtreeIfNeeded()
+
+        XCTAssertEqual(panel.frame.size.width, panelSize.width)
+        XCTAssertEqual(panel.frame.size.height, panelSize.height)
     }
 
     @MainActor

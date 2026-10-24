@@ -30,6 +30,72 @@ final class PluginCatalogServiceTests: XCTestCase {
         )
     }
 
+    func testMLXDownloadProgressUsesBytesWhenOneFileDominates() {
+        let totalBytes: Int64 = 1_017_375_718
+        let smallFilesBytes: Int64 = 14_567
+        let modelBytes: Int64 = 1_007_776_125
+
+        let afterSmallFiles = MLXDownloadProgress.fraction(
+            completedBytes: smallFilesBytes,
+            currentFileBytes: 0,
+            totalBytes: totalBytes,
+            completedFiles: 5,
+            totalFiles: 9
+        )
+        let halfwayThroughModel = MLXDownloadProgress.fraction(
+            completedBytes: smallFilesBytes,
+            currentFileBytes: modelBytes / 2,
+            totalBytes: totalBytes,
+            completedFiles: 5,
+            totalFiles: 9
+        )
+
+        XCTAssertLessThan(afterSmallFiles, 0.03)
+        XCTAssertGreaterThan(halfwayThroughModel, afterSmallFiles)
+        XCTAssertLessThan(halfwayThroughModel, 0.5)
+    }
+
+    func testMLXDownloadProgressIsContinuousAtFileBoundary() {
+        let totalBytes: Int64 = 1_017_375_718
+        let smallFilesBytes: Int64 = 14_567
+        let modelBytes: Int64 = 1_007_776_125
+
+        let beforeBoundary = MLXDownloadProgress.fraction(
+            completedBytes: smallFilesBytes,
+            currentFileBytes: modelBytes,
+            totalBytes: totalBytes,
+            completedFiles: 5,
+            totalFiles: 9
+        )
+        let afterBoundary = MLXDownloadProgress.fraction(
+            completedBytes: smallFilesBytes + modelBytes,
+            currentFileBytes: 0,
+            totalBytes: totalBytes,
+            completedFiles: 6,
+            totalFiles: 9
+        )
+
+        XCTAssertEqual(
+            beforeBoundary,
+            afterBoundary,
+            accuracy: 0.000_001
+        )
+    }
+
+    func testMLXDownloadProgressFallsBackToFileCountWithoutSizes() {
+        XCTAssertEqual(
+            MLXDownloadProgress.fraction(
+                completedBytes: 0,
+                currentFileBytes: 0,
+                totalBytes: 0,
+                completedFiles: 5,
+                totalFiles: 9
+            ),
+            0.02 + 0.88 * 5 / 9,
+            accuracy: 0.000_001
+        )
+    }
+
     func testFetchInstallAndUninstallLocalCatalogPlugin() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("GlintPluginCatalogTests-\(UUID().uuidString)")
@@ -100,7 +166,17 @@ final class PluginCatalogServiceTests: XCTestCase {
 
         let catalog = try await service.fetchCatalog(from: catalogURL)
         XCTAssertEqual(catalog.map(\.id), ["test-dictionary"])
-        _ = try await service.install(finalManifest)
+        let progressCollector = InstallProgressCollector()
+        _ = try await service.install(finalManifest) {
+            progressCollector.append($0)
+        }
+        let progress = progressCollector.values
+        XCTAssertEqual(progress.first?.phase, .preparing)
+        XCTAssertEqual(progress.last?.fraction, 1)
+        XCTAssertEqual(
+            progress.map(\.fraction),
+            progress.map(\.fraction).sorted()
+        )
         let installed = await manager.installedPlugins()
         XCTAssertEqual(installed.first?.id, finalManifest.id)
         try await service.uninstall(id: finalManifest.id)
@@ -215,6 +291,294 @@ final class PluginCatalogServiceTests: XCTestCase {
         }
     }
 
+    func testModelScopeSnapshotInstallsBeforeHuggingFaceFallback() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelScopeCatalog-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let payloads: [String: Data] = [
+            "config.json": Data("{}".utf8),
+            "tokenizer.json": Data("{\"tokenizer\":true}".utf8),
+            "model.safetensors": Data([0x01, 0x02, 0x03, 0x04]),
+        ]
+        let snapshotFiles = payloads.map { path, data in
+            [
+                "Path": path,
+                "Size": data.count,
+                "Sha256": sha256(data),
+                "Revision": "modelscope-revision",
+                "Type": "blob",
+            ] as [String: Any]
+        }
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: [
+                "Data": ["Files": snapshotFiles]
+            ]
+        )
+        let requestCollector = RequestHostCollector()
+        StubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestCollector.append(url.host)
+            guard url.host == "modelscope.cn" else { return nil }
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            if url.path
+                == "/api/v1/models/example/model/repo/files"
+            {
+                return (response, snapshotData)
+            }
+            if url.path.contains(
+                "/models/example/model/resolve/modelscope-revision/"
+            ),
+                let data = payloads[url.lastPathComponent]
+            {
+                return (response, data)
+            }
+            return nil
+        }
+        defer { StubURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let manager = PluginManager(baseDirectory: root)
+        let service = PluginCatalogService(
+            manager: manager,
+            session: URLSession(configuration: configuration)
+        )
+        let modelscopeURL = URL(
+            string: "https://modelscope.cn/models/example/model"
+        )!
+        let manifest = PluginManifest(
+            id: "modelscope-test-model",
+            type: .translation,
+            name: "ModelScope Test Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(payloads.values.map(\.count).reduce(0, +)),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "APACHE-2.0",
+            minRAMBytes: 0,
+            revision: "huggingface-revision",
+            modelscopeURL: modelscopeURL
+        )
+        let progressCollector = InstallProgressCollector()
+
+        let installed = try await service.install(manifest) {
+            progressCollector.append($0)
+        }
+
+        XCTAssertEqual(installed.modelscopeURL, modelscopeURL)
+        XCTAssertFalse(requestCollector.values.isEmpty)
+        XCTAssertTrue(
+            requestCollector.values.allSatisfy {
+                $0 == "modelscope.cn"
+            }
+        )
+        XCTAssertEqual(
+            progressCollector.values.first?.sourceHost,
+            "modelscope.cn"
+        )
+    }
+
+    func testModelScopeFailureFallsBackToHuggingFaceMirror() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelScopeFallback-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let payloads: [String: Data] = [
+            "config.json": Data("{}".utf8),
+            "tokenizer.json": Data("{\"tokenizer\":true}".utf8),
+            "model.safetensors": Data([0x05, 0x06, 0x07]),
+        ]
+        let snapshotFiles = payloads.map { path, data in
+            [
+                "rfilename": path,
+                "size": data.count,
+                "lfs": ["sha256": sha256(data)],
+            ] as [String: Any]
+        }
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: ["siblings": snapshotFiles]
+        )
+        let requestCollector = RequestHostCollector()
+        StubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestCollector.append(url.host)
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: url.host == "modelscope.cn" ? 404 : 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            if url.host == "modelscope.cn",
+                url.path
+                    == "/api/v1/models/example/model/repo/files"
+            {
+                return (response, Data())
+            }
+            guard url.host == "hf-mirror.com" else { return nil }
+            if url.path.contains("/api/models/") {
+                return (response, snapshotData)
+            }
+            if let data = payloads[url.lastPathComponent] {
+                return (response, data)
+            }
+            return nil
+        }
+        defer { StubURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let manager = PluginManager(baseDirectory: root)
+        let service = PluginCatalogService(
+            manager: manager,
+            session: URLSession(configuration: configuration)
+        )
+        let manifest = PluginManifest(
+            id: "modelscope-fallback-test",
+            type: .translation,
+            name: "ModelScope Fallback Test",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(payloads.values.map(\.count).reduce(0, +)),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "APACHE-2.0",
+            minRAMBytes: 0,
+            revision: "huggingface-revision",
+            modelscopeURL: URL(
+                string: "https://modelscope.cn/models/example/model"
+            )!
+        )
+        let progressCollector = InstallProgressCollector()
+
+        _ = try await service.install(manifest) {
+            progressCollector.append($0)
+        }
+
+        let hosts = requestCollector.values
+        XCTAssertTrue(hosts.contains("modelscope.cn"))
+        XCTAssertTrue(hosts.contains("hf-mirror.com"))
+        let progressHosts = Set(
+            progressCollector.values.compactMap(\.sourceHost)
+        )
+        XCTAssertTrue(progressHosts.contains("modelscope.cn"))
+        XCTAssertTrue(progressHosts.contains("hf-mirror.com"))
+    }
+
+    func testLargeDownloadReportsProgressBeforeFileCompletes() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintChunkedProgress-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let modelData = Data(
+            repeating: 0x5A,
+            count: 3_000_000
+        )
+        let payloads: [String: Data] = [
+            "config.json": Data("{}".utf8),
+            "tokenizer.json": Data("{\"tokenizer\":true}".utf8),
+            "zz-model.safetensors": modelData,
+        ]
+        let snapshotFiles = payloads.map { path, data in
+            [
+                "Path": path,
+                "Size": data.count,
+                "Sha256": sha256(data),
+                "Revision": "modelscope-revision",
+                "Type": "blob",
+            ] as [String: Any]
+        }
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: [
+                "Data": ["Files": snapshotFiles]
+            ]
+        )
+        ChunkedURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            if url.path.hasSuffix("/repo/files") {
+                return (response, snapshotData)
+            }
+            if let data = payloads[url.lastPathComponent] {
+                return (response, data)
+            }
+            return nil
+        }
+        defer { ChunkedURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [ChunkedURLProtocol.self]
+        let manager = PluginManager(baseDirectory: root)
+        let service = PluginCatalogService(
+            manager: manager,
+            session: URLSession(configuration: configuration)
+        )
+        let manifest = PluginManifest(
+            id: "chunked-progress-test",
+            type: .translation,
+            name: "Chunked Progress Test",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(payloads.values.map(\.count).reduce(0, +)),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "APACHE-2.0",
+            minRAMBytes: 0,
+            revision: "huggingface-revision",
+            modelscopeURL: URL(
+                string: "https://modelscope.cn/models/example/model"
+            )!
+        )
+        let progressCollector = InstallProgressCollector()
+
+        _ = try await service.install(manifest) {
+            progressCollector.append($0)
+        }
+
+        XCTAssertTrue(
+            progressCollector.values.contains {
+                $0.phase == .downloading
+                    && $0.fraction > 0.1
+                    && $0.fraction < 0.85
+            }
+        )
+    }
+
     func testDictionaryArchiveRequiresRuntimeFile() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -313,6 +677,12 @@ final class PluginCatalogServiceTests: XCTestCase {
         process.waitUntilExit()
         XCTAssertEqual(process.terminationStatus, 0)
     }
+
+    private func sha256(_ data: Data) -> String {
+        SHA256.hash(data: data)
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
 }
 
 private final class StubURLProtocol: URLProtocol {
@@ -346,4 +716,117 @@ private final class StubURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+}
+
+private final class ChunkedURLProtocol: URLProtocol {
+    nonisolated(unsafe) static var handler: ((URLRequest) -> (HTTPURLResponse, Data)?)?
+    private var sender: ChunkedURLProtocolSender?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.handler,
+            let (response, data) = handler(request)
+        else {
+            client?.urlProtocol(
+                self,
+                didFailWithError: URLError(.cannotConnectToHost)
+            )
+            return
+        }
+        client?.urlProtocol(
+            self,
+            didReceive: response,
+            cacheStoragePolicy: .notAllowed
+        )
+        let sender = ChunkedURLProtocolSender(
+            urlProtocol: self,
+            data: data
+        )
+        self.sender = sender
+        DispatchQueue.global(qos: .userInitiated).async {
+            sender.send()
+        }
+    }
+
+    override func stopLoading() {
+        sender?.stop()
+    }
+}
+
+private final class ChunkedURLProtocolSender: @unchecked Sendable {
+    private let urlProtocol: URLProtocol
+    private let data: Data
+    private let lock = NSLock()
+    private var stopped = false
+
+    init(urlProtocol: URLProtocol, data: Data) {
+        self.urlProtocol = urlProtocol
+        self.data = data
+    }
+
+    func send() {
+        let chunkSize = max(64 * 1024, data.count / 30)
+        var offset = 0
+        while offset < data.count {
+            lock.lock()
+            let stopped = stopped
+            lock.unlock()
+            if stopped { return }
+            let end = min(offset + chunkSize, data.count)
+            urlProtocol.client?.urlProtocol(
+                urlProtocol,
+                didLoad: data.subdata(in: offset..<end)
+            )
+            offset = end
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        urlProtocol.client?.urlProtocolDidFinishLoading(urlProtocol)
+    }
+
+    func stop() {
+        lock.lock()
+        stopped = true
+        lock.unlock()
+    }
+}
+
+private final class InstallProgressCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [PluginInstallProgress] = []
+
+    var values: [PluginInstallProgress] {
+        lock.lock()
+        defer { lock.unlock() }
+        return storage
+    }
+
+    func append(_ progress: PluginInstallProgress) {
+        lock.lock()
+        storage.append(progress)
+        lock.unlock()
+    }
+}
+
+private final class RequestHostCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [String?] = []
+
+    var values: [String?] {
+        lock.lock()
+        defer { lock.unlock() }
+        return storage
+    }
+
+    func append(_ host: String?) {
+        lock.lock()
+        storage.append(host)
+        lock.unlock()
+    }
 }

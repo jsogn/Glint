@@ -11,5 +11,6 @@
   "minRAMBytes": 6442450944,
   "summary": "速度快、表达自然，适合日常中英输入。",
   "revision": "e5c6fe56c7b3bc77fae5ae92db31f2178f1e6912",
+  "modelscopeURL": "https://modelscope.cn/models/mlx-community/Hy-MT2-1.8B-4bit",
   "source": "catalog"
 }

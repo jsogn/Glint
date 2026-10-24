@@ -45,6 +45,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
     public let minRAMBytes: Int64
     public let summary: String?
     public let revision: String?
+    public let modelscopeURL: URL?
     public let source: PluginSource
     public let promptProfile: TranslationPromptProfile?
 
@@ -61,6 +62,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         minRAMBytes: Int64,
         summary: String? = nil,
         revision: String? = nil,
+        modelscopeURL: URL? = nil,
         source: PluginSource = .catalog,
         promptProfile: TranslationPromptProfile? = nil
     ) {
@@ -76,6 +78,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         self.minRAMBytes = minRAMBytes
         self.summary = summary
         self.revision = revision
+        self.modelscopeURL = modelscopeURL
         self.source = source
         self.promptProfile = promptProfile
     }

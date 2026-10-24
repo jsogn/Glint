@@ -16,7 +16,8 @@ final class PluginManifestTests: XCTestCase {
               "license": "CC-BY-SA-4.0",
               "minRAMBytes": 0,
               "source": "bundled",
-              "revision": "abc123"
+              "revision": "abc123",
+              "modelscopeURL": "https://modelscope.cn/models/example/dictionary"
             }
             """
         let manifest = try JSONDecoder().decode(
@@ -27,6 +28,10 @@ final class PluginManifestTests: XCTestCase {
         XCTAssertEqual(manifest.type, .dictionary)
         XCTAssertEqual(manifest.source, .bundled)
         XCTAssertEqual(manifest.revision, "abc123")
+        XCTAssertEqual(
+            manifest.modelscopeURL,
+            URL(string: "https://modelscope.cn/models/example/dictionary")
+        )
     }
 
     func testPluginVersionComparison() {

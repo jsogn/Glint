@@ -107,6 +107,10 @@ struct HUDItemRow: View {
                 ? metrics.multiItemVerticalPadding
                 : metrics.singleItemVerticalPadding
         )
+        // Keep the visible capsule on the same exact geometry as NSPanel.
+        // Otherwise intrinsic SwiftUI height can leave a transparent strip on
+        // the side facing the candidate row when HUD placement flips above it.
+        .frame(height: metrics.panelHeight(for: items.count))
         .modifier(
             HUDSurfaceStyle(
                 appearance: appearance,

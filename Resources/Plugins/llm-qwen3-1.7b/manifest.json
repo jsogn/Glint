@@ -11,5 +11,6 @@
   "minRAMBytes": 6442450944,
   "summary": "速度适中，支持中英及多种语言，适合通用多语言场景。",
   "revision": "3b1b1768f8f8cf8351c712464f906e86c2b8269e",
+  "modelscopeURL": "https://modelscope.cn/models/mlx-community/Qwen3-1.7B-4bit",
   "source": "catalog"
 }

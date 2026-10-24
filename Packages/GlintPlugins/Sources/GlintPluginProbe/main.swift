@@ -27,7 +27,13 @@ struct GlintPluginProbe {
             }
             print("installing \(plugin.name) (\(plugin.sizeBytes) bytes)")
             let installed = try await service.install(plugin) { value in
-                print(String(format: "progress %.1f%%", value * 100))
+                print(
+                    String(
+                        format: "progress %.1f%% phase=%@",
+                        value.fraction * 100,
+                        value.phase.rawValue
+                    )
+                )
             }
             let directory = await manager.pluginDirectory(for: installed.id)
             print("installed \(installed.id) -> \(directory.path)")

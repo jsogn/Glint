@@ -44,7 +44,7 @@ public final class MainWindowModel {
     public private(set) var isLoadingCatalog = false
     public private(set) var isInstalling: String?
     public private(set) var isCancellingInstallation = false
-    public private(set) var installProgress: [String: Double] = [:]
+    public private(set) var installProgress: [String: PluginInstallProgress] = [:]
     public private(set) var catalogError: String?
     public private(set) var activeModelID: String
     public private(set) var translationMode: TranslationMode
@@ -260,7 +260,10 @@ public final class MainWindowModel {
         guard installTask == nil, localImportTask == nil else { return }
         isInstalling = plugin.id
         isCancellingInstallation = false
-        installProgress[plugin.id] = 0
+        installProgress[plugin.id] = PluginInstallProgress(
+            fraction: 0,
+            phase: .preparing
+        )
         catalogError = nil
         installTask = Task { [weak self] in
             guard let self else { return }
@@ -429,7 +432,10 @@ public final class MainWindowModel {
         do {
             _ = try await pluginLifecycle.install(plugin) { [weak self] value in
                 Task { @MainActor [weak self] in
-                    self?.installProgress[plugin.id] = value
+                    self?.applyInstallProgress(
+                        value,
+                        for: plugin.id
+                    )
                 }
             }
             hadPendingUpgrade = await pluginLifecycle.hasPendingUpgrade()
@@ -480,7 +486,10 @@ public final class MainWindowModel {
             } else {
                 try await pluginLifecycle.commitPendingUpgrade()
             }
-            installProgress[plugin.id] = 1
+            installProgress[plugin.id] = PluginInstallProgress(
+                fraction: 1,
+                phase: .installing
+            )
         } catch {
             try? await pluginLifecycle.rollbackPendingUpgrade()
             if wasActiveTranslation, hadPendingUpgrade {
@@ -515,6 +524,21 @@ public final class MainWindowModel {
             }
         }
         installProgress.removeValue(forKey: plugin.id)
+    }
+
+    private func applyInstallProgress(
+        _ progress: PluginInstallProgress,
+        for pluginID: String
+    ) {
+        guard isInstalling == pluginID else { return }
+        if let current = installProgress[pluginID],
+            current.phase == progress.phase,
+            current.sourceHost == progress.sourceHost,
+            progress.fraction < current.fraction
+        {
+            return
+        }
+        installProgress[pluginID] = progress
     }
 
     public func uninstallPlugin(_ plugin: PluginManifest) async {
@@ -660,19 +684,32 @@ public final class MainWindowModel {
         {
             return url
         }
-        let catalogURL = FileManager.default.urls(
+        if let bundledCatalogURL =
+            Bundle.main.url(
+                forResource: "catalog",
+                withExtension: "json",
+                subdirectory: "Resources"
+            )
+            ?? Bundle.main.url(
+                forResource: "catalog",
+                withExtension: "json"
+            )
+        {
+            return bundledCatalogURL
+        }
+        let developmentCatalogURL = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first?
         .appendingPathComponent("Glint/catalog.json")
-        if let catalogURL, FileManager.default.fileExists(atPath: catalogURL.path) {
-            return catalogURL
+        if let developmentCatalogURL,
+            FileManager.default.fileExists(
+                atPath: developmentCatalogURL.path
+            )
+        {
+            return developmentCatalogURL
         }
-        return Bundle.main.url(
-            forResource: "catalog",
-            withExtension: "json",
-            subdirectory: "Resources"
-        ) ?? Bundle.main.url(forResource: "catalog", withExtension: "json")
+        return nil
     }
 
 }

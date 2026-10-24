@@ -31,7 +31,7 @@ final class PluginLifecycleService {
 
     func install(
         _ plugin: PluginManifest,
-        progress: (@Sendable (Double) -> Void)? = nil
+        progress: (@Sendable (PluginInstallProgress) -> Void)? = nil
     ) async throws -> PluginManifest {
         try await catalog.install(plugin, progress: progress)
     }

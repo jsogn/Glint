@@ -11,5 +11,6 @@
   "minRAMBytes": 12884901888,
   "summary": "速度较慢，更适合复杂表达和高配置设备。",
   "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+  "modelscopeURL": "https://modelscope.cn/models/mlx-community/Qwen3-4B-Instruct-2507-4bit",
   "source": "catalog"
 }

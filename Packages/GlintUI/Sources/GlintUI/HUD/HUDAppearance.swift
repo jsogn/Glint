@@ -155,7 +155,8 @@ struct HUDLayoutMetrics: Equatable {
     let singleItemVerticalPadding: CGFloat
     let multiItemVerticalPadding: CGFloat
     let itemVerticalPadding: CGFloat
-    let panelHeight: CGFloat
+    let singleItemHeight: CGFloat
+    let multiItemHeight: CGFloat
     let measurementSafetyPadding: CGFloat
 
     init(appearance: HUDAppearance = .default) {
@@ -193,10 +194,27 @@ struct HUDLayoutMetrics: Equatable {
             (2 * scale).rounded() + density.verticalDelta
         )
         measurementSafetyPadding = 3
-        panelHeight = max(
-            32,
-            (fontSize + 22 + density.panelHeightDelta).rounded()
+        let textFont = NSFont.systemFont(
+            ofSize: fontSize,
+            weight: .medium
         )
+        let lineHeight = ceil(
+            textFont.ascender - textFont.descender + textFont.leading
+        )
+        singleItemHeight = max(
+            24,
+            lineHeight + singleItemVerticalPadding * 2
+        )
+        multiItemHeight = max(
+            24,
+            lineHeight
+                + multiItemVerticalPadding * 2
+                + itemVerticalPadding * 2
+        )
+    }
+
+    func panelHeight(for itemCount: Int) -> CGFloat {
+        itemCount > 1 ? multiItemHeight : singleItemHeight
     }
 }
 
@@ -233,11 +251,4 @@ private extension HUDDensity {
         }
     }
 
-    var panelHeightDelta: CGFloat {
-        switch self {
-        case .compact: return -2
-        case .standard: return 0
-        case .spacious: return 4
-        }
-    }
 }

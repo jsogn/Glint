@@ -122,6 +122,10 @@ public final class HUDController {
         let hostingView = NSHostingView(
             rootView: HUDLiveView(model: contentModel)
         )
+        // HUDLayout owns the panel geometry. Without this, NSHostingView can
+        // shrink the panel to its intrinsic content height after ordering it
+        // on screen, moving only the candidate-facing edge when placed above.
+        hostingView.sizingOptions = []
         panel.contentView = hostingView
         self.contentModel = contentModel
         self.panel = panel
@@ -610,7 +614,9 @@ public final class HUDController {
         appearance: HUDAppearance = .default
     ) -> NSSize {
         let metrics = HUDLayoutMetrics(appearance: appearance)
-        let height = metrics.panelHeight
+        let height = metrics.panelHeight(
+            for: selectedOnly ? 1 : items.count
+        )
         let widthLimit = max(120, maximumWidth)
         let width: CGFloat
         if selectedOnly {

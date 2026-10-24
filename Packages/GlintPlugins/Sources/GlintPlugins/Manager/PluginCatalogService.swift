@@ -134,7 +134,7 @@ public actor PluginCatalogService {
 
     public func install(
         _ manifest: PluginManifest,
-        progress: (@Sendable (Double) -> Void)? = nil
+        progress: (@Sendable (PluginInstallProgress) -> Void)? = nil
     ) async throws -> PluginManifest {
         try Task.checkCancellation()
         guard
@@ -148,9 +148,23 @@ public actor PluginCatalogService {
         guard manifest.url.isFileURL || Self.isAllowedRemoteURL(manifest.url) else {
             throw PluginCatalogError.invalidResponse
         }
+        if let modelscopeURL = manifest.modelscopeURL,
+            !Self.isAllowedModelScopeURL(modelscopeURL)
+        {
+            throw PluginCatalogError.invalidResponse
+        }
         if manifest.runtime == "mlx" {
             return try await installMLXSnapshot(manifest, progress: progress)
         }
+        let reporter = InstallProgressReporter(progress)
+        reporter.emit(
+            PluginInstallProgress(
+                fraction: PluginInstallProgressRange.preparing,
+                phase: .preparing,
+                sourceHost: manifest.url.host
+            ),
+            force: true
+        )
 
         let workDirectory = fileManager.temporaryDirectory
             .appendingPathComponent("GlintPlugin-\(UUID().uuidString)", isDirectory: true)
@@ -163,7 +177,13 @@ public actor PluginCatalogService {
         let archiveURL = workDirectory.appendingPathComponent("plugin.archive")
         if manifest.url.isFileURL {
             try fileManager.copyItem(at: manifest.url, to: archiveURL)
-            progress?(0.5)
+            reporter.emit(
+                PluginInstallProgress(
+                    fraction: 0.05,
+                    phase: .preparing
+                ),
+                force: true
+            )
         } else {
             let downloadDirectory = workDirectory.appendingPathComponent(
                 "download",
@@ -173,11 +193,35 @@ public actor PluginCatalogService {
                 at: downloadDirectory,
                 withIntermediateDirectories: true
             )
-            let delegate = DownloadProgressDelegate(progress: progress)
-            let (temporaryURL, response) = try await session.download(
-                from: manifest.url,
-                delegate: delegate
-            )
+            let totalBytes = max(0, manifest.sizeBytes)
+            let (temporaryURL, response) = try await downloadTemporaryFile(
+                from: manifest.url
+            ) {
+                [reporter, totalBytes, sourceHost = manifest.url.host]
+                completed,
+                expected,
+                speed in
+                let resolvedTotal = expected > 0 ? expected : totalBytes
+                let ratio =
+                    resolvedTotal > 0
+                    ? Double(min(completed, resolvedTotal))
+                        / Double(resolvedTotal)
+                    : 0
+                reporter.emit(
+                    PluginInstallProgress(
+                        fraction: PluginInstallProgressRange.mapped(
+                            ratio,
+                            from: PluginInstallProgressRange.downloadingStart,
+                            to: PluginInstallProgressRange.downloadingEnd
+                        ),
+                        phase: .downloading,
+                        completedBytes: completed,
+                        totalBytes: resolvedTotal,
+                        bytesPerSecond: speed,
+                        sourceHost: sourceHost
+                    )
+                )
+            }
             try Task.checkCancellation()
             guard let http = response as? HTTPURLResponse,
                 (200..<300).contains(http.statusCode)
@@ -187,6 +231,14 @@ public actor PluginCatalogService {
             try fileManager.moveItem(at: temporaryURL, to: archiveURL)
         }
 
+        reporter.emit(
+            PluginInstallProgress(
+                fraction: PluginInstallProgressRange.verifyingStart,
+                phase: .verifying,
+                totalBytes: manifest.sizeBytes
+            ),
+            force: true
+        )
         guard let archiveData = try? Data(contentsOf: archiveURL) else {
             throw PluginCatalogError.invalidResponse
         }
@@ -196,8 +248,15 @@ public actor PluginCatalogService {
         guard manifest.sha256 != "REPLACE_ME", digest == manifest.sha256.lowercased() else {
             throw PluginCatalogError.checksumMismatch
         }
-        progress?(0.85)
         try Task.checkCancellation()
+        reporter.emit(
+            PluginInstallProgress(
+                fraction: PluginInstallProgressRange.installingStart,
+                phase: .installing,
+                totalBytes: manifest.sizeBytes
+            ),
+            force: true
+        )
 
         let extractedDirectory = workDirectory.appendingPathComponent(
             "extracted",
@@ -250,11 +309,21 @@ public actor PluginCatalogService {
 
         try JSONEncoder().encode(manifest).write(to: manifestURL)
         try Task.checkCancellation()
+        reporter.emit(
+            PluginInstallProgress(
+                fraction: PluginInstallProgressRange.installingEnd,
+                phase: .installing
+            ),
+            force: true
+        )
         let installed = try await manager.installPreparedPlugin(
             at: pluginDirectory,
             keepBackup: true
         )
-        progress?(1)
+        reporter.emit(
+            PluginInstallProgress(fraction: 1, phase: .installing),
+            force: true
+        )
         return installed
     }
 
@@ -343,11 +412,42 @@ public actor PluginCatalogService {
 
     private func installMLXSnapshot(
         _ manifest: PluginManifest,
-        progress: (@Sendable (Double) -> Void)?
+        progress: (@Sendable (PluginInstallProgress) -> Void)?
     ) async throws -> PluginManifest {
-        guard let repository = Self.huggingFaceRepositoryID(from: manifest.url) else {
+        guard
+            let huggingFaceRepository = Self.repositoryID(
+                from: manifest.url
+            )
+        else {
             throw PluginCatalogError.invalidModelRepository
         }
+        var sources: [MLXDownloadSource] = []
+        if let modelscopeURL = manifest.modelscopeURL {
+            guard
+                let repository = Self.repositoryID(
+                    from: modelscopeURL,
+                    pathPrefix: "models"
+                )
+            else {
+                throw PluginCatalogError.invalidModelRepository
+            }
+            sources.append(
+                .modelScope(
+                    repository: repository,
+                    endpoint: modelscopeURL
+                )
+            )
+        }
+        sources.append(
+            contentsOf: Self.huggingFaceEndpoints(for: manifest.url).map {
+                .huggingFace(
+                    repository: huggingFaceRepository,
+                    revision: manifest.revision ?? "main",
+                    endpoint: $0
+                )
+            }
+        )
+        let reporter = InstallProgressReporter(progress)
 
         let workDirectory = fileManager.temporaryDirectory
             .appendingPathComponent("GlintMLX-\(UUID().uuidString)", isDirectory: true)
@@ -367,17 +467,35 @@ public actor PluginCatalogService {
         )
 
         var lastError: Error?
-        for endpoint in Self.huggingFaceEndpoints(for: manifest.url) {
+        for source in sources {
             try Task.checkCancellation()
-            progress?(0)
+            reporter.reset()
+            reporter.emit(
+                PluginInstallProgress(
+                    fraction: PluginInstallProgressRange.preparing,
+                    phase: .preparing,
+                    sourceHost: source.host
+                ),
+                force: true
+            )
             do {
-                try await downloadMLXSnapshot(
-                    repository: repository,
-                    revision: manifest.revision ?? "main",
-                    endpoint: endpoint,
-                    into: modelDirectory,
-                    progress: progress
-                )
+                switch source {
+                case let .modelScope(repository, endpoint):
+                    try await downloadModelScopeSnapshot(
+                        repository: repository,
+                        endpoint: endpoint,
+                        into: modelDirectory,
+                        reporter: reporter
+                    )
+                case let .huggingFace(repository, revision, endpoint):
+                    try await downloadHuggingFaceSnapshot(
+                        repository: repository,
+                        revision: revision,
+                        endpoint: endpoint,
+                        into: modelDirectory,
+                        reporter: reporter
+                    )
+                }
                 lastError = nil
                 break
             } catch {
@@ -414,17 +532,111 @@ public actor PluginCatalogService {
         )
 
         try Task.checkCancellation()
+        reporter.emit(
+            PluginInstallProgress(
+                fraction: PluginInstallProgressRange.installingStart,
+                phase: .installing
+            ),
+            force: true
+        )
         let installed = try await manager.installPreparedPlugin(at: pluginDirectory)
-        progress?(1)
+        reporter.emit(
+            PluginInstallProgress(fraction: 1, phase: .installing),
+            force: true
+        )
         return installed
     }
 
-    private func downloadMLXSnapshot(
+    private func downloadModelScopeSnapshot(
+        repository: String,
+        endpoint: URL,
+        into directory: URL,
+        reporter: InstallProgressReporter
+    ) async throws {
+        guard
+            var apiComponents = URLComponents(
+                url: endpoint,
+                resolvingAgainstBaseURL: false
+            )
+        else {
+            throw PluginCatalogError.invalidModelRepository
+        }
+        apiComponents.path =
+            "/api/v1/models/\(repository)/repo/files"
+        apiComponents.queryItems = [
+            URLQueryItem(name: "Revision", value: "master"),
+            URLQueryItem(name: "Recursive", value: "true"),
+        ]
+        apiComponents.fragment = nil
+        guard let apiURL = apiComponents.url else {
+            throw PluginCatalogError.invalidModelRepository
+        }
+        let (data, response) = try await session.data(from: apiURL)
+        try Task.checkCancellation()
+        guard let http = response as? HTTPURLResponse,
+            (200..<300).contains(http.statusCode)
+        else {
+            throw PluginCatalogError.invalidResponse
+        }
+        let snapshot = try JSONDecoder().decode(
+            ModelScopeSnapshot.self,
+            from: data
+        )
+        var files: [SnapshotDownloadFile] = []
+        for file in snapshot.data.files {
+            guard file.type == "blob",
+                Self.shouldInstallModelFile(file.path)
+            else {
+                continue
+            }
+            guard let revision = file.revision, !revision.isEmpty else {
+                throw PluginCatalogError.invalidModelSnapshot
+            }
+            files.append(
+                SnapshotDownloadFile(
+                    path: file.path,
+                    size: file.size,
+                    sha256: file.sha256,
+                    revision: revision
+                )
+            )
+        }
+        files.sort { $0.path < $1.path }
+
+        guard
+            var originComponents = URLComponents(
+                url: endpoint,
+                resolvingAgainstBaseURL: false
+            )
+        else {
+            throw PluginCatalogError.invalidModelRepository
+        }
+        originComponents.path = ""
+        originComponents.query = nil
+        originComponents.fragment = nil
+        guard let origin = originComponents.url else {
+            throw PluginCatalogError.invalidModelRepository
+        }
+        try await downloadSnapshotFiles(
+            files,
+            downloadURL: { file in
+                guard let revision = file.revision else { return nil }
+                let base =
+                    "\(origin.absoluteString)/models/\(repository)/resolve/\(revision)/"
+                return Self.fileURL(base: base, path: file.path)
+            },
+            sourceHost: endpoint.host,
+            into: directory,
+            reporter: reporter
+        )
+    }
+
+    private func downloadHuggingFaceSnapshot(
         repository: String,
         revision: String,
         endpoint: URL,
         into directory: URL,
-        progress: (@Sendable (Double) -> Void)?
+        reporter: InstallProgressReporter
     ) async throws {
         guard
             let apiURL = URL(
@@ -440,15 +652,49 @@ public actor PluginCatalogService {
         else {
             throw PluginCatalogError.invalidResponse
         }
-        let snapshot = try JSONDecoder().decode(HuggingFaceSnapshot.self, from: data)
-        let files = snapshot.siblings
-            .filter { Self.shouldInstallModelFile($0.rfilename) }
-            .sorted { $0.rfilename < $1.rfilename }
+        let snapshot = try JSONDecoder().decode(
+            HuggingFaceSnapshot.self,
+            from: data
+        )
+        let files = snapshot.siblings.compactMap {
+            file
+                -> SnapshotDownloadFile? in
+            guard Self.shouldInstallModelFile(file.rfilename) else {
+                return nil
+            }
+            return SnapshotDownloadFile(
+                path: file.rfilename,
+                size: file.size ?? 0,
+                sha256: file.lfs?.sha256,
+                revision: nil
+            )
+        }.sorted { $0.path < $1.path }
+        let downloadBase =
+            "\(endpoint.absoluteString)/\(repository)/resolve/\(revision)/"
+        try await downloadSnapshotFiles(
+            files,
+            downloadURL: {
+                Self.fileURL(base: downloadBase, path: $0.path)
+            },
+            sourceHost: endpoint.host,
+            into: directory,
+            reporter: reporter
+        )
+    }
+
+    private func downloadSnapshotFiles(
+        _ files: [SnapshotDownloadFile],
+        downloadURL: (SnapshotDownloadFile) -> URL?,
+        sourceHost: String?,
+        into directory: URL,
+        reporter: InstallProgressReporter
+    ) async throws {
         guard Self.isCompleteModelSnapshot(files) else {
             throw PluginCatalogError.invalidModelSnapshot
         }
-
-        let expectedBytes = files.reduce(Int64(0)) { $0 + ($1.size ?? 0) }
+        let expectedBytes = files.reduce(Int64(0)) {
+            $0 + $1.size
+        }
         let available =
             try directory.resourceValues(
                 forKeys: [.volumeAvailableCapacityForImportantUsageKey]
@@ -458,11 +704,12 @@ public actor PluginCatalogService {
         }
 
         var completedBytes = Int64(0)
+        var downloadedFiles: [DownloadedSnapshotFile] = []
         for (index, file) in files.enumerated() {
             try Task.checkCancellation()
             guard
                 let destination = Self.safeDestination(
-                    for: file.rfilename,
+                    for: file.path,
                     in: directory
                 )
             else {
@@ -473,30 +720,50 @@ public actor PluginCatalogService {
                 withIntermediateDirectories: true
             )
             guard
-                let downloadURL = URL(
-                    string: "\(endpoint.absoluteString)/\(repository)/resolve/\(revision)/"
-                        + file.rfilename
-                )
+                let resolvedDownloadURL = downloadURL(file)
             else {
                 throw PluginCatalogError.invalidModelRepository
             }
 
-            let fileBytes = file.size ?? 0
+            let fileBytes = file.size
             let completedBeforeFile = completedBytes
             let fileCount = files.count
-            let delegate = SnapshotFileProgressDelegate {
-                [completedBeforeFile, expectedBytes, index, fileCount, fileBytes] received in
-                if expectedBytes > 0 {
-                    let current = completedBeforeFile + min(received, fileBytes)
-                    progress?(min(0.98, Double(current) / Double(expectedBytes)))
-                } else {
-                    progress?(0.98 * Double(index) / Double(fileCount))
-                }
+            let (temporaryURL, response) = try await downloadTemporaryFile(
+                from: resolvedDownloadURL
+            ) {
+                [
+                    completedBeforeFile,
+                    expectedBytes,
+                    index,
+                    fileCount,
+                    sourceHost,
+                    reporter,
+                ]
+                received,
+                _,
+                speed in
+                let fraction = MLXDownloadProgress.fraction(
+                    completedBytes: completedBeforeFile,
+                    currentFileBytes: received,
+                    totalBytes: expectedBytes,
+                    completedFiles: index,
+                    totalFiles: fileCount
+                )
+                let reportedBytes =
+                    expectedBytes > 0
+                    ? min(expectedBytes, completedBeforeFile + received)
+                    : completedBeforeFile + received
+                reporter.emit(
+                    PluginInstallProgress(
+                        fraction: fraction,
+                        phase: .downloading,
+                        completedBytes: reportedBytes,
+                        totalBytes: expectedBytes,
+                        bytesPerSecond: speed,
+                        sourceHost: sourceHost
+                    )
+                )
             }
-            let (temporaryURL, response) = try await session.download(
-                from: downloadURL,
-                delegate: delegate
-            )
             try Task.checkCancellation()
             guard let http = response as? HTTPURLResponse,
                 (200..<300).contains(http.statusCode)
@@ -512,21 +779,123 @@ public actor PluginCatalogService {
             if fileBytes > 0, actualBytes != fileBytes {
                 throw PluginCatalogError.invalidModelSnapshot
             }
-            if let expectedSHA = file.lfs?.sha256,
-                try Self.sha256(of: destination) != expectedSHA.lowercased()
-            {
-                throw PluginCatalogError.invalidModelSnapshot
-            }
             try Task.checkCancellation()
             completedBytes += Int64(actualBytes)
-            progress?(min(0.98, Double(index + 1) / Double(files.count)))
+            downloadedFiles.append(
+                DownloadedSnapshotFile(
+                    destination: destination,
+                    actualBytes: Int64(actualBytes),
+                    expectedSHA256: file.sha256
+                )
+            )
+            reporter.emit(
+                PluginInstallProgress(
+                    fraction: MLXDownloadProgress.fraction(
+                        completedBytes: completedBytes,
+                        currentFileBytes: 0,
+                        totalBytes: expectedBytes,
+                        completedFiles: index + 1,
+                        totalFiles: fileCount
+                    ),
+                    phase: .downloading,
+                    completedBytes: completedBytes,
+                    totalBytes: expectedBytes,
+                    sourceHost: sourceHost
+                )
+            )
+        }
+
+        reporter.emit(
+            PluginInstallProgress(
+                fraction: PluginInstallProgressRange.verifyingStart,
+                phase: .verifying,
+                completedBytes: completedBytes,
+                totalBytes: expectedBytes
+            ),
+            force: true
+        )
+        var verifiedBytes = Int64(0)
+        for (index, file) in downloadedFiles.enumerated() {
+            try Task.checkCancellation()
+            if let expectedSHA = file.expectedSHA256 {
+                let verifiedBeforeFile = verifiedBytes
+                let actualBytes = file.actualBytes
+                let fileIndex = index
+                let fileCount = downloadedFiles.count
+                let digest = try Self.sha256(
+                    of: file.destination
+                ) { fileProgress in
+                    let current =
+                        verifiedBeforeFile
+                        + Int64(
+                            Double(actualBytes)
+                                * min(max(fileProgress, 0), 1)
+                        )
+                    let raw =
+                        expectedBytes > 0
+                        ? Double(current) / Double(expectedBytes)
+                        : Double(fileIndex) / Double(max(1, fileCount))
+                    reporter.emit(
+                        PluginInstallProgress(
+                            fraction: PluginInstallProgressRange.mapped(
+                                raw,
+                                from: PluginInstallProgressRange.verifyingStart,
+                                to: PluginInstallProgressRange.verifyingEnd
+                            ),
+                            phase: .verifying,
+                            completedBytes: current,
+                            totalBytes: expectedBytes
+                        )
+                    )
+                }
+                guard digest == expectedSHA.lowercased() else {
+                    throw PluginCatalogError.invalidModelSnapshot
+                }
+            }
+            verifiedBytes += file.actualBytes
+            let raw =
+                expectedBytes > 0
+                ? Double(verifiedBytes) / Double(expectedBytes)
+                : Double(index + 1) / Double(max(1, downloadedFiles.count))
+            reporter.emit(
+                PluginInstallProgress(
+                    fraction: PluginInstallProgressRange.mapped(
+                        raw,
+                        from: PluginInstallProgressRange.verifyingStart,
+                        to: PluginInstallProgressRange.verifyingEnd
+                    ),
+                    phase: .verifying,
+                    completedBytes: verifiedBytes,
+                    totalBytes: expectedBytes
+                )
+            )
         }
     }
 
-    private static func huggingFaceRepositoryID(from url: URL) -> String? {
+    private static func repositoryID(
+        from url: URL,
+        pathPrefix: String? = nil
+    ) -> String? {
         let components = url.pathComponents.filter { $0 != "/" }
-        guard components.count >= 2 else { return nil }
+        guard components.count >= (pathPrefix == nil ? 2 : 3) else {
+            return nil
+        }
+        if let pathPrefix {
+            guard components[0] == pathPrefix else { return nil }
+            return "\(components[1])/\(components[2])"
+        }
         return "\(components[0])/\(components[1])"
+    }
+
+    private static func fileURL(
+        base: String,
+        path: String
+    ) -> URL? {
+        guard var url = URL(string: base) else { return nil }
+        for component in path.split(separator: "/") {
+            url.appendPathComponent(String(component))
+        }
+        return url
     }
 
     static func huggingFaceEndpoints(
@@ -565,6 +934,15 @@ public actor PluginCatalogService {
             return false
         }
         return ["localhost", "127.0.0.1", "::1"].contains(host)
+    }
+
+    private static func isAllowedModelScopeURL(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "https",
+            let host = url.host?.lowercased()
+        else {
+            return false
+        }
+        return host == "modelscope.cn" || host == "www.modelscope.cn"
     }
 
     private static func shouldInstallModelFile(_ name: String) -> Bool {
@@ -607,9 +985,9 @@ public actor PluginCatalogService {
     }
 
     private static func isCompleteModelSnapshot(
-        _ files: [HuggingFaceSnapshot.Sibling]
+        _ files: [SnapshotDownloadFile]
     ) -> Bool {
-        let names = Set(files.map(\.rfilename))
+        let names = Set(files.map(\.path))
         let hasWeights = names.contains { $0.hasSuffix(".safetensors") }
         let hasTokenizer =
             names.contains("tokenizer.json")
@@ -630,21 +1008,55 @@ public actor PluginCatalogService {
         }
     }
 
-    private static func sha256(of url: URL) throws -> String {
+    private func downloadTemporaryFile(
+        from url: URL,
+        progress: @escaping @Sendable (Int64, Int64, Int64?) -> Void
+    ) async throws -> (URL, URLResponse) {
+        let taskBox = DownloadTaskBox()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let delegate = ProgressDownloadDelegate(
+                    continuation: continuation,
+                    onProgress: progress
+                )
+                let task = session.downloadTask(with: url)
+                taskBox.install(task: task, delegate: delegate)
+                task.resume()
+            }
+        } onCancel: {
+            taskBox.cancel()
+        }
+    }
+
+    private static func sha256(
+        of url: URL,
+        progress: (@Sendable (Double) -> Void)? = nil
+    ) throws -> String {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
+        let totalBytes =
+            try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         var hasher = SHA256()
+        var processedBytes = 0
         while let data = try handle.read(upToCount: 4 * 1024 * 1024),
             !data.isEmpty
         {
+            try Task.checkCancellation()
             hasher.update(data: data)
+            processedBytes += data.count
+            if totalBytes > 0 {
+                progress?(
+                    min(1, Double(processedBytes) / Double(totalBytes))
+                )
+            }
         }
+        progress?(1)
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     private static let defaultSession: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 120
+        configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 60 * 60
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.waitsForConnectivity = false
@@ -670,38 +1082,146 @@ private struct HuggingFaceSnapshot: Decodable {
     let siblings: [Sibling]
 }
 
-private final class DownloadProgressDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let progress: (@Sendable (Double) -> Void)?
+private enum MLXDownloadSource {
+    case modelScope(repository: String, endpoint: URL)
+    case huggingFace(
+        repository: String,
+        revision: String,
+        endpoint: URL
+    )
 
-    init(progress: (@Sendable (Double) -> Void)?) {
-        self.progress = progress
-    }
-
-    nonisolated func urlSession(
-        _ session: URLSession,
-        downloadTask: URLSessionDownloadTask,
-        didWriteData bytesWritten: Int64,
-        totalBytesWritten: Int64,
-        totalBytesExpectedToWrite: Int64
-    ) {
-        guard totalBytesExpectedToWrite > 0 else { return }
-        progress?(
-            min(
-                0.8,
-                0.8 * Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-            )
-        )
+    var host: String? {
+        switch self {
+        case let .modelScope(_, endpoint),
+            let .huggingFace(_, _, endpoint):
+            return endpoint.host
+        }
     }
 }
 
-private final class SnapshotFileProgressDelegate:
+private struct SnapshotDownloadFile {
+    let path: String
+    let size: Int64
+    let sha256: String?
+    let revision: String?
+}
+
+private struct ModelScopeSnapshot: Decodable {
+    struct Payload: Decodable {
+        let files: [File]
+
+        private enum CodingKeys: String, CodingKey {
+            case files = "Files"
+        }
+    }
+
+    struct File: Decodable {
+        let path: String
+        let size: Int64
+        let sha256: String?
+        let revision: String?
+        let type: String
+
+        private enum CodingKeys: String, CodingKey {
+            case path = "Path"
+            case size = "Size"
+            case sha256 = "Sha256"
+            case revision = "Revision"
+            case type = "Type"
+        }
+    }
+
+    let data: Payload
+
+    private enum CodingKeys: String, CodingKey {
+        case data = "Data"
+    }
+}
+
+private struct DownloadedSnapshotFile {
+    let destination: URL
+    let actualBytes: Int64
+    let expectedSHA256: String?
+}
+
+private final class DownloadSpeedMeter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var lastTimestamp = DispatchTime.now().uptimeNanoseconds
+    private var lastBytes: Int64 = 0
+    private var smoothedBytesPerSecond: Double = 0
+
+    func update(totalBytes: Int64) -> Int64? {
+        lock.lock()
+        defer { lock.unlock() }
+        let now = DispatchTime.now().uptimeNanoseconds
+        let elapsed =
+            now > lastTimestamp
+            ? Double(now - lastTimestamp) / 1_000_000_000
+            : 0
+        guard elapsed >= 0.2 else {
+            return smoothedBytesPerSecond > 0
+                ? Int64(smoothedBytesPerSecond)
+                : nil
+        }
+        let deltaBytes = max(0, totalBytes - lastBytes)
+        let instantaneous = Double(deltaBytes) / elapsed
+        smoothedBytesPerSecond =
+            smoothedBytesPerSecond == 0
+            ? instantaneous
+            : smoothedBytesPerSecond * 0.75 + instantaneous * 0.25
+        lastTimestamp = now
+        lastBytes = totalBytes
+        guard smoothedBytesPerSecond > 0 else { return nil }
+        return Int64(smoothedBytesPerSecond)
+    }
+}
+
+private final class DownloadTaskBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var task: URLSessionDownloadTask?
+    private var delegate: ProgressDownloadDelegate?
+    private var isCancelled = false
+
+    func install(
+        task: URLSessionDownloadTask,
+        delegate: ProgressDownloadDelegate
+    ) {
+        lock.lock()
+        self.task = task
+        self.delegate = delegate
+        let shouldCancel = isCancelled
+        lock.unlock()
+        task.delegate = delegate
+        if shouldCancel {
+            task.cancel()
+        }
+    }
+
+    func cancel() {
+        lock.lock()
+        isCancelled = true
+        let task = task
+        lock.unlock()
+        task?.cancel()
+    }
+}
+
+private final class ProgressDownloadDelegate:
     NSObject,
-    URLSessionTaskDelegate,
+    URLSessionDownloadDelegate,
     @unchecked Sendable
 {
-    private let onProgress: @Sendable (Int64) -> Void
+    private let continuation: CheckedContinuation<(URL, URLResponse), Error>
+    private let onProgress: @Sendable (Int64, Int64, Int64?) -> Void
+    private let speedMeter = DownloadSpeedMeter()
+    private let lock = NSLock()
+    private var completed = false
 
-    init(onProgress: @escaping @Sendable (Int64) -> Void) {
+    init(
+        continuation: CheckedContinuation<(URL, URLResponse), Error>,
+        onProgress: @escaping @Sendable (Int64, Int64, Int64?) -> Void
+    ) {
+        self.continuation = continuation
         self.onProgress = onProgress
     }
 
@@ -712,6 +1232,119 @@ private final class SnapshotFileProgressDelegate:
         totalBytesWritten: Int64,
         totalBytesExpectedToWrite: Int64
     ) {
-        onProgress(totalBytesWritten)
+        onProgress(
+            totalBytesWritten,
+            totalBytesExpectedToWrite,
+            speedMeter.update(totalBytes: totalBytesWritten)
+        )
+    }
+
+    nonisolated func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didFinishDownloadingTo location: URL
+    ) {
+        guard let response = downloadTask.response else {
+            finish(.failure(URLError(.badServerResponse)))
+            return
+        }
+        if let http = response as? HTTPURLResponse,
+            !(200..<300).contains(http.statusCode)
+        {
+            finish(.failure(PluginCatalogError.invalidResponse))
+            return
+        }
+        let retainedURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintDownload-\(UUID().uuidString).tmp"
+            )
+        do {
+            try FileManager.default.moveItem(
+                at: location,
+                to: retainedURL
+            )
+            finish(.success((retainedURL, response)))
+        } catch {
+            finish(.failure(error))
+        }
+    }
+
+    nonisolated func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didCompleteWithError error: Error?
+    ) {
+        guard let error else { return }
+        finish(.failure(error))
+    }
+
+    private func finish(
+        _ result: Result<(URL, URLResponse), Error>
+    ) {
+        lock.lock()
+        guard !completed else {
+            lock.unlock()
+            return
+        }
+        completed = true
+        lock.unlock()
+        continuation.resume(with: result)
+    }
+}
+
+private final class InstallProgressReporter: @unchecked Sendable {
+    private static let minimumFractionDelta = 0.001
+    private static let maximumUpdateInterval: UInt64 = 200_000_000
+
+    private let progress: (@Sendable (PluginInstallProgress) -> Void)?
+    private let lock = NSLock()
+    private var lastFraction = -1.0
+    private var lastPhase: PluginInstallProgress.Phase?
+    private var lastSourceHost: String?
+    private var lastEmission: UInt64 = 0
+
+    init(_ progress: (@Sendable (PluginInstallProgress) -> Void)?) {
+        self.progress = progress
+    }
+
+    func reset() {
+        lock.lock()
+        lastFraction = -1
+        lastPhase = nil
+        lastSourceHost = nil
+        lastEmission = 0
+        lock.unlock()
+    }
+
+    func emit(
+        _ value: PluginInstallProgress,
+        force: Bool = false
+    ) {
+        guard let progress else { return }
+        let now = DispatchTime.now().uptimeNanoseconds
+        lock.lock()
+        let phaseChanged = value.phase != lastPhase
+        let sourceChanged = value.sourceHost != lastSourceHost
+        let fractionAdvanced =
+            value.fraction >= lastFraction + Self.minimumFractionDelta
+        let intervalElapsed =
+            now >= lastEmission
+            && now - lastEmission >= Self.maximumUpdateInterval
+        let shouldEmit =
+            force
+            || phaseChanged
+            || sourceChanged
+            || fractionAdvanced
+            || (intervalElapsed && value.fraction >= lastFraction)
+        guard shouldEmit else {
+            lock.unlock()
+            return
+        }
+        lastFraction = value.fraction
+        lastPhase = value.phase
+        lastSourceHost = value.sourceHost
+        lastEmission = now
+        lock.unlock()
+        progress(value)
     }
 }
