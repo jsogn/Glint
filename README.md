@@ -19,7 +19,7 @@ Glint 是一款为 macOS 打造的英文学习工具。输入中文拼音时，�
 ## 使用方式
 
 1. 从 [GitHub Releases](https://github.com/jsogn/Glint/releases/latest) 下载并
-   安装 Glint。
+   安装 Glint，推荐下载 `Glint-*-Installer-macOS26-arm64.pkg`。
 2. 首次启动时，按提示授予辅助功能权限。
 3. 输入中文拼音，对应英文翻译会出现在候选栏旁。
 
