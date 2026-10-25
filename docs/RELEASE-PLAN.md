@@ -58,21 +58,27 @@ Release 构建不得使用 `CODE_SIGNING_ALLOWED=NO`。签名顺序应先内层�
 ### 无 Developer ID 的内部测试包
 
 当前没有 Developer ID 时，可运行 `scripts/package_test_dmg.sh` 生成 arm64
-内部测试 DMG。脚本会：
+内部测试 DMG，或运行 `scripts/package_test_pkg.sh` 生成直接安装的 PKG。两个脚本
+都会从头构建 Release App，并完成以下步骤：
 
 - 构建 Release App；
 - 逐个重签嵌套 Mach-O，再稳定重签主 App；
 - 校验最低系统版本、必需资源、arm64 和签名完整性；
-- 打入安装说明与一键诊断命令；
 - 生成 SHA-256 校验文件。
+
+DMG 额外包含安装说明与一键诊断命令；PKG 使用安装前后脚本完成安装校验和首次启动。
 
 这种包不能被 `spctl` 接受，也不能启用可用的 Hardened Runtime：ad-hoc 签名没有
 Team ID，运行时库校验会拒绝嵌套动态库。它只适用于已知测试者的内部验证。
 
-面向普通测试用户时优先运行 `scripts/package_test_pkg.sh` 生成直接安装的 PKG。
-PKG 内嵌 App，通过标准 macOS Installer 复制到 `/Applications`；postinstall 只在
-已安装的 Glint.app 上清除 quarantine，随后校验、注册并尝试启动 App。PKG 仍需
-首次 Gatekeeper 用户确认，不能替代 Developer ID 与 Apple 公证。
+面向普通测试用户时优先使用 PKG。PKG 内嵌 App，通过标准 macOS Installer 复制到
+`/Applications`；postinstall 只在已安装的 Glint.app 上清除 quarantine，随后校验、
+注册并尝试启动 App。PKG 仍需首次 Gatekeeper 用户确认，不能替代 Developer ID
+与 Apple 公证。
+
+需要同时生成 DMG 和 PKG 时运行 `scripts/package_test_distributions.sh`。该入口
+只构建、签名和验证一次 Release App，再分别生成两个安装包；Release workflow
+使用这一入口，避免重复 Release 构建。
 
 ### GitHub 自动发布
 
@@ -80,8 +86,8 @@ PKG 内嵌 App，通过标准 macOS Installer 复制到 `/Applications`；postin
 
 - `.github/workflows/ci.yml`：在 push 到 `main` 和 Pull Request 时执行 Swift
   格式检查、完整 Swift 测试和 Python 工具测试；
-- `.github/workflows/release.yml`：推送 `v*` 标签时重复质量门禁，构建
-  ad-hoc PKG、DMG 和对应 SHA-256 文件，并创建 GitHub Latest 发布。
+- `.github/workflows/release.yml`：推送 `v*` 标签时重复质量门禁，以单次 Release
+  构建生成 ad-hoc PKG、DMG 和对应 SHA-256 文件，并创建 GitHub Latest 发布。
 
 当前 GitHub Latest 是面向开发和已知测试者的发布包，不等于正式公开版；
 ad-hoc 包仍不能通过 Gatekeeper。Latest 只表示这是仓库最新的非草稿版本。

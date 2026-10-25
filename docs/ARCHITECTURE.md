@@ -82,6 +82,8 @@ Glint/
 │   ├── dev.sh
 │   ├── launch.sh
 │   ├── package_test_dmg.sh
+│   ├── package_test_distributions.sh
+│   ├── package_test_lib.zsh
 │   ├── package_test_pkg.sh
 │   ├── prepare_opus_model.sh
 │   ├── run.sh

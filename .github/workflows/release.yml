@@ -44,9 +44,7 @@ jobs:
         run: zsh ./scripts/test_python_tools.sh
 
       - name: Build ad-hoc developer packages
-        run: |
-          ./scripts/package_test_dmg.sh
-          ./scripts/package_test_pkg.sh
+        run: ./scripts/package_test_distributions.sh
 
       - name: Validate tag and package versions
         run: |
