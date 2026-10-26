@@ -8,8 +8,7 @@
 - 展开多行候选时更及时关闭翻译栏，收起后自动恢复。
 - 改善输入法切换、重启和候选数量变化时的恢复能力。
 
-> 当前发布包使用 ad-hoc 签名，没有经过 Apple 公证，只适合开发和已知测试者。
-> 首次打开如果被 macOS 阻止，请在“系统设置 → 隐私与安全性”中允许一次。
+> 首次打开如遇 macOS 安全提示，请在“系统设置 → 隐私与安全性”中允许 Glint 打开。
 
 ## 安装
 
@@ -22,10 +21,3 @@
 
 - macOS 26 或更高版本
 - Apple Silicon Mac
-
-下载后可校验安装包：
-
-```bash
-shasum -a 256 -c Glint-*-Installer-macOS26-arm64.pkg.sha256
-shasum -a 256 -c Glint-*-macOS26-arm64.dmg.sha256
-```
