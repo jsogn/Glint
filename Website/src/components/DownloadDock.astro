@@ -1,0 +1,27 @@
+---
+import { downloadURL, fallbackRelease } from "../data/release";
+
+interface Props {
+  compact?: boolean;
+}
+
+const { compact = false } = Astro.props;
+const pkgURL = downloadURL(fallbackRelease.pkg.stableURL);
+---
+
+<a
+  class:list={["download-dock", { "download-dock--compact": compact }]}
+  href={pkgURL}
+  aria-label="下载 Glint 的 macOS 安装包"
+>
+  <img src="/glint-app-icon.png" alt="" width="38" height="38" />
+  <span class="download-dock__copy">
+    <strong>下载 Glint</strong>
+    <small>macOS 26+ · Apple Silicon</small>
+  </span>
+  <span class="download-dock__arrow" aria-hidden="true">
+    <svg viewBox="0 0 20 20">
+      <path d="M10 3v9M6.5 8.5 10 12l3.5-3.5M4 15v2h12v-2" />
+    </svg>
+  </span>
+</a>

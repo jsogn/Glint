@@ -1,0 +1,208 @@
+---
+const candidates = [
+  { word: "学习", translation: "Learning · learn · study" },
+  { word: "学校", translation: "school" },
+  { word: "学生", translation: "student" },
+  { word: "学会", translation: "learn · master" },
+  { word: "学院", translation: "college" },
+  { word: "学", translation: "study" }
+];
+---
+
+<div
+  class="glint-window"
+  data-glint-window
+  aria-label="Glint 输入与翻译演示"
+>
+  <div class="glint-window__chrome" aria-hidden="true">
+    <span class="glint-window__lights"><i></i><i></i><i></i></span>
+    <span class="glint-window__title">专注写一句自然的中文</span>
+  </div>
+
+  <div class="glint-window__body">
+    <div class="glint-window__input" aria-label="正在输入：每天进步一点，持续 xue">
+      <span data-glint-prefix></span>
+      <span class="glint-window__marked" data-glint-pinyin></span>
+      <span class="glint-window__caret" aria-hidden="true"></span>
+    </div>
+
+    <div
+      class="glint-choice-bar is-pending"
+      role="radiogroup"
+      aria-label="输入法候选"
+      aria-hidden="true"
+      inert
+      data-glint-choice-bar
+    >
+      {
+        candidates.map((candidate, index) => (
+          <button
+            class:list={["glint-choice", { "is-active": index === 0 }]}
+            type="button"
+            role="radio"
+            aria-checked={index === 0 ? "true" : "false"}
+            tabindex={index === 0 ? "0" : "-1"}
+            data-glint-choice={index}
+          >
+            <span class="glint-choice__label">
+              <span class="glint-choice__index">{index + 1}</span>
+              {candidate.word}
+            </span>
+          </button>
+        ))
+      }
+      <span class="glint-choice-bar__more" aria-hidden="true">
+        <svg viewBox="0 0 14 14">
+          <path d="m4 5.5 3 3 3-3" />
+        </svg>
+      </span>
+    </div>
+
+    <div
+      class="glint-translation-bar is-pending"
+      aria-live="polite"
+      aria-hidden="true"
+      data-glint-translation-bar
+    >
+      <span data-glint-translation>Learning · learn · study</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  type GlintCandidate = {
+    word: string;
+    translation: string;
+  };
+
+  const glintCandidates: GlintCandidate[] = [
+    { word: "学习", translation: "Learning · learn · study" },
+    { word: "学校", translation: "school" },
+    { word: "学生", translation: "student" },
+    { word: "学会", translation: "learn · master" },
+    { word: "学院", translation: "college" },
+    { word: "学", translation: "study" }
+  ];
+
+  const wait = (duration: number) =>
+    new Promise<void>((resolve) => window.setTimeout(resolve, duration));
+
+  const typeText = async (
+    element: HTMLElement,
+    text: string,
+    characterDelay: number
+  ) => {
+    element.textContent = "";
+    for (const character of Array.from(text)) {
+      element.textContent += character;
+      await wait(characterDelay);
+    }
+  };
+
+  document.querySelectorAll<HTMLElement>("[data-glint-window]").forEach((windowFrame) => {
+    const choices = [
+      ...windowFrame.querySelectorAll<HTMLButtonElement>("[data-glint-choice]")
+    ];
+    const choiceBar = windowFrame.querySelector<HTMLElement>(
+      "[data-glint-choice-bar]"
+    );
+    const translationBar = windowFrame.querySelector<HTMLElement>(
+      "[data-glint-translation-bar]"
+    );
+    const prefix = windowFrame.querySelector<HTMLElement>("[data-glint-prefix]");
+    const pinyin = windowFrame.querySelector<HTMLElement>("[data-glint-pinyin]");
+    const translation = windowFrame.querySelector<HTMLElement>(
+      "[data-glint-translation]"
+    );
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const revealBar = (bar: HTMLElement | null) => {
+      if (!bar) return;
+      bar.classList.remove("is-pending");
+      bar.removeAttribute("aria-hidden");
+      bar.removeAttribute("inert");
+    };
+
+    const select = (next: number, moveFocus = false) => {
+      const index = Math.max(0, Math.min(next, choices.length - 1));
+      choices.forEach((choice, choiceIndex) => {
+        const active = choiceIndex === index;
+        choice.classList.toggle("is-active", active);
+        choice.setAttribute("aria-checked", String(active));
+        choice.tabIndex = active ? 0 : -1;
+      });
+      if (translation) {
+        translation.textContent = glintCandidates[index]?.translation ?? "";
+        if (!reduceMotion.matches) {
+          translation.animate(
+            [
+              { opacity: 0.35, transform: "translateY(3px)" },
+              { opacity: 1, transform: "translateY(0)" }
+            ],
+            {
+              duration: 170,
+              easing: "cubic-bezier(0.22, 1, 0.36, 1)"
+            }
+          );
+        }
+      }
+      if (moveFocus) choices[index]?.focus();
+    };
+
+    const showCompleteState = () => {
+      if (prefix) prefix.textContent = "每天进步一点，持续";
+      if (pinyin) pinyin.textContent = "xue";
+      revealBar(choiceBar);
+      revealBar(translationBar);
+    };
+
+    const playDemo = async () => {
+      if (!prefix || !pinyin) return;
+      if (reduceMotion.matches) {
+        showCompleteState();
+        return;
+      }
+
+      prefix.textContent = "";
+      pinyin.textContent = "";
+      choiceBar?.classList.add("is-pending");
+      translationBar?.classList.add("is-pending");
+      choiceBar?.setAttribute("aria-hidden", "true");
+      translationBar?.setAttribute("aria-hidden", "true");
+      choiceBar?.setAttribute("inert", "");
+
+      await wait(320);
+      await typeText(prefix, "每天进步一点，持续", 62);
+      await wait(160);
+      await typeText(pinyin, "xue", 110);
+      await wait(260);
+      revealBar(choiceBar);
+      await wait(380);
+      revealBar(translationBar);
+    };
+
+    choices.forEach((choice, index) => {
+      choice.addEventListener("click", () => select(index));
+      choice.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+          event.preventDefault();
+          select((index + 1) % choices.length, true);
+        }
+        if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+          event.preventDefault();
+          select((index - 1 + choices.length) % choices.length, true);
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          select(0, true);
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          select(choices.length - 1, true);
+        }
+      });
+    });
+
+    playDemo();
+  });
+</script>

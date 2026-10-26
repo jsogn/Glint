@@ -1,0 +1,73 @@
+---
+import DownloadDock from "./DownloadDock.astro";
+import { downloadURL, fallbackRelease } from "../data/release";
+---
+
+<section id="install" class="install-section" aria-labelledby="install-title">
+  <div class="content">
+    <div class="install-heading">
+      <div>
+        <h2 id="install-title">三步开始使用。</h2>
+        <p>
+          首次打开时，macOS 会拦截一次，按下面步骤操作即可，
+          不需要关闭系统安全保护。
+        </p>
+      </div>
+      <DownloadDock compact />
+    </div>
+
+    <ol class="install-steps">
+      <li>
+        <span class="install-steps__number">01</span>
+        <div>
+          <h3>安装 PKG</h3>
+          <p>下载后双击安装包，按安装器提示继续。</p>
+        </div>
+      </li>
+      <li>
+        <span class="install-steps__number">02</span>
+        <div>
+          <h3>选择“仍要打开”</h3>
+          <p>
+            如果提示 Apple 无法验证软件，打开
+            <b>系统设置 → 隐私与安全性 → 安全性</b>，点击“仍要打开”，
+            再重新打开安装包。
+          </p>
+        </div>
+      </li>
+      <li>
+        <span class="install-steps__number">03</span>
+        <div>
+          <h3>启用辅助功能</h3>
+          <p>
+            打开 Glint，在
+            <b>系统设置 → 隐私与安全性 → 辅助功能</b> 中启用 Glint。
+            如果没有出现翻译，重新打开一次 Glint。
+          </p>
+        </div>
+      </li>
+    </ol>
+
+    <details class="install-details">
+      <summary>其他下载方式</summary>
+      <div class="install-details__body">
+        <a href={downloadURL(fallbackRelease.dmg.stableURL)}>
+          DMG 磁盘映像
+          <svg viewBox="0 0 14 14" aria-hidden="true">
+            <path d="M3 11 11 3M4.5 3H11v6.5" />
+          </svg>
+        </a>
+        <a
+          href="https://github.com/jsogn/Glint/releases/latest"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub Releases
+          <svg viewBox="0 0 14 14" aria-hidden="true">
+            <path d="M3 11 11 3M4.5 3H11v6.5" />
+          </svg>
+        </a>
+      </div>
+    </details>
+  </div>
+</section>

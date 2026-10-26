@@ -1,0 +1,34 @@
+---
+import DownloadDock from "../components/DownloadDock.astro";
+import GlintSurface from "../components/GlintSurface.astro";
+import InstallGuide from "../components/InstallGuide.astro";
+import VideoPlayer from "../components/VideoPlayer.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Glint — 输入中文，顺手看见英文"
+  description="Glint 是一款为中文母语者打造的 macOS 英文学习工具，支持单词、短语与短句，本地翻译，不打断输入。"
+>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="content hero__inner">
+      <div class="hero__copy">
+        <h1 id="hero-title">
+          输入中文，<br />
+          <span>顺手看见英文。</span>
+        </h1>
+        <p class="hero__lede">Glint 不替换输入法，也不打断输入。</p>
+        <div class="hero__action">
+          <DownloadDock />
+        </div>
+      </div>
+
+      <div class="hero__surface">
+        <GlintSurface />
+      </div>
+    </div>
+  </section>
+
+  <VideoPlayer />
+  <InstallGuide />
+</BaseLayout>

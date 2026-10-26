@@ -1,0 +1,86 @@
+<section class="film-section" aria-label="Glint 45 秒产品演示">
+  <div class="content">
+    <div class="film-window">
+      <iframe
+        src="https://player.bilibili.com/player.html?bvid=BV1spnb6kEtW&page=1&high_quality=1&danmaku=0&autoplay=1&muted=1&t=0.01"
+        title="Glint 45 秒产品演示"
+        data-glint-film-player
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowfullscreen
+        sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </div>
+  </div>
+</section>
+
+<script>
+  const filmPlayer = document.querySelector<HTMLIFrameElement>(
+    "[data-glint-film-player]"
+  );
+  // Bilibili has no loop option and resumes saved progress unless t is non-zero.
+  const filmLoopDelay = 45_800;
+  const filmStartTime = "0.01";
+  let filmLoopTimer: number | undefined;
+  let filmPlaybackStartedAt = Date.now();
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const restartFilm = () => {
+    if (!filmPlayer) return;
+    const loopURL = new URL(filmPlayer.src);
+    loopURL.searchParams.set("t", filmStartTime);
+    loopURL.searchParams.set("_glint_loop", String(Date.now()));
+    filmPlaybackStartedAt = Date.now();
+    filmPlayer.src = loopURL.toString();
+  };
+
+  const handoffToPlayer = () => {
+    if (!filmPlayer || filmPlayer.dataset.userControlled === "true") return;
+    filmPlayer.dataset.userControlled = "true";
+    window.clearTimeout(filmLoopTimer);
+  };
+
+  const scheduleFilmLoop = () => {
+    window.clearTimeout(filmLoopTimer);
+    if (
+      !filmPlayer ||
+      filmPlayer.dataset.userControlled === "true" ||
+      reduceMotion.matches ||
+      document.visibilityState !== "visible"
+    ) {
+      return;
+    }
+    const remaining = Math.max(
+      0,
+      filmLoopDelay - (Date.now() - filmPlaybackStartedAt)
+    );
+    filmLoopTimer = window.setTimeout(() => {
+      restartFilm();
+    }, remaining);
+  };
+
+  filmPlayer?.addEventListener("load", () => {
+    filmPlaybackStartedAt = Date.now();
+    scheduleFilmLoop();
+  });
+  filmPlayer?.addEventListener("focus", handoffToPlayer);
+  window.addEventListener("blur", () => {
+    if (document.activeElement === filmPlayer) {
+      handoffToPlayer();
+    }
+  });
+  document.addEventListener("visibilitychange", scheduleFilmLoop);
+  const syncPlaybackPreference = () => {
+    if (!filmPlayer) return;
+    const playerURL = new URL(filmPlayer.src);
+    const autoplay = reduceMotion.matches ? "0" : "1";
+    if (playerURL.searchParams.get("autoplay") !== autoplay) {
+      playerURL.searchParams.set("autoplay", autoplay);
+      filmPlayer.src = playerURL.toString();
+      return;
+    }
+    scheduleFilmLoop();
+  };
+  reduceMotion.addEventListener("change", syncPlaybackPreference);
+  syncPlaybackPreference();
+</script>
