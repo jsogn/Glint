@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "Website/**"
   pull_request:
+    paths-ignore:
+      - "Website/**"
 
 concurrency:
   group: ci-${{ github.ref }}
