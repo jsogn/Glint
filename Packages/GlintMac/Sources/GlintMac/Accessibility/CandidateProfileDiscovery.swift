@@ -10,6 +10,7 @@ private let candidateProfileLogger = Logger(
 enum CandidateReadProfile: String, Sendable, Equatable {
     case isolatedCandidateList
     case isolatedStyledText
+    case isolatedSelectedTextItems
 }
 
 struct CandidateProfileKey: Hashable, Sendable {
@@ -48,6 +49,7 @@ struct CandidateProfileKey: Hashable, Sendable {
 final class CandidateProfileCache: @unchecked Sendable {
     private struct Entry: Sendable {
         var profile: CandidateReadProfile?
+        var profileNeedsActivation = false
         var failedAttempts = 0
         var retryAfter: UInt64 = 0
         var profileFailureCount = 0
@@ -104,10 +106,27 @@ final class CandidateProfileCache: @unchecked Sendable {
         guard let key = profileKey(for: identity) else {
             return nil
         }
-        if let profile = lock.withLock({
-            $0.entries[key]?.profile
-        }) {
+        let cached = lock.withLock {
+            state -> (
+                hasEntry: Bool,
+                profile: CandidateReadProfile?
+            ) in
+            guard
+                let entry = state.entries[key],
+                let profile = entry.profile
+            else {
+                return (false, nil)
+            }
+            return (
+                true,
+                entry.profileNeedsActivation ? nil : profile
+            )
+        }
+        if let profile = cached.profile {
             return profile
+        }
+        if cached.hasEntry {
+            return nil
         }
         guard let profile = persistence?.profile(for: key) else {
             return nil
@@ -118,6 +137,36 @@ final class CandidateProfileCache: @unchecked Sendable {
             state.entries[key] = entry
         }
         return profile
+    }
+
+    func hasProfileOrPending(
+        for identity: InputMethodIdentity
+    ) -> Bool {
+        guard let key = profileKey(for: identity) else {
+            return false
+        }
+        return lock.withLock {
+            $0.entries[key]?.profile != nil
+        }
+    }
+
+    func activatePendingProfile(
+        for identity: InputMethodIdentity
+    ) -> Bool {
+        guard let key = profileKey(for: identity) else {
+            return false
+        }
+        return lock.withLock { state in
+            guard var entry = state.entries[key],
+                entry.profile != nil,
+                entry.profileNeedsActivation
+            else {
+                return false
+            }
+            entry.profileNeedsActivation = false
+            state.entries[key] = entry
+            return true
+        }
     }
 
     @discardableResult
@@ -225,6 +274,7 @@ final class CandidateProfileCache: @unchecked Sendable {
             var entry = state.entries[key] ?? Entry()
             if let profile {
                 entry.profile = profile
+                entry.profileNeedsActivation = true
                 entry.failedAttempts = 0
                 entry.retryAfter = 0
             } else {
@@ -284,14 +334,23 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
     let fallback: any AXCandidateReading
     let profiles: CandidateProfileCache
     let allowsProfileDiscovery: Bool
+    let selectedTextItemReaders: SelectedTextItemReaderPool
 
     func snapshot(
         processIdentifier: pid_t?,
         includeVisibleCandidates: Bool,
         includeVisibleTexts: Bool
     ) -> AXCandidateSnapshot? {
+        if !allowsProfileDiscovery,
+            profiles.activatePendingProfile(
+                for: source.identity
+            )
+        {
+            return nil
+        }
         if let profile = profiles.profile(for: source.identity) {
-            if let candidate = candidateReader(for: profile).snapshot(
+            let reader = candidateReader(for: profile)
+            if let candidate = reader.snapshot(
                 processIdentifier: processIdentifier,
                 includeVisibleCandidates: includeVisibleCandidates,
                 includeVisibleTexts: includeVisibleTexts
@@ -299,7 +358,11 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
                 profiles.recordProfileHit(for: source.identity)
                 return candidate
             }
-            if allowsProfileDiscovery {
+            if allowsProfileDiscovery,
+                Self.shouldRecordProfileMiss(
+                    for: reader.missReason
+                )
+            {
                 profiles.recordProfileMiss(for: source.identity)
             }
         }
@@ -314,6 +377,12 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
             profiles.requestDiscovery(for: source.identity)
         }
         return fallbackSnapshot
+    }
+
+    static func shouldRecordProfileMiss(
+        for reason: AXCandidateReadMissReason
+    ) -> Bool {
+        reason == .structureMismatch
     }
 
     private func candidateReader(
@@ -331,6 +400,12 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
         case .isolatedStyledText:
             return WeTypeCandidateReader(
                 bundleIdentifier: bundleIdentifier
+            )
+        case .isolatedSelectedTextItems:
+            return selectedTextItemReaders.reader(
+                bundleIdentifier: bundleIdentifier,
+                inputSourceIdentifier:
+                    source.identity.inputSourceIdentifier
             )
         }
     }
@@ -373,26 +448,49 @@ enum CandidateProfileDetector {
             includeVisibleCandidates: true,
             includeVisibleTexts: false
         )
+        let selectedTextItemReader =
+            SelectedTextItemCandidateReader(
+                bundleIdentifier: key.bundleIdentifier,
+                accessLimits: .discovery,
+                maximumWindowCount: maximumWindowCount,
+                maximumNodeCount: maximumNodeCount
+            )
+        let selectedTextItemSnapshot =
+            selectedTextItemReader.snapshot(
+                includeVisibleCandidates: true,
+                includeVisibleTexts: false
+            )
         return classify(
             listSnapshot: listSnapshot,
-            textSnapshot: textSnapshot
+            textSnapshot: textSnapshot,
+            selectedTextItemSnapshot: selectedTextItemSnapshot
         )
     }
 
     static func classify(
         listSnapshot: AXCandidateSnapshot?,
-        textSnapshot: AXCandidateSnapshot?
+        textSnapshot: AXCandidateSnapshot?,
+        selectedTextItemSnapshot: AXCandidateSnapshot? = nil
     ) -> CandidateReadProfile? {
         if let listSnapshot,
-            listSnapshot.options.count >= 2
+            listSnapshot.options.count
+                >= CandidateCountPolicy.profileDiscoveryMinimum
         {
             return .isolatedCandidateList
         }
         if let textSnapshot,
-            textSnapshot.options.count >= 2,
+            textSnapshot.options.count
+                >= CandidateCountPolicy.profileDiscoveryMinimum,
             textSnapshot.selectionIsExact
         {
             return .isolatedStyledText
+        }
+        if let selectedTextItemSnapshot,
+            selectedTextItemSnapshot.options.count
+                >= CandidateCountPolicy.profileDiscoveryMinimum,
+            selectedTextItemSnapshot.selectionIsExact
+        {
+            return .isolatedSelectedTextItems
         }
         return nil
     }

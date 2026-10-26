@@ -1502,6 +1502,23 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(row.selectedIndex, 4)
     }
 
+    func testAXVisibleRowSupportsSingleCandidate() throws {
+        let selected = AXCandidateItem(
+            text: "only",
+            frame: CGRect(x: 20, y: 80, width: 50, height: 28)
+        )
+
+        let row = try XCTUnwrap(
+            AXCandidateVisibleRowSelector.select(
+                selected: selected,
+                visible: [selected]
+            )
+        )
+
+        XCTAssertEqual(row.items, [selected])
+        XCTAssertEqual(row.selectedIndex, 0)
+    }
+
     func testAXVisibleRowDeduplicatesEquivalentCandidates() throws {
         let selected = AXCandidateItem(
             text: "same",
@@ -1624,6 +1641,62 @@ final class GlintMacTests: XCTestCase {
 }
 
 final class WeTypeCandidateParserTests: XCTestCase {
+    func testParserSupportsSingleCandidate() throws {
+        let groups = try XCTUnwrap(
+            WeTypeCandidateParser.groups(
+                from: makeObservations(
+                    texts: ["only"],
+                    selectedShortcutIndex: 0
+                )
+            )
+        )
+
+        XCTAssertEqual(groups.map(\.text), ["only"])
+        XCTAssertEqual(WeTypeCandidateParser.selectedIndex(in: groups), 0)
+    }
+
+    func testParserRejectsMoreThanNineCandidates() {
+        let observations = (0..<10).flatMap { index in
+            let x = CGFloat(index * 60)
+            return [
+                observation(
+                    "\(index)",
+                    x: x,
+                    brightness: index == 0 ? 1 : 0.54
+                ),
+                observation(
+                    "candidate-\(index)",
+                    x: x + 12,
+                    brightness: index == 0 ? 1 : 0.78
+                ),
+            ]
+        }
+        XCTAssertNil(
+            WeTypeCandidateParser.groups(
+                from: observations
+            )
+        )
+    }
+
+    func testUnsupportedLayoutIsClassified() {
+        XCTAssertTrue(
+            WeTypeCandidateParser.hasUnsupportedLayout([
+                observation("1", x: 0, brightness: 1),
+                observation("one", x: 12, brightness: 1),
+                observation("2", x: 60, y: 40, brightness: 0.54),
+                observation("two", x: 72, y: 40, brightness: 0.78),
+            ])
+        )
+        XCTAssertFalse(
+            WeTypeCandidateParser.hasUnsupportedLayout(
+                makeObservations(
+                    texts: ["one"],
+                    selectedShortcutIndex: 0
+                )
+            )
+        )
+    }
+
     func testParserPairsCandidatesAndSelectsBrightShortcut() throws {
         let observations = makeObservations(
             texts: ["one", "two", "three"],
@@ -1818,6 +1891,16 @@ final class WeTypeCandidateParserTests: XCTestCase {
 }
 
 final class SogouCandidateParserTests: XCTestCase {
+    func testParserSupportsSingleCandidate() throws {
+        let candidates = try XCTUnwrap(
+            SogouCandidateParser.candidates(
+                from: [observation("only", x: 20)]
+            )
+        )
+
+        XCTAssertEqual(candidates.map(\.text), ["only"])
+    }
+
     func testParserSortsOneVisibleCandidateRow() throws {
         let observations = [
             observation("two", x: 80),
@@ -1866,6 +1949,21 @@ final class SogouCandidateParserTests: XCTestCase {
         )
     }
 
+    func testUnsupportedLayoutIsClassified() {
+        XCTAssertTrue(
+            SogouCandidateParser.hasUnsupportedLayout([
+                observation("one", x: 20),
+                observation("two", x: 80),
+                observation("three", x: 20, y: 50),
+            ])
+        )
+        XCTAssertFalse(
+            SogouCandidateParser.hasUnsupportedLayout([
+                observation("only", x: 20)
+            ])
+        )
+    }
+
     private func observation(
         _ text: String,
         x: CGFloat,
@@ -1879,6 +1977,136 @@ final class SogouCandidateParserTests: XCTestCase {
                 width: 40,
                 height: 26
             )
+        )
+    }
+}
+
+final class SelectedTextItemCandidateParserTests: XCTestCase {
+    func testReaderPoolReusesReaderForSameInputSource() {
+        let pool = SelectedTextItemReaderPool()
+        let first = pool.reader(
+            bundleIdentifier: "com.example.inputmethod",
+            inputSourceIdentifier: "com.example.inputmethod.pinyin"
+        )
+        let repeated = pool.reader(
+            bundleIdentifier: "com.example.inputmethod",
+            inputSourceIdentifier: "com.example.inputmethod.pinyin"
+        )
+        let otherMode = pool.reader(
+            bundleIdentifier: "com.example.inputmethod",
+            inputSourceIdentifier: "com.example.inputmethod.wubi"
+        )
+
+        XCTAssertTrue(first === repeated)
+        XCTAssertFalse(first === otherMode)
+    }
+
+    func testParserSortsOneVisibleRowAndFindsSelectedItem() throws {
+        let observations = [
+            observation("two", x: 80, selected: true),
+            observation("one", x: 20),
+            observation("three", x: 140),
+        ]
+
+        let row = try XCTUnwrap(
+            SelectedTextItemCandidateParser.row(
+                from: observations
+            )
+        )
+
+        XCTAssertEqual(
+            row.items.map(\.text),
+            ["one", "two", "three"]
+        )
+        XCTAssertEqual(row.selectedIndex, 1)
+        XCTAssertEqual(row.selected.text, "two")
+    }
+
+    func testParserSupportsSingleSelectedCandidate() throws {
+        let row = try XCTUnwrap(
+            SelectedTextItemCandidateParser.row(
+                from: [
+                    observation("only", x: 20, selected: true)
+                ]
+            )
+        )
+
+        XCTAssertEqual(row.items.map(\.text), ["only"])
+        XCTAssertEqual(row.selectedIndex, 0)
+    }
+
+    func testParserRequiresExactlyOneSelectedItem() {
+        XCTAssertNil(
+            SelectedTextItemCandidateParser.row(
+                from: [
+                    observation("one", x: 20),
+                    observation("two", x: 80),
+                ]
+            )
+        )
+        XCTAssertNil(
+            SelectedTextItemCandidateParser.row(
+                from: [
+                    observation("one", x: 20, selected: true),
+                    observation("two", x: 80, selected: true),
+                ]
+            )
+        )
+    }
+
+    func testParserRejectsExpandedRowsAndTooManyCandidates() {
+        XCTAssertNil(
+            SelectedTextItemCandidateParser.row(
+                from: [
+                    observation("one", x: 20, selected: true),
+                    observation("two", x: 80),
+                    observation("three", x: 20, y: 50),
+                ]
+            )
+        )
+        XCTAssertNil(
+            SelectedTextItemCandidateParser.row(
+                from: (0..<10).map {
+                    observation(
+                        "candidate-\($0)",
+                        x: CGFloat($0 * 60),
+                        selected: $0 == 0
+                    )
+                }
+            )
+        )
+    }
+
+    func testContainerLayoutRequiresSingleRow() {
+        XCTAssertTrue(
+            SelectedTextItemCandidateParser.isSingleVisibleRow([
+                CGRect(x: 10, y: 20, width: 40, height: 28),
+                CGRect(x: 60, y: 21, width: 40, height: 28),
+            ])
+        )
+        XCTAssertFalse(
+            SelectedTextItemCandidateParser.isSingleVisibleRow([
+                CGRect(x: 10, y: 20, width: 40, height: 28),
+                CGRect(x: 10, y: 60, width: 40, height: 28),
+            ])
+        )
+    }
+
+    private func observation(
+        _ text: String,
+        x: CGFloat,
+        y: CGFloat = 10,
+        selected: Bool = false
+    ) -> SelectedTextItemCandidateObservation {
+        SelectedTextItemCandidateObservation(
+            text: text,
+            frame: CGRect(
+                x: x,
+                y: y,
+                width: 50,
+                height: 28
+            ),
+            isSelected: selected
         )
     }
 }
@@ -2295,6 +2523,75 @@ final class HostAccessibilityModeTests: XCTestCase {
     }
 }
 
+final class CandidatePollingPolicyTests: XCTestCase {
+    func testUsesActiveIntervalUntilDwell() {
+        XCTAssertEqual(
+            CandidatePollingPolicy.interval(
+                isDwelling: false,
+                nanosecondsUntilDwell: nil
+            ),
+            CandidatePollingPolicy.activeInterval
+        )
+        XCTAssertEqual(
+            CandidatePollingPolicy.interval(
+                isDwelling: false,
+                nanosecondsUntilDwell: 30_000_000
+            ),
+            30_000_000
+        )
+        XCTAssertEqual(
+            CandidatePollingPolicy.interval(
+                isDwelling: false,
+                nanosecondsUntilDwell: 200_000_000
+            ),
+            CandidatePollingPolicy.activeInterval
+        )
+    }
+
+    func testUsesStableIntervalAfterDwell() {
+        XCTAssertEqual(
+            CandidatePollingPolicy.interval(
+                isDwelling: true,
+                nanosecondsUntilDwell: nil
+            ),
+            CandidatePollingPolicy.stableInterval
+        )
+    }
+
+    func testCandidateChangeReturnsToActiveInterval() {
+        XCTAssertEqual(
+            CandidatePollingPolicy.interval(
+                isDwelling: false,
+                nanosecondsUntilDwell: nil
+            ),
+            CandidatePollingPolicy.activeInterval
+        )
+    }
+
+    func testTemporaryLayoutEndsCandidateImmediately() {
+        XCTAssertTrue(
+            MonitoringController.shouldEndCandidateImmediately(
+                for: .temporaryLayout
+            )
+        )
+        XCTAssertFalse(
+            MonitoringController.shouldEndCandidateImmediately(
+                for: .unavailable
+            )
+        )
+        XCTAssertFalse(
+            MonitoringController.shouldEndCandidateImmediately(
+                for: .structureMismatch
+            )
+        )
+        XCTAssertTrue(
+            MonitoringController.shouldEndCandidateImmediately(
+                for: .candidateEnded
+            )
+        )
+    }
+}
+
 final class CandidateProfileDiscoveryTests: XCTestCase {
     func testProfileClassifierSeparatesListAndStyledTextShapes() {
         XCTAssertEqual(
@@ -2341,9 +2638,43 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
                 )
             )
         )
+        XCTAssertNil(
+            CandidateProfileDetector.classify(
+                listSnapshot: nil,
+                textSnapshot: nil,
+                selectedTextItemSnapshot: snapshot(
+                    candidateCount: 1,
+                    selectionIsExact: true
+                )
+            )
+        )
     }
 
-    func testDiscoveredProfileIsReusedWithoutAnotherProbe() async {
+    func testProfileClassifierRecognizesSelectedTextItems() {
+        XCTAssertEqual(
+            CandidateProfileDetector.classify(
+                listSnapshot: nil,
+                textSnapshot: nil,
+                selectedTextItemSnapshot: snapshot(
+                    candidateCount: 4,
+                    selectionIsExact: true
+                )
+            ),
+            .isolatedSelectedTextItems
+        )
+        XCTAssertNil(
+            CandidateProfileDetector.classify(
+                listSnapshot: nil,
+                textSnapshot: nil,
+                selectedTextItemSnapshot: snapshot(
+                    candidateCount: 4,
+                    selectionIsExact: false
+                )
+            )
+        )
+    }
+
+    func testDiscoveredProfileActivatesAfterSamplingComposition() async {
         let cache = CandidateProfileCache(
             clock: { 0 },
             discover: { _ in .isolatedCandidateList }
@@ -2353,11 +2684,89 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         let task = cache.requestDiscovery(for: identity)
         await task?.value
 
+        XCTAssertNil(cache.profile(for: identity))
+        XCTAssertTrue(cache.hasProfileOrPending(for: identity))
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
         XCTAssertEqual(
             cache.profile(for: identity),
             .isolatedCandidateList
         )
         XCTAssertNil(cache.requestDiscovery(for: identity))
+    }
+
+    func testPendingProfileWaitsForNonComposingBoundary() async {
+        let identity = identity()
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            discover: { _ in .isolatedSelectedTextItems }
+        )
+        await cache.requestDiscovery(for: identity)?.value
+        let source = ActiveInputSource(
+            identity: identity,
+            kind: .otherInputMethod
+        )
+        let samplingReader = AdaptiveUnknownCandidateReader(
+            source: source,
+            fallback: StubCandidates(),
+            profiles: cache,
+            allowsProfileDiscovery: true,
+            selectedTextItemReaders: .init()
+        )
+
+        XCTAssertNil(
+            samplingReader.snapshot(
+                includeVisibleCandidates: true
+            )
+        )
+        XCTAssertNil(cache.profile(for: identity))
+
+        let boundaryReader = AdaptiveUnknownCandidateReader(
+            source: source,
+            fallback: StubCandidates(),
+            profiles: cache,
+            allowsProfileDiscovery: false,
+            selectedTextItemReaders: .init()
+        )
+        XCTAssertNil(
+            boundaryReader.snapshot(
+                includeVisibleCandidates: true
+            )
+        )
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedSelectedTextItems
+        )
+    }
+
+    func testPendingProfileDoesNotReloadFromPersistence() async throws {
+        let suiteName =
+            "GlintMacTests.PendingProfile.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: suiteName)
+        )
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        let identity = identity()
+        let persistence = CandidateProfilePersistence(
+            defaults: defaults,
+            storageKey: "profiles"
+        )
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "1.0" },
+            persistence: persistence,
+            discover: { _ in .isolatedSelectedTextItems }
+        )
+
+        await cache.requestDiscovery(for: identity)?.value
+
+        XCTAssertNil(cache.profile(for: identity))
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedSelectedTextItems
+        )
     }
 
     func testFailedDiscoveryRetriesQuicklyThenUsesLongCooldown() async {
@@ -2423,7 +2832,8 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
                 )
             ),
             profiles: cache,
-            allowsProfileDiscovery: true
+            allowsProfileDiscovery: true,
+            selectedTextItemReaders: .init()
         )
 
         XCTAssertNotNil(
@@ -2541,6 +2951,7 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
             discover: { _ in .isolatedCandidateList }
         )
         await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
         XCTAssertEqual(
             cache.profile(for: identity),
             .isolatedCandidateList
@@ -2576,6 +2987,7 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
             discover: { _ in .isolatedCandidateList }
         )
         await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
 
         cache.recordProfileMiss(for: identity)
         cache.recordProfileMiss(for: identity)
@@ -2586,6 +2998,25 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         XCTAssertEqual(
             cache.profile(for: identity),
             .isolatedCandidateList
+        )
+    }
+
+    func testOnlyStructureMismatchInvalidatesProfile() {
+        XCTAssertTrue(
+            AdaptiveUnknownCandidateReader
+                .shouldRecordProfileMiss(for: .structureMismatch)
+        )
+        XCTAssertFalse(
+            AdaptiveUnknownCandidateReader
+                .shouldRecordProfileMiss(for: .temporaryLayout)
+        )
+        XCTAssertFalse(
+            AdaptiveUnknownCandidateReader
+                .shouldRecordProfileMiss(for: .unavailable)
+        )
+        XCTAssertFalse(
+            AdaptiveUnknownCandidateReader
+                .shouldRecordProfileMiss(for: .candidateEnded)
         )
     }
 
@@ -2740,6 +3171,49 @@ final class MonitoringSessionTests: XCTestCase {
             candidates.requestedProcessIdentifiers.first ?? nil ?? 0,
             pid_t(4242)
         )
+    }
+
+    func testSessionAppliesCandidateDwellDuration() async throws {
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(kind: .keyboardLayout),
+            focus: StubFocus(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+        let session = MonitoringSession(controller: controller)
+        let recorder = SessionEventRecorder()
+        let collector = Task {
+            let events = await session.events
+            for await event in events {
+                recorder.record(event)
+            }
+        }
+        defer { collector.cancel() }
+
+        await session.start(
+            MonitoringSettings(
+                mode: .modelFirst,
+                candidateDwellDuration: 0.3,
+                translationScope: .selected,
+                configurationToken: "test"
+            )
+        )
+        try await waitUntil {
+            recorder.states.contains(.running)
+        }
+
+        let configured =
+            await controller
+            .configuredCandidateDwellNanoseconds
+        XCTAssertEqual(configured, 300_000_000)
+        await session.stop()
     }
 
     func testSessionKeepsDeliveringEventsAcrossStopAndStart() async throws {
@@ -2942,5 +3416,38 @@ final class AXCandidateRowSelectionTests: XCTestCase {
         XCTAssertEqual(row?.items.count, 3)
         XCTAssertEqual(row?.selectedIndex, 1)
         XCTAssertEqual(row?.items.map(\.text), ["", "你", ""])
+    }
+
+    func testUnsupportedLayoutIsClassified() {
+        let oneRow = (0..<3).map { index in
+            AXCandidateItem(
+                text: "candidate\(index)",
+                frame: CGRect(
+                    x: CGFloat(index * 40),
+                    y: 0,
+                    width: 30,
+                    height: 20
+                )
+            )
+        }
+        XCTAssertFalse(
+            AXCandidateVisibleRowSelector.hasUnsupportedLayout(
+                oneRow
+            )
+        )
+        XCTAssertTrue(
+            AXCandidateVisibleRowSelector.hasUnsupportedLayout([
+                oneRow[0],
+                AXCandidateItem(
+                    text: "next-row",
+                    frame: CGRect(
+                        x: 0,
+                        y: 40,
+                        width: 30,
+                        height: 20
+                    )
+                ),
+            ])
+        )
     }
 }

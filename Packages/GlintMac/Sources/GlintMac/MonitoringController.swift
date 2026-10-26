@@ -63,6 +63,31 @@ struct CompositionTransitionTracker: Sendable {
     }
 }
 
+struct CandidatePollingPolicy: Sendable {
+    static let activeInterval: UInt64 = 40_000_000
+    static let stableInterval: UInt64 = 80_000_000
+    static let minimumPreDwellInterval: UInt64 = 10_000_000
+
+    static func interval(
+        isDwelling: Bool,
+        nanosecondsUntilDwell: UInt64?
+    ) -> UInt64 {
+        guard !isDwelling else {
+            return stableInterval
+        }
+        guard let nanosecondsUntilDwell else {
+            return activeInterval
+        }
+        return min(
+            activeInterval,
+            max(
+                minimumPreDwellInterval,
+                nanosecondsUntilDwell
+            )
+        )
+    }
+}
+
 public enum MonitoringEvent: Sendable {
     case status(String)
     case inputSourceChanged(InputMethodIdentity)
@@ -154,7 +179,10 @@ public actor MonitoringController {
 
     private enum CandidateReadOutcome {
         case found(CandidateObservation)
-        case miss(String)
+        case miss(
+            status: String,
+            reason: AXCandidateReadMissReason
+        )
     }
 
     private let inputSource: any InputSourceReading
@@ -263,6 +291,10 @@ public actor MonitoringController {
         guard seconds.isFinite else { return }
         let clamped = min(max(seconds, 0.08), 0.3)
         candidateDwellNanoseconds = UInt64(clamped * 1_000_000_000)
+    }
+
+    var configuredCandidateDwellNanoseconds: UInt64 {
+        candidateDwellNanoseconds
     }
 
     public func setTranslationScope(
@@ -411,7 +443,14 @@ public actor MonitoringController {
         switch outcome {
         case .found(let candidate):
             observation = candidate
-        case .miss(let status):
+        case .miss(let status, let reason):
+            if Self.shouldEndCandidateImmediately(
+                for: reason
+            ) {
+                emitStatus(status)
+                invalidateCandidate(immediate: true)
+                return CandidatePollingPolicy.stableInterval
+            }
             if await activateHostAccessibilityIfNeeded(
                 source: activeInputSource,
                 focus: snapshot
@@ -495,7 +534,7 @@ public actor MonitoringController {
             )
         case .dwelling(let revision):
             guard handledRevision != revision else {
-                return 60_000_000
+                return CandidatePollingPolicy.stableInterval
             }
             handledRevision = revision
             dwellDetectedAt = .now
@@ -636,7 +675,10 @@ public actor MonitoringController {
                 includeVisibleTexts: translationScope == .row
             )
         else {
-            return .miss("未检测到候选")
+            return .miss(
+                status: "未检测到候选",
+                reason: candidateReader.missReason
+            )
         }
         guard
             let selectedFrame = candidate.frame
@@ -658,7 +700,10 @@ public actor MonitoringController {
                 for: displayFrame
             )
         else {
-            return .miss("未找到候选位置")
+            return .miss(
+                status: "未找到候选位置",
+                reason: .unavailable
+            )
         }
         return .found(
             CandidateObservation(
@@ -671,16 +716,15 @@ public actor MonitoringController {
     }
 
     private func nextCandidatePollInterval(after timestamp: UInt64) -> UInt64 {
-        let regularInterval: UInt64 = 40_000_000
-        guard
-            let remaining = typingTracker.nanosecondsUntilDwell(
-                at: timestamp,
-                dwellDurationNanoseconds: candidateDwellNanoseconds
-            )
-        else {
-            return regularInterval
-        }
-        return min(regularInterval, max(10_000_000, remaining))
+        CandidatePollingPolicy.interval(
+            isDwelling: typingTracker.isDwelling,
+            nanosecondsUntilDwell:
+                typingTracker.nanosecondsUntilDwell(
+                    at: timestamp,
+                    dwellDurationNanoseconds:
+                        candidateDwellNanoseconds
+                )
+        )
     }
 
     private func currentInputSource() async -> ActiveInputSource {
@@ -719,6 +763,13 @@ public actor MonitoringController {
         case .modelFirst:
             return scope == .selected
         }
+    }
+
+    static func shouldEndCandidateImmediately(
+        for reason: AXCandidateReadMissReason
+    ) -> Bool {
+        reason == .temporaryLayout
+            || reason == .candidateEnded
     }
 
     private func startCandidatePrefetchIfNeeded(

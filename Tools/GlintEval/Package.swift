@@ -48,6 +48,12 @@ let package = Package(
                 .product(name: "GlintMac", package: "GlintMac")
             ]
         ),
+        .executableTarget(
+            name: "SelectedTextItemCacheProbe",
+            dependencies: [
+                .product(name: "GlintMac", package: "GlintMac")
+            ]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

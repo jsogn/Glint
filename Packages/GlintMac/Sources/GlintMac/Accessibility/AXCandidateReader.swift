@@ -89,26 +89,14 @@ struct AXCandidateVisibleRow: Sendable, Equatable {
 }
 
 enum AXCandidateVisibleRowSelector {
-    static let maximumRowCount = 9
+    static let maximumRowCount =
+        CandidateCountPolicy.runtimeRange.upperBound
 
     static func select(
         selected: AXCandidateItem,
         visible: [AXCandidateItem]
     ) -> AXCandidateVisibleRow? {
-        var seen: Set<AXCandidateIdentity> = []
-        let unique = visible.filter {
-            seen.insert($0.identity).inserted
-        }
-        let framed: [(item: AXCandidateItem, frame: CGRect)] =
-            unique.compactMap { item in
-                guard let frame = item.frame,
-                    frame.width > 0,
-                    frame.height > 0
-                else {
-                    return nil
-                }
-                return (item: item, frame: frame)
-            }
+        let framed = framedItems(visible)
         guard framed.count > 1 else {
             return fallbackRow(selected: selected)
         }
@@ -135,6 +123,33 @@ enum AXCandidateVisibleRowSelector {
             items: sorted.map { $0.element.item },
             selectedIndex: sortedSelectedIndex
         )
+    }
+
+    static func hasUnsupportedLayout(
+        _ visible: [AXCandidateItem]
+    ) -> Bool {
+        let framed = framedItems(visible)
+        return framed.count > 1
+            && (visibleRowCount(for: framed.map { $0.frame }) > 1
+                || framed.count > maximumRowCount)
+    }
+
+    private static func framedItems(
+        _ visible: [AXCandidateItem]
+    ) -> [(item: AXCandidateItem, frame: CGRect)] {
+        var seen: Set<AXCandidateIdentity> = []
+        let unique = visible.filter {
+            seen.insert($0.identity).inserted
+        }
+        return unique.compactMap { item in
+            guard let frame = item.frame,
+                frame.width > 0,
+                frame.height > 0
+            else {
+                return nil
+            }
+            return (item: item, frame: frame)
+        }
     }
 
     private static func visibleRowCount(for frames: [CGRect]) -> Int {
@@ -214,6 +229,7 @@ public final class AXCandidateReader {
     private var cachedCandidateList: AXUIElement?
     private var lastDeepScanPID: pid_t?
     private var lastDeepScanTimestamp: UInt64 = 0
+    private(set) var missReason: AXCandidateReadMissReason = .unavailable
 
     public init() {}
 
@@ -222,6 +238,7 @@ public final class AXCandidateReader {
         includeVisibleCandidates: Bool = false,
         includeVisibleTexts: Bool = true
     ) -> AXCandidateSnapshot? {
+        missReason = .unavailable
         if let processIdentifier,
             processIdentifier == Self.ownProcessIdentifier
         {
@@ -241,10 +258,29 @@ public final class AXCandidateReader {
             ?? Self.processIdentifier(
                 of: application
             )
-        let windows = session.elementsAttribute(
-            application,
-            kAXWindowsAttribute
-        )
+        let windows =
+            session.attribute(
+                application,
+                kAXWindowsAttribute
+            ) as? [AXUIElement]
+        guard let windows else {
+            return nil
+        }
+        let hadCandidateList = cachedCandidateList != nil
+        if hadCandidateList,
+            let cachedCandidateWindow,
+            !windows.contains(where: {
+                CFEqual($0, cachedCandidateWindow)
+            })
+                || (session.boolAttribute(
+                    cachedCandidateWindow,
+                    kAXHiddenAttribute
+                ) ?? false)
+        {
+            clearCandidateCache()
+            missReason = .candidateEnded
+            return nil
+        }
         let roots = windows.isEmpty ? [application] : windows
         if cachedCandidateListPID == applicationPID,
             let cachedCandidateWindow,
@@ -258,37 +294,52 @@ public final class AXCandidateReader {
                 session: session
             )
         {
+            var failureReason: AXCandidateReadMissReason = .unavailable
             if let snapshot = Self.snapshot(
                 from: cachedCandidateList,
                 candidateWindow: cachedCandidateWindow,
                 includeVisibleCandidates: includeVisibleCandidates,
                 includeVisibleTexts: includeVisibleTexts,
-                session: session
+                session: session,
+                failureReason: &failureReason
             ) {
                 return snapshot
             }
+            if failureReason == .temporaryLayout {
+                missReason = failureReason
+                return nil
+            }
         }
         clearCandidateCache()
+        var foundCandidateList = false
         for window in roots {
             guard
                 let list = Self.candidateList(
                     in: window,
                     session: session
-                ),
-                let snapshot = Self.snapshot(
-                    from: list,
-                    candidateWindow: window,
-                    includeVisibleCandidates: includeVisibleCandidates,
-                    includeVisibleTexts: includeVisibleTexts,
-                    session: session
                 )
             else {
                 continue
             }
-            cachedCandidateWindow = window
-            cachedCandidateList = list
-            cachedCandidateListPID = applicationPID
-            return snapshot
+            foundCandidateList = true
+            var failureReason: AXCandidateReadMissReason = .unavailable
+            if let snapshot = Self.snapshot(
+                from: list,
+                candidateWindow: window,
+                includeVisibleCandidates: includeVisibleCandidates,
+                includeVisibleTexts: includeVisibleTexts,
+                session: session,
+                failureReason: &failureReason
+            ) {
+                cachedCandidateWindow = window
+                cachedCandidateList = list
+                cachedCandidateListPID = applicationPID
+                return snapshot
+            }
+            if failureReason == .temporaryLayout {
+                missReason = failureReason
+                return nil
+            }
         }
         let timestamp = DispatchTime.now().uptimeNanoseconds
         let shouldDeepScan =
@@ -303,21 +354,33 @@ public final class AXCandidateReader {
             if let candidate = Self.deepCandidateList(
                 in: roots,
                 session: session
-            ),
-                let snapshot = Self.snapshot(
+            ) {
+                foundCandidateList = true
+                var failureReason: AXCandidateReadMissReason = .unavailable
+                if let snapshot = Self.snapshot(
                     from: candidate.list,
                     candidateWindow: candidate.window,
                     includeVisibleCandidates:
                         includeVisibleCandidates,
                     includeVisibleTexts: includeVisibleTexts,
-                    session: session
-                )
-            {
-                cachedCandidateWindow = candidate.window
-                cachedCandidateList = candidate.list
-                cachedCandidateListPID = applicationPID
-                return snapshot
+                    session: session,
+                    failureReason: &failureReason
+                ) {
+                    cachedCandidateWindow = candidate.window
+                    cachedCandidateList = candidate.list
+                    cachedCandidateListPID = applicationPID
+                    return snapshot
+                }
+                if failureReason == .temporaryLayout {
+                    missReason = failureReason
+                    return nil
+                }
             }
+        }
+        if hadCandidateList,
+            !foundCandidateList
+        {
+            missReason = .candidateEnded
         }
         return nil
     }
@@ -529,7 +592,8 @@ public final class AXCandidateReader {
         candidateWindow: AXUIElement,
         includeVisibleCandidates: Bool,
         includeVisibleTexts: Bool,
-        session: AXReadSession
+        session: AXReadSession,
+        failureReason: inout AXCandidateReadMissReason
     ) -> AXCandidateSnapshot? {
         let selectedElements =
             session.elementsAttribute(
@@ -610,6 +674,11 @@ public final class AXCandidateReader {
                 visible: visibleItems
             )
         else {
+            if AXCandidateVisibleRowSelector.hasUnsupportedLayout(
+                visibleItems
+            ) {
+                failureReason = .temporaryLayout
+            }
             return nil
         }
         let options = row.items.enumerated().map { index, item in

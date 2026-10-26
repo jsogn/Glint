@@ -1,88 +1,77 @@
 # 未知输入法通用适配
 
-## 结论
+Glint 不为每个输入法厂商复制一条读取链路。输入法只有匹配已验证的候选结构后，
+才启用对应 reader；相同结构直接复用。
 
-Glint 对外提供三种候选读取能力：
+## 支持结构
 
-- 宿主 App 中具有 `InputMethodCandidateList` 语义的标准候选列表；
-- 独立输入法进程中的单行 `AXList + AXStaticText` 候选结构；
-- 独立候选窗口中的直接 `AXStaticText` 候选结构，可结合原生选中语义或
-  `AXForegroundColor` 判断高亮。
+| 能力 | 结构 | 高亮来源 |
+| --- | --- | --- |
+| 标准候选 | 宿主 `InputMethodCandidateList` | 父列表 `AXSelectedChildren` |
+| `isolatedCandidateList` | 独立进程单行匿名 `AXList` | 无高亮，首候选降级 |
+| `isolatedStyledText` | 独立窗口中的直接文本项 | 原生选中或唯一样式高亮 |
+| `isolatedSelectedTextItems` | 容器、数字序号和文字 | 容器 `AXSelected` |
 
-苹果拼音、微信和搜狗继续使用各自的显式 reader。未知第三方输入法只有在后台探测
-并验证上述结构后，才启用对应的通用 Profile。
+Apple 拼音、微信和搜狗保留显式 reader。它们的高亮或几何语义无法由当前通用
+Profile 完整表达，但这些差异限定在 reader 内，`MonitoringController` 和 HUD
+不包含厂商分支。新输入法只要暴露上述通用结构，就无需新增专用代码。
 
 ## 安全边界
 
-- 不扫描普通宿主 App 的 `AXList`，避免把侧栏、列表或任务列表误认为候选栏。
+- 不扫描普通宿主 App 的 `AXList`，避免误读侧栏、任务列表或其他文本。
 - 只检查当前 TIS 输入源对应的输入法进程，不遍历其他 App。
-- 不监听键盘，不截图，不执行 OCR，不调用输入法私有接口。
-- 探测日志只记录输入源 ID、Profile 类型、耗时和尝试次数，不记录候选原文。
+- 不监听键盘、不截图、不执行 OCR、不调用输入法私有接口。
+- Profile 和日志不包含候选原文；失败结果、错误和冷却时间不落盘。
 
-## 探测流程
+## 探测与持久化
 
 1. 未知输入法先使用标准 reader 读取宿主 App。
-2. 只有 `AXTextInputMarkedRange` 表明正在组合输入时，标准 reader 失配才会触发
-   探测；空闲编辑状态不会提前消耗探测机会。
-3. 当前轮询立即结束，后台低优先级任务对当前输入法 bundle 执行一次有节点上限的
-   结构探测。
-4. 匹配 Profile 后按输入源 ID 和 bundle 缓存，后续组合直接使用通用 reader。
-5. 成功 Profile 同时写入 `UserDefaults`，并使用输入法版本参与缓存键。Glint
-   重启或输入法服务重启后继续复用；输入法版本变化时旧 Profile 自动失配。
-6. Profile 只保存 bundle、输入源 ID、应用版本和结构枚举，不保存候选文本；
-   失败结果、错误和冷却时间不落盘。
-7. 已缓存 Profile 连续失败至少 3 次且持续 2 秒时标记过期，同时删除内存和持久化
-   记录，然后重新探测；瞬时候选消失不会导致误删。
-8. 不兼容结果不会每次组合重试。第一次失败后等待 `500ms` 再尝试一次；之后按
-   `10 / 20 / 40 / 60` 分钟指数退避。
-9. 全局同一时间只允许一个 Profile 探测任务，防止进程崩溃重启造成扫描风暴。
+2. 只有 `AXTextInputMarkedRange` 表明正在组合输入时才允许后台探测。
+3. 当前组合只采样；成功 Profile 在下一次非组合边界启用，避免在半途改变链路。
+4. 探测按单行列表、直接文字、分组文本项的顺序进行，全局同一时间只运行一个任务。
+5. Profile 键包含 Bundle、输入源 ID 和输入法版本；输入法升级后自动重新验证。
+6. 持久化内容只有上述键和结构枚举，不保存候选文本或当前窗口节点。
+7. 已缓存 Profile 连续结构失配 3 次且持续 2 秒才失效；瞬时空值不会删除。
+8. 第一次探测失败后 `500ms` 重试；之后按 `10 / 20 / 40 / 60` 分钟退避。
+9. 未知输入法首次使用可能暂时没有译文，这是明确的 best-effort 边界。
 
-未知输入法首次使用可能暂时没有翻译。这是明确接受的 best-effort 边界；只有探测
-完成后才会在当前运行中启用通用支持。
+分组文本项 reader 按 Bundle 和输入源隔离缓存，最多保留 32 个 reader。热路径
+验证进程会话、窗口归属、容器父链、子节点数量和原候选项身份；候选节点被重建或
+窗口变化时重新发现。frame、`AXSelected` 和候选文字每轮重新读取。
 
 ## AX 资源上限
 
-- 常规独立进程 reader 最多检查 3 个窗口。
-- 搜狗形态每次最多检查 24 个直接节点；微信形态最多检查 36 个直接节点。
-- 后台 Profile 探测最多检查 2 个窗口、16 个节点，单次 AX 消息超时为 `50ms`。
-- 候选行最多 9 项，多行、空 frame 或结构冲突时直接拒绝。
-- 后台确认单行列表 Profile 时至少需要 2 个候选；直接文字 Profile 还要求存在唯一、
-  可验证的样式高亮，避免把输入法设置窗口中的普通文字误判为候选栏。
-- 每次读取还受最大属性调用数和总截止时间限制。交互 reader 最多 `192` 次属性
-  调用、总时长 `300ms`；后台探测每个结构最多 `64` 次调用、总时长 `150ms`。
-- 多窗口候选中优先选择未隐藏且有有效 frame 的窗口，再比较候选数量。
+| 路径 | 上限 |
+| --- | --- |
+| 常规独立进程 reader | 3 个窗口 |
+| 搜狗形态 | 24 个直接节点 |
+| 微信形态 | 36 个直接节点 |
+| 分组文本项 | 24 个容器或候选项节点 |
+| 后台探测 | 2 个窗口、16 个节点、单次消息 `50ms` |
+| 交互读取 | 192 次属性调用、总计 `300ms` |
+| 后台探测 | 每个结构 64 次调用、总计 `150ms` |
 
-这些限制不能中断已经发出的同步 AX 消息，但能限制总节点数，并确保探测不在候选
-读取主路径上执行。
+候选运行态统一接受单行 `1...9` 项，运行中数量可变化。首次自动探测至少要求
+2 个候选，用于避免把普通文本误判为候选栏。分组文本项还必须存在唯一容器
+`AXSelected=true`。
+
+这些限制不能中断已经发出的同步 AX 请求，但会约束后续调用和总节点数。
 
 ## 故障行为
 
-- 输入法缺失、AX 属性异常、窗口消失或类型不匹配时均返回无候选。
-- 候选读取失败不启动翻译模型，不弹运行时错误。
-- Profile 读取失败时先尝试标准 reader，不会因此关闭监控。
-- TIS 数据缺少 bundle ID 时不进行通用探测，只保留标准候选路径。
+- 输入法缺失、窗口消失、确定性多行布局或结构错误时立即结束候选会话。
+- 组合结束、失焦、真实文字选区、切换输入源时立即结束候选 HUD。
+- AX timeout、瞬时空值等不确定失败使用两帧去抖，避免 HUD 闪烁。
+- 已缓存 Profile 读取失败时回退标准 reader，不因此停止监控。
+- 多行展开立即隐藏 HUD，但临时布局不计入结构失配，也不删除 Profile。
+- TIS 缺少 Bundle ID 时不进行跨输入法探测，只保留标准候选路径。
+- 候选读取失败不启动翻译模型，运行时仅静默隐藏 HUD。
 
-## Profile 验证工具
+## 验证工具
 
-`CandidateProfileProbe` 绕过显式输入法注册，直接对指定 Bundle 运行通用探测器，
-用于验证搜狗、微信和未知输入法是否匹配 Profile。工具只输出 Bundle、输入源、
-Profile 名称和耗时，不输出候选原文。
+`CandidateProfileProbe` 用于验证指定输入法匹配的结构 Profile；
+`SelectedTextItemCacheProbe` 用于验证分组文本项冷热读取和缓存命中。两者均只输出
+结构、数量、耗时和缓存统计，不输出候选原文。
 
-在文本编辑器中保持候选栏显示时运行：
-
-```bash
-swift run --package-path Tools/GlintEval CandidateProfileProbe \
-  --bundle com.sogou.inputmethod.sogou \
-  --source com.sogou.inputmethod.sogou.pinyin \
-  --seconds 30
-```
-
-```bash
-swift run --package-path Tools/GlintEval CandidateProfileProbe \
-  --bundle com.tencent.inputmethod.wetype \
-  --source com.tencent.inputmethod.wetype.pinyin \
-  --seconds 30
-```
-
-预期结果分别为 `isolatedCandidateList` 和 `isolatedStyledText`；没有候选或结构
-不满足约束时输出 `profile.matched=none`。
+构建、参数和运行步骤见
+[Tools/AXCandidateLab/README.md](../Tools/AXCandidateLab/README.md)。

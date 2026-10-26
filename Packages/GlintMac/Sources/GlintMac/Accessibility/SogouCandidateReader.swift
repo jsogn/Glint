@@ -9,8 +9,6 @@ struct SogouCandidateObservation: Sendable, Equatable {
 }
 
 enum SogouCandidateParser {
-    static let maximumCandidateCount = 9
-
     static func candidates(
         from observations: [SogouCandidateObservation]
     ) -> [SogouCandidateObservation]? {
@@ -21,12 +19,25 @@ enum SogouCandidateParser {
             return $0.frame.minX < $1.frame.minX
         }
         guard
-            (1...maximumCandidateCount).contains(sorted.count),
+            CandidateCountPolicy.runtimeRange.contains(sorted.count),
             visibleRowCount(for: sorted.map(\.frame)) == 1
         else {
             return nil
         }
         return sorted
+    }
+
+    static func hasUnsupportedLayout(
+        _ observations: [SogouCandidateObservation]
+    ) -> Bool {
+        guard !observations.isEmpty else {
+            return false
+        }
+        return observations.count
+            > CandidateCountPolicy.runtimeRange.upperBound
+            || visibleRowCount(
+                for: observations.map(\.frame)
+            ) > 1
     }
 
     private static func visibleRowCount(
@@ -65,6 +76,7 @@ public final class SogouCandidateReader {
     private let accessLimits: AXAccessLimits
     private let maximumWindowCount: Int
     private let maximumNodeCount: Int
+    private(set) var missReason: AXCandidateReadMissReason = .unavailable
 
     public convenience init(
         bundleIdentifier: String = InputMethodIdentifier.sogouBundle,
@@ -104,6 +116,7 @@ public final class SogouCandidateReader {
         includeVisibleCandidates: Bool = false,
         includeVisibleTexts: Bool = true
     ) -> AXCandidateSnapshot? {
+        missReason = .unavailable
         guard
             let application =
                 NSRunningApplication
@@ -112,6 +125,7 @@ public final class SogouCandidateReader {
                 )
                 .first(where: { !$0.isTerminated })
         else {
+            missReason = .candidateEnded
             return nil
         }
         let appElement = AXUIElementCreateApplication(
@@ -122,6 +136,11 @@ public final class SogouCandidateReader {
             appElement,
             kAXWindowsAttribute
         )
+        guard !windows.isEmpty else {
+            missReason = .candidateEnded
+            return nil
+        }
+        var foundCandidateList = false
         let candidates = windows.prefix(maximumWindowCount)
             .compactMap { window -> AXCandidateWindowSnapshot? in
                 guard
@@ -135,6 +154,7 @@ public final class SogouCandidateReader {
                 else {
                     return nil
                 }
+                foundCandidateList = true
                 return AXCandidateWindowSnapshot(
                     candidateCount: candidate.candidateCount,
                     snapshot: candidate.snapshot,
@@ -145,7 +165,18 @@ public final class SogouCandidateReader {
                         ) ?? false)
                 )
             }
-        return AXCandidateWindowSelector.preferred(from: candidates)
+        if missReason == .temporaryLayout {
+            return nil
+        }
+        if let candidate =
+            AXCandidateWindowSelector.preferred(from: candidates)
+        {
+            return candidate
+        }
+        if !foundCandidateList {
+            missReason = .candidateEnded
+        }
+        return nil
     }
 
     private func snapshot(
@@ -178,6 +209,12 @@ public final class SogouCandidateReader {
                 ),
                 let first = candidates.first
             else {
+                if SogouCandidateParser.hasUnsupportedLayout(
+                    observations
+                ) {
+                    missReason = .temporaryLayout
+                    return nil
+                }
                 continue
             }
             let candidateWindowFrame = session.frame(of: window)

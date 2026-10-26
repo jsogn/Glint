@@ -1,12 +1,20 @@
 import Foundation
 import GlintCore
 
+enum AXCandidateReadMissReason: Sendable, Equatable {
+    case unavailable
+    case temporaryLayout
+    case candidateEnded
+    case structureMismatch
+}
+
 protocol AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t?,
         includeVisibleCandidates: Bool,
         includeVisibleTexts: Bool
     ) -> AXCandidateSnapshot?
+    var missReason: AXCandidateReadMissReason { get }
 }
 
 extension AXCandidateReading {
@@ -20,6 +28,10 @@ extension AXCandidateReading {
             includeVisibleCandidates: includeVisibleCandidates,
             includeVisibleTexts: includeVisibleTexts
         )
+    }
+
+    var missReason: AXCandidateReadMissReason {
+        .unavailable
     }
 }
 
@@ -71,15 +83,19 @@ struct CandidateReaderRouter: CandidateReaderRouting {
     let fallback: any AXCandidateReading
     let registrations: [CandidateReaderRegistration]
     let adaptiveProfiles: CandidateProfileCache?
+    let selectedTextItemReaders: SelectedTextItemReaderPool
 
     init(
         fallback: any AXCandidateReading,
         registrations: [CandidateReaderRegistration],
-        adaptiveProfiles: CandidateProfileCache? = nil
+        adaptiveProfiles: CandidateProfileCache? = nil,
+        selectedTextItemReaders:
+            SelectedTextItemReaderPool = .init()
     ) {
         self.fallback = fallback
         self.registrations = registrations
         self.adaptiveProfiles = adaptiveProfiles
+        self.selectedTextItemReaders = selectedTextItemReaders
     }
 
     func reader(
@@ -103,7 +119,8 @@ struct CandidateReaderRouter: CandidateReaderRouting {
             source: source,
             fallback: fallback,
             profiles: adaptiveProfiles,
-            allowsProfileDiscovery: allowProfileDiscovery
+            allowsProfileDiscovery: allowProfileDiscovery,
+            selectedTextItemReaders: selectedTextItemReaders
         )
     }
 
@@ -124,9 +141,9 @@ struct CandidateReaderRouter: CandidateReaderRouting {
         else {
             return false
         }
-        return adaptiveProfiles?.profile(
+        return adaptiveProfiles?.hasProfileOrPending(
             for: source.identity
-        ) != nil
+        ) == true
     }
 }
 

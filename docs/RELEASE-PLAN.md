@@ -1,130 +1,68 @@
 # Glint Distribution Plan
 
-## 1. Current Status
+## 当前状态
 
-Glint 当前是可稳定运行的开发版本。没有 Developer ID 时可以发布明确标注的
-ad-hoc 测试包，但还不能提供通过 Gatekeeper 的正式公开版本。
-
-| 项目 | 当前状态 | 发行要求 |
+| 项目 | 当前 | 正式发行目标 |
 | --- | --- | --- |
-| Bundle ID | `com.local.glint` | 正式、唯一且长期不变的 Bundle ID |
-| 签名身份 | ad-hoc | Developer ID Application |
+| Bundle ID | `com.local.glint` | 长期固定的正式 Bundle ID |
+| 签名 | ad-hoc | Developer ID Application |
 | Team ID | 未配置 | 固定 Apple Developer Team |
-| Hardened Runtime | Release 配置启用；ad-hoc 开发/测试包禁用 | 正式包保持启用 |
-| 公证 | 无 | Developer ID 签名后提交 Apple 公证 |
-| 更新机制 | 无 | Sparkle 2 或等价方案 |
-| 分发格式 | 源码构建 | 签名并公证的 DMG |
+| Hardened Runtime | 正式签名需要；ad-hoc 测试包不可用 | 启用 |
+| 公证 | 无 | Apple notarization + staple |
+| 更新 | 未接入 | Sparkle 2 或等价方案 |
+| 分发 | 源码或 ad-hoc PKG/DMG | 签名、公证的 PKG/DMG |
 
-当前 `spctl` 拒绝 ad-hoc Debug App 属于预期行为，不影响本地开发。
+当前包面向开发和已知测试者。`spctl` 拒绝 ad-hoc App 是预期行为，不代表本地运行
+失败。
 
-## 2. Required Decisions
+## 必选决策
 
-在邀请外部用户测试前，必须先确定：
+邀请外部用户前必须先确定：
 
-1. 正式 Bundle ID。建议使用项目拥有或长期使用的反向域名，例如
-   `io.github.jsogn.glint`，不再使用 `com.local.*`。
+1. 正式 Bundle ID，建议使用项目长期持有的反向域名，而非 `com.local.*`。
 2. Apple Developer Team ID。
-3. 分发范围：
-   - 仅本机：继续使用当前开发签名；
-   - 小范围测试：Developer ID + 公证 DMG；
-   - 公开分发：再加 Sparkle 更新源和版本发布流程。
+3. 分发范围：本机开发、小范围测试或公开分发。
 
-切换 Bundle ID 或签名身份会造成一次辅助功能 TCC 权限身份变化。该切换应在外部
-Beta 前完成，而不是发布后修改。
+切换 Bundle ID、签名 Team 或首次修复历史 TCC 记录会改变辅助功能授权身份。该
+切换应在外部 Beta 前完成，避免发布后要求用户重新授权。
 
-## 3. Signing Architecture
+## Ad-hoc 测试发布
 
-推荐直接下载分发，不启用 App Sandbox：
+没有 Developer ID 时可以使用：
 
-- `com.apple.security.app-sandbox`：不启用；
-- Accessibility：继续通过用户 TCC 授权；不申请屏幕录制权限；
-- Hardened Runtime：启用；
-- 不使用 `disable-library-validation` 绕过动态库校验；
-- 主 App、嵌套 dylib 和动态库必须使用同一个 Developer ID Team 签名。
+- `scripts/package_test_dmg.sh`：生成 arm64 DMG、安装说明、诊断命令和 SHA256。
+- `scripts/package_test_pkg.sh`：生成标准 macOS Installer PKG；安装后校验、注册
+  并尝试启动 App。
+- `scripts/package_test_distributions.sh`：只构建、签名和验证一次 Release App，
+  再生成 DMG 与 PKG，发布流程优先使用该入口。
 
-内置 OPUS-MT 使用的 CTranslate2、SentencePiece 和桥接动态库位于
-`Contents/Resources/mt-opus-zh-en/bin`，必须与主 App 使用同一 Developer ID
-Team 签名。其他可选模型只作为 MLX 数据加载。归档阶段要枚举 App 实际包含的
-dylib 和 framework，完成内层优先签名。
-构建前必须运行 `scripts/prepare_opus_model.sh`，按 `model-lock.json` 转换或
-校验内置 OPUS；模型权重和词表不得加入 Git。小体积 CT2 运行时由仓库提供，
-并随主 App 一起签名。
-开发构建完成后必须运行 `scripts/verify_app.sh`，检查 App 与全部嵌套 Mach-O
-的最低系统版本、arm64 架构、必需资源和代码签名。
+三个入口都会从头构建 Release App、重签嵌套 Mach-O、稳定重签主 App，并校验
+arm64、最低系统、必需资源、签名完整性和 SHA256。
 
-Release 构建不得使用 `CODE_SIGNING_ALLOWED=NO`。签名顺序应先内层动态库，后主 App，
-全部使用 hardened runtime 和时间戳。
+ad-hoc 包不能通过 Gatekeeper，也不能启用可用的 Hardened Runtime。面向普通测试
+用户时优先使用 PKG；首次安装仍可能需要在“隐私与安全性”中允许一次。
 
-### 无 Developer ID 的内部测试包
+## 正式签名与公证
 
-当前没有 Developer ID 时，可运行 `scripts/package_test_dmg.sh` 生成 arm64
-内部测试 DMG，或运行 `scripts/package_test_pkg.sh` 生成直接安装的 PKG。两个脚本
-都会从头构建 Release App，并完成以下步骤：
+直接下载分发不启用 App Sandbox：
 
-- 构建 Release App；
-- 逐个重签嵌套 Mach-O，再稳定重签主 App；
-- 校验最低系统版本、必需资源、arm64 和签名完整性；
-- 生成 SHA-256 校验文件。
+- 继续通过用户 TCC 授权 Accessibility，不申请屏幕录制权限。
+- 主 App、嵌套 dylib 和 framework 使用同一个 Developer ID Team，内层优先签名。
+- 不使用 `disable-library-validation` 绕过动态库校验。
+- 内置 CTranslate2、SentencePiece 和 OPUS-MT 必须与主 App 同源签名。
+- 构建前运行 `scripts/prepare_opus_model.sh`；模型权重和词表不进入 Git。
+- 开发构建完成后运行 `scripts/verify_app.sh`。
 
-DMG 额外包含安装说明与一键诊断命令；PKG 使用安装前后脚本完成安装校验和首次启动。
+取得 Developer ID 后执行：
 
-这种包不能被 `spctl` 接受，也不能启用可用的 Hardened Runtime：ad-hoc 签名没有
-Team ID，运行时库校验会拒绝嵌套动态库。它只适用于已知测试者的内部验证。
+1. 固定 Bundle ID 和 Team ID，archive arm64 Release。
+2. 使用 hardened runtime 和时间戳完成内层优先签名。
+3. 运行 `codesign --verify --deep --strict` 和 `spctl -a -vv`。
+4. 生成 DMG，使用 `notarytool` 提交并等待成功。
+5. 使用 `stapler` 附加票据，再次运行 `spctl` 和离线启动验证。
+6. 在干净用户环境验证首次授权、安装、更新与卸载。
 
-面向普通测试用户时优先使用 PKG。PKG 内嵌 App，通过标准 macOS Installer 复制到
-`/Applications`；postinstall 只在已安装的 Glint.app 上清除 quarantine，随后校验、
-注册并尝试启动 App。PKG 仍需首次 Gatekeeper 用户确认，不能替代 Developer ID
-与 Apple 公证。
-
-需要同时生成 DMG 和 PKG 时运行 `scripts/package_test_distributions.sh`。该入口
-只构建、签名和验证一次 Release App，再分别生成两个安装包；Release workflow
-使用这一入口，避免重复 Release 构建。
-
-### GitHub 自动发布
-
-仓库提供两个 GitHub Actions 工作流：
-
-- `.github/workflows/ci.yml`：在 push 到 `main` 和 Pull Request 时执行 Swift
-  格式检查、完整 Swift 测试和 Python 工具测试；
-- `.github/workflows/release.yml`：推送 `v*` 标签时重复质量门禁，以单次 Release
-  构建生成 ad-hoc PKG、DMG 和对应 SHA-256 文件，并创建 GitHub Latest 发布。
-
-当前 GitHub Latest 是面向开发和已知测试者的发布包，不等于正式公开版；
-ad-hoc 包仍不能通过 Gatekeeper。Latest 只表示这是仓库最新的非草稿版本。
-
-发布版本必须与 `project.yml` 中的 `MARKETING_VERSION` 一致。例如版本为
-`0.2.0` 时推送 `v0.2.0`。CI 运行器当前使用 `macos-26`。
-
-### 开发签名与 TCC
-
-- `scripts/build.sh` 构建后使用 ad-hoc 签名，并把 designated requirement 固定为
-  `identifier "com.local.glint"`；
-- `scripts/test.sh` 必须使用独立的 `build-tests` DerivedData。测试构建会设置
-  `CODE_SIGNING_ALLOWED=NO`，不得覆盖 `build/.../Glint.app`；
-- 测试完成后必须从 LaunchServices 注销 `build-tests/.../Glint.app`，避免同名
-  Bundle ID 与开发版并存；
-- 可运行 App 与测试 App 不得共享同一个 Bundle 路径，否则 TCC 可能在稳定 identifier
-  和测试构建 CDHash 之间反复切换，造成每次启动都要求重新授权；
-- 切换 Bundle ID、签名 Team 或首次修复历史 TCC 记录后，需要一次性重新授权；
-- 若后续取得 Apple Development 证书，开发构建应优先使用固定 Team 身份，不再
-  依赖 ad-hoc 签名。
-
-## 4. Release Pipeline
-
-取得 Developer ID 后执行以下流程：
-
-1. 设置固定 Bundle ID 和 Team ID；
-2. archive Apple Silicon Release；
-3. Developer ID 签名主 App 与所有嵌套二进制；
-4. `codesign --verify --deep --strict`；
-5. `spctl -a -vv` 通过；
-6. 压缩或制作 DMG；
-7. `notarytool` 提交并等待成功；
-8. `stapler` 附加公证票据；
-9. 再次执行 `spctl` 和离线启动验证；
-10. 在干净的 macOS 用户环境中验证首次权限引导。
-
-目标验证命令：
+目标校验命令：
 
 ```bash
 security find-identity -v -p codesigning
@@ -134,28 +72,45 @@ xcrun notarytool submit Glint.zip --keychain-profile GlintNotary --wait
 xcrun stapler staple Glint.app
 ```
 
-## 5. Distribution And Updates
+## GitHub 自动发布
 
-第一轮外部 Beta 建议只提供签名、公证的 arm64 DMG，不立即接入自动更新。确认安装和
-TCC 流程稳定后，再接入 Sparkle 2：
+- `.github/workflows/ci.yml`：在 `main` push 和 Pull Request 中执行 Swift
+  格式严格检查、完整测试和 Python 工具测试。
+- `.github/workflows/release.yml`：推送 `v*` 标签后重复质量门禁，生成 ad-hoc
+  PKG、DMG 和校验文件，并创建 GitHub Latest 发布。
 
-- Appcast 使用 HTTPS；
-- 更新包和 DMG 使用 EdDSA 签名；
-- 私钥只存在发布者 Keychain 或 CI Secret；
-- 更新前保留当前版本可回滚；
-- 每个版本递增 `CFBundleVersion`；
-- 更新不得替换 Bundle ID 或签名 Team。
+标签版本必须与 `project.yml` 的 `MARKETING_VERSION` 一致。例如 `0.4.0` 对应
+`v0.4.0`；每个发布递增 `CFBundleVersion`。CI 当前使用 `macos-26`。
 
-## 6. 正式公开版 Release Gate
+## TCC 与本地测试
 
-面向普通用户公开签名、公证版本前至少满足：
+- `scripts/build.sh` 使用固定的 ad-hoc designated requirement。
+- `scripts/test.sh` 使用独立 `build-tests` DerivedData，不覆盖可运行的 Debug App。
+- 测试后注销 `build-tests` 和临时 Release/DMG 中的 App 注册，避免同 Bundle ID
+  的多个路径争用 TCC 身份。
+- 不通过 `open -n` 启动重复实例；运行入口必须等待 readiness token 和单实例确认。
+- 构建失败时保留用户正在运行的 App；测试完成后保持最新 Debug App 运行。
 
-- 完整 `./scripts/test.sh` 通过；
-- `run.sh` 连续三轮 readiness 握手通过；
-- TextEdit、Safari、Chrome、微信真实输入通过；
-- 密码框与安全输入不显示 HUD；
-- 睡眠唤醒、多显示器、非蓝色高亮通过；
-- 真实 AX 候选文本和 frame fixture 回归，不保存候选截图；
-- 干净用户环境首次授权通过；
-- Gatekeeper、公证、staple 全部通过；
-- 下载和卸载流程不会破坏用户词典与模型配置。
+## 更新策略
+
+第一轮外部 Beta 只提供签名、公证的 arm64 安装包，不立即启用自动更新。安装和
+TCC 流程稳定后再接入 Sparkle 2：
+
+- Appcast 使用 HTTPS，更新包使用 EdDSA 签名。
+- 私钥只保存在发布者 Keychain 或 CI Secret。
+- 每个版本递增 build，更新不得替换 Bundle ID 或签名 Team。
+- 更新前保留可回滚版本。
+
+## 公开版门禁
+
+面向普通用户发布前至少满足：
+
+- 完整 `./scripts/test.sh`、Swift 格式检查、Python 工具测试和 Release arm64
+  构建通过。
+- `run.sh` 连续三轮 readiness 握手和单实例检查通过。
+- TextEdit、Safari、Chrome 和微信真实输入通过。
+- 密码框、Secure Input、睡眠唤醒、多显示器、全屏和不同缩放完成验证。
+- AX fixture 回归不保存候选截图或原文。
+- 干净用户环境的首次授权、安装、更新和卸载通过。
+- Gatekeeper、公证、staple 和离线启动全部通过。
+- 下载、更新或卸载不会破坏用户词典与模型配置。

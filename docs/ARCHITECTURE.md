@@ -1,181 +1,116 @@
 # Glint Architecture
 
 - 状态：现行
-- 日期：2026-10-19
-- 最近校准：2026-10-23
+- 最近校准：2026-10-26
 - 平台：macOS 26+，Apple Silicon
 - 语言：Swift 6
 
 ## 1. 架构目标
 
-Glint 是一个菜单栏工具 + 主窗口 + 单行 HUD 的 macOS App。架构优先保证：
+Glint 是菜单栏工具、主窗口和单行 HUD 组成的 macOS App：
 
-1. 原生 macOS 集成：Accessibility、TIS、AppKit；候选识别不截图、不执行 OCR。
-2. 全局默认生效，但只读取当前输入法候选，不读文本正文。
-3. CC-CEDICT、ECDICT、Wiktionary 和 OPUS-MT 是只读内置核心能力；其他词典与
-   更大的翻译模型按插件管理。OPUS-MT 在构建时从固定 Hugging Face revision
-   转换为 CTranslate2 int8，校验产物后进入 App bundle，不存入 Git 历史。
-4. 翻译运行时可以替换，但插件不执行任意第三方代码。
-5. App 逻辑与模型实验分离；模型评测结论与生产运行时保持可追溯。
-6. 默认不保存候选文本、翻译结果或输入历史。
+1. 使用原生 Accessibility、TIS 和 AppKit 集成；不截图、不执行 OCR。
+2. 全局默认生效，但只读取当前输入法候选，不读取输入框正文。
+3. CC-CEDICT、ECDICT、Wiktionary 和 OPUS-MT 是只读内置能力。
+4. 翻译运行时可以替换，但插件只能携带受支持的模型或词典数据。
+5. 默认不保存候选文本、翻译结果或输入历史。
+6. 模型评测与生产运行时分离，只接入经过验证的运行时类型。
 
 ## 2. 技术栈
 
 | 层 | 选型 |
-|---|---|
-| 语言 | Swift 6 |
+| --- | --- |
 | App 生命周期 | AppKit `NSApplicationDelegate` |
 | 主窗口 | AppKit `NSWindow` + SwiftUI `NSHostingController` |
-| HUD | AppKit `NSPanel` + SwiftUI `NSHostingView` |
-| UI | 系统 AppKit/SwiftUI 控件，不引入第三方 UI 组件库 |
-| 候选读取 | Accessibility `InputMethodCandidateList` + 微信输入法专用 AX 样式解析 |
-| 上下文 | 当前不读取输入框正文；如后续启用，必须单独评审隐私边界 |
-| 输入状态 | Carbon TIS + Accessibility API |
-| 词典 | 系统 SQLite3，CC-CEDICT，ECDICT 作为反查/词频辅助 |
-| 轻量翻译 | CTranslate2 int8（OPUS-MT） |
-| 专用翻译 LLM | MLX Swift（Hy-MT2 1.8B / Index-Translate 2B） |
-| 通用多语言 LLM | MLX Swift（Qwen3 0.6B / 1.7B / 4B，可选） |
-| 插件管理 | 自研 manifest + 下载/校验/安装器 |
-| 更新 | 尚未接入 |
+| HUD | 单一 AppKit `NSPanel` + 持久 SwiftUI `NSHostingView` |
+| 候选读取 | Accessibility 标准候选、显式 reader、结构 Profile |
+| 输入状态 | Carbon TIS + Accessibility |
+| 词典 | SQLite3、CC-CEDICT、ECDICT、Wiktionary |
+| 轻量翻译 | 内置 CTranslate2 int8（OPUS-MT） |
+| 可选翻译 | MLX Swift，本地下载或导入 |
+| 插件管理 | manifest、SHA256 校验和原子安装 |
 | 日志 | OSLog，默认脱敏 |
-| 分发 | Developer ID + 公证，先直接下载 |
+| 分发目标 | Developer ID、hardened runtime、公证；当前测试发布见发布计划 |
 
-## 3. 目录结构
+## 3. 仓库结构
 
 ```text
 Glint/
-├── README.md
-├── Glint.xcworkspace
-├── App/
-│   ├── Glint/                 # App 生命周期、组合根和命令行诊断
-│   └── GlintTests/            # App target 冒烟测试
-├── Packages/
-│   ├── GlintCore/             # 领域模型、协议、路由和缓存
-│   ├── GlintMac/              # Accessibility、TIS 和实时监控
-│   ├── GlintDictionary/       # SQLite 词典与排序
-│   ├── GlintInference/        # CTranslate2 与 MLX 推理
-│   ├── GlintPlugins/          # 插件清单、下载、导入和安装
-│   ├── GlintUI/               # 主窗口、设置和 HUD
-│   └── GlintBenchmark/        # 词典基准命令行
-├── Bridges/
-│   └── CTranslate2Bridge/     # C ABI 源码；运行时 dylib 随 OPUS 资源提供
-├── Tools/
-│   ├── AXCandidateLab/
-│   ├── CandidateLab/
-│   ├── DictionaryBuilder/
-│   ├── DictionaryLab/
-│   ├── GlintEval/
-│   └── ModelLab/
-├── Resources/
-│   ├── Distribution/
-│   ├── Evaluation/
-│   ├── Plugins/
-│   └── catalog.json
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── AX-CANDIDATE-VALIDATION.md
-│   ├── DICTIONARY-SOURCES.md
-│   ├── RELEASE-PLAN.md
-│   └── assets/
-├── scripts/
-│   ├── build.sh
-│   ├── dev.sh
-│   ├── launch.sh
-│   ├── package_test_dmg.sh
-│   ├── package_test_distributions.sh
-│   ├── package_test_lib.zsh
-│   ├── package_test_pkg.sh
-│   ├── prepare_opus_model.sh
-│   ├── run.sh
-│   ├── test.sh
-│   ├── verify_app.sh
-│   └── build_wiktionary_dictionary.py
+├── App/                 # 组合根、生命周期、菜单栏和诊断入口
+├── Packages/            # 领域、macOS、词典、推理、插件和 UI 模块
+├── Bridges/             # CTranslate2 C ABI 桥接源码
+├── Tools/               # 候选、词典和模型实验工具
+├── Resources/           # 内置核心能力、模型清单和分发资源
+├── docs/                # 现行架构、验证、发布和来源文档
+└── scripts/             # 构建、测试、运行、打包和校验入口
 ```
+
+`docs/` 只保留长期维护的现行事实、验证证据和发布门禁。已完成里程碑、重复实验
+记录和已被现行文档覆盖的专项调研由 Git 历史保存。
 
 ## 4. 模块边界
 
+| 模块 | 职责 |
+| --- | --- |
+| `GlintCore` | 纯 Swift 领域模型、词典/翻译协议、路由、停留判定和精确缓存 |
+| `GlintMac` | TIS、Accessibility、候选 reader、焦点、安全输入和监控编排 |
+| `GlintDictionary` | SQLite 查询、词频排序和词典插件加载 |
+| `GlintInference` | CTranslate2、MLX、模型加载、内存预算和推理取消 |
+| `GlintPlugins` | manifest、下载、校验、原子安装和本地模型导入 |
+| `GlintUI` | 主窗口、设置、HUD、权限页和展示状态 |
+| `GlintApp` | 组合根、App 生命周期和跨模块协调 |
+
 ### GlintCore
 
-纯 Swift，不依赖 AppKit 或数据库。
-
-包含：
-
-- `Candidate`、`CandidateKind`、`TranslationResult`、`TranslationMode`；
-- `DictionaryEngine`、`TranslationEngine` 协议；
-- `SmartRouter`：词典/模型/不显示的路由；
-- `TranslationMemo`：精确结果内存缓存和并发请求合并；
-- `TypingActivityTracker`：候选停留和 revision 计算；
-- 公共错误类型、模型选择偏好和提示词档位。
+- `Candidate`、`CandidateKind`、`TranslationResult` 和翻译模式。
+- `DictionaryEngine`、`TranslationEngine` 和 `SmartRouter`。
+- `TranslationMemo`：精确结果 LRU、并发请求合并和容量限制。
+- `TypingActivityTracker`：候选停留、revision 和快速输入抑制。
+- 不依赖 AppKit、SQLite 或任何推理运行时。
 
 ### GlintMac
 
-所有 macOS 平台相关实现：
-
-- TIS 输入源判断；
-- Accessibility 光标/控件 frame；
-- Accessibility 输入法候选读取；
-- 安全输入判断；
-- `MonitoringController`、候选去抖和整栏翻译调度；
-- 当前不读取输入框正文；如后续启用上下文，必须经过独立隐私评审。
-
-不包含 UI、插件下载或词典数据。
+- 当前输入源、焦点、文字选区、Secure Input 和辅助功能状态。
+- `MonitoringController` actor：权限节流、候选轮询、停留、取消和事件发布。
+- `CandidateReaderRouter`：Apple、显式 reader 和未知输入法 Profile。
+- `AXReadSession`：消息超时、属性调用上限和总截止时间。
+- 不包含 UI、插件下载、词典数据或推理实现。
 
 ### GlintDictionary
 
-- SQLite3 数据库访问；
-- CC-CEDICT 词条查询；
-- 英文对应词排序（词频、ECDICT 反查、人工 override）；
-- 词典插件的加载接口。
-
-不依赖 AppKit。
+- 查询 CC-CEDICT、ECDICT 和 Wiktionary SQLite 资源。
+- 合并多来源义项，按词频、短语和人工 override 排序。
+- 通过固定 runtime 接口加载词典插件，不执行插件代码。
 
 ### GlintInference
 
-- `TranslationEngine` 的实现；
-- CTranslate2 适配器；
-- MLX 适配器；
-- 模型加载、内存预算、推理取消；
-- 不负责下载，不负责 UI。
+- `TranslationEngine` 的 CTranslate2 与 MLX 实现。
+- 内置 OPUS-MT 只从签名 App bundle 加载。
+- 可选模型只接受 MLX 数据插件；不负责下载、UI 或候选读取。
+- 负责模型生命周期、推理串行化和资源释放。
 
 ### GlintPlugins
 
-- manifest 解析和版本校验；
-- 下载、SHA256 校验、解压、原子安装；
-- 插件目录管理、删除、更新；
-- `PluginManager` actor；
-- 不执行插件代码，模型只作为数据加载。
+- 解析 manifest，校验版本、文件类型和 SHA256。
+- 下载、镜像回退、断点进度、解压和原子安装。
+- 管理可选词典与翻译模型；内置核心能力不参与安装或卸载。
+- 插件是数据包，不允许携带 dylib、脚本或其他可执行代码。
 
 ### GlintUI
 
-- `MainWindowController` + SwiftUI 页面；
-- `HUDController` + `NSPanel`；
-- 侧栏、插件卡片、权限卡片、预览；
-- `MainWindowModel` 作为主窗口的 `@MainActor` 状态和动作边界；
-- 依赖 `GlintCore` 的领域类型和 `GlintPlugins` 的 manifest/manager
-  接口，不直接实现 Accessibility 读取或推理。
+- 主窗口侧栏、设置页、插件页、权限页和关于页。
+- 单一 HUD panel，不创建键盘监听、Toast 或运行时错误卡片。
+- `MainWindowModel` 作为 `@MainActor` 展示状态和动作边界。
+- 不直接实现 Accessibility 读取或模型推理。
 
 ### GlintApp
 
-组合根，只做：
+- 创建 `AppEnvironment` 并注入具体实现。
+- 管理菜单栏、主窗口、HUD、监控 session 和退出。
+- 仅在翻译运行时准备完成后启动监控。
+- 保持单实例并提供 readiness 与诊断命令。
 
-- App 生命周期；
-- 创建 `AppEnvironment`；
-- 注入具体实现；
-- 菜单栏、主窗口、HUD 的协调；
-- 权限引导和启动/停止监控。
-
-### Tools/ModelLab
-
-Python 模型实验环境：
-
-- 模型下载和转换；
-- 50 条测试集；
-- 质量、延迟、内存评测；
-- 将选型结论记录到实验工具说明和提交历史。
-
-不进入 App 安装包。
-
-## 5. 依赖规则
+## 5. 依赖方向
 
 ```text
 GlintApp
@@ -191,221 +126,108 @@ GlintCore
   → 无 AppKit / SQLite / MLX 依赖
 ```
 
-规则：
+- 禁止反向依赖，尤其禁止 `GlintCore` 引用平台、数据库或推理模块。
+- `GlintMac` 不引用 `GlintUI`；`GlintInference` 不引用 `GlintPlugins`。
+- UI 只依赖领域协议，不直接持有 CTranslate2 或 MLX 类型。
+- `Bridges/CTranslate2Bridge` 只由 `GlintInference` 通过 C ABI 加载。
 
-- 不允许反向依赖：`GlintCore` 不能 import 上面任何模块。
-- `GlintMac` 不能 import `GlintUI`。
-- `GlintInference` 不能 import `GlintPlugins`；模型路径由 App/PluginManager 注入。
-- `GlintUI` 不直接持有 `CTranslate2`/`MLX` 类型，只通过 `TranslationEngine` 协议。
-- `Bridges/CTranslate2Bridge` 的运行时产物只由 `GlintInference` 通过 C ABI
-  `dlopen` 加载；桥接源码不进入 Swift 依赖图。
+## 6. 生命周期与 UI
 
-## 6. App 生命周期与 UI
+- `LSUIElement = true`，App 仅驻留菜单栏。
+- 首次启动显示主窗口；关闭窗口只隐藏，不停止监控。
+- 翻译运行时准备完成后才启动 `MonitoringSession`。
+- HUD 使用 borderless、non-activating `NSPanel`，加入所有 Space 与全屏空间。
+- HUD 不抢焦点、不改变候选选择，也不创建新的内容根视图。
+- 主窗口和 HUD 都通过 `AppEnvironment` 获取状态，不互相直接调用。
+- 监控、候选 reader 和 HUD 均跳过 Glint 自身 PID。
 
-- AppKit `NSApplicationDelegate`，`LSUIElement = true`，只驻留菜单栏。
-- 首次启动打开 `MainWindow`；关闭窗口只隐藏，不退出监控。
-- `MainWindow` 是独立 `NSWindow`，内容由 SwiftUI `NavigationSplitView` 承载。
-- `HUDController` 管理非激活 `NSPanel`：
-  - borderless；
-  - `.nonactivatingPanel`；
-  - popUpMenu level；
-  - `canJoinAllSpaces` + `fullScreenAuxiliary`；
-  - 不抢焦点，不改变候选选择。
-- 候选 reader 输出 `AXCandidateGeometry`，分别说明横向锚点和纵向边界来自
-  `window`、`list`、`item` 还是 `text` 节点。Reader 先按自身语义生成最终
-  presentation frame，几何层不再暗中应用输入法专属偏移；HUD 只消费归一化后的
-  边界。
-- 监控和候选 reader 都必须拒绝 Glint 自身 PID；不得通过直接焦点或进程 fallback
-  读取自身 SwiftUI/AX 树，避免主线程 AX 服务与后台深度遍历发生重入。
-- HUD 的用户间距从上述归一化边界计算；屏幕边缘优先翻边，避免为了贴边而静默
-  压缩间距。
-- HUD 的 `NSPanel` 是唯一尺寸来源；`NSHostingView` 不得按内容固有高度反向缩放
-  窗口，可见胶囊必须与 panel 同高。panel 高度按当前字体行高、候选模式密度和
-  垂直内边距计算，不使用会放大笔记本屏幕视觉负担的固定额外高度。
-- 主窗口和 HUD 都通过 `AppEnvironment` 获取状态，不直接互相调用。
+候选 reader 输出 `AXCandidateGeometry`，区分横向锚点和纵向边界来自 `window`、
+`list`、`item` 还是 `text`。输入法专属视觉校准由 reader 完成，HUD 只消费最终
+presentation frame。panel 是唯一尺寸来源，`NSHostingView` 不得反向压缩窗口高度。
 
 ## 7. 运行时数据流
 
 ```text
 InputSourceMonitor (TIS)
-  → InputMethodIdentity + InputSourceKind
-  → FocusMonitor (AX)
+  → InputMethodIdentity
+  → FocusMonitor
   → CandidateReaderRouter
-      ├─ AXCandidateReader (standard candidate list)
-      ├─ WeTypeCandidateReader (WeChat-specific AX structure)
-      ├─ SogouCandidateReader (Sogou anonymous candidate list)
-      └─ AdaptiveUnknownCandidateReader (background discovered Profile)
-  → SmartRouter (GlintCore)
-      ├─ DictionaryEngine (GlintDictionary)
-      └─ TranslationEngine (GlintInference)
-  → HUDController (AppKit + SwiftUI)
+      ├─ AXCandidateReader
+      ├─ 微信 / 搜狗显式 reader
+      └─ AdaptiveUnknownCandidateReader
+  → MonitoringController
+  → SmartRouter
+      ├─ DictionaryEngine
+      └─ TranslationEngine
+  → HUDController
 ```
 
-主窗口只是观察同一套状态：
+主窗口观察同一套监控状态：
 
 ```text
 MonitoringSession → AppDelegate + HUDEventCoordinator
 MainWindowModel → MainWindowView
 ```
 
-## 8. 并发与状态
+未知输入法的 Profile、资源上限和失败恢复见
+[未知输入法通用适配](GENERIC-INPUT-METHOD-ADAPTATION.md)。AX 结构、性能和验收
+边界见 [AX Candidate Validation](AX-CANDIDATE-VALIDATION.md)。
 
-- `MonitoringController`：actor；单一轮询循环，负责权限节流、候选去抖、
-  停留判定、翻译取消和事件发布。
-- `MonitoringSession`：actor；串行化 start/stop 意图，长期持有
-  `MonitoringController` 的事件流，向 AppDelegate 发布状态和监控事件。
-  停止监控只停止轮询循环，不取消事件消费者，因此重新开启后事件仍然可达。
-- `AppDelegate`：仅在 `MonitoringSession` 报告 running 后把 UI 置为已开启；
-  启动准备期间显示 preparing 状态；事件泵在 App 生命周期内不取消。
-- `AXCandidateReader`：候选识别主路径；只识别具有输入法候选语义的
-  `InputMethodCandidateList`，不读取普通 `AXList`。通过 FocusSnapshot 的
-  focused PID 复用焦点解析结果，避免每次轮询重新查找 focused application。
-  快速路径未命中时，在窗口树内以 64 个节点、8 层和统一 AX 预算为上限搜索该
-  精确标识，兼容候选窗口位于较深层级的宿主；同一 PID 的深度搜索最多每 120ms
-  执行一次。缓存命中使用已缓存候选节点和窗口父子链验证，不重新遍历整棵树。
-- `AXHostAccessibilityActivator`：苹果拼音候选首次读取失败时，若宿主 App 的
-  `AXEnhancedUserInterface` 为 `false`，通过既有辅助功能权限按 PID 请求一次
-  完整 AX 模式；成功后按 PID、Bundle ID、启动时间和可执行路径组成的进程会话
-  身份缓存。属性不支持时停止重试，临时 AX 读取失败使用 2 秒冷却，写入失败使用
-  30 秒冷却。Electron 可能在实际写入成功后返回 `kAXErrorNotImplemented`，
-  因此以回读属性值为准。
-- `InputMethodIdentity`：GlintCore 中的系统输入法身份，包含 bundle ID、input
-  source ID、source type 和本地化名称。UI 展示使用 TIS 的本地化名称，不用内部
-  ID 猜测输入法名称。
-- `CandidateReaderRouter`：按 bundle ID / input source ID 把输入法路由到专用
-  candidate reader；未知输入法使用标准 reader。新增搜狗等输入法只需注册 reader
-  和 adapter，不增加 `MonitoringController` 分支。
-- `AdaptiveUnknownCandidateReader`：组合输入中标准 reader 未命中时异步探测当前
-  输入法进程；只接受已验证的独立单行列表或文字样式 Profile。探测不阻塞候选轮询，
-  一个进程内全局最多执行一个探测，并按输入源缓存正向或负向结果。成功 Profile
-  以输入法版本为边界持久化到 `UserDefaults`，失败结果只在内存中保留冷却。
-- `WeTypeCandidateReader`：微信输入法专用候选路径；从 `WeType` 进程读取候选
-  文本、frame 和 `AXAttributedStringForRange` 前景亮度。唯一亮色数字对应的组
-  作为高亮候选；无法判断样式时使用首候选，不截图且不申请屏幕录制权限。
-- `SogouCandidateReader`：从 `SogouInput` 进程的匿名 `AXList` 读取单行可见候选
-  和 frame。公开 AX 不提供高亮项，因此默认“选中”模式使用首候选，并返回
-  `selectionIsExact=false`；用户选择“一栏”时翻译可见候选但不伪造选中高亮。
-- `AXCandidateGeometry`：统一候选几何语义。横向锚点和纵向边界可以来自不同节点；
-  视觉校准由 reader 在生成 frame 时完成，避免把搜狗或微信的假设泄漏到通用层。
-  第三方皮肤不单独检测，由用户间距兜底。
-- `AXReadSession`：统一 AX 消息超时、最大属性调用数和单调时钟截止时间。标准、
-  搜狗、微信和后台探测都必须通过同一读取预算，预算耗尽后返回无候选。
-- `FocusMonitor.processFallbackSnapshot()`：直接焦点快照不可用时返回前台应用
-  PID。是否允许使用该 fallback 由 `CandidateReaderRouter` 按能力决定：苹果
-  标准候选、微信/搜狗显式 reader 和已缓存验证 Profile 可以用；未知输入法不可用。
-  它不猜测文本框或读取正文，后续仍必须找到已验证的候选节点才会显示 HUD。安全
-  输入检查先于该 fallback。
-- `FocusResolutionPolicy`：把直接焦点是否可用、文字选区、fallback 能力和进程
-  fallback 统一为纯决策，避免监控主循环分散维护同一套焦点规则。
-- `CandidateTranslationPipeline`：无状态并发编排；选中项优先，整栏结果按
-  revision 发布，旧任务由监控层取消。
-- `TranslationRuntime`/`TranslationMemo`：actor；模型加载、推理和缓存请求串行化。
-- `PluginManager`/`PluginCatalogService`/`LocalModelImportService`：actor；
-  下载、导入和安装进度通过闭包回到主 actor。
-- `MainWindowModel`/`HUDController`：`@MainActor`；只接收不可变的展示状态。
-- 缓存：内存 LRU；不落盘；候选变化时取消旧请求。
+## 8. 候选读取与监控
 
-未知输入法的 Profile 探测、缓存和限流细节见
-`docs/GENERIC-INPUT-METHOD-ADAPTATION.md`。
+- `MonitoringController` 是单一 actor 轮询循环；权限检查最多每秒一次。
+- 快速输入期间保持 `40ms`，候选停留并启动翻译后降至 `80ms`。
+- 候选变化恢复快速轮询；不增加翻译完成后的固定等待。
+- 确定性候选结束和多行布局立即关闭 HUD；不确定 AX 失败使用两帧去抖。
+- 标准候选缓存验证窗口和列表归属；分组文本项缓存额外验证父链、子节点数量和
+  候选项身份。
+- 已知 Profile 失败时先回退标准 reader；后台探测全局单任务并指数退避。
+- 进程 fallback 只对 Apple、显式 reader 和已验证 Profile 开放，不猜测文本框。
+- Apple 拼音读取失败时可按宿主 PID 请求一次增强 AX；写入后必须回读确认。
+- 权限状态按秒节流，不在每次候选轮询重复调用 TCC。
 
-## 9. 插件与模型
+## 9. 并发与状态
 
-- 插件 manifest 是唯一入口；模型/词库是数据，不带可执行代码。
-- 支持两种插件类型：`dictionary`、`translation`。
-- 固定运行时适配器：
-  - `cedict-sqlite` → CC-CEDICT 查询与 overrides；
-  - `ecdict-rank` → ECDICT 词频和义项排序；
-  - `sqlite-v1` → 扩展词典；
-  - `ctranslate2` → CTranslate2Bridge；
-  - `mlx` → MLX Swift。
-- CC-CEDICT、overrides、ECDICT、Wiktionary 和 OPUS-MT 作为只读核心资源直接
-  随 App 提供，不复制到 Application Support，不参与安装和卸载。OPUS-MT 由
-  `scripts/prepare_opus_model.sh` 在构建前转换并校验，锁文件记录源 revision、
-  工具版本和每个产物的 SHA256。
-- 词典路由由只读内置词典和 Application Support 中的可选插件合并；内置 ID
-  优先，插件列表不得重复注册同一词典。
-- 下载目录：
+- `MonitoringController` 串行化输入源、焦点、候选、停留和翻译任务状态。
+- `MonitoringSession` 串行化 start/stop 意图，并长期持有事件流。
+- `AppDelegate` 只在 session 报告 running 后把 UI 置为已开启。
+- `TranslationRuntime` 和 `TranslationMemo` 串行化模型加载、推理和请求合并。
+- `PluginManager`、目录服务和本地导入服务以 actor 隔离文件操作。
+- `MainWindowModel` 和 `HUDController` 保持在 `@MainActor`。
+- 候选 revision 变化时取消旧翻译；只允许当前 revision 更新 HUD。
+- 候选、翻译结果和输入历史不落盘；精确结果缓存只在内存中使用。
 
-```text
-~/Library/Application Support/Glint/
-  plugins/
-    mt-hy-mt2-1.8b/
-  models/
-  cache/
-  logs/
-```
+## 10. 插件与模型
 
-- 安装流程：下载可选插件 → 校验 manifest 和 SHA256 → 原子替换插件目录 →
-  刷新内存中的已安装清单。
-- MLX 大模型按累计有效字节计算单调进度，下载、校验和安装使用互不重叠的阶段；
-  UI 同时显示已下载大小和实时速度。关闭连接 30 秒后进入下一下载源，避免网络
-  已停滞但界面长时间只显示固定百分比。
-- 删除流程：先取消推理/卸载模型，再删除插件目录。核心词典和
-  内置 OPUS-MT 不提供删除操作。
-- 不支持任意第三方 dylib、脚本或可执行文件。
-- 下载和本地导入的翻译插件只允许 MLX；词典插件只允许固定 SQLite runtime。
-  CTranslate2 只从签名的 App bundle 加载。
-- MLX 模型下载顺序为 ModelScope、`hf-mirror.com`、Hugging Face。清单通过
-  `modelscopeURL` 显式声明国内仓库；Hy-MT2 与全部 Qwen3 MLX 模型使用
-  `cdn-lfs-cn-1.modelscope.cn`，文件大小与 SHA-256 必须通过 ModelScope 文件接口
-  校验。Index-Translate 当前没有可用 ModelScope 仓库，因此继续走 Hugging Face
-  回退。`hf-mirror.com` 不保证权重留在国内，Hy-MT2 的权重仍会重定向到 XetHub，
-  因此只作为第二来源。
-- 不支持用户添加的远程翻译接口；候选和翻译内容只进入受支持的本地运行时。
-- 插件升级使用持久化事务标记；未完成激活的升级在下次启动时回滚到旧版本。
-- 产品语言固定为简体中文到英文；清单不重复保存 capabilities、语言或质量档位。
+- manifest 是插件唯一入口，支持 `dictionary` 与 `translation`。
+- 固定 runtime：
+  - `cedict-sqlite`、`ecdict-rank`、`sqlite-v1`；
+  - `ctranslate2` 仅用于内置 OPUS-MT；
+  - `mlx` 用于可选翻译模型。
+- CC-CEDICT、ECDICT、Wiktionary、overrides 和 OPUS-MT 随 App 提供，不复制到
+  Application Support，也不允许卸载。
+- OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；
+  权重不进入 Git，锁文件记录产物 SHA256。
+- 可选 MLX 模型优先国内镜像，失败后回退官方源；下载、校验和安装阶段不重叠。
+- 插件升级使用持久化事务；未完成激活的升级在下次启动时回滚。
+- 不支持用户添加的远程翻译接口，候选与译文只进入本地受支持运行时。
 
-## 10. 持久化与隐私
+## 11. 持久化、构建与测试
 
-- 词典：只读 SQLite；模型：文件目录；设置：UserDefaults/JSON。
-- 不保存候选文本、翻译结果、输入历史、剪贴板、窗口标题。
-- 运行日志用 OSLog，候选文本/翻译内容默认 `.private`，不写文件。
-- 安全输入场景直接跳过。
-- 推理阶段不联网；只有用户主动下载/更新插件时使用 URLSession。
+- 词典为只读 SQLite；模型为本地目录；偏好保存到 UserDefaults/JSON。
+- 不保存候选文本、译文、输入历史、剪贴板或窗口标题。
+- 推理阶段不联网；只有用户主动下载或更新插件时使用 URLSession。
+- App target 只复制五个运行时核心资源，不从 `Resources` 整目录复制。
+- Xcode workspace 使用本地 Swift packages；构建、测试和运行统一走 `scripts/`。
+- 单元测试覆盖路由、候选分类、词典排序、插件状态、缓存和偏好边界。
+- 集成测试使用 AX snapshot、frame 和 mock runtime 验证监控、HUD 和生命周期。
+- Release 前运行完整测试、Release arm64 构建和分发校验。
 
-## 11. 构建与依赖
+## 12. 架构决策
 
-- Xcode workspace + 本地 Swift packages + 一个 App target。
-- 依赖：
-  - 系统 SQLite3；
-  - MLX Swift（高质量翻译插件）；
-  - CTranslate2 与 SentencePiece 动态库（运行在 `Resources/Plugins/mt-opus-zh-en/bin`）。
-- App target 只复制运行时 allowlist：`catalog.json`、`dict-cedict`、
-  `dict-ecdict`、`dict-wiktionary-zh-en` 和 `mt-opus-zh-en` 五个只读核心
-  资源。OPUS-MT 权重由构建脚本准备且不进入 Git；评测数据、可选插件和其他
-  模型目录不得由 `Resources` 整目录进入 App。
-- App 第一版不启用 App Sandbox；使用 Developer ID + hardened runtime + 公证。
-- Bundle ID 暂定 `com.local.glint`，正式签名/团队确定后再改。
-- `scripts/build.sh`、`scripts/test.sh` 只封装 `xcodebuild`/`swift test`，不复制 demo 的 `swiftc` 流程。
-
-## 12. 测试
-
-### 单元测试
-
-- `SmartRouter` 的双来源路由、失败回退和无结果；
-- 候选文本清洗、数字/emoji 过滤；
-- 词典英文对应词排序；
-- manifest 校验、版本比较、安装状态机；
-- 翻译取消和缓存。
-
-### 集成测试
-
-- 用 AX 候选快照和 frame 数据测试 MonitoringController；
-- 用 mock `TranslationEngine` 测试 HUD 显示/隐藏；
-- 主窗口侧栏、插件下载状态、权限提示的 UI 测试。
-
-### 模型评测
-
-- `Tools/ModelLab` 生成 50 条测试集；
-- 对比 OPUS-MT、Qwen3、Hy-MT2 和 Index-Translate；
-- 记录：英文对应准确率、短句自然度、p95 延迟、峰值内存、模型体积；
-- 结果保留在版本历史和实验工具说明中，生产运行时只接入经过验证的模型类型。
-
-## 13. ADR 列表
-
-- ADR-0001：不替换输入法，采用候选栏读取 + HUD；输入候选由 AX 读取。
-- ADR-0002：Swift 6 + AppKit/SwiftUI 混合。
-- ADR-0003：插件模型作为数据，固定 runtime adapter。
-- ADR-0004：AppKit 生命周期承载菜单栏 + 主窗口 + HUD。
-- ADR-0005：先做 ModelLab，再接入经过验证的生产推理运行时。
+- ADR-0001：不替换输入法，使用候选读取 + HUD。
+- ADR-0002：Swift 6、AppKit 生命周期、SwiftUI 内容。
+- ADR-0003：插件作为数据，固定 runtime adapter。
+- ADR-0004：菜单栏、主窗口和单一非激活 HUD panel。
+- ADR-0005：先完成本地评测，再接入生产推理运行时。
 - ADR-0006：不持久化候选文本和翻译结果。

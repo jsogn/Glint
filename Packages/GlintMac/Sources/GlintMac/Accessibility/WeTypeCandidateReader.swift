@@ -62,7 +62,27 @@ enum WeTypeCandidateParser {
             )
             index += 2
         }
-        return groups.isEmpty ? nil : groups
+        guard CandidateCountPolicy.runtimeRange.contains(groups.count)
+        else {
+            return nil
+        }
+        return groups
+    }
+
+    static func hasUnsupportedLayout(
+        _ observations: [WeTypeCandidateObservation]
+    ) -> Bool {
+        guard !observations.isEmpty else {
+            return false
+        }
+        if visibleRowCount(
+            for: observations.map(\.frame)
+        ) > 1 {
+            return true
+        }
+        return observations.filter {
+            isShortcut($0.text)
+        }.count > CandidateCountPolicy.runtimeRange.upperBound
     }
 
     static func selectedIndex(
@@ -145,6 +165,7 @@ public final class WeTypeCandidateReader {
     private let accessLimits: AXAccessLimits
     private let maximumWindowCount: Int
     private let maximumNodeCount: Int
+    private(set) var missReason: AXCandidateReadMissReason = .unavailable
 
     public convenience init(
         bundleIdentifier: String = InputMethodIdentifier.weTypeBundle,
@@ -184,6 +205,7 @@ public final class WeTypeCandidateReader {
         includeVisibleCandidates: Bool = false,
         includeVisibleTexts: Bool = true
     ) -> AXCandidateSnapshot? {
+        missReason = .unavailable
         guard
             let application =
                 NSRunningApplication
@@ -192,6 +214,7 @@ public final class WeTypeCandidateReader {
                 )
                 .first(where: { !$0.isTerminated })
         else {
+            missReason = .candidateEnded
             return nil
         }
         let appElement = AXUIElementCreateApplication(
@@ -202,17 +225,28 @@ public final class WeTypeCandidateReader {
             appElement,
             kAXWindowsAttribute
         )
+        guard !windows.isEmpty else {
+            missReason = .candidateEnded
+            return nil
+        }
+        var sawObservations = false
         let candidates = windows.prefix(maximumWindowCount)
             .compactMap { window -> AXCandidateWindowSnapshot? in
+                var failureReason: AXCandidateReadMissReason = .unavailable
                 guard
                     let candidate = snapshot(
                         from: window,
                         includeVisibleCandidates:
                             includeVisibleCandidates,
                         includeVisibleTexts: includeVisibleTexts,
-                        session: session
+                        session: session,
+                        failureReason: &failureReason,
+                        sawObservations: &sawObservations
                     )
                 else {
+                    if failureReason == .temporaryLayout {
+                        missReason = failureReason
+                    }
                     return nil
                 }
                 return AXCandidateWindowSnapshot(
@@ -225,14 +259,27 @@ public final class WeTypeCandidateReader {
                         ) ?? false)
                 )
             }
-        return AXCandidateWindowSelector.preferred(from: candidates)
+        if missReason == .temporaryLayout {
+            return nil
+        }
+        if let candidate =
+            AXCandidateWindowSelector.preferred(from: candidates)
+        {
+            return candidate
+        }
+        if !sawObservations {
+            missReason = .candidateEnded
+        }
+        return nil
     }
 
     private func snapshot(
         from window: AXUIElement,
         includeVisibleCandidates: Bool,
         includeVisibleTexts: Bool,
-        session: AXReadSession
+        session: AXReadSession,
+        failureReason: inout AXCandidateReadMissReason,
+        sawObservations: inout Bool
     ) -> (candidateCount: Int, snapshot: AXCandidateSnapshot)? {
         let observations = session.elementsAttribute(
             window,
@@ -242,11 +289,17 @@ public final class WeTypeCandidateReader {
         .compactMap {
             Self.observation($0, session: session)
         }
-        guard observations.count >= 2,
+        sawObservations = !observations.isEmpty
+        guard
             let groups = WeTypeCandidateParser.groups(
                 from: observations
             )
         else {
+            if WeTypeCandidateParser.hasUnsupportedLayout(
+                observations
+            ) {
+                failureReason = .temporaryLayout
+            }
             return nil
         }
         let selection = WeTypeCandidateParser.selection(

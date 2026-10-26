@@ -87,4 +87,28 @@ Tools/GlintEval/.build/debug/WeTypeAXProbe --pid <WeType PID>
 重点查看 `selectedSemanticsAvailable` 和
 `styleSelectedCandidateIndex`。当前微信输入法没有原生选中节点，但候选数字和
 文字的 `AXForegroundColor` 会随高亮切换；探针根据唯一更亮的数字组推导索引。
-完整实验记录见 `docs/WETYPE-AX-RESEARCH.md`。
+当前兼容边界和验收记录见 `docs/AX-CANDIDATE-VALIDATION.md`。
+
+## 通用 Profile 与分组缓存探针
+
+`CandidateProfileProbe` 绕过显式 reader，直接验证指定输入法是否匹配通用结构。
+先保持候选栏显示，再运行：
+
+```bash
+swift run --package-path Tools/GlintEval CandidateProfileProbe \
+  --bundle <输入法 Bundle ID> \
+  --source <输入源 ID> \
+  --seconds 30
+```
+
+`SelectedTextItemCacheProbe` 测量分组文本项 reader 的冷读取、热读取和缓存命中：
+
+```bash
+swift run --package-path Tools/GlintEval SelectedTextItemCacheProbe \
+  --bundle <输入法 Bundle ID> \
+  --seconds 2 \
+  --visible-texts false
+```
+
+`--visible-texts true` 会读取整行候选文字。以上探针只输出结构、数量、耗时和缓存
+统计，不输出候选原文。
