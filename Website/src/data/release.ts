@@ -1,21 +1,21 @@
 export const fallbackRelease = {
   version: "0.4.1",
-  publishedAt: "2026-10-27T12:42:42Z",
+  publishedAt: "2026-10-27T13:19:41Z",
   source: "https://github.com/jsogn/Glint/releases/tag/v0.4.1",
   pkg: {
     stableURL: "/latest/Glint-Installer-macOS26-arm64.pkg",
     versionedURL:
       "/releases/v0.4.1/Glint-0.4.1-Installer-macOS26-arm64.pkg",
-    size: 117608130,
+    size: 117603560,
     sha256:
-      "2f53fb8bbd0f4d5c87bd6aef56bdbd00a5da19347f1026296deece6aebc04e67"
+      "7cd0413b890ef05e517c8282c6ce79e20a671d235827e3d30c832608f45f9b17"
   },
   dmg: {
     stableURL: "/latest/Glint-macOS26-arm64.dmg",
     versionedURL: "/releases/v0.4.1/Glint-0.4.1-macOS26-arm64.dmg",
-    size: 124445102,
+    size: 124449249,
     sha256:
-      "c2d5516f6169972f91644598d7ec62b6025c457345ffc69bf6db60e557d3432d"
+      "9542376aa3f8ce5508f8d29a2511d2973e0299b726d1d798a98b42d69e77718b"
   }
 } as const;
 
