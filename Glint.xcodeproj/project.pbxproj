@@ -26,6 +26,7 @@
 		B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */; };
 		B63A5AEECF778A78BD185434 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */; };
 		B70CAFEBB2416E25B0FFED97 /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2E26ACCA8E4915ED8C4AAE15 /* GlintCore */; };
+		C64B566FF643DC7F6F1257C8 /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B25DB3A29CF7D59E6192BE4D /* LaunchAtLoginController.swift */; };
 		C848E897C79EDE1BC7204972 /* BundledPluginResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */; };
 		D418B3179EEE536BCCF50C9D /* GlintUI in Frameworks */ = {isa = PBXBuildFile; productRef = FBD93326229A8A62F071CD36 /* GlintUI */; };
 		D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */; };
@@ -50,6 +51,7 @@
 		7B3EDCB227F6EBFF409729DC /* mt-opus-zh-en */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "mt-opus-zh-en"; path = "Resources/Plugins/mt-opus-zh-en"; sourceTree = SOURCE_ROOT; };
 		88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A6CE2C298747A802E1589A8C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		B25DB3A29CF7D59E6192BE4D /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
 		B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-wiktionary-zh-en"; path = "Resources/Plugins/dict-wiktionary-zh-en"; sourceTree = SOURCE_ROOT; };
 		D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryPluginLoader.swift; sourceTree = "<group>"; };
 		D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledPluginResources.swift; sourceTree = "<group>"; };
@@ -128,6 +130,7 @@
 				32E9F8EB23E80E0A931F444E /* Diagnostics.swift */,
 				D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */,
 				26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */,
+				B25DB3A29CF7D59E6192BE4D /* LaunchAtLoginController.swift */,
 				A6CE2C298747A802E1589A8C /* main.swift */,
 				58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */,
 			);
@@ -302,6 +305,7 @@
 				7BF97DC43287CFA143A70ED2 /* Diagnostics.swift in Sources */,
 				D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */,
 				509EF10E6771101ED85B0DAC /* HUDEventCoordinator.swift in Sources */,
+				C64B566FF643DC7F6F1257C8 /* LaunchAtLoginController.swift in Sources */,
 				B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */,
 				30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */,
 			);
@@ -333,14 +337,14 @@
 				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Glint/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.glint;
 				PRODUCT_NAME = Glint;
 				SDKROOT = macosx;
@@ -435,14 +439,14 @@
 				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 12;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Glint/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.glint;
 				PRODUCT_NAME = Glint;
 				SDKROOT = macosx;

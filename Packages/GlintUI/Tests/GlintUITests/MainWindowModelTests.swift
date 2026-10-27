@@ -246,6 +246,55 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
+    func testLaunchAtLoginUsesSystemStatusAndForwardsActions() throws {
+        let suiteName = "GlintLaunchAtLoginTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let model = MainWindowModel(
+            catalogURL: nil,
+            defaults: defaults
+        )
+        var requestedValues: [Bool] = []
+        var refreshCount = 0
+        var openSettingsCount = 0
+        model.setLaunchAtLoginAction = {
+            requestedValues.append($0)
+        }
+        model.refreshLaunchAtLoginAction = {
+            refreshCount += 1
+        }
+        model.openLoginItemsSettingsAction = {
+            openSettingsCount += 1
+        }
+
+        model.updateLaunchAtLogin(status: .enabled)
+        XCTAssertTrue(model.isLaunchAtLoginEnabled)
+
+        model.setLaunchAtLoginEnabled(false)
+        model.refreshLaunchAtLogin()
+        model.openLoginItemsSettings()
+        XCTAssertEqual(requestedValues, [false])
+        XCTAssertEqual(refreshCount, 1)
+        XCTAssertEqual(openSettingsCount, 1)
+
+        model.updateLaunchAtLogin(
+            status: .requiresApproval,
+            error: "需要允许登录项"
+        )
+        XCTAssertFalse(model.isLaunchAtLoginEnabled)
+        XCTAssertTrue(model.launchAtLoginRequiresApproval)
+        XCTAssertEqual(model.launchAtLoginError, "需要允许登录项")
+
+        model.updateLaunchAtLogin(
+            status: .unavailable,
+            error: "不可用"
+        )
+        model.setLaunchAtLoginEnabled(true)
+        XCTAssertEqual(requestedValues, [false, true])
+    }
+
+    @MainActor
     func testActiveInputMethodUsesSystemDisplayName() throws {
         let suiteName =
             "GlintInputMethodDisplayTests.\(UUID().uuidString)"

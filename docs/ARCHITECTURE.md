@@ -135,6 +135,9 @@ GlintCore
 
 - `LSUIElement = true`，App 仅驻留菜单栏。
 - 首次启动显示主窗口；关闭窗口只隐藏，不停止监控。
+- 登录时启动由 `SMAppService.mainApp` 管理，默认关闭；登录启动只进入菜单栏，
+  不主动显示主窗口。
+- 不使用 AppKit 的自动登录恢复，避免与登录项重复启动。
 - 翻译运行时准备完成后才启动 `MonitoringSession`。
 - HUD 使用 borderless、non-activating `NSPanel`，加入所有 Space 与全屏空间。
 - HUD 不抢焦点、不改变候选选择，也不创建新的内容根视图。

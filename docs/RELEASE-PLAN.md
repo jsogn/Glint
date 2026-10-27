@@ -79,8 +79,8 @@ xcrun stapler staple Glint.app
 - `.github/workflows/release.yml`：推送 `v*` 标签后重复质量门禁，生成 ad-hoc
   PKG、DMG 和校验文件，并创建 GitHub Latest 发布。
 
-标签版本必须与 `project.yml` 的 `MARKETING_VERSION` 一致。例如 `0.4.0` 对应
-`v0.4.0`；每个发布递增 `CFBundleVersion`。CI 当前使用 `macos-26`。
+标签版本必须与 `project.yml` 的 `MARKETING_VERSION` 一致。例如 `0.4.1` 对应
+`v0.4.1`；每个发布递增 `CFBundleVersion`。CI 当前使用 `macos-26`。
 
 ## TCC 与本地测试
 
@@ -112,5 +112,6 @@ TCC 流程稳定后再接入 Sparkle 2：
 - 密码框、Secure Input、睡眠唤醒、多显示器、全屏和不同缩放完成验证。
 - AX fixture 回归不保存候选截图或原文。
 - 干净用户环境的首次授权、安装、更新和卸载通过。
+- 登录项的启用、系统审批撤销、禁用和实际重新登录启动通过。
 - Gatekeeper、公证、staple 和离线启动全部通过。
 - 下载、更新或卸载不会破坏用户词典与模型配置。

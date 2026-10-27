@@ -6,6 +6,7 @@ func runApplication() {
     let delegate = AppDelegate()
     app.delegate = delegate
     app.setActivationPolicy(.accessory)
+    app.disableRelaunchOnLogin()
     app.run()
 }
 

@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainWindowController: MainWindowController!
     private let hudEventCoordinator: HUDEventCoordinator
     private let environment: AppEnvironment
+    private let launchAtLoginController: LaunchAtLoginController
     private let windowModel: MainWindowModel
     private var eventPumpTask: Task<Void, Never>?
     private var sessionState: MonitoringSessionState = .idle
@@ -29,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var startupPreparationTask: Task<Void, Never>?
     private var shouldStartMonitoringAfterPreparation = false
     private var shouldRequestPermissionAfterPreparation = false
+    private var wasLaunchedAtLogin = false
 
     override init() {
         let environment = AppEnvironment()
@@ -37,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             builtInPlugins: BundledPluginResources.manifests
         )
         self.environment = environment
+        self.launchAtLoginController = LaunchAtLoginController()
         self.windowModel = windowModel
         self.hudEventCoordinator = HUDEventCoordinator(
             hud: HUDController(),
@@ -49,12 +52,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        wasLaunchedAtLogin = LoginLaunchDetector.wasLaunchedAtLogin()
         configureWindowModel()
         observeInputSourceChanges()
         refreshActiveInputMethodName()
+        setupMainMenu()
         setupStatusItem()
         mainWindowController = MainWindowController(model: windowModel)
-        mainWindowController.show()
+        if !wasLaunchedAtLogin {
+            mainWindowController.show()
+        }
         windowModel.isPreparingMonitoring = true
         updateMonitoringMenuItem()
         updateStatusItem(isMonitoring: false)
@@ -101,6 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         refreshActiveInputMethodName()
+        refreshLaunchAtLoginState()
         let wasGranted = windowModel.accessibilityGranted
         refreshPermissionState()
         if !wasGranted, windowModel.accessibilityGranted {
@@ -145,6 +153,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         menu.addItem(item("退出", action: #selector(quit)))
         statusItem.menu = menu
+    }
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+
+        let appMenu = NSMenu(title: "Glint")
+        let hideItem = NSMenuItem(
+            title: "隐藏 Glint",
+            action: #selector(NSApplication.hide(_:)),
+            keyEquivalent: "h"
+        )
+        hideItem.target = NSApp
+        appMenu.addItem(hideItem)
+        appMenu.addItem(NSMenuItem.separator())
+        let quitItem = NSMenuItem(
+            title: "退出 Glint",
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        quitItem.target = NSApp
+        appMenu.addItem(quitItem)
+
+        let appMenuItem = NSMenuItem(
+            title: "Glint",
+            action: nil,
+            keyEquivalent: ""
+        )
+        appMenuItem.submenu = appMenu
+        mainMenu.addItem(appMenuItem)
+
+        let windowMenu = NSMenu(title: "窗口")
+        let closeItem = NSMenuItem(
+            title: "关闭窗口",
+            action: #selector(NSWindow.performClose(_:)),
+            keyEquivalent: "w"
+        )
+        windowMenu.addItem(closeItem)
+
+        let windowMenuItem = NSMenuItem(
+            title: "窗口",
+            action: nil,
+            keyEquivalent: ""
+        )
+        windowMenuItem.submenu = windowMenu
+        mainMenu.addItem(windowMenuItem)
+
+        NSApp.mainMenu = mainMenu
+        NSApp.windowsMenu = windowMenu
     }
 
     private func updateStatusItem(isMonitoring: Bool) {
@@ -221,6 +277,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowModel.requestPermissionsAction = { [weak self] in
             self?.beginPermissionRequest()
         }
+        windowModel.refreshLaunchAtLoginAction = { [weak self] in
+            self?.refreshLaunchAtLoginState()
+        }
+        windowModel.setLaunchAtLoginAction = { [weak self] enabled in
+            self?.setLaunchAtLoginEnabled(enabled)
+        }
+        windowModel.openLoginItemsSettingsAction = { [weak self] in
+            self?.launchAtLoginController.openSystemSettings()
+        }
         windowModel.openAccessibilitySettingsAction = { [weak self] in
             self?.openAccessibilitySettings()
         }
@@ -264,6 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowModel.dictionaryConfigurationChangedAction = { [weak self] in
             await self?.environment.refreshDictionaryRoutes()
         }
+        refreshLaunchAtLoginState()
     }
 
     private func item(_ title: String, action: Selector) -> NSMenuItem {
@@ -442,6 +508,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshPermissionState() {
         windowModel.accessibilityGranted = FocusMonitor.isAccessibilityTrusted()
+    }
+
+    private func refreshLaunchAtLoginState(error: String? = nil) {
+        windowModel.updateLaunchAtLogin(
+            status: launchAtLoginController.status,
+            error: error
+        )
+    }
+
+    private func setLaunchAtLoginEnabled(_ enabled: Bool) {
+        if enabled, launchAtLoginController.status == .requiresApproval {
+            launchAtLoginController.openSystemSettings()
+            return
+        }
+        do {
+            try launchAtLoginController.setEnabled(enabled)
+            refreshLaunchAtLoginState()
+        } catch {
+            appLogger.error(
+                "failed to update login item: \(String(describing: error), privacy: .public)"
+            )
+            refreshLaunchAtLoginState(
+                error: "无法更改登录时启动设置，请稍后重试。"
+            )
+        }
     }
 
     private func observeInputSourceChanges() {

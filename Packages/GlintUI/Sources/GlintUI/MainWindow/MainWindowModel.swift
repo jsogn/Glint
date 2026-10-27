@@ -29,6 +29,13 @@ struct CatalogUpdatePolicy {
     }
 }
 
+public enum LaunchAtLoginStatus: Equatable, Sendable {
+    case disabled
+    case enabled
+    case requiresApproval
+    case unavailable
+}
+
 @MainActor
 @Observable
 public final class MainWindowModel {
@@ -36,6 +43,8 @@ public final class MainWindowModel {
     public var isPreparingMonitoring = false
     public var accessibilityGranted = false
     public var hasRequestedAccessibilityPermission = false
+    public private(set) var launchAtLoginStatus: LaunchAtLoginStatus = .disabled
+    public private(set) var launchAtLoginError: String?
     public var statusText = ""
     public private(set) var activeInputMethodName = "检测中"
     public private(set) var installedPlugins: [PluginManifest] = []
@@ -87,6 +96,12 @@ public final class MainWindowModel {
     public var requestPermissionsAction: @MainActor () -> Void = {}
     @ObservationIgnored
     public var openAccessibilitySettingsAction: @MainActor () -> Void = {}
+    @ObservationIgnored
+    public var refreshLaunchAtLoginAction: @MainActor () -> Void = {}
+    @ObservationIgnored
+    public var setLaunchAtLoginAction: @MainActor (Bool) -> Void = { _ in }
+    @ObservationIgnored
+    public var openLoginItemsSettingsAction: @MainActor () -> Void = {}
     @ObservationIgnored
     public var activateTranslationModelAction: @MainActor (String) async -> String? = { _ in nil }
     @ObservationIgnored
@@ -164,6 +179,14 @@ public final class MainWindowModel {
         "系统候选词"
     }
 
+    public var isLaunchAtLoginEnabled: Bool {
+        launchAtLoginStatus == .enabled
+    }
+
+    public var launchAtLoginRequiresApproval: Bool {
+        launchAtLoginStatus == .requiresApproval
+    }
+
     public func updateActiveInputMethod(
         _ identity: InputMethodIdentity?
     ) {
@@ -190,6 +213,27 @@ public final class MainWindowModel {
 
     public func openAccessibilitySettings() {
         openAccessibilitySettingsAction()
+    }
+
+    public func refreshLaunchAtLogin() {
+        refreshLaunchAtLoginAction()
+    }
+
+    public func setLaunchAtLoginEnabled(_ enabled: Bool) {
+        launchAtLoginError = nil
+        setLaunchAtLoginAction(enabled)
+    }
+
+    public func openLoginItemsSettings() {
+        openLoginItemsSettingsAction()
+    }
+
+    public func updateLaunchAtLogin(
+        status: LaunchAtLoginStatus,
+        error: String? = nil
+    ) {
+        launchAtLoginStatus = status
+        launchAtLoginError = error
     }
 
     public func refreshInstalledPlugins() async {

@@ -10,7 +10,7 @@ struct OverviewPage: View {
     var body: some View {
         PageContainer {
             OverviewStatusCard(model: model) {
-                selection = .translation
+                selection = .general
             }
 
             LazyVGrid(
@@ -89,7 +89,7 @@ struct OverviewPage: View {
 
 private struct OverviewStatusCard: View {
     let model: MainWindowModel
-    let openTranslationSettings: () -> Void
+    let openGeneralSettings: () -> Void
 
     private var state: OverviewRuntimeState {
         let missingPermissions = missingPermissionText
@@ -170,7 +170,7 @@ private struct OverviewStatusCard: View {
             Divider()
 
             OverviewPipeline(model: model) {
-                openTranslationSettings()
+                openGeneralSettings()
             }
 
             Text(model.translationMode.explanation)
@@ -223,14 +223,15 @@ private struct OverviewStatusCard: View {
 
     private var actionTint: Color {
         model.isMonitoring && missingPermissionText == nil
-            ? .orange
+            ? Color(nsColor: .systemGray)
             : .accentColor
     }
+
 }
 
 private struct OverviewPipeline: View {
     let model: MainWindowModel
-    let openTranslationSettings: () -> Void
+    let openGeneralSettings: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
@@ -250,7 +251,7 @@ private struct OverviewPipeline: View {
                 symbol: "arrow.triangle.branch",
                 label: "策略",
                 value: model.translationMode.title,
-                action: openTranslationSettings
+                action: openGeneralSettings
             )
             arrow
             stage(
@@ -279,8 +280,8 @@ private struct OverviewPipeline: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(label)，\(value)")
-                .accessibilityHint("打开翻译设置")
-                .help("\(label)：\(value)。打开翻译设置")
+                .accessibilityHint("打开通用配置")
+                .help("\(label)：\(value)。打开通用配置")
             } else {
                 stageContent(symbol: symbol, label: label, value: value)
                     .accessibilityElement(children: .combine)

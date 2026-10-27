@@ -41,8 +41,8 @@ public struct MainWindowView: View {
         switch selection ?? .overview {
         case .overview:
             OverviewPage(model: model, selection: $selection)
-        case .translation:
-            TranslationSettingsPage(model: model)
+        case .general:
+            GeneralPage(model: model)
         case .display:
             DisplayPage(model: model)
         case .plugins:
@@ -69,7 +69,7 @@ private struct PageTitle: View {
 
 enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     case overview
-    case translation
+    case general
     case display
     case plugins
     case permissions
@@ -80,7 +80,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     var title: String {
         switch self {
         case .overview: return "概览"
-        case .translation: return "翻译设置"
+        case .general: return "通用配置"
         case .display: return "显示与触发"
         case .plugins: return "插件与模型"
         case .permissions: return "权限与隐私"
@@ -91,7 +91,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     var symbol: String {
         switch self {
         case .overview: return "sparkles"
-        case .translation: return "text.bubble"
+        case .general: return "gearshape"
         case .display: return "rectangle.on.rectangle"
         case .plugins: return "shippingbox"
         case .permissions: return "lock.shield"
