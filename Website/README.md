@@ -25,7 +25,7 @@ The static output is written to `dist/`.
 ## Environment
 
 ```text
-PUBLIC_SITE_ORIGIN=https://www.example.com
+PUBLIC_SITE_ORIGIN=https://glint.jiangwang.space
 PUBLIC_DOWNLOAD_ORIGIN=https://glint-release.tos-cn-beijing.volces.com
 PUBLIC_NOINDEX=true
 ```
@@ -33,6 +33,9 @@ PUBLIC_NOINDEX=true
 - `PUBLIC_SITE_ORIGIN` controls canonical metadata.
 - `PUBLIC_DOWNLOAD_ORIGIN` controls release links and `latest.json`.
 - `PUBLIC_NOINDEX` keeps temporary preview deployments out of search engines.
+
+Vercel deploys the site from the repository's `Website/` root. Installer and
+disk-image downloads remain on Tencent Cloud object storage.
 
 The homepage links directly to the stable `/latest/` objects in the release
 bucket, so normal downloads do not depend on runtime release metadata.

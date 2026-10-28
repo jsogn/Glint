@@ -2,8 +2,6 @@
 dist/
 node_modules/
 
-
-# Tencent Cloud EdgeOne
 .env
-.edgeone/*
-.tef_dist/*
+.vercel/
+.env.local
