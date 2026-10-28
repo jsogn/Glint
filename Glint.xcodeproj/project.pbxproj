@@ -337,14 +337,14 @@
 				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Glint/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.1;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.glint;
 				PRODUCT_NAME = Glint;
 				SDKROOT = macosx;
@@ -439,14 +439,14 @@
 				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Glint/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.1;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.glint;
 				PRODUCT_NAME = Glint;
 				SDKROOT = macosx;
