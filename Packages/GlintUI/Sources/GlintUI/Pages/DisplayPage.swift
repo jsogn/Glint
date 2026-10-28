@@ -53,7 +53,7 @@ struct DisplayPage: View {
                             }
                             .fixedSize()
                         }
-                        Text("同时限制显示和快捷键。")
+                        Text("控制最多显示几项释义。")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
