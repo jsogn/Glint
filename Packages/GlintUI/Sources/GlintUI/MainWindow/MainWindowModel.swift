@@ -69,8 +69,7 @@ public final class MainWindowModel {
     public private(set) var translationModelStatusText: String?
     public private(set) var translationModelStatusIsError = false
     public private(set) var translationModelStatusModelID: String?
-    public private(set) var coreDictionaryUpdateStates:
-        [String: CoreDictionaryUpdateState] = [:]
+    public private(set) var coreDictionaryUpdateStates: [String: CoreDictionaryUpdateState] = [:]
     public let generalPreferences: GeneralPreferences
     public let displayPreferences: DisplayPreferences
     private let catalogURL: URL?
@@ -124,10 +123,9 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var dictionaryConfigurationChangedAction: @MainActor () async -> Void = {}
     @ObservationIgnored
-    public var checkCoreDictionaryUpdateAction:
-        @MainActor (CoreDictionaryUpdateKind) async throws -> String = {
-            _ in "词典更新服务不可用"
-        }
+    public var checkCoreDictionaryUpdateAction: @MainActor (CoreDictionaryUpdateKind) async throws -> String = {
+        _ in "词典更新服务不可用"
+    }
 
     public init(
         generalPreferences: GeneralPreferences? = nil,

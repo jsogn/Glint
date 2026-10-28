@@ -19,8 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var monitoringMenuItem: NSMenuItem!
     private var mainWindowController: MainWindowController!
     private let hudEventCoordinator: HUDEventCoordinator
-    private let translationChoiceShortcutCoordinator:
-        TranslationChoiceShortcutCoordinator
+    private let translationChoiceShortcutCoordinator: TranslationChoiceShortcutCoordinator
     private let environment: AppEnvironment
     private let launchAtLoginController: LaunchAtLoginController
     private let windowModel: MainWindowModel

@@ -103,8 +103,7 @@ struct SystemTranslationKeyboardEventPoster:
 struct SystemTranslationTextInserter: TranslationTextInserting {
     private let focusSnapshot: @Sendable () -> FocusSnapshot?
     private let frontmostProcessIdentifier: @Sendable () -> pid_t?
-    private let keyboardEventPoster:
-        any TranslationKeyboardEventPosting
+    private let keyboardEventPoster: any TranslationKeyboardEventPosting
 
     init(
         focusSnapshot: @escaping @Sendable () -> FocusSnapshot? = {
@@ -286,8 +285,7 @@ protocol TranslationChoiceHotKeyRegistering: AnyObject {
 
 @MainActor
 public final class TranslationChoiceShortcutCoordinator {
-    public var onChoice:
-        (@MainActor (TranslationChoiceOffer, Int) -> Void)?
+    public var onChoice: (@MainActor (TranslationChoiceOffer, Int) -> Void)?
 
     private let hotKeys: any TranslationChoiceHotKeyRegistering
     private var shortcut: TranslationInsertionShortcut
@@ -412,7 +410,7 @@ public final class TranslationChoiceShortcutCoordinator {
     }
 }
 
-private let translationChoiceHotKeySignature: OSType = 0x474C_4E54 // GLNT
+private let translationChoiceHotKeySignature: OSType = 0x474C_4E54  // GLNT
 
 @MainActor
 private final class CarbonTranslationChoiceHotKeys:

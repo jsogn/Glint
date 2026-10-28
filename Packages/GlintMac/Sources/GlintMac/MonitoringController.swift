@@ -1184,7 +1184,8 @@ public actor MonitoringController {
                 : selected.insertionOptions
             choices = Array(options.prefix(maximumTranslationCount))
         case .row:
-            let ordered = presentations
+            let ordered =
+                presentations
                 .sorted { $0.index < $1.index }
                 .prefix(maximumTranslationCount)
             guard

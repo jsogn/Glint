@@ -79,8 +79,7 @@ private struct TranslationShortcutRecorderButton: NSViewRepresentable {
 @MainActor
 private final class ShortcutRecorderNSButton: NSButton {
     private(set) var isRecordingShortcut = false
-    var onShortcutRecorded:
-        ((TranslationInsertionShortcut) -> Void)?
+    var onShortcutRecorded: ((TranslationInsertionShortcut) -> Void)?
     private var showsInputError = false
     private var errorTask: Task<Void, Never>?
     private var pendingModifiers: TranslationInsertionModifiers = []

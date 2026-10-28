@@ -50,7 +50,8 @@ private final class ECDICTStubURLProtocol: URLProtocol {
             $0.append(path)
         }
         let isAtom = path == "/commits.atom"
-        let body = isAtom
+        let body =
+            isAtom
             ? ECDICTStubURLProtocol.atomData.withLock { $0 }
             : ECDICTStubURLProtocol.archiveData.withLock { $0 }
         let response = HTTPURLResponse(

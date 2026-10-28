@@ -71,10 +71,12 @@ public actor ECDICTUpdateService {
             self.destination = destination
             self.fileManager = fileManager
             try? fileManager.removeItem(at: destination)
-            guard fileManager.createFile(
-                atPath: destination.path,
-                contents: nil
-            ) else {
+            guard
+                fileManager.createFile(
+                    atPath: destination.path,
+                    contents: nil
+                )
+            else {
                 throw ECDICTUpdateError.invalidArchive
             }
         }
@@ -482,7 +484,8 @@ public actor ECDICTUpdateService {
             stream.next_in = UnsafeMutablePointer<
                 Bytef
             >(
-                mutating: rawBuffer
+                mutating:
+                    rawBuffer
                     .bindMemory(to: Bytef.self)
                     .baseAddress
             )
@@ -494,7 +497,8 @@ public actor ECDICTUpdateService {
                 )
                 let produced = try output.withUnsafeMutableBytes {
                     outputBuffer -> Int in
-                    stream.next_out = outputBuffer
+                    stream.next_out =
+                        outputBuffer
                         .bindMemory(to: Bytef.self)
                         .baseAddress
                     stream.avail_out = uInt(outputBuffer.count)

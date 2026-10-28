@@ -95,15 +95,14 @@ enum DictionaryPluginLoader {
                 isDirectory: true
             )
         }
-        return (
-            try? fileManager.contentsOfDirectory(
+        return
+            (try? fileManager.contentsOfDirectory(
                 at: pluginsDirectory,
                 includingPropertiesForKeys: [.isDirectoryKey],
                 options: [.skipsHiddenFiles]
-            )
-        )?.sorted {
-            $0.lastPathComponent < $1.lastPathComponent
-        } ?? []
+            ))?.sorted {
+                $0.lastPathComponent < $1.lastPathComponent
+            } ?? []
     }
 
     private static func ecdictRanker(

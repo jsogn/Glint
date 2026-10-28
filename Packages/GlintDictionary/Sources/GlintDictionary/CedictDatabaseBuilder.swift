@@ -92,9 +92,10 @@ public enum CedictDatabaseBuilder {
             ) == SQLITE_OK,
             let database
         else {
-            let message = database.map {
-                String(cString: sqlite3_errmsg($0))
-            } ?? "unknown"
+            let message =
+                database.map {
+                    String(cString: sqlite3_errmsg($0))
+                } ?? "unknown"
             sqlite3_close(database)
             throw CedictDatabaseBuilderError.sqlite(message)
         }
@@ -259,18 +260,21 @@ public enum CedictDatabaseBuilder {
             ) == SQLITE_OK,
             let database
         else {
-            let message = database.map {
-                String(cString: sqlite3_errmsg($0))
-            } ?? "unknown"
+            let message =
+                database.map {
+                    String(cString: sqlite3_errmsg($0))
+                } ?? "unknown"
             sqlite3_close(database)
             throw CedictDatabaseBuilderError.sqlite(message)
         }
         defer { sqlite3_close(database) }
 
-        guard stringValue(
-            database,
-            sql: "SELECT value FROM metadata WHERE key = 'schema'"
-        ) == schema else {
+        guard
+            stringValue(
+                database,
+                sql: "SELECT value FROM metadata WHERE key = 'schema'"
+            ) == schema
+        else {
             throw CedictDatabaseBuilderError.invalidSchema
         }
         let integritySQL =
@@ -292,10 +296,10 @@ public enum CedictDatabaseBuilder {
             ?? intValue(
                 database,
                 sql: """
-                SELECT COUNT(DISTINCT
-                    simplified || char(0) || traditional || char(0) || pinyin
-                ) FROM entries
-                """
+                    SELECT COUNT(DISTINCT
+                        simplified || char(0) || traditional || char(0) || pinyin
+                    ) FROM entries
+                    """
             )
             ?? 0
         let senseCount =

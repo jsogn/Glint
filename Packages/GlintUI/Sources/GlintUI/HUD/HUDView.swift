@@ -353,14 +353,16 @@ struct HUDNativeMaterialBackground: NSViewRepresentable {
 }
 
 #Preview("HUD · 选中") {
-    HUDView(items: [
-        HUDItem(id: 0, number: 1, text: "Hello"),
-        HUDItem(id: 1, number: 2, text: "hi"),
-        HUDItem(id: 2, number: 3, text: "ciao"),
-    ], layoutStyle: .selectedTranslations)
-        .padding(32)
-        .background(Color.black.opacity(0.85))
-        .preferredColorScheme(.dark)
+    HUDView(
+        items: [
+            HUDItem(id: 0, number: 1, text: "Hello"),
+            HUDItem(id: 1, number: 2, text: "hi"),
+            HUDItem(id: 2, number: 3, text: "ciao"),
+        ], layoutStyle: .selectedTranslations
+    )
+    .padding(32)
+    .background(Color.black.opacity(0.85))
+    .preferredColorScheme(.dark)
 }
 
 #Preview("HUD · 一栏") {

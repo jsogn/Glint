@@ -12,19 +12,16 @@ public final class GeneralPreferences {
             "general.translationInsertionEnabled"
     }
 
-    public private(set) var insertionShortcut:
-        TranslationInsertionShortcut
+    public private(set) var insertionShortcut: TranslationInsertionShortcut
     public private(set) var insertionEnabled: Bool
 
     @ObservationIgnored
     private let defaults: UserDefaults
 
     @ObservationIgnored
-    public var insertionShortcutDidChange:
-        (@MainActor (TranslationInsertionShortcut) -> Void)?
+    public var insertionShortcutDidChange: (@MainActor (TranslationInsertionShortcut) -> Void)?
     @ObservationIgnored
-    public var insertionEnabledDidChange:
-        (@MainActor (Bool) -> Void)?
+    public var insertionEnabledDidChange: (@MainActor (Bool) -> Void)?
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

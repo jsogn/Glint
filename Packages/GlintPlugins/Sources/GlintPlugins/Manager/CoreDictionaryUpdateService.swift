@@ -202,9 +202,10 @@ public actor CoreDictionaryUpdateService {
         )
         let representationChanged =
             downloadedETag != nil
-            && downloadedETag != defaults.string(
-                forKey: DefaultsKey.etag
-            )
+            && downloadedETag
+                != defaults.string(
+                    forKey: DefaultsKey.etag
+                )
         guard
             Self.isNewer(
                 downloadedDate,

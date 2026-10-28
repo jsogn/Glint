@@ -5,7 +5,13 @@ cd "$(dirname "$0")/.."
 
 export PYTHONDONTWRITEBYTECODE=1
 
-python3 -m unittest discover -s Tools/CandidateLab -p 'test_*.py'
-python3 -m unittest discover -s Tools/DictionaryBuilder -p 'test_*.py'
-python3 -m unittest discover -s Tools/DictionaryLab -p 'test_*.py'
-python3 -m unittest discover -s Tools/ModelLab/eval -p 'test_*.py'
+for test_dir in \
+  Tools/CandidateLab \
+  Tools/DictionaryBuilder \
+  Tools/DictionaryLab \
+  Tools/ModelLab/eval; do
+  test_files=("$test_dir"/test_*.py(N))
+  if (( ${#test_files} > 0 )); then
+    python3 -m unittest discover -s "$test_dir" -p 'test_*.py'
+  fi
+done

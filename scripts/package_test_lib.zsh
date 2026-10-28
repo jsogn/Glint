@@ -13,6 +13,14 @@ prepare_release_app() {
   ./scripts/prepare_opus_model.sh
   xcodegen generate
 
+  local source_packages_args=()
+  if [[ -n "${GLINT_SOURCE_PACKAGES_DIR:-}" ]]; then
+    mkdir -p "$GLINT_SOURCE_PACKAGES_DIR"
+    source_packages_args=(
+      -clonedSourcePackagesDirPath "$GLINT_SOURCE_PACKAGES_DIR"
+    )
+  fi
+
   xcodebuild \
     -workspace Glint.xcworkspace \
     -scheme Glint \
@@ -22,6 +30,7 @@ prepare_release_app() {
     ARCHS=arm64 \
     ONLY_ACTIVE_ARCH=YES \
     CODE_SIGNING_ALLOWED=NO \
+    "${source_packages_args[@]}" \
     -quiet \
     build
 

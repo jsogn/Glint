@@ -197,9 +197,10 @@ public enum ECDICTRankBuilder {
             ) == SQLITE_OK,
             let database
         else {
-            let message = database.map {
-                String(cString: sqlite3_errmsg($0))
-            } ?? "unknown"
+            let message =
+                database.map {
+                    String(cString: sqlite3_errmsg($0))
+                } ?? "unknown"
             sqlite3_close(database)
             throw ECDICTRankBuilderError.sqlite(message)
         }
@@ -299,7 +300,8 @@ public enum ECDICTRankBuilder {
             try execute(database, "BEGIN IMMEDIATE;")
             do {
                 for (term, bucket) in candidates {
-                    let top = bucket
+                    let top =
+                        bucket
                         .map { RankedWord(english: $0.key, ranking: $0.value) }
                         .sorted {
                             if $0.ranking != $1.ranking {
@@ -385,9 +387,10 @@ public enum ECDICTRankBuilder {
             ) == SQLITE_OK,
             let database
         else {
-            let message = database.map {
-                String(cString: sqlite3_errmsg($0))
-            } ?? "unknown"
+            let message =
+                database.map {
+                    String(cString: sqlite3_errmsg($0))
+                } ?? "unknown"
             sqlite3_close(database)
             throw ECDICTRankBuilderError.sqlite(message)
         }
@@ -529,7 +532,8 @@ public enum ECDICTRankBuilder {
         for (index, field) in fields.enumerated() {
             indexes[field.lowercased()] = index
         }
-        indexes["word"] = indexes["word"].map { $0 }
+        indexes["word"] =
+            indexes["word"].map { $0 }
             ?? indexes["\u{FEFF}word"]
         guard indexes["word"] != nil, indexes["translation"] != nil else {
             throw ECDICTRankBuilderError.invalidHeader
