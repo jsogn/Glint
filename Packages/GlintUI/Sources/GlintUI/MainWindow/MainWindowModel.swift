@@ -36,6 +36,12 @@ public enum LaunchAtLoginStatus: Equatable, Sendable {
     case unavailable
 }
 
+public struct CoreDictionaryUpdateState: Equatable, Sendable {
+    public let isChecking: Bool
+    public let statusText: String?
+    public let isError: Bool
+}
+
 @MainActor
 @Observable
 public final class MainWindowModel {
@@ -63,9 +69,8 @@ public final class MainWindowModel {
     public private(set) var translationModelStatusText: String?
     public private(set) var translationModelStatusIsError = false
     public private(set) var translationModelStatusModelID: String?
-    public private(set) var isCheckingCoreDictionaryUpdate = false
-    public private(set) var coreDictionaryUpdateStatusText: String?
-    public private(set) var coreDictionaryUpdateStatusIsError = false
+    public private(set) var coreDictionaryUpdateStates:
+        [String: CoreDictionaryUpdateState] = [:]
     public let generalPreferences: GeneralPreferences
     public let displayPreferences: DisplayPreferences
     private let catalogURL: URL?
@@ -91,7 +96,7 @@ public final class MainWindowModel {
     @ObservationIgnored
     private var localImportTask: Task<Void, Never>?
     @ObservationIgnored
-    private var coreDictionaryUpdateTask: Task<Void, Never>?
+    private var coreDictionaryUpdateTasks: [String: Task<Void, Never>] = [:]
     @ObservationIgnored
     public var startMonitoringAction: @MainActor () -> Void = {}
     @ObservationIgnored
@@ -120,8 +125,8 @@ public final class MainWindowModel {
     public var dictionaryConfigurationChangedAction: @MainActor () async -> Void = {}
     @ObservationIgnored
     public var checkCoreDictionaryUpdateAction:
-        @MainActor () async throws -> String = {
-            "CC-CEDICT 更新服务不可用"
+        @MainActor (String) async throws -> String = { dictionaryID in
+            "\(dictionaryID) 更新服务不可用"
         }
 
     public init(
@@ -275,39 +280,62 @@ public final class MainWindowModel {
         translationConfigurationChangedAction()
     }
 
-    public func checkCoreDictionaryUpdate() {
-        guard coreDictionaryUpdateTask == nil else { return }
-        isCheckingCoreDictionaryUpdate = true
-        coreDictionaryUpdateStatusText = nil
-        coreDictionaryUpdateStatusIsError = false
-        coreDictionaryUpdateTask = Task { [weak self] in
+    public func coreDictionaryUpdateState(
+        for dictionaryID: String
+    ) -> CoreDictionaryUpdateState? {
+        coreDictionaryUpdateStates[dictionaryID]
+    }
+
+    public func checkCoreDictionaryUpdate(
+        _ dictionaryID: String
+    ) {
+        guard coreDictionaryUpdateTasks[dictionaryID] == nil else {
+            return
+        }
+        coreDictionaryUpdateStates[dictionaryID] =
+            CoreDictionaryUpdateState(
+                isChecking: true,
+                statusText: nil,
+                isError: false
+            )
+        coreDictionaryUpdateTasks[dictionaryID] = Task { [weak self] in
             guard let self else { return }
             defer {
-                isCheckingCoreDictionaryUpdate = false
-                coreDictionaryUpdateTask = nil
+                coreDictionaryUpdateTasks[dictionaryID] = nil
             }
             do {
-                let message = try await checkCoreDictionaryUpdateAction()
+                let message = try await checkCoreDictionaryUpdateAction(
+                    dictionaryID
+                )
                 try Task.checkCancellation()
                 await refreshInstalledPlugins()
                 await dictionaryConfigurationChangedAction()
-                coreDictionaryUpdateStatusText = message
-                coreDictionaryUpdateStatusIsError = false
+                coreDictionaryUpdateStates[dictionaryID] =
+                    CoreDictionaryUpdateState(
+                        isChecking: false,
+                        statusText: message,
+                        isError: false
+                    )
             } catch {
                 if Task.isCancelled {
-                    coreDictionaryUpdateStatusText = nil
-                    coreDictionaryUpdateStatusIsError = false
+                    coreDictionaryUpdateStates[dictionaryID] = nil
                     return
                 }
-                coreDictionaryUpdateStatusText =
-                    "更新失败：\(error.localizedDescription)"
-                coreDictionaryUpdateStatusIsError = true
+                coreDictionaryUpdateStates[dictionaryID] =
+                    CoreDictionaryUpdateState(
+                        isChecking: false,
+                        statusText:
+                            "更新失败：\(error.localizedDescription)",
+                        isError: true
+                    )
             }
         }
     }
 
-    public func cancelCoreDictionaryUpdate() {
-        coreDictionaryUpdateTask?.cancel()
+    public func cancelCoreDictionaryUpdate(
+        _ dictionaryID: String
+    ) {
+        coreDictionaryUpdateTasks[dictionaryID]?.cancel()
     }
 
     public func checkForCatalogUpdates(force: Bool = false) async {

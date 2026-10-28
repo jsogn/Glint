@@ -28,6 +28,21 @@ python3 Tools/DictionaryBuilder/build_sqlite.py \
 - 许可证：MIT
 - 角色：英语词频和义项排序补充
 - 状态：已内置；仅作为词频、Collins 和 Oxford 排序层，不作为完整中文义项库
+- 数据：提交 `9c46923fb81a2eb6c264a3a1689562ea7bc56b6a`，CSV SHA256
+  `d1ecbdf9ee2b920afb6f430ca6b6bb9f559588cf0dff86e04bd255f9390843cc`；
+  生成 101,755 个中文词项和 152,449 条排序记录
+- 更新：用户可在“插件与模型”中手动检查；App 通过提交 Atom 源检测 revision，
+  下载固定 revision 的官方归档，校验 CSV 后流式重建 SQLite，失败时继续使用当前
+  版本
+
+```bash
+python3 Tools/DictionaryBuilder/build_ecdict_ranker.py \
+  --csv /tmp/ecdict.csv \
+  --output /tmp/ecdict_rank.sqlite3 \
+  --source-checksum d1ecbdf9ee2b920afb6f430ca6b6bb9f559588cf0dff86e04bd255f9390843cc \
+  --source-date 2026-10-20T02:25:07Z \
+  --source-revision 9c46923fb81a2eb6c264a3a1689562ea7bc56b6a
+```
 
 ### Wiktionary / Kaikki
 
@@ -36,7 +51,7 @@ python3 Tools/DictionaryBuilder/build_sqlite.py \
 - 角色：覆盖量大的开放中文词条，补充 CC-CEDICT/ECDICT
 - 状态：已构建并随 App 提供 `dict-wiktionary-zh-en`，支持简繁查询；评估显示它能
   显著提高义项覆盖率，但原始首项排序仍需 ECDICT 和人工 override
-- 注意：目录和安装页必须保留 Wiktionary 署名与相同方式共享许可
+- 注意：插件目录中的 `NOTICE.txt` 必须保留 Wiktionary 署名与许可证链接
 
 ## 评估后暂不接入
 

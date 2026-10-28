@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """Build a compact Chinese-term → English-headword ranking index from ECDICT.
 
-Only terms present in CC-CEDICT are kept, so this is a ranking layer rather
-than a second full dictionary shown in the HUD.
+The output is a compact ranking layer rather than a second full dictionary
+shown in the HUD.
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 import re
 import sqlite3
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-ECDICT = ROOT / "Vendor" / "ECDICT" / "ecdict.csv"
-OUT = ROOT / "Resources" / "Plugins" / "dict-ecdict" / "ecdict_rank.sqlite3"
 
 CHINESE_RE = re.compile(r"[\u4e00-\u9fff]{2,6}")
 STOP_TERMS = {
@@ -37,10 +36,37 @@ def parse_frequency(row: dict[str, str]) -> int:
     return 500_000
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--csv",
+        type=Path,
+        default=ROOT / "Vendor" / "ECDICT" / "ecdict.csv",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=(
+            ROOT
+            / "Resources"
+            / "Plugins"
+            / "dict-ecdict"
+            / "ecdict_rank.sqlite3"
+        ),
+    )
+    parser.add_argument("--source-checksum", default="")
+    parser.add_argument("--source-date", default="")
+    parser.add_argument("--source-revision", default="")
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
+    ecdict_path = args.csv.resolve()
+    output = args.output.resolve()
     candidates: dict[str, dict[str, tuple[int, int, int]]] = {}
     parsed = 0
-    with ECDICT.open(encoding="utf-8", newline="") as handle:
+    with ecdict_path.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
         for row in reader:
             word = (row.get("word") or "").strip()
@@ -73,10 +99,10 @@ def main() -> None:
                 if previous is None or value > previous:
                     bucket[word] = value
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    if OUT.exists():
-        OUT.unlink()
-    db = sqlite3.connect(OUT)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if output.exists():
+        output.unlink()
+    db = sqlite3.connect(output)
     db.execute(
         """
         CREATE TABLE ranks (
@@ -86,6 +112,14 @@ def main() -> None:
             collins INTEGER NOT NULL,
             oxford INTEGER NOT NULL,
             PRIMARY KEY (term, english)
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
         )
         """
     )
@@ -108,9 +142,21 @@ def main() -> None:
         rows,
     )
     db.execute("CREATE INDEX idx_ranks_term ON ranks(term, frequency)")
+    db.executemany(
+        "INSERT INTO metadata(key, value) VALUES (?, ?)",
+        [
+            ("schema", "ecdict-rank-v1"),
+            ("source", "ECDICT"),
+            ("license", "MIT"),
+            ("source_checksum", args.source_checksum),
+            ("source_date", args.source_date),
+            ("source_revision", args.source_revision),
+        ],
+    )
+    db.execute("PRAGMA user_version = 1")
     db.commit()
     db.close()
-    size_mb = OUT.stat().st_size / (1024 * 1024)
+    size_mb = output.stat().st_size / (1024 * 1024)
     print(f"parsed_rows={parsed} terms={len(candidates)} rows={len(rows)} size={size_mb:.1f}MB")
 
 

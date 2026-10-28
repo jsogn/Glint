@@ -132,7 +132,7 @@ def main() -> None:
         "license": "CC-BY-SA-4.0 AND GFDL",
         "minRAMBytes": 0,
         "source": "bundled",
-        "summary": "Wiktionary 开放词典，覆盖大量中文词语和短语；需保留署名与相同方式共享许可。",
+        "summary": "Wiktionary 开放词典，覆盖大量中文词语和短语。",
     }
     (args.output / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",

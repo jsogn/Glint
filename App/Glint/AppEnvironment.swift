@@ -7,6 +7,7 @@ import GlintPlugins
 final class AppEnvironment {
     let pluginManager: PluginManager
     let coreDictionaryUpdateService: CoreDictionaryUpdateService
+    let ecdictUpdateService: ECDICTUpdateService
     let translationRuntime: TranslationRuntime
     let monitoring: MonitoringController
     let monitoringSession: MonitoringSession
@@ -18,6 +19,12 @@ final class AppEnvironment {
             pluginManager: pluginManager,
             bundledDirectory: BundledPluginResources.directory(
                 for: CoreDictionaryUpdateService.dictionaryID
+            )
+        )
+        let ecdictUpdateService = ECDICTUpdateService(
+            pluginManager: pluginManager,
+            bundledDirectory: BundledPluginResources.directory(
+                for: ECDICTUpdateService.dictionaryID
             )
         )
         let dictionary = PluginDictionaryRouter()
@@ -75,6 +82,7 @@ final class AppEnvironment {
         self.dictionary = dictionary
         self.pluginManager = pluginManager
         self.coreDictionaryUpdateService = coreDictionaryUpdateService
+        self.ecdictUpdateService = ecdictUpdateService
         self.translationRuntime = translationRuntime
         let router = SmartRouter(dictionary: dictionary, translation: translationRuntime)
         let monitoring = MonitoringController(router: router)
@@ -84,6 +92,23 @@ final class AppEnvironment {
 
     func refreshDictionaryRoutes() async {
         await dictionary.reload()
+    }
+
+    func checkCoreDictionaryUpdate(
+        id: String
+    ) async throws -> String {
+        switch id {
+        case CoreDictionaryUpdateService.dictionaryID:
+            try await coreDictionaryUpdateService
+                .checkForUpdate()
+                .statusText
+        case ECDICTUpdateService.dictionaryID:
+            try await ecdictUpdateService
+                .checkForUpdate()
+                .statusText
+        default:
+            throw CoreDictionaryUpdateError.unavailable
+        }
     }
 
 }

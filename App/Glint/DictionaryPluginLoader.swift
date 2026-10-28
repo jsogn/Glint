@@ -144,7 +144,7 @@ enum DictionaryPluginLoader {
             let database = directory.appendingPathComponent(
                 "ecdict_rank.sqlite3"
             )
-            guard FileManager.default.fileExists(atPath: database.path) else {
+            guard ECDICTRankBuilder.isCompatible(databaseURL: database) else {
                 return nil
             }
             return ECDICTDictionary(databaseURL: database)

@@ -48,6 +48,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
     public let modelscopeURL: URL?
     public let source: PluginSource
     public let sourceDate: String?
+    public let sourceChecksum: String?
     public let promptProfile: TranslationPromptProfile?
 
     public init(
@@ -66,6 +67,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         modelscopeURL: URL? = nil,
         source: PluginSource = .catalog,
         sourceDate: String? = nil,
+        sourceChecksum: String? = nil,
         promptProfile: TranslationPromptProfile? = nil
     ) {
         self.id = id
@@ -83,6 +85,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         self.modelscopeURL = modelscopeURL
         self.source = source
         self.sourceDate = sourceDate
+        self.sourceChecksum = sourceChecksum
         self.promptProfile = promptProfile
     }
 

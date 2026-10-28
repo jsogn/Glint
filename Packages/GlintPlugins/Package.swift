@@ -21,6 +21,9 @@ let package = Package(
                     name: "GlintDictionary",
                     package: "GlintDictionary"
                 ),
+            ],
+            linkerSettings: [
+                .linkedLibrary("z")
             ]
         ),
         .executableTarget(

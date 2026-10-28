@@ -328,14 +328,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await self.environment.monitoring.setMode(mode)
             }
         }
-        windowModel.checkCoreDictionaryUpdateAction = { [weak self] in
+        windowModel.checkCoreDictionaryUpdateAction = {
+            [weak self] dictionaryID in
             guard let self else {
                 throw CoreDictionaryUpdateError.unavailable
             }
-            let result =
-                try await self.environment.coreDictionaryUpdateService
-                .checkForUpdate()
-            return result.statusText
+            return try await self.environment.checkCoreDictionaryUpdate(
+                id: dictionaryID
+            )
         }
         windowModel.displayPreferences.candidateDwellDurationDidChange = {
             [weak self] duration in

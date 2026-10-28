@@ -4,7 +4,10 @@ import GlintPlugins
 import SwiftUI
 
 struct PluginsPage: View {
-    private static let coreDictionaryID = "dict-cedict"
+    private static let coreDictionaryIDs: Set<String> = [
+        "dict-cedict",
+        "dict-ecdict",
+    ]
 
     let model: MainWindowModel
     @Binding var selectedTab: PluginTab
@@ -222,18 +225,20 @@ struct PluginsPage: View {
                                 : Color.secondary
                         )
                 }
-                if plugin.id == Self.coreDictionaryID {
-                    if model.isCheckingCoreDictionaryUpdate {
-                        Text("正在检查 CC-CEDICT 更新…")
+                if Self.coreDictionaryIDs.contains(plugin.id),
+                    let state = model.coreDictionaryUpdateState(
+                        for: plugin.id
+                    )
+                {
+                    if state.isChecking {
+                        Text("正在检查 \(plugin.name) 更新…")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    } else if let status =
-                        model.coreDictionaryUpdateStatusText
-                    {
+                    } else if let status = state.statusText {
                         Text(status)
                             .font(.caption)
                             .foregroundStyle(
-                                model.coreDictionaryUpdateStatusIsError
+                                state.isError
                                     ? Color.red
                                     : Color.secondary
                             )
@@ -241,22 +246,24 @@ struct PluginsPage: View {
                 }
             }
             Spacer()
-            if plugin.id == Self.coreDictionaryID,
+            if Self.coreDictionaryIDs.contains(plugin.id),
                 plugin.source == .bundled
             {
-                if model.isCheckingCoreDictionaryUpdate {
+                if model.coreDictionaryUpdateState(
+                    for: plugin.id
+                )?.isChecking == true {
                     HStack(spacing: 8) {
                         ProgressView()
                             .controlSize(.small)
                         Button("取消") {
-                            model.cancelCoreDictionaryUpdate()
+                            model.cancelCoreDictionaryUpdate(plugin.id)
                         }
                         .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
                     }
                 } else {
                     Button("检查更新") {
-                        model.checkCoreDictionaryUpdate()
+                        model.checkCoreDictionaryUpdate(plugin.id)
                     }
                     .disabled(
                         model.isInstalling != nil

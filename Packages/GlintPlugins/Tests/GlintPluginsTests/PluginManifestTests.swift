@@ -16,6 +16,7 @@ final class PluginManifestTests: XCTestCase {
               "license": "CC-BY-SA-4.0",
               "minRAMBytes": 0,
               "source": "bundled",
+              "sourceChecksum": "file-blob",
               "revision": "abc123",
               "modelscopeURL": "https://modelscope.cn/models/example/dictionary"
             }
@@ -27,6 +28,7 @@ final class PluginManifestTests: XCTestCase {
         XCTAssertEqual(manifest.id, "dict-cedict")
         XCTAssertEqual(manifest.type, .dictionary)
         XCTAssertEqual(manifest.source, .bundled)
+        XCTAssertEqual(manifest.sourceChecksum, "file-blob")
         XCTAssertEqual(manifest.revision, "abc123")
         XCTAssertEqual(
             manifest.modelscopeURL,

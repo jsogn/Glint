@@ -231,11 +231,14 @@ MainWindowModel → MainWindowView
   - `ctranslate2` 仅用于内置 OPUS-MT；
   - `mlx` 用于可选翻译模型。
 - CC-CEDICT、ECDICT、Wiktionary、overrides 和 OPUS-MT 随 App 提供，不允许卸载。
-  ECDICT、Wiktionary 和 OPUS-MT 仅使用 bundled 数据；CC-CEDICT 可把经过校验的
+  Wiktionary 和 OPUS-MT 仅使用 bundled 数据；CC-CEDICT 与 ECDICT 可把经过校验的
   更新安装到 Application Support 的同 ID 数据目录，加载失败时回退 bundled 基线。
 - CC-CEDICT 仅允许用户手动从 MDBG 官方地址检查更新。更新器使用 HEAD 条件请求、
   同日 ETag 变化检测、gzip 流式解析、schema/数量/完整性校验和可回滚的原子插件
   安装；取消或失败不会替换当前可用词典。
+- ECDICT 仅允许用户手动检查更新。更新器读取 GitHub 的 `ecdict.csv` 提交 Atom
+  源检测 revision，下载固定 revision 的官方代码归档，流式解压并校验 CSV 结构，
+  随后重建排序 SQLite 并执行同样的数量、完整性和可回滚安装校验。
 - OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；
   权重不进入 Git，锁文件记录产物 SHA256。
 - 可选 MLX 模型优先国内镜像，失败后回退官方源；下载、校验和安装阶段不重叠。
