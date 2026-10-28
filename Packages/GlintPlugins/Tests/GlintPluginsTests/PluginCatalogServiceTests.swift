@@ -371,7 +371,6 @@ final class PluginCatalogServiceTests: XCTestCase {
             )!,
             license: "APACHE-2.0",
             minRAMBytes: 0,
-            revision: "huggingface-revision",
             modelscopeURL: modelscopeURL
         )
         let progressCollector = InstallProgressCollector()
@@ -391,6 +390,205 @@ final class PluginCatalogServiceTests: XCTestCase {
             progressCollector.values.first?.sourceHost,
             "modelscope.cn"
         )
+    }
+
+    func testPinnedMLXSnapshotDoesNotUseMutableModelScopeMaster()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintPinnedModelCatalog-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let payloads: [String: Data] = [
+            "config.json": Data(#"{"model_type":"qwen3"}"#.utf8),
+            "tokenizer.json": Data("{\"tokenizer\":true}".utf8),
+            "model.safetensors": Data([0x01, 0x02, 0x03, 0x04]),
+        ]
+        let snapshotFiles = payloads.map { path, data in
+            [
+                "rfilename": path,
+                "size": data.count,
+                "lfs": path == "model.safetensors"
+                    ? ["sha256": sha256(data)]
+                    : nil,
+            ].compactMapValues { $0 }
+        }
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: ["siblings": snapshotFiles]
+        )
+        let requestCollector = RequestHostCollector()
+        StubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestCollector.append(url.host)
+            guard url.host == "hf-mirror.com" else { return nil }
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            if url.path
+                == "/api/models/example/model/revision/pinned-revision"
+            {
+                return (response, snapshotData)
+            }
+            if url.path.contains(
+                "/example/model/resolve/pinned-revision/"
+            ),
+                let data = payloads[url.lastPathComponent]
+            {
+                return (response, data)
+            }
+            return nil
+        }
+        defer { StubURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let manager = PluginManager(baseDirectory: root)
+        let service = PluginCatalogService(
+            manager: manager,
+            session: URLSession(configuration: configuration)
+        )
+        let manifest = PluginManifest(
+            id: "pinned-model",
+            type: .translation,
+            name: "Pinned Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(payloads.values.map(\.count).reduce(0, +)),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "pinned-revision",
+            modelscopeURL: URL(
+                string: "https://modelscope.cn/models/example/model"
+            )!
+        )
+
+        _ = try await service.install(manifest)
+
+        XCTAssertEqual(
+            Set(requestCollector.values.compactMap { $0 }),
+            ["hf-mirror.com"]
+        )
+    }
+
+    func testMLXSnapshotUpgradeRetainsPreviousRevisionForRollback()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMLXUpgradeRollback-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let payloads: [String: Data] = [
+            "config.json": Data(#"{"model_type":"qwen3"}"#.utf8),
+            "tokenizer.json": Data("{\"tokenizer\":true}".utf8),
+            "model.safetensors": Data([0x11, 0x22, 0x33]),
+        ]
+        let snapshotFiles = payloads.map { path, data in
+            [
+                "rfilename": path,
+                "size": data.count,
+                "lfs": path == "model.safetensors"
+                    ? ["sha256": sha256(data)]
+                    : nil,
+            ].compactMapValues { $0 }
+        }
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: ["siblings": snapshotFiles]
+        )
+        StubURLProtocol.handler = { request in
+            guard let url = request.url,
+                url.host == "hf-mirror.com"
+            else {
+                return nil
+            }
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            if url.path.hasPrefix("/api/models/example/model/revision/") {
+                return (response, snapshotData)
+            }
+            if url.path.contains("/example/model/resolve/"),
+                let data = payloads[url.lastPathComponent]
+            {
+                return (response, data)
+            }
+            return nil
+        }
+        defer { StubURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let manager = PluginManager(baseDirectory: root)
+        let service = PluginCatalogService(
+            manager: manager,
+            session: URLSession(configuration: configuration)
+        )
+        let first = PluginManifest(
+            id: "rollback-model",
+            type: .translation,
+            name: "Rollback Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(payloads.values.map(\.count).reduce(0, +)),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "revision-one"
+        )
+        let second = PluginManifest(
+            id: first.id,
+            type: first.type,
+            name: first.name,
+            version: first.version,
+            runtime: first.runtime,
+            sizeBytes: first.sizeBytes,
+            sha256: first.sha256,
+            url: first.url,
+            license: first.license,
+            minRAMBytes: first.minRAMBytes,
+            revision: "revision-two"
+        )
+
+        _ = try await service.install(first)
+        _ = try await service.install(second)
+
+        let hasPendingUpgrade = await manager.hasPendingUpgrade()
+        let updatedRevision = await manager.installedPlugin(
+            id: first.id
+        )?.revision
+        XCTAssertTrue(hasPendingUpgrade)
+        XCTAssertEqual(updatedRevision, "revision-two")
+
+        try await manager.rollbackPendingUpgrade()
+
+        let restoredRevision = await manager.installedPlugin(
+            id: first.id
+        )?.revision
+        XCTAssertEqual(restoredRevision, "revision-one")
     }
 
     func testModelScopeFailureFallsBackToHuggingFaceMirror() async throws {
@@ -466,7 +664,6 @@ final class PluginCatalogServiceTests: XCTestCase {
             )!,
             license: "APACHE-2.0",
             minRAMBytes: 0,
-            revision: "huggingface-revision",
             modelscopeURL: URL(
                 string: "https://modelscope.cn/models/example/model"
             )!
@@ -559,7 +756,6 @@ final class PluginCatalogServiceTests: XCTestCase {
             )!,
             license: "APACHE-2.0",
             minRAMBytes: 0,
-            revision: "huggingface-revision",
             modelscopeURL: URL(
                 string: "https://modelscope.cn/models/example/model"
             )!

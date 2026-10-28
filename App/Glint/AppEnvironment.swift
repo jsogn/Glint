@@ -6,6 +6,7 @@ import GlintPlugins
 @MainActor
 final class AppEnvironment {
     let pluginManager: PluginManager
+    let modelHubService: ModelHubService
     let coreDictionaryUpdateService: CoreDictionaryUpdateService
     let ecdictUpdateService: ECDICTUpdateService
     let translationRuntime: TranslationRuntime
@@ -81,6 +82,7 @@ final class AppEnvironment {
         }
         self.dictionary = dictionary
         self.pluginManager = pluginManager
+        self.modelHubService = ModelHubService()
         self.coreDictionaryUpdateService = coreDictionaryUpdateService
         self.ecdictUpdateService = ecdictUpdateService
         self.translationRuntime = translationRuntime
@@ -107,6 +109,41 @@ final class AppEnvironment {
                 .checkForUpdate()
                 .statusText
         }
+    }
+
+    func checkTranslationModelUpdate(
+        _ manifest: PluginManifest
+    ) async throws -> UpstreamModelUpdate? {
+        try await modelHubService.update(for: manifest)
+    }
+
+    func searchModelMarket(
+        query: String
+    ) async throws -> [UpstreamModelSummary] {
+        try await modelHubService.search(query: query)
+    }
+
+    func prepareModelMarketInstall(
+        _ model: UpstreamModelSummary,
+        matching knownManifest: PluginManifest?
+    ) async throws -> ModelInstallPreparation {
+        let snapshot = try await modelHubService.inspect(
+            repository: model.repository
+        )
+        guard
+            await MLXModelCompatibility.supports(
+                modelType: snapshot.modelType
+            )
+        else {
+            throw ModelHubError.unsupportedModelType(snapshot.modelType)
+        }
+        return ModelInstallPreparation(
+            manifest: ModelHubService.manifest(
+                for: snapshot,
+                matching: knownManifest
+            ),
+            snapshot: snapshot
+        )
     }
 
 }

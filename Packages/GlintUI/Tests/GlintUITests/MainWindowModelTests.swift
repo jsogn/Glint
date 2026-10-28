@@ -829,6 +829,525 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
+    func testTranslationModelUpdateShowsLatestUpstreamRevision() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelUpdateState-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let manager = PluginManager(baseDirectory: root)
+        let installed = PluginManifest(
+            id: "upstream-test-model",
+            type: .translation,
+            name: "Upstream Test Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 10,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "old-revision"
+        )
+        try await install(installed, using: manager, root: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil
+        )
+        await model.refreshInstalledPlugins()
+        let updatedManifest = PluginManifest(
+            id: installed.id,
+            type: installed.type,
+            name: installed.name,
+            version: installed.version,
+            runtime: installed.runtime,
+            sizeBytes: 20,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: installed.url,
+            license: installed.license,
+            minRAMBytes: installed.minRAMBytes,
+            revision: "new-revision"
+        )
+        model.checkTranslationModelUpdateAction = { plugin in
+            XCTAssertEqual(plugin.id, installed.id)
+            return UpstreamModelUpdate(
+                currentRevision: "old-revision",
+                latestRevision: "new-revision",
+                lastModified: "2026-10-20T10:00:00Z",
+                manifest: updatedManifest
+            )
+        }
+
+        model.checkTranslationModelUpdate(installed)
+        for _ in 0..<200
+        where model.translationModelUpdateState(
+            for: installed.id
+        )?.isChecking == true {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        let state = try XCTUnwrap(
+            model.translationModelUpdateState(for: installed.id)
+        )
+        XCTAssertFalse(state.isChecking)
+        XCTAssertFalse(state.isError)
+        XCTAssertEqual(state.statusText, "上游有新版本")
+        XCTAssertEqual(state.update?.latestRevision, "new-revision")
+    }
+
+    @MainActor
+    func testTranslationModelUpdateReportsUpToDate() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelUpToDate-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let manager = PluginManager(baseDirectory: root)
+        let installed = PluginManifest(
+            id: "upstream-current-model",
+            type: .translation,
+            name: "Current Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 10,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/current"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "current-revision"
+        )
+        try await install(installed, using: manager, root: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil
+        )
+        await model.refreshInstalledPlugins()
+        model.checkTranslationModelUpdateAction = { _ in nil }
+
+        model.checkTranslationModelUpdate(installed)
+        for _ in 0..<200
+        where model.translationModelUpdateState(
+            for: installed.id
+        )?.isChecking == true {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertEqual(
+            model.translationModelUpdateState(
+                for: installed.id
+            )?.statusText,
+            "已是最新"
+        )
+    }
+
+    @MainActor
+    func testModelMarketSearchUsesLiveUpstreamResults() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelMarketSearch-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        let result = UpstreamModelSummary(
+            repository: "mlx-community/Hy-MT2-1.8B-4bit",
+            name: "Hy-MT2-1.8B-4bit",
+            downloads: 1200,
+            likes: 5,
+            pipelineTag: "translation",
+            tags: ["mlx", "translation"],
+            license: "apache-2.0"
+        )
+        var receivedQuery: String?
+        model.searchModelMarketAction = { query in
+            receivedQuery = query
+            return [result]
+        }
+
+        await model.searchModelMarket(query: "Hy-MT2")
+
+        XCTAssertEqual(receivedQuery, "Hy-MT2")
+        XCTAssertEqual(model.modelMarketResults, [result])
+        XCTAssertFalse(model.isLoadingModelMarket)
+        XCTAssertNil(model.modelMarketError)
+    }
+
+    @MainActor
+    func testModelMarketSearchFailureLeavesUsableState() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelMarketOffline-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        model.searchModelMarketAction = { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        await model.searchModelMarket(query: "Qwen3")
+
+        XCTAssertFalse(model.isLoadingModelMarket)
+        XCTAssertTrue(model.modelMarketResults.isEmpty)
+        XCTAssertTrue(model.modelMarketError?.isEmpty == false)
+        XCTAssertNil(model.isInstalling)
+    }
+
+    @MainActor
+    func testCancellingMarketPreflightClearsBusyState() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelMarketCancellation-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        model.prepareModelMarketInstallAction = { _, _ in
+            try await Task.sleep(for: .seconds(10))
+            throw ModelHubError.unavailable
+        }
+
+        model.installModelFromMarket(
+            marketResult(repository: "example/cancel")
+        )
+        XCTAssertEqual(
+            model.isPreparingModelMarketInstallID,
+            "example/cancel"
+        )
+
+        model.cancelModelMarketInstall()
+        for _ in 0..<200
+        where model.isPreparingModelMarketInstallID != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertNil(model.isPreparingModelMarketInstallID)
+        XCTAssertNil(model.modelMarketInstallPreview)
+        XCTAssertNil(model.isInstalling)
+        XCTAssertNil(model.modelMarketError)
+    }
+
+    @MainActor
+    func testModelMarketPreparesInstallWithoutStartingDownload() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelMarketPreview-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        let result = marketResult(repository: "example/preview")
+        let preparation = marketPreparation(
+            for: result,
+            sizeBytes: 2_000
+        )
+        model.availableInstallationSpaceAction = { 100_000 }
+        model.prepareModelMarketInstallAction = { _, _ in preparation }
+
+        model.installModelFromMarket(result)
+        for _ in 0..<200
+        where model.isPreparingModelMarketInstallID != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertEqual(model.modelMarketInstallPreview, preparation)
+        XCTAssertNil(model.isInstalling)
+        XCTAssertNil(model.modelMarketError)
+
+        model.cancelModelMarketInstallPreview()
+        XCTAssertNil(model.modelMarketInstallPreview)
+    }
+
+    @MainActor
+    func testConfirmModelMarketInstallTracksRepositoryAndPlugin()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelMarketConfirm-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        let result = marketResult(repository: "example/confirm")
+        let preparation = marketPreparation(
+            for: result,
+            sizeBytes: 2_000
+        )
+        model.availableInstallationSpaceAction = { 100_000 }
+        model.prepareModelMarketInstallAction = { _, _ in preparation }
+
+        model.installModelFromMarket(result)
+        for _ in 0..<200
+        where model.isPreparingModelMarketInstallID != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        model.confirmModelMarketInstall()
+
+        XCTAssertEqual(
+            model.modelMarketInstallRepository,
+            result.repository
+        )
+        XCTAssertEqual(
+            model.modelMarketInstallPluginID,
+            preparation.manifest.id
+        )
+        model.cancelInstallation()
+    }
+
+    @MainActor
+    func testModelMarketRejectsInsufficientInstallationSpace() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelMarketDisk-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        let result = marketResult(repository: "example/disk")
+        model.availableInstallationSpaceAction = { 1_000 }
+        XCTAssertEqual(model.availableInstallationSpaceAction(), 1_000)
+        model.prepareModelMarketInstallAction = { _, _ in
+            self.marketPreparation(for: result, sizeBytes: 2_000)
+        }
+
+        model.installModelFromMarket(result)
+        for _ in 0..<200
+        where model.isPreparingModelMarketInstallID != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertTrue(
+            model.modelMarketError?.contains("磁盘空间") == true,
+            "error=\(String(describing: model.modelMarketError))"
+        )
+        XCTAssertNil(model.modelMarketInstallPreview)
+        XCTAssertNil(model.isInstalling)
+    }
+
+    @MainActor
+    func testModelMarketShowsPreparationFailure() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelMarketFailure-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        let result = UpstreamModelSummary(
+            repository: "example/unsupported",
+            name: "unsupported",
+            downloads: 0,
+            likes: 0,
+            pipelineTag: "translation",
+            tags: ["mlx"],
+            license: nil
+        )
+        model.prepareModelMarketInstallAction = { _, _ in
+            throw ModelHubError.unsupportedModel
+        }
+
+        model.installModelFromMarket(result)
+        for _ in 0..<200
+        where model.isPreparingModelMarketInstallID != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertEqual(
+            model.modelMarketError,
+            "模型与当前 Glint 运行时不兼容"
+        )
+        XCTAssertNil(model.isInstalling)
+    }
+
+    @MainActor
+    func testModelMarketRejectsModelBeyondAvailableMemory() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelMarketMemory-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        let result = UpstreamModelSummary(
+            repository: "example/too-large",
+            name: "too-large",
+            downloads: 0,
+            likes: 0,
+            pipelineTag: "translation",
+            tags: ["mlx"],
+            license: nil
+        )
+        let manifest = PluginManifest(
+            id: "upstream-mlx-too-large",
+            type: .translation,
+            name: "Too Large",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 10,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/too-large"
+            )!,
+            license: "MIT",
+            minRAMBytes: .max,
+            revision: "revision"
+        )
+        model.availableInstallationSpaceAction = { 100_000 }
+        model.prepareModelMarketInstallAction = { _, _ in
+            ModelInstallPreparation(
+                manifest: manifest,
+                snapshot: self.marketSnapshot(
+                    repository: result.repository,
+                    sizeBytes: 2_000
+                )
+            )
+        }
+
+        model.installModelFromMarket(result)
+        for _ in 0..<200
+        where model.isPreparingModelMarketInstallID != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertTrue(model.modelMarketError?.contains("内存") == true)
+        XCTAssertNil(model.modelMarketInstallPreview)
+        XCTAssertNil(model.isInstalling)
+    }
+
+    @MainActor
+    private func marketResult(
+        repository: String
+    ) -> UpstreamModelSummary {
+        UpstreamModelSummary(
+            repository: repository,
+            name: repository.split(separator: "/").last.map(String.init)
+                ?? repository,
+            downloads: 0,
+            likes: 0,
+            pipelineTag: "translation",
+            tags: ["mlx", "translation"],
+            license: "MIT"
+        )
+    }
+
+    private func marketPreparation(
+        for model: UpstreamModelSummary,
+        sizeBytes: Int64
+    ) -> ModelInstallPreparation {
+        ModelInstallPreparation(
+            manifest: PluginManifest(
+                id: "upstream-mlx-test",
+                type: .translation,
+                name: model.name,
+                version: "1.0",
+                runtime: "mlx",
+                sizeBytes: sizeBytes,
+                sha256: "HUGGINGFACE_SNAPSHOT",
+                url: URL(
+                    string: "https://huggingface.co/\(model.repository)"
+                )!,
+                license: "MIT",
+                minRAMBytes: 4_294_967_296,
+                revision: "revision"
+            ),
+            snapshot: marketSnapshot(
+                repository: model.repository,
+                sizeBytes: sizeBytes
+            )
+        )
+    }
+
+    private func marketSnapshot(
+        repository: String,
+        sizeBytes: Int64
+    ) -> UpstreamModelSnapshot {
+        UpstreamModelSnapshot(
+            repository: repository,
+            revision: "revision",
+            lastModified: nil,
+            modelType: "qwen3",
+            sizeBytes: sizeBytes,
+            license: "MIT",
+            hasChatTemplate: true,
+            parameterCount: 1_000_000_000,
+            quantizationBits: 4,
+            pipelineTag: "translation"
+        )
+    }
+
+    @MainActor
     private func translationManifest(
         id: String,
         version: String = "1.0",

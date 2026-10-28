@@ -336,6 +336,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 kind: updateKind
             )
         }
+        windowModel.checkTranslationModelUpdateAction = {
+            [weak self] manifest in
+            guard let self else {
+                throw ModelHubError.unavailable
+            }
+            return try await self.environment.checkTranslationModelUpdate(
+                manifest
+            )
+        }
+        windowModel.searchModelMarketAction = { [weak self] query in
+            guard let self else {
+                throw ModelHubError.unavailable
+            }
+            return try await self.environment.searchModelMarket(
+                query: query
+            )
+        }
+        windowModel.prepareModelMarketInstallAction = {
+            [weak self] model, knownManifest in
+            guard let self else {
+                throw ModelHubError.unavailable
+            }
+            return try await self.environment.prepareModelMarketInstall(
+                model,
+                matching: knownManifest
+            )
+        }
         windowModel.displayPreferences.candidateDwellDurationDidChange = {
             [weak self] duration in
             guard let self else { return }

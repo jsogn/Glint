@@ -7,13 +7,18 @@ struct PluginsPage: View {
     let model: MainWindowModel
     @Binding var selectedTab: PluginTab
     @State private var pluginToRemove: PluginManifest?
+    @State private var marketQuery = ""
 
     var body: some View {
         PageContainer {
             HStack(spacing: 12) {
                 pluginTabControl
                 Spacer()
-                if model.isLoadingPlugins || model.isLoadingCatalog {
+                if model.isLoadingPlugins
+                    || model.isLoadingCatalog
+                    || model.isInstalling != nil
+                    || model.isPreparingModelMarketInstallID != nil
+                {
                     ProgressView()
                         .controlSize(.small)
                 }
@@ -26,11 +31,30 @@ struct PluginsPage: View {
                     Spacer()
                 }
             }
-            pluginPanel(kind: selectedTab.kind)
+            pluginPanel(selectedTab)
         }
         .task {
             await model.refreshInstalledPlugins()
             await model.checkForCatalogUpdates()
+        }
+        .task(id: selectedTab) {
+            if selectedTab == .translation {
+                for plugin in model.translationPlugins
+                where plugin.source == .catalog {
+                    if model.translationModelUpdateState(for: plugin.id)
+                        == nil
+                    {
+                        model.checkTranslationModelUpdate(plugin)
+                    }
+                }
+                return
+            }
+            guard selectedTab == .market,
+                model.modelMarketResults.isEmpty
+            else {
+                return
+            }
+            await model.searchModelMarket(query: marketQuery)
         }
         .confirmationDialog(
             "卸载插件？",
@@ -53,6 +77,28 @@ struct PluginsPage: View {
         } message: {
             Text("这会删除本地插件文件。")
         }
+        .sheet(
+            isPresented: Binding(
+                get: { model.modelMarketInstallPreview != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        model.cancelModelMarketInstallPreview()
+                    }
+                }
+            )
+        ) {
+            if let preview = model.modelMarketInstallPreview {
+                ModelInstallConfirmationSheet(
+                    preparation: preview,
+                    onCancel: {
+                        model.cancelModelMarketInstallPreview()
+                    },
+                    onInstall: {
+                        model.confirmModelMarketInstall()
+                    }
+                )
+            }
+        }
     }
 
     private var pluginTabControl: some View {
@@ -62,6 +108,18 @@ struct PluginsPage: View {
             accessibilityTitle: "插件类型",
             title: \.title
         )
+    }
+
+    @ViewBuilder
+    private func pluginPanel(_ tab: PluginTab) -> some View {
+        switch tab {
+        case .dictionary:
+            pluginPanel(kind: .dictionary)
+        case .translation:
+            pluginPanel(kind: .translation)
+        case .market:
+            modelMarketPanel
+        }
     }
 
     @ViewBuilder
@@ -92,7 +150,7 @@ struct PluginsPage: View {
                 SettingsCard("本地模型") {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(spacing: 10) {
-                            Text("下载官方模型，或导入标准 MLX 模型目录。")
+                            Text("管理已安装模型，或导入标准 MLX 模型目录。")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -106,7 +164,7 @@ struct PluginsPage: View {
                                 .buttonStyle(.plain)
                                 .foregroundStyle(.secondary)
                             } else {
-                                Button("导入模型…") {
+                                Button("导入模型") {
                                     if let directory =
                                         LocalModelDirectoryPicker
                                         .chooseModelDirectory()
@@ -239,6 +297,20 @@ struct PluginsPage: View {
                             )
                     }
                 }
+                if plugin.type == .translation,
+                    let state = model.translationModelUpdateState(
+                        for: plugin.id
+                    ),
+                    let status = state.statusText
+                {
+                    Text(status)
+                        .font(.caption)
+                        .foregroundStyle(
+                            state.isError
+                                ? Color.red
+                                : Color.secondary
+                        )
+                }
             }
             Spacer()
             if let updateKind = plugin.coreUpdateKind,
@@ -271,6 +343,32 @@ struct PluginsPage: View {
                 }
             }
             if plugin.type == .translation {
+                if plugin.source == .catalog {
+                    let updateState =
+                        model.translationModelUpdateState(
+                            for: plugin.id
+                        )
+                    if updateState?.isChecking == true {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else if updateState?.update != nil {
+                        Button("更新") {
+                            model.installTranslationModelUpdate(plugin.id)
+                        }
+                        .disabled(
+                            model.isInstalling != nil
+                                || model.isImportingLocalModel
+                        )
+                    } else {
+                        Button("检查更新") {
+                            model.checkTranslationModelUpdate(plugin)
+                        }
+                        .disabled(
+                            model.isInstalling != nil
+                                || model.isImportingLocalModel
+                        )
+                    }
+                }
                 if model.isActiveTranslationModel(plugin) {
                     Text("使用中")
                         .font(.caption.weight(.semibold))
@@ -383,6 +481,178 @@ struct PluginsPage: View {
         .padding(.vertical, 4)
     }
 
+    private var modelMarketPanel: some View {
+        SettingsPanel(minHeight: 420) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    TextField("搜索模型名称或仓库", text: $marketQuery)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit {
+                            searchModelMarket()
+                        }
+                    Button("搜索") {
+                        searchModelMarket()
+                    }
+                    .disabled(model.isLoadingModelMarket)
+                }
+                Text("搜索并安装你需要的翻译模型。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let error = model.modelMarketError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                Divider()
+                if model.isLoadingModelMarket {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("正在搜索模型…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if model.modelMarketResults.isEmpty {
+                    Text("没有找到可安装的 MLX 模型")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(
+                            Array(model.modelMarketResults.enumerated()),
+                            id: \.element.id
+                        ) { index, result in
+                            if index > 0 {
+                                Divider()
+                            }
+                            modelMarketRow(result)
+                                .padding(.vertical, 8)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func modelMarketRow(
+        _ result: UpstreamModelSummary
+    ) -> some View {
+        let installed = model.installedPlugin(
+            forRepository: result.repository
+        )
+        let isPreparing =
+            model.isPreparingModelMarketInstallID == result.id
+        let isDownloading =
+            model.modelMarketInstallRepository == result.repository
+        return HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(result.name)
+                    .fontWeight(.medium)
+                Text(result.repository)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                Text(modelMarketMetadata(result))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if isPreparing {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("正在检查…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("取消") {
+                        model.cancelModelMarketInstall()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                }
+            } else if isDownloading {
+                let progress =
+                    model.modelMarketInstallPluginID.flatMap {
+                        model.installProgress[$0]
+                    }
+                    ?? PluginInstallProgress(
+                        fraction: 0,
+                        phase: .preparing
+                    )
+                let progressDescription =
+                    InstallProgressFormatting.description(
+                        for: progress
+                    )
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        ProgressView(value: progress.fraction)
+                            .progressViewStyle(.linear)
+                            .accessibilityLabel("安装进度")
+                            .accessibilityValue(
+                                Text(progressDescription)
+                            )
+                        Text(progressDescription)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .help(progressDescription)
+                    }
+                    .frame(width: 220, alignment: .leading)
+                    Button(
+                        model.isCancellingInstallation
+                            ? "取消中…"
+                            : "取消"
+                    ) {
+                        model.cancelInstallation()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .disabled(model.isCancellingInstallation)
+                }
+            } else if installed != nil {
+                Text("已安装")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button("安装") {
+                    model.installModelFromMarket(result)
+                }
+                .disabled(
+                    model.isInstalling != nil
+                        || model.isImportingLocalModel
+                        || model.isPreparingModelMarketInstallID != nil
+                )
+            }
+        }
+    }
+
+    private func modelMarketMetadata(
+        _ model: UpstreamModelSummary
+    ) -> String {
+        var values = [
+            "\(model.downloads.formatted()) 次下载",
+            "\(model.likes) 喜欢",
+        ]
+        if let license = model.license {
+            values.append(license)
+        }
+        if let pipelineTag = model.pipelineTag {
+            values.append(pipelineTag)
+        }
+        return values.joined(separator: " · ")
+    }
+
+    private func searchModelMarket() {
+        let query = marketQuery.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        Task {
+            await model.searchModelMarket(query: query)
+        }
+    }
+
     private func fallbackSummary(for type: PluginKind) -> String {
         switch type {
         case .dictionary:
@@ -403,6 +673,13 @@ struct PluginsPage: View {
         if plugin.source == .bundled {
             return "内置 · 版本 \(plugin.version) · \(plugin.license)"
         }
+        if plugin.id.hasPrefix("upstream-mlx-"),
+            let revision = plugin.revision
+        {
+            return
+                "上游 · \(size) · \(plugin.license) · "
+                + String(revision.prefix(8))
+        }
         return "版本 \(plugin.version) · \(size) · \(plugin.license)"
     }
 }
@@ -410,18 +687,126 @@ struct PluginsPage: View {
 enum PluginTab: String, CaseIterable, Hashable {
     case dictionary
     case translation
+    case market
 
     var title: String {
         switch self {
         case .dictionary: "翻译词典"
         case .translation: "翻译模型"
+        case .market: "模型市场"
+        }
+    }
+}
+
+private struct ModelInstallConfirmationSheet: View {
+    let preparation: ModelInstallPreparation
+    let onCancel: () -> Void
+    let onInstall: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("安装模型")
+                .font(.title3.weight(.semibold))
+            Text(preparation.manifest.name)
+                .font(.headline)
+            Grid(
+                alignment: .leading,
+                horizontalSpacing: 24,
+                verticalSpacing: 8
+            ) {
+                detailRow(
+                    "模型架构",
+                    preparation.snapshot.modelType
+                )
+                detailRow(
+                    "参数规模",
+                    parameterText
+                )
+                detailRow(
+                    "量化精度",
+                    quantizationText
+                )
+                detailRow(
+                    "下载大小",
+                    byteCount(preparation.snapshot.sizeBytes)
+                )
+                detailRow(
+                    "预计运行内存",
+                    byteCount(preparation.manifest.minRAMBytes)
+                )
+                detailRow(
+                    "许可证",
+                    preparation.snapshot.license
+                )
+                detailRow(
+                    "版本",
+                    String(preparation.snapshot.revision.prefix(12))
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Text("模型将在下载后执行加载验证。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button("取消", role: .cancel) {
+                    onCancel()
+                }
+                .keyboardShortcut(.cancelAction)
+                Button("下载并安装") {
+                    onInstall()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(24)
+        .frame(width: 440)
+    }
+
+    private var parameterText: String {
+        guard let count = preparation.snapshot.parameterCount else {
+            return "未知"
+        }
+        if count >= 1_000_000_000 {
+            return String(
+                format: "%.1fB",
+                Double(count) / 1_000_000_000
+            )
+        }
+        if count >= 1_000_000 {
+            return String(
+                format: "%.0fM",
+                Double(count) / 1_000_000
+            )
+        }
+        return count.formatted()
+    }
+
+    private var quantizationText: String {
+        guard let bits = preparation.snapshot.quantizationBits else {
+            return "未知"
+        }
+        return bits.rounded() == bits
+            ? "\(Int(bits))-bit"
+            : "\(bits)-bit"
+    }
+
+    private func detailRow(_ label: String, _ value: String) -> some View {
+        GridRow(alignment: .firstTextBaseline) {
+            Text(label)
+                .foregroundStyle(.secondary)
+                .gridColumnAlignment(.leading)
+            Text(value)
+                .foregroundStyle(.primary)
+                .gridColumnAlignment(.leading)
+                .textSelection(.enabled)
         }
     }
 
-    var kind: PluginKind {
-        switch self {
-        case .dictionary: .dictionary
-        case .translation: .translation
-        }
+    private func byteCount(_ value: Int64) -> String {
+        ByteCountFormatter.string(
+            fromByteCount: value,
+            countStyle: .file
+        )
     }
 }

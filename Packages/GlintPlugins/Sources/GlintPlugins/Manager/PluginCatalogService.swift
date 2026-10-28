@@ -422,7 +422,9 @@ public actor PluginCatalogService {
             throw PluginCatalogError.invalidModelRepository
         }
         var sources: [MLXDownloadSource] = []
-        if let modelscopeURL = manifest.modelscopeURL {
+        if manifest.revision == nil,
+            let modelscopeURL = manifest.modelscopeURL
+        {
             guard
                 let repository = Self.repositoryID(
                     from: modelscopeURL,
@@ -539,7 +541,10 @@ public actor PluginCatalogService {
             ),
             force: true
         )
-        let installed = try await manager.installPreparedPlugin(at: pluginDirectory)
+        let installed = try await manager.installPreparedPlugin(
+            at: pluginDirectory,
+            keepBackup: true
+        )
         reporter.emit(
             PluginInstallProgress(fraction: 1, phase: .installing),
             force: true

@@ -42,6 +42,13 @@ public struct CoreDictionaryUpdateState: Equatable, Sendable {
     public let isError: Bool
 }
 
+public struct TranslationModelUpdateState: Equatable, Sendable {
+    public let isChecking: Bool
+    public let statusText: String?
+    public let isError: Bool
+    public let update: UpstreamModelUpdate?
+}
+
 @MainActor
 @Observable
 public final class MainWindowModel {
@@ -70,6 +77,14 @@ public final class MainWindowModel {
     public private(set) var translationModelStatusIsError = false
     public private(set) var translationModelStatusModelID: String?
     public private(set) var coreDictionaryUpdateStates: [String: CoreDictionaryUpdateState] = [:]
+    public private(set) var translationModelUpdateStates: [String: TranslationModelUpdateState] = [:]
+    public private(set) var modelMarketResults: [UpstreamModelSummary] = []
+    public private(set) var isLoadingModelMarket = false
+    public private(set) var modelMarketError: String?
+    public private(set) var isPreparingModelMarketInstallID: String?
+    public private(set) var modelMarketInstallPreview: ModelInstallPreparation?
+    public private(set) var modelMarketInstallRepository: String?
+    public private(set) var modelMarketInstallPluginID: String?
     public let generalPreferences: GeneralPreferences
     public let displayPreferences: DisplayPreferences
     private let catalogURL: URL?
@@ -96,6 +111,10 @@ public final class MainWindowModel {
     private var localImportTask: Task<Void, Never>?
     @ObservationIgnored
     private var coreDictionaryUpdateTasks: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored
+    private var translationModelUpdateTasks: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored
+    private var modelMarketInstallTask: Task<Void, Never>?
     @ObservationIgnored
     public var startMonitoringAction: @MainActor () -> Void = {}
     @ObservationIgnored
@@ -125,6 +144,33 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var checkCoreDictionaryUpdateAction: @MainActor (CoreDictionaryUpdateKind) async throws -> String = {
         _ in "词典更新服务不可用"
+    }
+    @ObservationIgnored
+    public var checkTranslationModelUpdateAction: @MainActor (PluginManifest) async throws -> UpstreamModelUpdate? = {
+        _ in nil
+    }
+    @ObservationIgnored
+    public var searchModelMarketAction: @MainActor (String) async throws -> [UpstreamModelSummary] = {
+        _ in []
+    }
+    @ObservationIgnored
+    public var prepareModelMarketInstallAction:
+        @MainActor (
+            UpstreamModelSummary,
+            PluginManifest?
+        ) async throws -> ModelInstallPreparation = { _, _ in
+            throw ModelHubError.unavailable
+        }
+    @ObservationIgnored
+    public var availableInstallationSpaceAction: @MainActor () -> Int64? = {
+        let directory =
+            FileManager.default.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first
+        return try? directory?.resourceValues(
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+        ).volumeAvailableCapacityForImportantUsage
     }
 
     public init(
@@ -343,6 +389,189 @@ public final class MainWindowModel {
         coreDictionaryUpdateTasks[dictionaryID]?.cancel()
     }
 
+    public func translationModelUpdateState(
+        for modelID: String
+    ) -> TranslationModelUpdateState? {
+        translationModelUpdateStates[modelID]
+    }
+
+    public func checkTranslationModelUpdate(
+        _ plugin: PluginManifest
+    ) {
+        guard plugin.type == .translation,
+            plugin.source == .catalog,
+            plugin.revision != nil,
+            translationModelUpdateTasks[plugin.id] == nil
+        else {
+            return
+        }
+        translationModelUpdateStates[plugin.id] =
+            TranslationModelUpdateState(
+                isChecking: true,
+                statusText: nil,
+                isError: false,
+                update: nil
+            )
+        translationModelUpdateTasks[plugin.id] = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                translationModelUpdateTasks[plugin.id] = nil
+            }
+            do {
+                let update = try await checkTranslationModelUpdateAction(
+                    plugin
+                )
+                try Task.checkCancellation()
+                translationModelUpdateStates[plugin.id] =
+                    TranslationModelUpdateState(
+                        isChecking: false,
+                        statusText:
+                            update == nil ? "已是最新" : "上游有新版本",
+                        isError: false,
+                        update: update
+                    )
+            } catch {
+                if Task.isCancelled {
+                    translationModelUpdateStates[plugin.id] = nil
+                    return
+                }
+                translationModelUpdateStates[plugin.id] =
+                    TranslationModelUpdateState(
+                        isChecking: false,
+                        statusText:
+                            "更新检查失败：\(error.localizedDescription)",
+                        isError: true,
+                        update: nil
+                    )
+            }
+        }
+    }
+
+    public func installTranslationModelUpdate(_ modelID: String) {
+        guard
+            let update = translationModelUpdateStates[modelID]?.update
+        else {
+            return
+        }
+        installPlugin(update.manifest)
+    }
+
+    public func searchModelMarket(query: String) async {
+        guard !isLoadingModelMarket else { return }
+        isLoadingModelMarket = true
+        modelMarketError = nil
+        defer { isLoadingModelMarket = false }
+        do {
+            modelMarketResults = try await searchModelMarketAction(query)
+        } catch {
+            if Task.isCancelled {
+                return
+            }
+            modelMarketError = error.localizedDescription
+        }
+    }
+
+    public func installModelFromMarket(_ model: UpstreamModelSummary) {
+        guard isPreparingModelMarketInstallID == nil,
+            modelMarketInstallPreview == nil,
+            installTask == nil,
+            localImportTask == nil
+        else {
+            return
+        }
+        let knownManifest = knownPlugin(forRepository: model.repository)
+        isPreparingModelMarketInstallID = model.id
+        modelMarketError = nil
+        modelMarketInstallTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                isPreparingModelMarketInstallID = nil
+                modelMarketInstallTask = nil
+            }
+            do {
+                let preparation = try await prepareModelMarketInstallAction(
+                    model,
+                    knownManifest
+                )
+                try Task.checkCancellation()
+                guard isCompatible(preparation.manifest) else {
+                    modelMarketError =
+                        "预计至少需要 \(minimumMemoryText(for: preparation.manifest)) 内存，当前设备可能无法运行"
+                    return
+                }
+                let requiredSpace = preparation.snapshot.sizeBytes
+                    .multipliedReportingOverflow(by: 2)
+                if !requiredSpace.overflow,
+                    let available = availableInstallationSpaceAction(),
+                    available < requiredSpace.partialValue
+                {
+                    modelMarketError =
+                        "模型需要约 \(Self.byteCountText(preparation.snapshot.sizeBytes)) 可用磁盘空间，当前可用 \(Self.byteCountText(available))"
+                    return
+                }
+                modelMarketInstallPreview = preparation
+            } catch {
+                if !Task.isCancelled {
+                    modelMarketError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    public func cancelModelMarketInstall() {
+        modelMarketInstallTask?.cancel()
+    }
+
+    public func confirmModelMarketInstall() {
+        guard let preview = modelMarketInstallPreview else { return }
+        modelMarketInstallPreview = nil
+        modelMarketInstallRepository = preview.snapshot.repository
+        modelMarketInstallPluginID = preview.manifest.id
+        installPlugin(preview.manifest)
+    }
+
+    public func cancelModelMarketInstallPreview() {
+        modelMarketInstallPreview = nil
+    }
+
+    public func knownPlugin(
+        forRepository repository: String
+    ) -> PluginManifest? {
+        return
+            installedPlugin(forRepository: repository)
+            ?? (availablePlugins + builtInPlugins).first {
+                matchesRepository($0, repository: repository)
+            }
+    }
+
+    public func installedPlugin(
+        forRepository repository: String
+    ) -> PluginManifest? {
+        installedPlugins.first {
+            matchesRepository($0, repository: repository)
+        }
+    }
+
+    private func matchesRepository(
+        _ plugin: PluginManifest,
+        repository: String
+    ) -> Bool {
+        let path = plugin.url.path.trimmingCharacters(
+            in: CharacterSet(charactersIn: "/")
+        )
+        let repository = repository.trimmingCharacters(
+            in: CharacterSet(charactersIn: "/")
+        )
+        return path == repository || path.hasSuffix("/\(repository)")
+    }
+
+    private static func byteCountText(_ value: Int64) -> String {
+        ByteCountFormatter.string(
+            fromByteCount: value,
+            countStyle: .file
+        )
+    }
+
     public func checkForCatalogUpdates(force: Bool = false) async {
         guard let catalogURL else {
             availablePlugins = []
@@ -558,14 +787,23 @@ public final class MainWindowModel {
     }
 
     private func performInstallation(_ plugin: PluginManifest) async {
+        let previousModelID = activeModelID
         let wasActiveTranslation =
             plugin.type == .translation
             && activeModelID == plugin.id
+        let shouldValidateTranslation =
+            plugin.type == .translation
+            && (wasActiveTranslation || modelMarketInstallPluginID == plugin.id)
         var hadPendingUpgrade = false
         defer {
             installTask = nil
             isInstalling = nil
             isCancellingInstallation = false
+            installProgress.removeValue(forKey: plugin.id)
+            if modelMarketInstallPluginID == plugin.id {
+                modelMarketInstallRepository = nil
+                modelMarketInstallPluginID = nil
+            }
         }
 
         do {
@@ -583,8 +821,9 @@ public final class MainWindowModel {
                 await dictionaryConfigurationChangedAction()
             }
 
-            if wasActiveTranslation {
-                translationModelStatusText = "正在加载新版本…"
+            if shouldValidateTranslation {
+                translationModelStatusText =
+                    wasActiveTranslation ? "正在加载新版本…" : "正在验证模型…"
                 translationModelStatusIsError = false
                 translationModelStatusModelID = plugin.id
                 let error = await activateTranslationModelAction(plugin.id)
@@ -593,7 +832,6 @@ public final class MainWindowModel {
                     if hadPendingUpgrade {
                         try await pluginLifecycle.rollbackPendingUpgrade()
                         await refreshInstalledPlugins()
-                        _ = await activateTranslationModelAction(plugin.id)
                         if !wasCancelled {
                             translationModelStatusText =
                                 "更新失败，已恢复旧版本：\(error)"
@@ -607,6 +845,17 @@ public final class MainWindowModel {
                                 "模型加载失败：\(error)"
                         }
                     }
+                    let recoveryModelID =
+                        hadPendingUpgrade ? plugin.id : previousModelID
+                    if recoveryModelID != plugin.id || hadPendingUpgrade {
+                        let restoreError = await activateTranslationModelAction(
+                            recoveryModelID
+                        )
+                        if let restoreError, !wasCancelled {
+                            translationModelStatusText =
+                                "模型验证失败，且原模型恢复失败：\(restoreError)"
+                        }
+                    }
                     if wasCancelled {
                         translationModelStatusText = nil
                         translationModelStatusIsError = false
@@ -614,16 +863,46 @@ public final class MainWindowModel {
                     } else {
                         translationModelStatusIsError = true
                         translationModelStatusModelID = plugin.id
+                        catalogError = error
                     }
+                    translationConfigurationChangedAction()
+                    return
                 } else {
+                    if !wasActiveTranslation {
+                        await releaseTranslationModelAction(plugin.id)
+                        if let restoreError =
+                            await activateTranslationModelAction(
+                                previousModelID
+                            )
+                        {
+                            catalogError =
+                                "模型已安装，但恢复原模型失败：\(restoreError)"
+                        }
+                    }
                     try await pluginLifecycle.commitPendingUpgrade()
                     translationModelStatusText = nil
                     translationModelStatusIsError = false
                     translationModelStatusModelID = nil
+                    translationModelUpdateStates[plugin.id] =
+                        TranslationModelUpdateState(
+                            isChecking: false,
+                            statusText: "已是最新",
+                            isError: false,
+                            update: nil
+                        )
                 }
                 translationConfigurationChangedAction()
             } else {
                 try await pluginLifecycle.commitPendingUpgrade()
+                if plugin.type == .translation {
+                    translationModelUpdateStates[plugin.id] =
+                        TranslationModelUpdateState(
+                            isChecking: false,
+                            statusText: "已是最新",
+                            isError: false,
+                            update: nil
+                        )
+                }
             }
             installProgress[plugin.id] = PluginInstallProgress(
                 fraction: 1,
@@ -662,7 +941,6 @@ public final class MainWindowModel {
                 catalogError = error.localizedDescription
             }
         }
-        installProgress.removeValue(forKey: plugin.id)
     }
 
     private func applyInstallProgress(
@@ -690,6 +968,7 @@ public final class MainWindowModel {
         do {
             await releaseTranslationModelAction(plugin.id)
             try await pluginLifecycle.uninstall(id: plugin.id)
+            translationModelUpdateStates.removeValue(forKey: plugin.id)
             if translationModelStatusModelID == plugin.id {
                 translationModelStatusText = nil
                 translationModelStatusIsError = false

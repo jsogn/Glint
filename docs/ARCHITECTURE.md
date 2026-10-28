@@ -79,7 +79,7 @@ Glint/
 ### GlintDictionary
 
 - 查询 CC-CEDICT、ECDICT 和 Wiktionary SQLite 资源。
-- 合并多来源义项，按词频、短语和人工 override 排序。
+- 合并多来源义项，按词频和短语特征排序；不加载人工词表。
 - 通过固定 runtime 接口加载词典插件，不执行插件代码。
 
 ### GlintInference
@@ -230,7 +230,7 @@ MainWindowModel → MainWindowView
   - `cedict-sqlite`、`ecdict-rank`、`sqlite-v1`；
   - `ctranslate2` 仅用于内置 OPUS-MT；
   - `mlx` 用于可选翻译模型。
-- CC-CEDICT、ECDICT、Wiktionary、overrides 和 OPUS-MT 随 App 提供，不允许卸载。
+- CC-CEDICT、ECDICT、Wiktionary 和 OPUS-MT 随 App 提供，不允许卸载。
   Wiktionary 和 OPUS-MT 仅使用 bundled 数据；CC-CEDICT 与 ECDICT 可把经过校验的
   更新安装到 Application Support 的同 ID 数据目录，加载失败时回退 bundled 基线。
 - CC-CEDICT 仅允许用户手动从 MDBG 官方地址检查更新。更新器使用 HEAD 条件请求、
@@ -246,6 +246,18 @@ MainWindowModel → MainWindowView
 - OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；
   权重不进入 Git，锁文件记录产物 SHA256。
 - 可选 MLX 模型优先国内镜像，失败后回退官方源；下载、校验和安装阶段不重叠。
+- 模型市场直接查询 Hugging Face / 国内镜像的上游仓库，不需要维护远端目录服务。
+  搜索只负责发现；下载前读取 `config.json`、文件清单和 tokenizer 信息，并检查
+  当前 MLX runtime 是否支持该 `model_type`。
+- 空查询浏览上游翻译分类；主动搜索覆盖全部 MLX 模型，不因用途标签或内存估算
+  隐藏结果，也不根据搜索元数据显示兼容结论。点击安装后才对固定 revision 执行
+  架构、文件、tokenizer 和内存检查，并显示确定原因。
+- 安装前检查通过后先展示模型架构、参数规模、量化精度、精确下载大小、预计运行
+  内存、许可证和 revision；用户确认后才开始下载。
+- 市场新模型下载后会在提交安装前加载并执行一次短句翻译；失败时卸载新模型并
+  恢复原模型，成功时保持在原有模型选择上。
+- 已安装模型通过上游 commit SHA 检查更新，不使用手工版本号判断。市场安装和更新
+  都固定具体 revision；带 revision 的快照不读取可变化的 ModelScope `master`。
 - 插件升级使用持久化事务；未完成激活的升级在下次启动时回滚。
 - 不支持用户添加的远程翻译接口，候选与译文只进入本地受支持运行时。
 

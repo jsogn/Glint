@@ -3,6 +3,18 @@ import XCTest
 @testable import GlintInference
 
 final class MLXTranslationEngineTests: XCTestCase {
+    func testModelCompatibilityUsesRuntimeRegistry() async {
+        let supportsQwen = await MLXModelCompatibility.supports(
+            modelType: "qwen3"
+        )
+        let supportsUnknown = await MLXModelCompatibility.supports(
+            modelType: "not-a-registered-model"
+        )
+
+        XCTAssertTrue(supportsQwen)
+        XCTAssertFalse(supportsUnknown)
+    }
+
     func testCleanRemovesLabelsAndQuotes() {
         XCTAssertEqual(
             MLXTranslationEngine.clean("Translation: \"Hello.\"\nignored"),
