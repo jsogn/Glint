@@ -54,7 +54,6 @@ final class CedictDatabaseBuilderTests: XCTestCase {
 
         let dictionary = CedictDictionary(
             databaseURL: database,
-            overridesURL: nil,
             ranker: nil
         )
         let result = try await dictionary.lookup(

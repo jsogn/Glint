@@ -54,7 +54,7 @@ python3 Tools/DictionaryBuilder/build_ecdict_ranker.py \
 - 许可证：CC BY-SA 4.0 + GFDL
 - 角色：覆盖量大的开放中文词条，补充 CC-CEDICT/ECDICT
 - 状态：已构建并随 App 提供 `dict-wiktionary-zh-en`，支持简繁查询；评估显示它能
-  显著提高义项覆盖率，但原始首项排序仍需 ECDICT 和人工 override
+  显著提高义项覆盖率，首项排序由 ECDICT 信号和模型兜底负责，不加载人工词表
 - 注意：插件目录中的 `NOTICE.txt` 必须保留 Wiktionary 署名与许可证链接
 
 ## 评估后暂不接入

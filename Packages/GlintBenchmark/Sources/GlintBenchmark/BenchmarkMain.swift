@@ -53,9 +53,6 @@ struct BenchmarkMain {
                 engine: CedictDictionary(
                     databaseURL: rootURL.appendingPathComponent(
                         "Resources/Plugins/dict-cedict/cedict.sqlite3"
-                    ),
-                    overridesURL: rootURL.appendingPathComponent(
-                        "Resources/Plugins/dict-cedict/overrides.json"
                     )
                 )
             ),

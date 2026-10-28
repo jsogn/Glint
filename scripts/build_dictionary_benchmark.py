@@ -11,7 +11,6 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OVERRIDES = ROOT / "Resources/Plugins/dict-cedict/overrides.json"
 OUTPUT = ROOT / "Resources/Evaluation/dictionary-benchmark.json"
 
 GENERAL = {
@@ -64,11 +63,6 @@ BLOCKED = ["你号"]
 
 
 def main() -> None:
-    overrides_payload = json.loads(OVERRIDES.read_text(encoding="utf-8"))
-    overrides = {
-        **overrides_payload.get("retiredOverrides", {}),
-        **overrides_payload.get("overrides", {}),
-    }
     cases = []
     for text, expected in GENERAL.items():
         cases.append({"text": text, "category": "general", "expected": expected})
@@ -76,13 +70,6 @@ def main() -> None:
         cases.append({"text": text, "category": "ambiguous", "expected": expected})
     for text in BLOCKED:
         cases.append({"text": text, "category": "blocked", "expected": []})
-
-    for text, value in overrides.items():
-        if text in GENERAL or text in AMBIGUOUS:
-            continue
-        values = [value] if isinstance(value, str) else value
-        category = "phrase" if " " in text or len(text) >= 4 else "technical"
-        cases.append({"text": text, "category": category, "expected": values})
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(

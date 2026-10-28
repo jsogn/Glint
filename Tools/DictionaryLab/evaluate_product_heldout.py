@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from benchmark_lexicon import normalize_candidate
-from evaluate_override_ablation import merge_candidates, visible_candidates
+from evaluation_candidates import merge_candidates, visible_candidates
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -229,7 +229,7 @@ def render_markdown(result: dict[str, Any]) -> str:
         "",
         f"- Date: {result['generated_at']}",
         f"- Cases: {summary['case_count']}",
-        "- Sources excluded from tuning: runtime overrides and M8",
+        "- Sources excluded from tuning: M8",
         "",
         "| Variant | Top 1 | Top 3 | Coverage | p95 |",
         "| --- | ---: | ---: | ---: | ---: |",

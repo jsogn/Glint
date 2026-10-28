@@ -166,9 +166,6 @@ enum DictionaryPluginLoader {
             let database = directory.appendingPathComponent(
                 "cedict.sqlite3"
             )
-            let overrides = directory.appendingPathComponent(
-                "overrides.json"
-            )
             guard
                 FileManager.default.fileExists(atPath: database.path),
                 CedictDatabaseBuilder.isCompatible(databaseURL: database)
@@ -177,7 +174,6 @@ enum DictionaryPluginLoader {
             }
             return CedictDictionary(
                 databaseURL: database,
-                overridesURL: overrides,
                 ranker: ecdictRanker
             )
         case "ecdict-rank":

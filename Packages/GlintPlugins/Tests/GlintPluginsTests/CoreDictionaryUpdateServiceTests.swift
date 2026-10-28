@@ -176,7 +176,6 @@ final class CoreDictionaryUpdateServiceTests: XCTestCase {
             databaseURL: installedDirectory.appendingPathComponent(
                 "cedict.sqlite3"
             ),
-            overridesURL: nil,
             ranker: nil
         )
         let result = try await dictionary.lookup(
@@ -264,7 +263,6 @@ final class CoreDictionaryUpdateServiceTests: XCTestCase {
             databaseURL: installedDirectory.appendingPathComponent(
                 "cedict.sqlite3"
             ),
-            overridesURL: nil,
             ranker: nil
         )
         let result = try await dictionary.lookup(
@@ -361,7 +359,6 @@ final class CoreDictionaryUpdateServiceTests: XCTestCase {
             databaseURL: installedDirectory.appendingPathComponent(
                 "cedict.sqlite3"
             ),
-            overridesURL: nil,
             ranker: nil
         )
         let result = try await dictionary.lookup(
@@ -435,7 +432,6 @@ final class CoreDictionaryUpdateServiceTests: XCTestCase {
             databaseURL: bundled.appendingPathComponent(
                 "cedict.sqlite3"
             ),
-            overridesURL: nil,
             ranker: nil
         )
         let result = try await dictionary.lookup(

@@ -14,17 +14,12 @@ final class CedictDictionaryTests: XCTestCase {
     }
 
     private func makeDictionary(
-        databaseURL: URL? = nil,
-        overridesURL: URL? = nil
+        databaseURL: URL? = nil
     ) -> CedictDictionary {
         CedictDictionary(
             databaseURL: databaseURL
                 ?? rootURL.appendingPathComponent(
                     "Resources/Plugins/dict-cedict/cedict.sqlite3"
-                ),
-            overridesURL: overridesURL
-                ?? rootURL.appendingPathComponent(
-                    "Resources/Plugins/dict-cedict/overrides.json"
                 ),
             ranker: ECDICTRanker(
                 databaseURL: rootURL.appendingPathComponent(
@@ -32,20 +27,6 @@ final class CedictDictionaryTests: XCTestCase {
                 )
             )
         )
-    }
-
-    private func temporaryOverrides(
-        _ contents: String
-    ) throws -> (directory: URL, file: URL) {
-        let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try FileManager.default.createDirectory(
-            at: directory,
-            withIntermediateDirectories: true
-        )
-        let file = directory.appendingPathComponent("overrides.json")
-        try Data(contents.utf8).write(to: file)
-        return (directory, file)
     }
 
     func testKnownWord() async throws {
@@ -90,7 +71,12 @@ final class CedictDictionaryTests: XCTestCase {
         XCTAssertTrue(run?.options.contains { $0.text == "run" } == true)
 
         let complex = try await dictionary.lookup(Candidate(text: "复杂"))
-        XCTAssertEqual(complex?.text, "complex")
+        XCTAssertTrue(
+            complex?.options.contains { $0.text == "complex" } == true
+        )
+        XCTAssertTrue(
+            complex?.options.contains { $0.text == "complicated" } == true
+        )
     }
 
     func testSchemaV2PreservesReadingsAndSenses() async throws {
@@ -143,61 +129,14 @@ final class CedictDictionaryTests: XCTestCase {
         }
     }
 
-    func testDatabaseSensePrecedesFallbackOverride() async throws {
-        let (directory, overrides) = try temporaryOverrides(
-            """
-            {
-              "overrides": {
-                "设计": "forced override"
-              }
-            }
-            """
-        )
-        defer {
-            try? FileManager.default.removeItem(at: directory)
-        }
-        let dictionary = makeDictionary(overridesURL: overrides)
-
-        let result = try await dictionary.lookup(
-            Candidate(text: "设计", kind: .word)
-        )
-
-        XCTAssertNotEqual(result?.text, "forced override")
-        XCTAssertTrue(
-            result?.options.contains { $0.text == "forced override" } == true
-        )
-    }
-
-    func testFallbackOverrideIsUsedOnDictionaryMiss() async throws {
-        let (directory, overrides) = try temporaryOverrides(
-            """
-            {
-              "overrides": {
-                "不存在": "fallback answer"
-              }
-            }
-            """
-        )
-        defer {
-            try? FileManager.default.removeItem(at: directory)
-        }
-        let dictionary = makeDictionary(overridesURL: overrides)
-
-        let result = try await dictionary.lookup(
-            Candidate(text: "不存在", kind: .word)
-        )
-
-        XCTAssertEqual(result?.text, "fallback answer")
-    }
-
-    func testRuntimeSafeFallbackSurvivesDictionaryMiss() async throws {
+    func testMissingTermIsLeftForModelFallback() async throws {
         let dictionary = makeDictionary()
 
         let result = try await dictionary.lookup(
             Candidate(text: "颗粒度", kind: .word)
         )
 
-        XCTAssertEqual(result?.text, "granularity")
+        XCTAssertNil(result)
     }
 
     func testECDICTFallbackReturnsMultipleOptions() async throws {

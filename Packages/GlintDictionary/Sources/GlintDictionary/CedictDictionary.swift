@@ -11,47 +11,15 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         let senseOrder: Int
     }
 
-    private enum OverrideValue: Decodable {
-        case single(String)
-        case multiple([String])
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            if let value = try? container.decode(String.self) {
-                self = .single(value)
-            } else {
-                self = .multiple(try container.decode([String].self))
-            }
-        }
-
-        var values: [String] {
-            switch self {
-            case .single(let value): return [value]
-            case .multiple(let values): return values
-            }
-        }
-    }
-
-    private struct Overrides: Decodable {
-        let overrides: [String: OverrideValue]
-        let retiredOverrides: [String: OverrideValue]?
-    }
-
     private var database: OpaquePointer?
     private var senseStatement: OpaquePointer?
     private let lock = NSLock()
     private let ranker: ECDICTRanker?
-    private let overrides: [String: [String]]
-    private let retiredOverrides: [String: [String]]
-    private let builtin: [String: String]
 
     public init(
         databaseURL: URL? = nil,
-        overridesURL: URL? = nil,
-        builtin: [String: String] = CedictDictionary.builtin,
         ranker: ECDICTRanker? = nil
     ) {
-        self.builtin = builtin
         self.ranker = ranker
 
         let resolvedDatabase =
@@ -60,25 +28,6 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 name: "cedict",
                 extension: "sqlite3"
             )
-        let resolvedOverrides =
-            overridesURL
-            ?? Self.locateResource(
-                name: "overrides",
-                extension: "json"
-            )
-
-        if let resolvedOverrides,
-            let data = try? Data(contentsOf: resolvedOverrides),
-            let decoded = try? JSONDecoder().decode(Overrides.self, from: data)
-        {
-            self.overrides = decoded.overrides.mapValues { $0.values }
-            self.retiredOverrides =
-                decoded.retiredOverrides?
-                .mapValues { $0.values } ?? [:]
-        } else {
-            self.overrides = [:]
-            self.retiredOverrides = [:]
-        }
 
         if let resolvedDatabase {
             let openResult = sqlite3_open_v2(
@@ -129,44 +78,14 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
 
         let senses = querySenses(text)
         if !senses.isEmpty {
-            let dictionaryOptions = rankedSenseOptions(
+            let options = rankedSenseOptions(
                 term: text,
                 senses: senses
             )
-            let options =
-                dictionaryOptions
-                + fallbackOptions(for: text, after: dictionaryOptions)
             guard !options.isEmpty else { return nil }
             return TranslationResult(options: options)
         }
-        let fallback = fallbackOptions(for: text)
-        if !fallback.isEmpty {
-            return TranslationResult(options: fallback)
-        }
-        if let value = builtin[text] {
-            return TranslationResult(text: value)
-        }
         return nil
-    }
-
-    private func fallbackOptions(
-        for text: String,
-        after dictionaryOptions: [TranslationOption] = []
-    ) -> [TranslationOption] {
-        let values = (overrides[text] ?? []) + (retiredOverrides[text] ?? [])
-        guard !values.isEmpty else {
-            return []
-        }
-        let ceiling =
-            dictionaryOptions.isEmpty
-            ? 0.75
-            : (dictionaryOptions.map(\.score).min() ?? 0.75) - 0.0001
-        return values.enumerated().map { index, value in
-            TranslationOption(
-                text: value,
-                score: ceiling - Double(index) * 0.000001
-            )
-        }
     }
 
     private func querySenses(_ text: String) -> [DictionarySense] {
@@ -219,15 +138,6 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 rankingByEnglish[key] = ranking
             }
         }
-        var preferredBoosts: [String: Double] = [:]
-        for (index, value) in (overrides[term] ?? []).enumerated() {
-            let key = EnglishWordNormalizer.normalize(value)
-            preferredBoosts[key] = max(
-                preferredBoosts[key] ?? 0,
-                index == 0 ? 0.18 : 0.02
-            )
-        }
-
         var options: [TranslationOption] = []
         for sense in senses {
             let orderPenalty =
@@ -253,9 +163,6 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 }
                 if compact.contains(" ") {
                     score -= 0.05
-                }
-                if let boost = preferredBoosts[key] {
-                    score += boost
                 }
                 options.append(
                     TranslationOption(text: compact, score: score)
@@ -300,10 +207,4 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             )
     }
 
-    public static let builtin: [String: String] = [
-        "你好": "hello",
-        "你好吗": "How are you?",
-        "算法": "algorithm",
-        "中国": "China",
-    ]
 }

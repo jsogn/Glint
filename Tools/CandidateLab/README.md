@@ -10,7 +10,6 @@ by the App and does not change the production dictionary or routing behavior.
 - CC-CEDICT raw dictionary: https://cc-cedict.org/
 - ECDICT rank SQLite: https://github.com/skywind3000/ECDICT
 - Wiktionary / Kaikki SQLite: https://kaikki.org/dictionary/Chinese/
-- Glint curated overrides
 
 Source licenses and distribution constraints are recorded in
 `docs/DICTIONARY-SOURCES.md`.
@@ -32,7 +31,6 @@ python3 Tools/CandidateLab/build_candidate_bank.py \
   --cedict-gz /tmp/cedict_1_0_ts_utf-8_mdbg.txt.gz \
   --ecdict-db "$HOME/Library/Application Support/Glint/plugins/dict-ecdict/ecdict_rank.sqlite3" \
   --wiktionary-db "$HOME/Library/Application Support/Glint/plugins/dict-wiktionary-zh-en/dictionary.sqlite3" \
-  --overrides "$HOME/Library/Application Support/Glint/plugins/dict-cedict/overrides.json" \
   --cases Tools/ModelLab/eval/context_cases.json \
   --output Tools/ModelLab/results/context-candidate-bank.json
 ```

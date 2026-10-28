@@ -70,53 +70,11 @@ sense.
 python3 -m unittest discover -s Tools/DictionaryLab -p 'test_*.py' -v
 ```
 
-## Override Ablation
-
-The override stress corpus contains 20 paired targets. Each target appears in
-one context aligned with the current first override and one context that
-requires a different sense. It is deliberately adversarial and must not be
-treated as a frequency estimate for the full product.
-
-Runtime `overrides.json` now has two sections:
-
-- `overrides`: stable hints and exact low-priority fallback candidates;
-- `retiredOverrides`: context-sensitive historical candidates that can only
-  appear after dictionary results.
-
-Generate the auditable runtime classification and current Swift candidates:
-
-```bash
-python3 Tools/DictionaryLab/audit_runtime_overrides.py
-swift run --package-path Tools/GlintEval DictionaryChoices \
-  --cases Tools/DictionaryLab/eval/current_route_cases.json \
-  --wiktionary-db \
-  "$HOME/Library/Application Support/Glint/plugins/dict-wiktionary-zh-en/dictionary.sqlite3" \
-  --output Tools/DictionaryLab/results/current-route-choices.json
-```
-
-Validate the corpus and run the dictionary-only baselines:
-
-```bash
-python3 Tools/DictionaryLab/evaluate_override_ablation.py --dry-run
-python3 Tools/DictionaryLab/evaluate_override_ablation.py --skip-model
-```
-
-Run the same target-only and bounded-context Qwen3 4B comparison as the context
-research:
-
-```bash
-HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \
-  Tools/DictionaryLab/evaluate_override_ablation.py
-```
-
-The default report is
-`Tools/DictionaryLab/results/override-ablation.{json,md}`.
-
 ## Product Held-Out
 
-The 196-case product set excludes every target used by runtime overrides or the
-M8 dictionary corpus. It compares the real dictionary fallback route, the
-selected HY-MT2 model-first route, and the frozen Qwen3 context upper bound:
+The 196-case product set excludes targets used by the M8 dictionary corpus. It
+compares the real dictionary fallback route, the selected HY-MT2 model-first
+route, and the frozen Qwen3 context upper bound:
 
 ```bash
 HF_HUB_OFFLINE=1 Tools/ModelLab/.venv/bin/python \

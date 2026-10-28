@@ -15,7 +15,6 @@ from pathlib import Path
 
 
 SOURCE_WEIGHT = {
-    "curated": 4,
     "cedict": 3,
     "wiktionary": 2,
     "ecdict": 1,
@@ -213,29 +212,6 @@ def load_wiktionary(
     return count
 
 
-def load_overrides(
-    path: Path,
-    targets: set[str],
-    candidates_by_target: dict[str, dict[str, Candidate]],
-) -> int:
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    overrides = raw.get("overrides", {})
-    count = 0
-    for target in targets:
-        values = overrides.get(target, [])
-        if isinstance(values, str):
-            values = [values]
-        for value in values:
-            add_candidate(
-                candidates_by_target[target],
-                value,
-                "curated",
-                {},
-            )
-            count += 1
-    return count
-
-
 def reference_in_candidates(
     references: list[str],
     candidates: list[Candidate],
@@ -321,7 +297,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cedict-gz", required=True)
     parser.add_argument("--ecdict-db", required=True)
     parser.add_argument("--wiktionary-db", required=True)
-    parser.add_argument("--overrides", required=True)
     parser.add_argument("--cases", required=True)
     parser.add_argument("--output", required=True)
     return parser.parse_args()
@@ -351,11 +326,6 @@ def main() -> None:
             targets,
             candidates_by_target,
         ),
-        "curated": load_overrides(
-            Path(args.overrides),
-            targets,
-            candidates_by_target,
-        ),
     }
     bank = build_bank(
         cases,
@@ -364,7 +334,6 @@ def main() -> None:
             "cedict": args.cedict_gz,
             "ecdict": args.ecdict_db,
             "wiktionary": args.wiktionary_db,
-            "curated": args.overrides,
         },
         source_counts,
     )
