@@ -329,12 +329,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         windowModel.checkCoreDictionaryUpdateAction = {
-            [weak self] dictionaryID in
+            [weak self] updateKind in
             guard let self else {
                 throw CoreDictionaryUpdateError.unavailable
             }
             return try await self.environment.checkCoreDictionaryUpdate(
-                id: dictionaryID
+                kind: updateKind
             )
         }
         windowModel.displayPreferences.candidateDwellDurationDidChange = {

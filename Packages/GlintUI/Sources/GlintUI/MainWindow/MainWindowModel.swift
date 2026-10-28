@@ -125,8 +125,8 @@ public final class MainWindowModel {
     public var dictionaryConfigurationChangedAction: @MainActor () async -> Void = {}
     @ObservationIgnored
     public var checkCoreDictionaryUpdateAction:
-        @MainActor (String) async throws -> String = { dictionaryID in
-            "\(dictionaryID) 更新服务不可用"
+        @MainActor (CoreDictionaryUpdateKind) async throws -> String = {
+            _ in "词典更新服务不可用"
         }
 
     public init(
@@ -286,10 +286,17 @@ public final class MainWindowModel {
         coreDictionaryUpdateStates[dictionaryID]
     }
 
+    public var hasActiveCoreDictionaryUpdate: Bool {
+        coreDictionaryUpdateStates.values.contains {
+            $0.isChecking
+        }
+    }
+
     public func checkCoreDictionaryUpdate(
-        _ dictionaryID: String
+        _ dictionaryID: String,
+        kind: CoreDictionaryUpdateKind
     ) {
-        guard coreDictionaryUpdateTasks[dictionaryID] == nil else {
+        guard !hasActiveCoreDictionaryUpdate else {
             return
         }
         coreDictionaryUpdateStates[dictionaryID] =
@@ -305,7 +312,7 @@ public final class MainWindowModel {
             }
             do {
                 let message = try await checkCoreDictionaryUpdateAction(
-                    dictionaryID
+                    kind
                 )
                 try Task.checkCancellation()
                 await refreshInstalledPlugins()

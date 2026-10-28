@@ -17,6 +17,7 @@ final class PluginManifestTests: XCTestCase {
               "minRAMBytes": 0,
               "source": "bundled",
               "sourceChecksum": "file-blob",
+              "coreUpdateKind": "cedict",
               "revision": "abc123",
               "modelscopeURL": "https://modelscope.cn/models/example/dictionary"
             }
@@ -29,6 +30,7 @@ final class PluginManifestTests: XCTestCase {
         XCTAssertEqual(manifest.type, .dictionary)
         XCTAssertEqual(manifest.source, .bundled)
         XCTAssertEqual(manifest.sourceChecksum, "file-blob")
+        XCTAssertEqual(manifest.coreUpdateKind, .cedict)
         XCTAssertEqual(manifest.revision, "abc123")
         XCTAssertEqual(
             manifest.modelscopeURL,

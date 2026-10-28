@@ -31,45 +31,28 @@ actor PluginDictionaryRouter: DictionaryEngine {
 
 enum DictionaryPluginLoader {
     static func resolvedRoutes(baseDirectory: URL? = nil) -> [DictionaryRoute] {
+        let fileManager = FileManager.default
+        let bundledDirectories = BundledPluginResources.directories
+        let installedDirectories = pluginDirectories(
+            baseDirectory: baseDirectory,
+            fileManager: fileManager
+        )
+        let ranker =
+            ecdictRanker(in: installedDirectories)
+            ?? ecdictRanker(in: bundledDirectories)
         let bundledRoutes = routes(
-            in: BundledPluginResources.directories,
-            firstPriority: 0
+            in: bundledDirectories,
+            firstPriority: 0,
+            ecdictRanker: ranker
         )
         let bundledIDs = Set(bundledRoutes.map(\.id))
-        let fileManager = FileManager.default
-        let pluginsDirectory: URL
-        if let baseDirectory {
-            pluginsDirectory = baseDirectory
-        } else {
-            guard
-                let support = fileManager.urls(
-                    for: .applicationSupportDirectory,
-                    in: .userDomainMask
-                ).first
-            else {
-                return bundledRoutes
-            }
-            pluginsDirectory = support.appendingPathComponent(
-                "Glint/plugins",
-                isDirectory: true
-            )
-        }
-
-        guard
-            let directories = try? fileManager.contentsOfDirectory(
-                at: pluginsDirectory,
-                includingPropertiesForKeys: [.isDirectoryKey],
-                options: [.skipsHiddenFiles]
-            )
-        else {
+        guard !installedDirectories.isEmpty else {
             return bundledRoutes
         }
-
         let installedRoutes = routes(
-            in: directories.sorted {
-                $0.lastPathComponent < $1.lastPathComponent
-            },
-            firstPriority: 10
+            in: installedDirectories,
+            firstPriority: 10,
+            ecdictRanker: ranker
         )
         var installedByID: [String: DictionaryRoute] = [:]
         for route in installedRoutes where installedByID[route.id] == nil {
@@ -91,9 +74,64 @@ enum DictionaryPluginLoader {
         return effectiveBundledRoutes + additionalRoutes
     }
 
+    private static func pluginDirectories(
+        baseDirectory: URL?,
+        fileManager: FileManager
+    ) -> [URL] {
+        let pluginsDirectory: URL
+        if let baseDirectory {
+            pluginsDirectory = baseDirectory
+        } else {
+            guard
+                let support = fileManager.urls(
+                    for: .applicationSupportDirectory,
+                    in: .userDomainMask
+                ).first
+            else {
+                return []
+            }
+            pluginsDirectory = support.appendingPathComponent(
+                "Glint/plugins",
+                isDirectory: true
+            )
+        }
+        return (
+            try? fileManager.contentsOfDirectory(
+                at: pluginsDirectory,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            )
+        )?.sorted {
+            $0.lastPathComponent < $1.lastPathComponent
+        } ?? []
+    }
+
+    private static func ecdictRanker(
+        in directories: [URL]
+    ) -> ECDICTRanker? {
+        for directory in directories {
+            guard
+                let manifest = try? PluginManifest.load(from: directory),
+                manifest.id == "dict-ecdict",
+                manifest.runtime == "ecdict-rank"
+            else {
+                continue
+            }
+            let database = directory.appendingPathComponent(
+                "ecdict_rank.sqlite3"
+            )
+            guard ECDICTRankBuilder.isCompatible(databaseURL: database) else {
+                continue
+            }
+            return ECDICTRanker(databaseURL: database)
+        }
+        return nil
+    }
+
     private static func routes(
         in directories: [URL],
-        firstPriority: Int
+        firstPriority: Int,
+        ecdictRanker: ECDICTRanker?
     ) -> [DictionaryRoute] {
         directories
             .enumerated()
@@ -105,7 +143,8 @@ enum DictionaryPluginLoader {
                     manifest.type == .dictionary,
                     let engine = engine(
                         for: manifest,
-                        in: directory
+                        in: directory,
+                        ecdictRanker: ecdictRanker
                     )
                 else {
                     return nil
@@ -120,7 +159,8 @@ enum DictionaryPluginLoader {
 
     private static func engine(
         for manifest: PluginManifest,
-        in directory: URL
+        in directory: URL,
+        ecdictRanker: ECDICTRanker?
     ) -> (any DictionaryEngine)? {
         switch manifest.runtime {
         case "cedict-sqlite":
@@ -138,7 +178,8 @@ enum DictionaryPluginLoader {
             }
             return CedictDictionary(
                 databaseURL: database,
-                overridesURL: overrides
+                overridesURL: overrides,
+                ranker: ecdictRanker
             )
         case "ecdict-rank":
             let database = directory.appendingPathComponent(
@@ -147,7 +188,7 @@ enum DictionaryPluginLoader {
             guard ECDICTRankBuilder.isCompatible(databaseURL: database) else {
                 return nil
             }
-            return ECDICTDictionary(databaseURL: database)
+            return ECDICTDictionary(ranker: ecdictRanker)
         case GenericSQLiteDictionary.runtime:
             let database = directory.appendingPathComponent(
                 GenericSQLiteDictionary.databaseName

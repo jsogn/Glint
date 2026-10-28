@@ -168,6 +168,7 @@ final class CoreDictionaryUpdateServiceTests: XCTestCase {
             id: "dict-cedict"
         )
         XCTAssertEqual(installed?.version, "2026.10.28")
+        XCTAssertEqual(installed?.coreUpdateKind, .cedict)
         let installedDirectory = await manager.pluginDirectory(
             for: "dict-cedict"
         )

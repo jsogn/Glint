@@ -22,6 +22,8 @@ python3 Tools/DictionaryBuilder/build_sqlite.py \
   --output Resources/Plugins/dict-cedict/cedict.sqlite3
 ```
 
+该兼容脚本会调用 `glint-dictionary-builder`；解析和数据库生成只有 Swift 一份实现。
+
 ### ECDICT
 
 - 来源：[ECDICT](https://github.com/skywind3000/ECDICT)
@@ -43,6 +45,8 @@ python3 Tools/DictionaryBuilder/build_ecdict_ranker.py \
   --source-date 2026-10-20T02:25:07Z \
   --source-revision 9c46923fb81a2eb6c264a3a1689562ea7bc56b6a
 ```
+
+该兼容脚本同样调用 `glint-dictionary-builder`，不会另行实现排序规则。
 
 ### Wiktionary / Kaikki
 

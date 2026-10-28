@@ -4,11 +4,6 @@ import GlintPlugins
 import SwiftUI
 
 struct PluginsPage: View {
-    private static let coreDictionaryIDs: Set<String> = [
-        "dict-cedict",
-        "dict-ecdict",
-    ]
-
     let model: MainWindowModel
     @Binding var selectedTab: PluginTab
     @State private var pluginToRemove: PluginManifest?
@@ -225,7 +220,7 @@ struct PluginsPage: View {
                                 : Color.secondary
                         )
                 }
-                if Self.coreDictionaryIDs.contains(plugin.id),
+                if plugin.coreUpdateKind != nil,
                     let state = model.coreDictionaryUpdateState(
                         for: plugin.id
                     )
@@ -246,7 +241,7 @@ struct PluginsPage: View {
                 }
             }
             Spacer()
-            if Self.coreDictionaryIDs.contains(plugin.id),
+            if let updateKind = plugin.coreUpdateKind,
                 plugin.source == .bundled
             {
                 if model.coreDictionaryUpdateState(
@@ -263,10 +258,14 @@ struct PluginsPage: View {
                     }
                 } else {
                     Button("检查更新") {
-                        model.checkCoreDictionaryUpdate(plugin.id)
+                        model.checkCoreDictionaryUpdate(
+                            plugin.id,
+                            kind: updateKind
+                        )
                     }
                     .disabled(
-                        model.isInstalling != nil
+                        model.hasActiveCoreDictionaryUpdate
+                            || model.isInstalling != nil
                             || model.isImportingLocalModel
                     )
                 }

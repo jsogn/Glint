@@ -161,13 +161,16 @@ final class MainWindowModelTests: XCTestCase {
         model.dictionaryConfigurationChangedAction = {
             refreshCount += 1
         }
-        var checkedDictionaryID: String?
-        model.checkCoreDictionaryUpdateAction = { dictionaryID in
-            checkedDictionaryID = dictionaryID
+        var checkedUpdateKind: CoreDictionaryUpdateKind?
+        model.checkCoreDictionaryUpdateAction = { updateKind in
+            checkedUpdateKind = updateKind
             return "CC-CEDICT 已是最新"
         }
 
-        model.checkCoreDictionaryUpdate("dict-cedict")
+        model.checkCoreDictionaryUpdate(
+            "dict-cedict",
+            kind: .cedict
+        )
         for _ in 0..<200
         where model.coreDictionaryUpdateState(
             for: "dict-cedict"
@@ -181,7 +184,7 @@ final class MainWindowModelTests: XCTestCase {
             )?.statusText,
             "CC-CEDICT 已是最新"
         )
-        XCTAssertEqual(checkedDictionaryID, "dict-cedict")
+        XCTAssertEqual(checkedUpdateKind, .cedict)
         XCTAssertEqual(
             model.coreDictionaryUpdateState(
                 for: "dict-cedict"
@@ -215,7 +218,10 @@ final class MainWindowModelTests: XCTestCase {
             return "unexpected"
         }
 
-        model.checkCoreDictionaryUpdate("dict-cedict")
+        model.checkCoreDictionaryUpdate(
+            "dict-cedict",
+            kind: .cedict
+        )
         try await Task.sleep(for: .milliseconds(20))
         model.cancelCoreDictionaryUpdate("dict-cedict")
         for _ in 0..<200
@@ -252,37 +258,95 @@ final class MainWindowModelTests: XCTestCase {
             ],
             catalogURL: nil
         )
-        model.checkCoreDictionaryUpdateAction = { dictionaryID in
-            if dictionaryID == "dict-ecdict" {
+        model.checkCoreDictionaryUpdateAction = { updateKind in
+            if updateKind == .ecdict {
                 return "ECDICT 已是最新"
             }
             return "CC-CEDICT 已是最新"
         }
 
-        model.checkCoreDictionaryUpdate("dict-cedict")
-        model.checkCoreDictionaryUpdate("dict-ecdict")
+        model.checkCoreDictionaryUpdate(
+            "dict-cedict",
+            kind: .cedict
+        )
         for _ in 0..<200
         where model.coreDictionaryUpdateState(
             for: "dict-cedict"
-        )?.isChecking == true
-            || model.coreDictionaryUpdateState(
-                for: "dict-ecdict"
-            )?.isChecking == true {
+        )?.isChecking == true {
             try await Task.sleep(for: .milliseconds(5))
         }
-
         XCTAssertEqual(
             model.coreDictionaryUpdateState(
                 for: "dict-cedict"
             )?.statusText,
             "CC-CEDICT 已是最新"
         )
+
+        model.checkCoreDictionaryUpdate(
+            "dict-ecdict",
+            kind: .ecdict
+        )
+        for _ in 0..<200
+        where model.coreDictionaryUpdateState(
+            for: "dict-ecdict"
+        )?.isChecking == true {
+            try await Task.sleep(for: .milliseconds(5))
+        }
         XCTAssertEqual(
             model.coreDictionaryUpdateState(
                 for: "dict-ecdict"
             )?.statusText,
             "ECDICT 已是最新"
         )
+    }
+
+    @MainActor
+    func testCoreDictionaryUpdatesAreGloballySerialized() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintCoreDictionarySerializationTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            builtInPlugins: [
+                dictionaryManifest(id: "dict-cedict"),
+                dictionaryManifest(id: "dict-ecdict"),
+            ],
+            catalogURL: nil
+        )
+        var checkedKinds: [CoreDictionaryUpdateKind] = []
+        model.checkCoreDictionaryUpdateAction = { updateKind in
+            checkedKinds.append(updateKind)
+            try await Task.sleep(for: .seconds(10))
+            return "unexpected"
+        }
+
+        model.checkCoreDictionaryUpdate(
+            "dict-cedict",
+            kind: .cedict
+        )
+        try await Task.sleep(for: .milliseconds(20))
+        model.checkCoreDictionaryUpdate(
+            "dict-ecdict",
+            kind: .ecdict
+        )
+        try await Task.sleep(for: .milliseconds(20))
+
+        XCTAssertEqual(checkedKinds, [.cedict])
+        XCTAssertNil(
+            model.coreDictionaryUpdateState(for: "dict-ecdict")
+        )
+
+        model.cancelCoreDictionaryUpdate("dict-cedict")
+        for _ in 0..<200 where model.hasActiveCoreDictionaryUpdate {
+            try await Task.sleep(for: .milliseconds(5))
+        }
     }
 
     @MainActor

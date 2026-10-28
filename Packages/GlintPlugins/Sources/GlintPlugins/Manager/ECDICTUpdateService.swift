@@ -25,7 +25,6 @@ public enum ECDICTUpdateError: Error, LocalizedError, Equatable {
     case missingSourceDate
     case invalidArchive
     case implausibleDatabase
-    case installationValidationFailed
 
     public var errorDescription: String? {
         switch self {
@@ -39,8 +38,6 @@ public enum ECDICTUpdateError: Error, LocalizedError, Equatable {
             "ECDICT 下载文件格式无效"
         case .implausibleDatabase:
             "下载的 ECDICT 数据不完整"
-        case .installationValidationFailed:
-            "更新后的 ECDICT 校验失败，已恢复原词典"
         }
     }
 }
@@ -176,6 +173,7 @@ public actor ECDICTUpdateService {
     }
 
     private let pluginManager: PluginManager
+    private let installer: CoreDictionaryInstaller
     private let session: URLSession
     private let fileManager: FileManager
     private let bundledDirectory: URL?
@@ -195,6 +193,9 @@ public actor ECDICTUpdateService {
         minimumRankCount: Int = 120_000
     ) {
         self.pluginManager = pluginManager
+        self.installer = CoreDictionaryInstaller(
+            pluginManager: pluginManager
+        )
         self.session =
             session
             ?? {
@@ -273,90 +274,38 @@ public actor ECDICTUpdateService {
             throw ECDICTUpdateError.implausibleDatabase
         }
 
-        let stagingDirectory = workDirectory.appendingPathComponent(
-            "plugin",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(
-            at: stagingDirectory,
-            withIntermediateDirectories: true
-        )
-        for item in try fileManager.contentsOfDirectory(
-            at: bundledDirectory,
-            includingPropertiesForKeys: nil
-        ) {
-            try fileManager.copyItem(
-                at: item,
-                to: stagingDirectory.appendingPathComponent(
-                    item.lastPathComponent
-                )
-            )
-        }
-        let stagedDatabase = stagingDirectory.appendingPathComponent(
-            "ecdict_rank.sqlite3"
-        )
-        try? fileManager.removeItem(at: stagedDatabase)
-        try fileManager.copyItem(
-            at: builtDatabase,
-            to: stagedDatabase
-        )
         let version = Self.version(from: revision.date)
-        let manifest = PluginManifest(
-            id: Self.dictionaryID,
-            type: .dictionary,
-            name: current.manifest.name,
-            version: version,
-            runtime: current.manifest.runtime,
-            sizeBytes: Int64(fileSize(at: stagedDatabase)),
-            sha256: try Self.sha256(fileURL: stagedDatabase),
-            url: URL(
-                string:
-                    "https://github.com/skywind3000/ECDICT"
-            )!,
-            license: current.manifest.license,
-            minRAMBytes: current.manifest.minRAMBytes,
-            summary: current.manifest.summary,
-            revision: revision.commitSHA,
-            source: .bundled,
-            sourceDate: revision.date,
-            sourceChecksum: sourceChecksum
-        )
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(manifest).write(
-            to: stagingDirectory.appendingPathComponent(
-                PluginManifest.fileName
+        let manifest = try await installer.install(
+            PreparedCoreDictionaryInstallation(
+                dictionaryID: Self.dictionaryID,
+                bundledDirectory: bundledDirectory,
+                builtArtifactURL: builtDatabase,
+                artifactFileName: "ecdict_rank.sqlite3",
+                manifestFields: CoreDictionaryManifestFields(
+                    name: current.manifest.name,
+                    version: version,
+                    runtime: current.manifest.runtime,
+                    url: URL(
+                        string:
+                            "https://github.com/skywind3000/ECDICT"
+                    )!,
+                    license: current.manifest.license,
+                    minRAMBytes: current.manifest.minRAMBytes,
+                    summary: current.manifest.summary,
+                    revision: revision.commitSHA,
+                    sourceDate: revision.date,
+                    sourceChecksum: sourceChecksum,
+                    coreUpdateKind: .ecdict
+                ),
+                validate: { databaseURL in
+                    (try? ECDICTRankBuilder.inspect(
+                        databaseURL: databaseURL,
+                        fullIntegrityCheck: true
+                    )) == summary
+                }
             ),
-            options: .atomic
+            workDirectory: workDirectory
         )
-
-        try Task.checkCancellation()
-        let hadExistingInstall =
-            await pluginManager.installedPlugin(
-                id: Self.dictionaryID
-            ) != nil
-        _ = try await pluginManager.installPreparedPlugin(
-            at: stagingDirectory,
-            keepBackup: hadExistingInstall
-        )
-        let installedDirectory = await pluginManager.pluginDirectory(
-            for: Self.dictionaryID
-        )
-        let installedSummary = try? ECDICTRankBuilder.inspect(
-            databaseURL: installedDirectory.appendingPathComponent(
-                "ecdict_rank.sqlite3"
-            ),
-            fullIntegrityCheck: true
-        )
-        guard installedSummary == summary else {
-            if hadExistingInstall {
-                try? await pluginManager.rollbackPendingUpgrade()
-            } else {
-                try? await pluginManager.remove(id: Self.dictionaryID)
-            }
-            throw ECDICTUpdateError.installationValidationFailed
-        }
-        try await pluginManager.commitPendingUpgrade()
         return result(
             didUpdate: true,
             manifest: manifest,
@@ -500,14 +449,6 @@ public actor ECDICTUpdateService {
             sourceDate: summary.sourceDate,
             termCount: summary.termCount,
             rankCount: summary.rankCount
-        )
-    }
-
-    private func fileSize(at url: URL) -> Int64 {
-        Int64(
-            (try? url.resourceValues(
-                forKeys: [.fileSizeKey]
-            ).fileSize) ?? 0
         )
     }
 

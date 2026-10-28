@@ -49,7 +49,7 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         databaseURL: URL? = nil,
         overridesURL: URL? = nil,
         builtin: [String: String] = CedictDictionary.builtin,
-        ranker: ECDICTRanker? = ECDICTRanker()
+        ranker: ECDICTRanker? = nil
     ) {
         self.builtin = builtin
         self.ranker = ranker

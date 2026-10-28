@@ -5,7 +5,11 @@ let package = Package(
     name: "GlintDictionary",
     platforms: [.macOS("26.0")],
     products: [
-        .library(name: "GlintDictionary", targets: ["GlintDictionary"])
+        .library(name: "GlintDictionary", targets: ["GlintDictionary"]),
+        .executable(
+            name: "glint-dictionary-builder",
+            targets: ["GlintDictionaryBuilder"]
+        ),
     ],
     dependencies: [
         .package(path: "../GlintCore")
@@ -18,6 +22,10 @@ let package = Package(
                 .linkedLibrary("sqlite3"),
                 .linkedLibrary("z"),
             ]
+        ),
+        .executableTarget(
+            name: "GlintDictionaryBuilder",
+            dependencies: ["GlintDictionary"]
         ),
         .testTarget(
             name: "GlintDictionaryTests",

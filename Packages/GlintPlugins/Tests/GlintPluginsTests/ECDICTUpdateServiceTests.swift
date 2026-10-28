@@ -121,6 +121,7 @@ final class ECDICTUpdateServiceTests: XCTestCase {
             id: "dict-ecdict"
         )
         XCTAssertEqual(installed?.revision, newECDICTRevision)
+        XCTAssertEqual(installed?.coreUpdateKind, .ecdict)
         XCTAssertEqual(
             installed?.sourceChecksum,
             SHA256.hash(data: csv).map {

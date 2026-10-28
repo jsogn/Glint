@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import GlintDictionary
 
@@ -23,7 +22,6 @@ public enum CoreDictionaryUpdateError: Error, LocalizedError, Equatable {
     case invalidResponse
     case missingSourceDate
     case implausibleDatabase
-    case installationValidationFailed
 
     public var errorDescription: String? {
         switch self {
@@ -35,8 +33,6 @@ public enum CoreDictionaryUpdateError: Error, LocalizedError, Equatable {
             "CC-CEDICT 文件缺少日期信息"
         case .implausibleDatabase:
             "下载的 CC-CEDICT 数据不完整"
-        case .installationValidationFailed:
-            "更新后的 CC-CEDICT 校验失败，已恢复内置词典"
         }
     }
 }
@@ -55,6 +51,7 @@ public actor CoreDictionaryUpdateService {
     }
 
     private let pluginManager: PluginManager
+    private let installer: CoreDictionaryInstaller
     private let session: URLSession
     private let defaults: UserDefaults
     private let fileManager: FileManager
@@ -74,6 +71,9 @@ public actor CoreDictionaryUpdateService {
         minimumSenseCount: Int = 150_000
     ) {
         self.pluginManager = pluginManager
+        self.installer = CoreDictionaryInstaller(
+            pluginManager: pluginManager
+        )
         self.session =
             session
             ?? {
@@ -244,88 +244,33 @@ public actor CoreDictionaryUpdateService {
             throw CoreDictionaryUpdateError.implausibleDatabase
         }
 
-        let stagingDirectory = workDirectory.appendingPathComponent(
-            "plugin",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(
-            at: stagingDirectory,
-            withIntermediateDirectories: true
-        )
-        for item in try fileManager.contentsOfDirectory(
-            at: bundledDirectory,
-            includingPropertiesForKeys: nil
-        ) {
-            try fileManager.copyItem(
-                at: item,
-                to: stagingDirectory.appendingPathComponent(
-                    item.lastPathComponent
-                )
-            )
-        }
-        let stagedDatabase = stagingDirectory.appendingPathComponent(
-            "cedict.sqlite3"
-        )
-        try? fileManager.removeItem(at: stagedDatabase)
-        try fileManager.copyItem(
-            at: builtDatabase,
-            to: stagedDatabase
-        )
         let version = Self.version(from: downloadedDate)
-        let manifest = PluginManifest(
-            id: Self.dictionaryID,
-            type: .dictionary,
-            name: current.manifest.name,
-            version: version,
-            runtime: current.manifest.runtime,
-            sizeBytes: Int64(
-                fileSize(at: stagedDatabase)
+        let manifest = try await installer.install(
+            PreparedCoreDictionaryInstallation(
+                dictionaryID: Self.dictionaryID,
+                bundledDirectory: bundledDirectory,
+                builtArtifactURL: builtDatabase,
+                artifactFileName: "cedict.sqlite3",
+                manifestFields: CoreDictionaryManifestFields(
+                    name: current.manifest.name,
+                    version: version,
+                    runtime: current.manifest.runtime,
+                    url: sourceURL,
+                    license: current.manifest.license,
+                    minRAMBytes: current.manifest.minRAMBytes,
+                    summary: current.manifest.summary,
+                    sourceDate: downloadedDate,
+                    coreUpdateKind: .cedict
+                ),
+                validate: { databaseURL in
+                    (try? CedictDatabaseBuilder.inspect(
+                        databaseURL: databaseURL,
+                        fullIntegrityCheck: true
+                    )) == summary
+                }
             ),
-            sha256: try Self.sha256(fileURL: stagedDatabase),
-            url: sourceURL,
-            license: current.manifest.license,
-            minRAMBytes: current.manifest.minRAMBytes,
-            summary: current.manifest.summary,
-            source: .bundled,
-            sourceDate: downloadedDate
+            workDirectory: workDirectory
         )
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(manifest).write(
-            to: stagingDirectory.appendingPathComponent(
-                PluginManifest.fileName
-            ),
-            options: .atomic
-        )
-
-        try Task.checkCancellation()
-        let hadExistingInstall =
-            await pluginManager.installedPlugin(
-                id: Self.dictionaryID
-            ) != nil
-        _ = try await pluginManager.installPreparedPlugin(
-            at: stagingDirectory,
-            keepBackup: hadExistingInstall
-        )
-        let installedDirectory = await pluginManager.pluginDirectory(
-            for: Self.dictionaryID
-        )
-        let installedSummary = try? CedictDatabaseBuilder.inspect(
-            databaseURL: installedDirectory.appendingPathComponent(
-                "cedict.sqlite3"
-            ),
-            fullIntegrityCheck: true
-        )
-        guard installedSummary == summary else {
-            if hadExistingInstall {
-                try? await pluginManager.rollbackPendingUpgrade()
-            } else {
-                try? await pluginManager.remove(id: Self.dictionaryID)
-            }
-            throw CoreDictionaryUpdateError
-                .installationValidationFailed
-        }
-        try await pluginManager.commitPendingUpgrade()
         storeHTTPMetadata(from: http)
         return result(
             didUpdate: true,
@@ -426,14 +371,6 @@ public actor CoreDictionaryUpdateService {
         throw lastError ?? CoreDictionaryUpdateError.invalidResponse
     }
 
-    private func fileSize(at url: URL) -> Int64 {
-        Int64(
-            (try? url.resourceValues(
-                forKeys: [.fileSizeKey]
-            ).fileSize) ?? 0
-        )
-    }
-
     private static func isNewer(
         _ candidate: String,
         than current: String?
@@ -495,13 +432,4 @@ public actor CoreDictionaryUpdateService {
         return components.joined(separator: ".")
     }
 
-    private static func sha256(fileURL: URL) throws -> String {
-        let data = try Data(
-            contentsOf: fileURL,
-            options: [.mappedIfSafe]
-        )
-        return SHA256.hash(data: data)
-            .map { String(format: "%02x", $0) }
-            .joined()
-    }
 }

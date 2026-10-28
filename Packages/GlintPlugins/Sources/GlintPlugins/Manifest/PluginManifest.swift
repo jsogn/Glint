@@ -12,6 +12,11 @@ public enum PluginSource: String, Codable, Sendable {
     case local
 }
 
+public enum CoreDictionaryUpdateKind: String, Codable, Sendable {
+    case cedict
+    case ecdict
+}
+
 enum PluginRuntimePolicy {
     static func supportsDownloadedRuntime(
         type: PluginKind,
@@ -49,6 +54,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
     public let source: PluginSource
     public let sourceDate: String?
     public let sourceChecksum: String?
+    public let coreUpdateKind: CoreDictionaryUpdateKind?
     public let promptProfile: TranslationPromptProfile?
 
     public init(
@@ -68,6 +74,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         source: PluginSource = .catalog,
         sourceDate: String? = nil,
         sourceChecksum: String? = nil,
+        coreUpdateKind: CoreDictionaryUpdateKind? = nil,
         promptProfile: TranslationPromptProfile? = nil
     ) {
         self.id = id
@@ -86,6 +93,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         self.source = source
         self.sourceDate = sourceDate
         self.sourceChecksum = sourceChecksum
+        self.coreUpdateKind = coreUpdateKind
         self.promptProfile = promptProfile
     }
 
@@ -95,4 +103,5 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         )
         return try JSONDecoder().decode(Self.self, from: data)
     }
+
 }

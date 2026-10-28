@@ -95,19 +95,17 @@ final class AppEnvironment {
     }
 
     func checkCoreDictionaryUpdate(
-        id: String
+        kind: CoreDictionaryUpdateKind
     ) async throws -> String {
-        switch id {
-        case CoreDictionaryUpdateService.dictionaryID:
+        switch kind {
+        case .cedict:
             try await coreDictionaryUpdateService
                 .checkForUpdate()
                 .statusText
-        case ECDICTUpdateService.dictionaryID:
+        case .ecdict:
             try await ecdictUpdateService
                 .checkForUpdate()
                 .statusText
-        default:
-            throw CoreDictionaryUpdateError.unavailable
         }
     }
 

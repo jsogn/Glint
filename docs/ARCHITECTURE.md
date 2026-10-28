@@ -239,6 +239,10 @@ MainWindowModel → MainWindowView
 - ECDICT 仅允许用户手动检查更新。更新器读取 GitHub 的 `ecdict.csv` 提交 Atom
   源检测 revision，下载固定 revision 的官方代码归档，流式解压并校验 CSV 结构，
   随后重建排序 SQLite 并执行同样的数量、完整性和可回滚安装校验。
+- CC-CEDICT 与 ECDICT 的发布资源更新和 App 内更新共用 `GlintDictionary` 中的
+  Swift 构建器；`Tools/DictionaryBuilder` 下的 Python 文件只是兼容调用入口。
+- 可更新能力由 manifest 的 `coreUpdateKind` 声明，设置页与服务分发不再各自维护
+  词典 ID 白名单。核心词典更新在 App 层全局串行，避免多个安装事务竞争。
 - OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；
   权重不进入 Git，锁文件记录产物 SHA256。
 - 可选 MLX 模型优先国内镜像，失败后回退官方源；下载、校验和安装阶段不重叠。

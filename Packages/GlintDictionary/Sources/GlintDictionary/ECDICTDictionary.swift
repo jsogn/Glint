@@ -8,6 +8,10 @@ public final class ECDICTDictionary: DictionaryEngine, @unchecked Sendable {
         self.ranker = ECDICTRanker(databaseURL: databaseURL)
     }
 
+    public init(ranker: ECDICTRanker?) {
+        self.ranker = ranker
+    }
+
     public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
         let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty,
