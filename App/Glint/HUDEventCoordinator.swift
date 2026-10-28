@@ -1,4 +1,5 @@
 import CoreGraphics
+import GlintCore
 import GlintMac
 import GlintUI
 import OSLog
@@ -26,6 +27,9 @@ final class HUDEventCoordinator {
     }
 
     func updateSelection(index: Int, revision: UInt64) {
+        guard model.displayPreferences.translationScope == .row else {
+            return
+        }
         guard displayedRevision == revision else { return }
         hud.updateSelection(itemID: index)
     }
@@ -50,18 +54,18 @@ final class HUDEventCoordinator {
         }
         displayedRevision = revision
         model.statusText = ""
-        let showsNumbers = model.displayPreferences.translationScope == .row
-        let items = translations.map {
-            HUDItem(
-                id: $0.index,
-                number: showsNumbers ? $0.index + 1 : nil,
-                text: $0.translation ?? "…",
-                isSelected: $0.isSelected
-            )
-        }
+        let scope = model.displayPreferences.translationScope
+        let items = Self.hudItems(
+            translations: translations,
+            scope: scope
+        )
         hud.show(
             items: items,
             near: highlight.cgRect,
+            layoutStyle:
+                scope == .row
+                ? .candidateRow
+                : .selectedTranslations,
             position: model.displayPreferences.position,
             spacing: model.displayPreferences.candidateSpacing,
             opacity: model.displayPreferences.hudOpacity,
@@ -69,7 +73,7 @@ final class HUDEventCoordinator {
             revision: revision
         )
         let phase: String
-        if model.displayPreferences.translationScope == .row,
+        if scope == .row,
             items.count > 1,
             !isProgressive
         {
@@ -99,5 +103,42 @@ final class HUDEventCoordinator {
     private static func elapsedMilliseconds(_ duration: Duration) -> Double {
         Double(duration.components.seconds) * 1_000
             + Double(duration.components.attoseconds) / 1_000_000_000_000_000
+    }
+
+    private static func hudItems(
+        translations: [CandidateTranslationPresentation],
+        scope: CandidateTranslationScope
+    ) -> [HUDItem] {
+        switch scope {
+        case .selected:
+            guard
+                let selected =
+                    translations.first(where: \.isSelected)
+                    ?? translations.first
+            else {
+                return []
+            }
+            let texts =
+                selected.insertionOptions.isEmpty
+                ? [selected.translation ?? "…"]
+                : selected.insertionOptions
+            return texts.enumerated().map { index, text in
+                HUDItem(
+                    id: index,
+                    number: index + 1,
+                    text: text,
+                    isSelected: false
+                )
+            }
+        case .row:
+            return translations.map {
+                HUDItem(
+                    id: $0.index,
+                    number: $0.index + 1,
+                    text: $0.translation ?? "…",
+                    isSelected: $0.isSelected
+                )
+            }
+        }
     }
 }

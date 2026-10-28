@@ -63,6 +63,10 @@ public final class MainWindowModel {
     public private(set) var translationModelStatusText: String?
     public private(set) var translationModelStatusIsError = false
     public private(set) var translationModelStatusModelID: String?
+    public private(set) var isCheckingCoreDictionaryUpdate = false
+    public private(set) var coreDictionaryUpdateStatusText: String?
+    public private(set) var coreDictionaryUpdateStatusIsError = false
+    public let generalPreferences: GeneralPreferences
     public let displayPreferences: DisplayPreferences
     private let catalogURL: URL?
 
@@ -86,6 +90,8 @@ public final class MainWindowModel {
     private var installTask: Task<Void, Never>?
     @ObservationIgnored
     private var localImportTask: Task<Void, Never>?
+    @ObservationIgnored
+    private var coreDictionaryUpdateTask: Task<Void, Never>?
     @ObservationIgnored
     public var startMonitoringAction: @MainActor () -> Void = {}
     @ObservationIgnored
@@ -112,8 +118,14 @@ public final class MainWindowModel {
     public var translationConfigurationChangedAction: @MainActor () -> Void = {}
     @ObservationIgnored
     public var dictionaryConfigurationChangedAction: @MainActor () async -> Void = {}
+    @ObservationIgnored
+    public var checkCoreDictionaryUpdateAction:
+        @MainActor () async throws -> String = {
+            "CC-CEDICT 更新服务不可用"
+        }
 
     public init(
+        generalPreferences: GeneralPreferences? = nil,
         displayPreferences: DisplayPreferences? = nil,
         pluginManager: PluginManager = PluginManager(),
         builtInPlugins: [PluginManifest] = [],
@@ -121,6 +133,7 @@ public final class MainWindowModel {
         defaults: UserDefaults = .standard,
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
+        self.generalPreferences = generalPreferences ?? GeneralPreferences()
         self.displayPreferences = displayPreferences ?? DisplayPreferences()
         self.pluginLifecycle = PluginLifecycleService(manager: pluginManager)
         self.builtInPlugins = builtInPlugins
@@ -240,12 +253,61 @@ public final class MainWindowModel {
         isLoadingPlugins = true
         let managedPlugins = await pluginLifecycle.installedPlugins()
         let builtInIDs = Set(builtInPlugins.map(\.id))
+        var managedByID: [String: PluginManifest] = [:]
+        for plugin in managedPlugins {
+            managedByID[plugin.id] = plugin
+        }
+        let effectiveBuiltIns = builtInPlugins.map { plugin in
+            guard
+                let managed = managedByID[plugin.id],
+                managed.source == .bundled
+            else {
+                return plugin
+            }
+            return managed
+        }
         installedPlugins =
-            (builtInPlugins
-            + managedPlugins.filter { !builtInIDs.contains($0.id) }).sorted { $0.name < $1.name }
+            (effectiveBuiltIns
+            + managedPlugins.filter { !builtInIDs.contains($0.id) })
+            .sorted { $0.name < $1.name }
         reconcileActiveTranslationModel()
         isLoadingPlugins = false
         translationConfigurationChangedAction()
+    }
+
+    public func checkCoreDictionaryUpdate() {
+        guard coreDictionaryUpdateTask == nil else { return }
+        isCheckingCoreDictionaryUpdate = true
+        coreDictionaryUpdateStatusText = nil
+        coreDictionaryUpdateStatusIsError = false
+        coreDictionaryUpdateTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                isCheckingCoreDictionaryUpdate = false
+                coreDictionaryUpdateTask = nil
+            }
+            do {
+                let message = try await checkCoreDictionaryUpdateAction()
+                try Task.checkCancellation()
+                await refreshInstalledPlugins()
+                await dictionaryConfigurationChangedAction()
+                coreDictionaryUpdateStatusText = message
+                coreDictionaryUpdateStatusIsError = false
+            } catch {
+                if Task.isCancelled {
+                    coreDictionaryUpdateStatusText = nil
+                    coreDictionaryUpdateStatusIsError = false
+                    return
+                }
+                coreDictionaryUpdateStatusText =
+                    "更新失败：\(error.localizedDescription)"
+                coreDictionaryUpdateStatusIsError = true
+            }
+        }
+    }
+
+    public func cancelCoreDictionaryUpdate() {
+        coreDictionaryUpdateTask?.cancel()
     }
 
     public func checkForCatalogUpdates(force: Bool = false) async {

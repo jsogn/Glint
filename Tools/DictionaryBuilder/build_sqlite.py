@@ -80,11 +80,14 @@ def build(source_gz: Path, output: Path) -> tuple[int, int]:
     connection = sqlite3.connect(temporary)
     entry_count = 0
     sense_count = 0
+    source_date = ""
     try:
         create_schema(connection)
         with gzip.open(source_gz, "rt", encoding="utf-8") as handle:
             for line in handle:
                 if line.startswith("#"):
+                    if line.startswith("#! date="):
+                        source_date = line.removeprefix("#! date=").strip()
                     continue
                 parsed = parse_entry(line)
                 if parsed is None:
@@ -116,6 +119,14 @@ def build(source_gz: Path, output: Path) -> tuple[int, int]:
                 )
                 sense_count += len(senses)
         connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+        connection.executemany(
+            "INSERT INTO metadata(key, value) VALUES (?, ?)",
+            (
+                ("source_date", source_date),
+                ("entry_count", str(entry_count)),
+                ("sense_count", str(sense_count)),
+            ),
+        )
         connection.commit()
     finally:
         connection.close()

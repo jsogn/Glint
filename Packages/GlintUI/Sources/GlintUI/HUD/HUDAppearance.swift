@@ -1,6 +1,11 @@
 import AppKit
 import SwiftUI
 
+public enum HUDLayoutStyle: Equatable, Sendable {
+    case selectedTranslations
+    case candidateRow
+}
+
 public enum HUDBackgroundStyle: String, CaseIterable, Sendable {
     case darkGlass
     case solid
@@ -97,6 +102,7 @@ public struct HUDAppearance: Equatable, Sendable {
         blue: 0.12
     )
     public static let fontSizeRange = 12.0...18.0
+    public static let selectedTranslationSpacingRange = 8.0...24.0
     public static let `default` = HUDAppearance()
 
     public var backgroundStyle: HUDBackgroundStyle
@@ -105,6 +111,7 @@ public struct HUDAppearance: Equatable, Sendable {
     public var usesCustomTextColor: Bool
     public var fontSize: Double
     public var density: HUDDensity
+    public var selectedTranslationSpacing: Double
 
     public init(
         backgroundStyle: HUDBackgroundStyle = .darkGlass,
@@ -112,7 +119,8 @@ public struct HUDAppearance: Equatable, Sendable {
         backgroundColor: HUDColor = Self.defaultBackgroundColor,
         usesCustomTextColor: Bool = false,
         fontSize: Double = 14,
-        density: HUDDensity = .standard
+        density: HUDDensity = .standard,
+        selectedTranslationSpacing: Double = 14
     ) {
         let validFontSize = fontSize.isFinite ? fontSize : 14
         self.backgroundStyle = backgroundStyle
@@ -124,6 +132,17 @@ public struct HUDAppearance: Equatable, Sendable {
             Self.fontSizeRange.upperBound
         )
         self.density = density
+        let validTranslationSpacing =
+            selectedTranslationSpacing.isFinite
+            ? selectedTranslationSpacing
+            : 14
+        self.selectedTranslationSpacing = min(
+            max(
+                validTranslationSpacing,
+                Self.selectedTranslationSpacingRange.lowerBound
+            ),
+            Self.selectedTranslationSpacingRange.upperBound
+        )
     }
 
     public var effectiveTextColor: HUDColor {
@@ -148,6 +167,8 @@ struct HUDLayoutMetrics: Equatable {
     let numberFontSize: CGFloat
     let minimumItemWidth: CGFloat
     let itemSpacing: CGFloat
+    let selectedItemSpacing: CGFloat
+    let selectedHorizontalPadding: CGFloat
     let multiItemHorizontalPadding: CGFloat
     let singleItemHorizontalPadding: CGFloat
     let itemHorizontalPadding: CGFloat
@@ -168,6 +189,11 @@ struct HUDLayoutMetrics: Equatable {
         numberFontSize = max(9, (10 * scale).rounded())
         minimumItemWidth = max(40, (44 * scale).rounded())
         itemSpacing = max(3, (4 * scale).rounded())
+        selectedItemSpacing = CGFloat(appearance.selectedTranslationSpacing)
+        selectedHorizontalPadding = max(
+            8,
+            (10 * scale).rounded() + density.multiItemHorizontalDelta
+        )
         multiItemHorizontalPadding = max(
             2,
             (3 * scale).rounded() + density.multiItemHorizontalDelta
@@ -215,6 +241,40 @@ struct HUDLayoutMetrics: Equatable {
 
     func panelHeight(for itemCount: Int) -> CGFloat {
         itemCount > 1 ? multiItemHeight : singleItemHeight
+    }
+
+    func minimumItemWidth(for layoutStyle: HUDLayoutStyle) -> CGFloat {
+        layoutStyle == .selectedTranslations ? 0 : minimumItemWidth
+    }
+
+    func itemSpacing(for layoutStyle: HUDLayoutStyle) -> CGFloat {
+        layoutStyle == .selectedTranslations
+            ? selectedItemSpacing
+            : itemSpacing
+    }
+
+    func itemHorizontalPadding(
+        for layoutStyle: HUDLayoutStyle
+    ) -> CGFloat {
+        layoutStyle == .selectedTranslations ? 0 : itemHorizontalPadding
+    }
+
+    func horizontalPadding(
+        for layoutStyle: HUDLayoutStyle,
+        itemCount: Int
+    ) -> CGFloat {
+        let padding: CGFloat
+        if itemCount > 1 {
+            padding =
+                layoutStyle == .selectedTranslations
+                ? selectedHorizontalPadding
+                : multiItemHorizontalPadding
+        } else {
+            padding = singleItemHorizontalPadding
+        }
+        return layoutStyle == .selectedTranslations
+            ? padding + measurementSafetyPadding / 2
+            : padding
     }
 }
 

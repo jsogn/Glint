@@ -288,12 +288,102 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(metrics.numberFontSize, 10)
         XCTAssertEqual(metrics.minimumItemWidth, 44)
         XCTAssertEqual(metrics.itemSpacing, 4)
+        XCTAssertEqual(metrics.selectedHorizontalPadding, 10)
         XCTAssertEqual(metrics.multiItemHorizontalPadding, 3)
         XCTAssertEqual(metrics.singleItemHorizontalPadding, 12)
         XCTAssertEqual(metrics.itemHorizontalPadding, 5)
         XCTAssertEqual(metrics.numberSpacing, 2)
         XCTAssertEqual(metrics.singleItemHeight, 29)
         XCTAssertEqual(metrics.multiItemHeight, 27)
+    }
+
+    @MainActor
+    func testSelectedTranslationLayoutUsesConfiguredSpacing() {
+        let metrics = HUDLayoutMetrics()
+        let items = [
+            HUDItem(id: 0, number: 1, text: "Hello"),
+            HUDItem(id: 1, number: 2, text: "hi"),
+            HUDItem(id: 2, number: 3, text: "ciao"),
+            HUDItem(id: 3, number: 4, text: "hiya"),
+            HUDItem(id: 4, number: 5, text: "Bonjour"),
+        ]
+
+        XCTAssertEqual(
+            metrics.minimumItemWidth(for: .selectedTranslations),
+            0
+        )
+        XCTAssertEqual(
+            metrics.itemSpacing(for: .selectedTranslations),
+            14
+        )
+        XCTAssertEqual(
+            metrics.itemHorizontalPadding(for: .selectedTranslations),
+            0
+        )
+        XCTAssertEqual(
+            metrics.horizontalPadding(
+                for: .selectedTranslations,
+                itemCount: items.count
+            ),
+            11.5
+        )
+
+        let defaultSize = HUDController.panelSize(
+            for: items,
+            maximumWidth: 1_400,
+            layoutStyle: .selectedTranslations
+        )
+        let wideSize = HUDController.panelSize(
+            for: items,
+            maximumWidth: 1_400,
+            layoutStyle: .selectedTranslations,
+            appearance: HUDAppearance(
+                selectedTranslationSpacing: 24
+            )
+        )
+
+        XCTAssertGreaterThan(wideSize.width, defaultSize.width)
+    }
+
+    @MainActor
+    func testSelectedHUDHostingViewFitsConfiguredNaturalWidth() {
+        let items = [
+            HUDItem(id: 0, number: 1, text: "Hello"),
+            HUDItem(id: 1, number: 2, text: "hi"),
+            HUDItem(id: 2, number: 3, text: "ciao"),
+            HUDItem(id: 3, number: 4, text: "hiya"),
+            HUDItem(id: 4, number: 5, text: "Bonjour"),
+        ]
+        let hostingView = NSHostingView(
+            rootView: HUDView(
+                items: items,
+                layoutStyle: .selectedTranslations
+            )
+        )
+        hostingView.layoutSubtreeIfNeeded()
+        let naturalWidth = HUDItemRow.naturalPanelWidth(
+            for: items,
+            layoutStyle: .selectedTranslations
+        )
+        let panelSize = HUDController.panelSize(
+            for: items,
+            maximumWidth: 1_400,
+            layoutStyle: .selectedTranslations
+        )
+
+        XCTAssertGreaterThanOrEqual(
+            naturalWidth,
+            hostingView.fittingSize.width
+        )
+        XCTAssertLessThanOrEqual(
+            naturalWidth - hostingView.fittingSize.width,
+            HUDLayoutMetrics().measurementSafetyPadding
+        )
+        XCTAssertEqual(
+            panelSize.width,
+            naturalWidth,
+            accuracy: 0.001
+        )
     }
 
     @MainActor
@@ -579,6 +669,24 @@ final class HUDLayoutTests: XCTestCase {
 
         XCTAssertGreaterThanOrEqual(size.width, widestSingleItem)
         XCTAssertLessThanOrEqual(size.width, 600)
+    }
+
+    @MainActor
+    func testUnhighlightedMeaningsDoNotCollapseToSingleItem() {
+        let items = (0..<4).map { index in
+            HUDItem(
+                id: index,
+                number: index + 1,
+                text: String(repeating: "meaning ", count: 12)
+            )
+        }
+
+        XCTAssertFalse(
+            HUDItemRow.requiresSelectedOnly(
+                for: items,
+                maximumWidth: 300
+            )
+        )
     }
 
     @MainActor

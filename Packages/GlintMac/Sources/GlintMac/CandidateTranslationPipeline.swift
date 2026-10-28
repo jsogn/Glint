@@ -2,6 +2,8 @@ import Foundation
 import GlintCore
 
 enum CandidateTranslationPipeline {
+    static let maximumTranslationCountRange = 1...9
+
     static func translate(
         _ candidates: [Candidate],
         selectedIndex: Int,
@@ -10,7 +12,7 @@ enum CandidateTranslationPipeline {
         configurationToken: String,
         router: SmartRouter,
         memo: TranslationMemo,
-        displayOptionLimit: Int = 3,
+        displayOptionLimit: Int = 4,
         dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>] = [:],
         cachedPrefetchResults: [Int: TranslationResult] = [:],
         publishProgress: (
@@ -80,9 +82,17 @@ enum CandidateTranslationPipeline {
     }
 
     static func displayOptionLimit(
-        for scope: CandidateTranslationScope
+        for scope: CandidateTranslationScope,
+        maximumTranslationCount: Int
     ) -> Int {
-        scope == .row ? 1 : 3
+        guard scope == .selected else { return 1 }
+        return min(
+            max(
+                maximumTranslationCount,
+                maximumTranslationCountRange.lowerBound
+            ),
+            maximumTranslationCountRange.upperBound
+        )
     }
 
     static func memoKey(
@@ -154,18 +164,27 @@ enum CandidateTranslationPipeline {
         selectionIsExact: Bool,
         displayOptionLimit: Int
     ) -> CandidateTranslationPresentation {
-        let translation: String? = results[index].flatMap { result -> String? in
+        let result = results[index].flatMap { result -> TranslationResult? in
             guard isDisplayable(result) else { return nil }
+            return result
+        }
+        let translation: String? = result.flatMap { result -> String? in
             let text =
                 displayOptionLimit <= 1
                 ? result.text
                 : result.displayText
             return text.isEmpty ? nil : text
         }
+        let insertionOptions =
+            displayOptionLimit > 1
+            ? Array(result?.options.prefix(displayOptionLimit) ?? [])
+                .map(\.text)
+            : []
         return CandidateTranslationPresentation(
             index: index,
             candidateText: candidates[index].text,
             translation: translation,
+            insertionOptions: insertionOptions,
             isSelected:
                 selectionIsExact
                 && index == selectedIndex

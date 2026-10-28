@@ -32,6 +32,35 @@ struct DisplayPage: View {
 
                     Divider()
 
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(
+                                preferences.translationScope == .selected
+                                    ? "释义数量"
+                                    : "候选翻译数量"
+                            )
+                            Spacer()
+                            Stepper(
+                                value:
+                                    $preferences.maximumTranslationCount,
+                                in: DisplayPreferences
+                                    .maximumTranslationCountRange
+                            ) {
+                                Text(
+                                    "\(preferences.maximumTranslationCount) 个"
+                                )
+                                .monospacedDigit()
+                            }
+                            .fixedSize()
+                        }
+                        Text("同时限制显示和快捷键。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10)
+
+                    Divider()
+
                     segmentedSetting(
                         title: "显示位置",
                         selection: $preferences.position
@@ -107,6 +136,23 @@ struct DisplayPage: View {
                             density in
                             Text(density.title).tag(density)
                         }
+                    }
+                    if preferences.translationScope == .selected {
+                        Divider()
+                        sliderSetting(
+                            title: "释义间距",
+                            value: String(
+                                format: "%.0f pt",
+                                preferences.hudSelectedTranslationSpacing
+                            ),
+                            binding:
+                                $preferences.hudSelectedTranslationSpacing,
+                            range:
+                                HUDAppearance
+                                .selectedTranslationSpacingRange,
+                            step: 1,
+                            caption: "仅调整选中模式下多个释义之间的距离。"
+                        )
                     }
                     Divider()
                     sliderSetting(
@@ -305,11 +351,18 @@ private struct HUDPreview: View {
     private var previewItems: [HUDItem] {
         switch preferences.translationScope {
         case .selected:
-            return [
-                HUDItem(id: 0, text: "Hello · hi · ciao")
+            let items = [
+                HUDItem(id: 0, number: 1, text: "Hello"),
+                HUDItem(id: 1, number: 2, text: "hi"),
+                HUDItem(id: 2, number: 3, text: "ciao"),
+                HUDItem(id: 3, number: 4, text: "hiya"),
+                HUDItem(id: 4, number: 5, text: "Bonjour"),
             ]
+            return Array(
+                items.prefix(preferences.maximumTranslationCount)
+            )
         case .row:
-            return [
+            let items = [
                 HUDItem(
                     id: 0,
                     number: 1,
@@ -322,6 +375,9 @@ private struct HUDPreview: View {
                 HUDItem(id: 4, number: 5, text: "your number"),
                 HUDItem(id: 5, number: 6, text: "you"),
             ]
+            return Array(
+                items.prefix(preferences.maximumTranslationCount)
+            )
         }
     }
 
@@ -370,6 +426,10 @@ private struct HUDPreview: View {
     private var hudPreview: some View {
         HUDView(
             items: previewItems,
+            layoutStyle:
+                preferences.translationScope == .row
+                ? .candidateRow
+                : .selectedTranslations,
             appearance: preferences.hudAppearance,
             backgroundOpacity: preferences.hudOpacity
         )

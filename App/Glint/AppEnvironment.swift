@@ -6,6 +6,7 @@ import GlintPlugins
 @MainActor
 final class AppEnvironment {
     let pluginManager: PluginManager
+    let coreDictionaryUpdateService: CoreDictionaryUpdateService
     let translationRuntime: TranslationRuntime
     let monitoring: MonitoringController
     let monitoringSession: MonitoringSession
@@ -13,6 +14,12 @@ final class AppEnvironment {
 
     init() {
         let pluginManager = PluginManager()
+        let coreDictionaryUpdateService = CoreDictionaryUpdateService(
+            pluginManager: pluginManager,
+            bundledDirectory: BundledPluginResources.directory(
+                for: CoreDictionaryUpdateService.dictionaryID
+            )
+        )
         let dictionary = PluginDictionaryRouter()
         let translationRuntime = TranslationRuntime { modelID in
             if let manifest = BundledPluginResources.manifest(
@@ -67,6 +74,7 @@ final class AppEnvironment {
         }
         self.dictionary = dictionary
         self.pluginManager = pluginManager
+        self.coreDictionaryUpdateService = coreDictionaryUpdateService
         self.translationRuntime = translationRuntime
         let router = SmartRouter(dictionary: dictionary, translation: translationRuntime)
         let monitoring = MonitoringController(router: router)

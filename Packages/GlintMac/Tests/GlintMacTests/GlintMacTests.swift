@@ -264,6 +264,10 @@ private struct MultiOptionTranslation: TranslationEngine {
                 TranslationOption(text: "primary", score: 1),
                 TranslationOption(text: "alternative", score: 0.8),
                 TranslationOption(text: "secondary", score: 0.6),
+                TranslationOption(text: "quaternary", score: 0.4),
+                TranslationOption(text: "quinary", score: 0.2),
+                TranslationOption(text: "sixth", score: 0.1),
+                TranslationOption(text: "seventh", score: 0.05),
             ]
         )
     }
@@ -761,13 +765,18 @@ final class GlintMacTests: XCTestCase {
             ),
             memo: TranslationMemo(),
             displayOptionLimit: CandidateTranslationPipeline.displayOptionLimit(
-                for: .row
+                for: .row,
+                maximumTranslationCount: 4
             )
         )
 
         XCTAssertEqual(
             presentations.first?.translation,
             "primary"
+        )
+        XCTAssertEqual(
+            presentations.first?.insertionOptions,
+            []
         )
     }
 
@@ -847,7 +856,28 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(presentations.first?.translation, "cached")
     }
 
-    func testSelectedPresentationKeepsMultipleMeanings() async {
+    func testSelectedPresentationHonorsMaximumTranslationCount() async {
+        XCTAssertEqual(
+            CandidateTranslationPipeline.displayOptionLimit(
+                for: .selected,
+                maximumTranslationCount: 4
+            ),
+            4
+        )
+        XCTAssertEqual(
+            CandidateTranslationPipeline.displayOptionLimit(
+                for: .selected,
+                maximumTranslationCount: 0
+            ),
+            1
+        )
+        XCTAssertEqual(
+            CandidateTranslationPipeline.displayOptionLimit(
+                for: .selected,
+                maximumTranslationCount: 12
+            ),
+            9
+        )
         let presentations = await CandidateTranslationPipeline.translate(
             [
                 Candidate(
@@ -864,13 +894,23 @@ final class GlintMacTests: XCTestCase {
             ),
             memo: TranslationMemo(),
             displayOptionLimit: CandidateTranslationPipeline.displayOptionLimit(
-                for: .selected
+                for: .selected,
+                maximumTranslationCount: 4
             )
         )
 
         XCTAssertEqual(
             presentations.first?.translation,
             "primary · alternative · secondary"
+        )
+        XCTAssertEqual(
+            presentations.first?.insertionOptions,
+            [
+                "primary",
+                "alternative",
+                "secondary",
+                "quaternary",
+            ]
         )
     }
 
@@ -3148,6 +3188,33 @@ final class AXReadSessionTests: XCTestCase {
 }
 
 final class MonitoringSessionTests: XCTestCase {
+    func testSessionRejectsInsertionWithoutCurrentOffer() async {
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: EmptyTranslation()
+            ),
+            inputSource: StubInputSource(kind: .keyboardLayout),
+            focus: StubFocus(),
+            candidateReaders: FixedCandidateReaderRouter(
+                sourceReader: StubCandidates()
+            ),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+        let session = MonitoringSession(controller: controller)
+
+        let inserted = await session.insertTranslation(
+            TranslationChoiceOffer(
+                revision: 1,
+                choices: ["primary"]
+            ),
+            choiceIndex: 0
+        )
+
+        XCTAssertFalse(inserted)
+    }
+
     func testCandidateReaderReceivesFocusedProcessIdentifier() async {
         let candidates = RecordingCandidates()
         let controller = MonitoringController(
@@ -3202,6 +3269,7 @@ final class MonitoringSessionTests: XCTestCase {
                 mode: .modelFirst,
                 candidateDwellDuration: 0.3,
                 translationScope: .selected,
+                maximumTranslationCount: 7,
                 configurationToken: "test"
             )
         )
@@ -3212,7 +3280,10 @@ final class MonitoringSessionTests: XCTestCase {
         let configured =
             await controller
             .configuredCandidateDwellNanoseconds
+        let configuredCount =
+            await controller.configuredMaximumTranslationCount
         XCTAssertEqual(configured, 300_000_000)
+        XCTAssertEqual(configuredCount, 7)
         await session.stop()
     }
 

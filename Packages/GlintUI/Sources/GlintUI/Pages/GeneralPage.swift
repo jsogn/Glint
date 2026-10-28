@@ -35,6 +35,65 @@ struct GeneralPage: View {
                 }
             }
 
+            SettingsCard("快捷键") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 20) {
+                        Text("释义插入")
+                        Spacer()
+                        Toggle(
+                            "释义插入",
+                            isOn: Binding(
+                                get: {
+                                    model.generalPreferences
+                                        .insertionEnabled
+                                },
+                                set: {
+                                    model.generalPreferences
+                                        .setInsertionEnabled($0)
+                                }
+                            )
+                        )
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .accessibilityHint(
+                            "关闭后不注册触发键和数字快捷键"
+                        )
+                    }
+
+                    if model.generalPreferences.insertionEnabled {
+                        HStack(spacing: 20) {
+                            Text("触发键")
+                            Spacer(minLength: 24)
+                            TranslationShortcutRecorder(
+                                shortcut: model.generalPreferences
+                                    .insertionShortcut,
+                                isEnabled: model.generalPreferences
+                                    .insertionEnabled
+                            ) { shortcut in
+                                _ = model.generalPreferences
+                                    .setInsertionShortcut(shortcut)
+                            }
+                        }
+
+                        Text("按触发键加数字插入译文。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Spacer()
+                        Button("恢复默认设置") {
+                            model.generalPreferences
+                                .resetInsertionSettings()
+                        }
+                        .buttonStyle(.link)
+                    }
+                }
+            }
+
             SettingsCard("基础") {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 20) {
@@ -49,6 +108,7 @@ struct GeneralPage: View {
                         )
                         .labelsHidden()
                         .toggleStyle(.switch)
+                        .controlSize(.small)
                         .accessibilityHint("登录 Mac 时自动启动 Glint")
                     }
 

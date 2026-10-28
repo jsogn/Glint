@@ -19,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var monitoringMenuItem: NSMenuItem!
     private var mainWindowController: MainWindowController!
     private let hudEventCoordinator: HUDEventCoordinator
+    private let translationChoiceShortcutCoordinator:
+        TranslationChoiceShortcutCoordinator
     private let environment: AppEnvironment
     private let launchAtLoginController: LaunchAtLoginController
     private let windowModel: MainWindowModel
@@ -45,10 +47,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             hud: HUDController(),
             model: windowModel
         )
+        self.translationChoiceShortcutCoordinator =
+            TranslationChoiceShortcutCoordinator(
+                shortcut: windowModel.generalPreferences
+                    .insertionShortcut
+            )
         self.readinessToken = Self.readinessToken(
             from: CommandLine.arguments
         )
         super.init()
+        translationChoiceShortcutCoordinator.setEnabled(
+            windowModel.generalPreferences.insertionEnabled
+        )
+        translationChoiceShortcutCoordinator.onChoice = {
+            [weak self] offer, choiceIndex in
+            guard let self else { return }
+            Task {
+                _ = await self.environment.monitoringSession
+                    .insertTranslation(
+                        offer,
+                        choiceIndex: choiceIndex
+                    )
+            }
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -307,6 +328,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await self.environment.monitoring.setMode(mode)
             }
         }
+        windowModel.checkCoreDictionaryUpdateAction = { [weak self] in
+            guard let self else {
+                throw CoreDictionaryUpdateError.unavailable
+            }
+            let result =
+                try await self.environment.coreDictionaryUpdateService
+                .checkForUpdate()
+            return result.statusText
+        }
         windowModel.displayPreferences.candidateDwellDurationDidChange = {
             [weak self] duration in
             guard let self else { return }
@@ -322,6 +352,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task {
                 await self.environment.monitoring.setTranslationScope(scope)
             }
+        }
+        windowModel.displayPreferences.maximumTranslationCountDidChange = {
+            [weak self] count in
+            guard let self else { return }
+            Task {
+                await self.environment.monitoring
+                    .setMaximumTranslationCount(count)
+            }
+        }
+        windowModel.generalPreferences.insertionShortcutDidChange = {
+            [weak self] shortcut in
+            self?.translationChoiceShortcutCoordinator.updateShortcut(
+                shortcut
+            )
+        }
+        windowModel.generalPreferences.insertionEnabledDidChange = {
+            [weak self] enabled in
+            self?.translationChoiceShortcutCoordinator.setEnabled(enabled)
         }
         windowModel.translationConfigurationChangedAction = { [weak self] in
             self?.syncTranslationConfiguration()
@@ -392,6 +440,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func stopMonitoring() {
         shouldStartMonitoringAfterPreparation = false
         shouldRequestPermissionAfterPreparation = false
+        translationChoiceShortcutCoordinator.update(nil)
         hudEventCoordinator.hide(animated: false)
         windowModel.isMonitoring = false
         windowModel.statusText = ""
@@ -409,6 +458,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             candidateDwellDuration: windowModel.displayPreferences
                 .candidateDwellDuration,
             translationScope: windowModel.displayPreferences.translationScope,
+            maximumTranslationCount: windowModel.displayPreferences
+                .maximumTranslationCount,
             configurationToken: translationConfigurationToken
         )
     }
@@ -434,6 +485,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 markRuntimeReady()
             case .idle:
                 windowModel.isMonitoring = false
+                translationChoiceShortcutCoordinator.update(nil)
             case .starting, .stopping:
                 break
             }
@@ -451,6 +503,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .inputSourceChanged(let identity):
             windowModel.updateActiveInputMethod(identity)
         case .candidateChanged:
+            translationChoiceShortcutCoordinator.update(nil)
             hudEventCoordinator.candidateChanged()
         case .selectionChanged(let index, let revision):
             hudEventCoordinator.updateSelection(
@@ -458,6 +511,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 revision: revision
             )
         case .candidateEnded(let immediate):
+            translationChoiceShortcutCoordinator.update(nil)
             hudEventCoordinator.candidateEnded(immediate: immediate)
         case .results(
             let translations,
@@ -472,6 +526,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 isProgressive: isProgressive,
                 isMonitoring: windowModel.isMonitoring
             )
+        case .insertionOffer(let offer):
+            translationChoiceShortcutCoordinator.update(offer)
         }
     }
 

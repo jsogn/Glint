@@ -19,6 +19,8 @@ public enum HUDPosition: String, CaseIterable, Sendable {
 @MainActor
 @Observable
 public final class DisplayPreferences {
+    public static let maximumTranslationCountRange = 1...9
+
     private enum Key {
         static let position = "display.position"
         static let candidateDwellDuration = "display.candidateDwellDuration"
@@ -31,7 +33,11 @@ public final class DisplayPreferences {
         static let hudBackgroundColor = "display.hudBackgroundColor"
         static let hudFontSize = "display.hudFontSize"
         static let hudDensity = "display.hudDensity"
+        static let hudSelectedTranslationSpacing =
+            "display.hudSelectedTranslationSpacing"
         static let translationScope = "display.translationScope"
+        static let maximumTranslationCount =
+            "display.maximumTranslationCount"
     }
 
     @ObservationIgnored
@@ -41,6 +47,8 @@ public final class DisplayPreferences {
     public var candidateDwellDurationDidChange: (@MainActor (Double) -> Void)?
     @ObservationIgnored
     public var translationScopeDidChange: (@MainActor (CandidateTranslationScope) -> Void)?
+    @ObservationIgnored
+    public var maximumTranslationCountDidChange: (@MainActor (Int) -> Void)?
 
     public var position: HUDPosition {
         didSet {
@@ -155,6 +163,22 @@ public final class DisplayPreferences {
         }
     }
 
+    public var hudSelectedTranslationSpacing: Double {
+        didSet {
+            let clamped = Self.clampedSelectedTranslationSpacing(
+                hudSelectedTranslationSpacing
+            )
+            if clamped != hudSelectedTranslationSpacing {
+                hudSelectedTranslationSpacing = clamped
+                return
+            }
+            defaults.set(
+                clamped,
+                forKey: Key.hudSelectedTranslationSpacing
+            )
+        }
+    }
+
     public var translationScope: CandidateTranslationScope {
         didSet {
             defaults.set(
@@ -165,6 +189,23 @@ public final class DisplayPreferences {
         }
     }
 
+    public var maximumTranslationCount: Int {
+        didSet {
+            let clamped = Self.clampedMaximumTranslationCount(
+                maximumTranslationCount
+            )
+            if clamped != maximumTranslationCount {
+                maximumTranslationCount = clamped
+                return
+            }
+            defaults.set(
+                clamped,
+                forKey: Key.maximumTranslationCount
+            )
+            maximumTranslationCountDidChange?(clamped)
+        }
+    }
+
     public var hudAppearance: HUDAppearance {
         HUDAppearance(
             backgroundStyle: hudBackgroundStyle,
@@ -172,7 +213,8 @@ public final class DisplayPreferences {
             backgroundColor: hudBackgroundColor,
             usesCustomTextColor: hudUsesCustomTextColor,
             fontSize: hudFontSize,
-            density: hudDensity
+            density: hudDensity,
+            selectedTranslationSpacing: hudSelectedTranslationSpacing
         )
     }
 
@@ -250,6 +292,14 @@ public final class DisplayPreferences {
             HUDDensity(
                 rawValue: storedDensity ?? ""
             ) ?? .standard
+        let storedSelectedTranslationSpacing =
+            defaults.object(
+                forKey: Key.hudSelectedTranslationSpacing
+            ) as? Double
+        self.hudSelectedTranslationSpacing =
+            Self.clampedSelectedTranslationSpacing(
+                storedSelectedTranslationSpacing ?? 14
+            )
 
         let storedTranslationScope = defaults.string(
             forKey: Key.translationScope
@@ -258,6 +308,14 @@ public final class DisplayPreferences {
             CandidateTranslationScope(
                 rawValue: storedTranslationScope ?? ""
             ) ?? .selected
+        let storedMaximumTranslationCount =
+            defaults.object(
+                forKey: Key.maximumTranslationCount
+            ) as? Int
+        self.maximumTranslationCount =
+            Self.clampedMaximumTranslationCount(
+                storedMaximumTranslationCount ?? 4
+            )
     }
 
     public func resetHUDAppearance() {
@@ -269,6 +327,7 @@ public final class DisplayPreferences {
         hudSolidOpacity = 0.8
         hudFontSize = 14
         hudDensity = .standard
+        hudSelectedTranslationSpacing = 14
     }
 
     private func persist(_ color: HUDColor, forKey key: String) {
@@ -302,8 +361,30 @@ public final class DisplayPreferences {
         return min(max(value, 0), 24)
     }
 
+    private static func clampedSelectedTranslationSpacing(
+        _ value: Double
+    ) -> Double {
+        guard value.isFinite else { return 14 }
+        return min(
+            max(
+                value,
+                HUDAppearance.selectedTranslationSpacingRange.lowerBound
+            ),
+            HUDAppearance.selectedTranslationSpacingRange.upperBound
+        )
+    }
+
     private static func clampedOpacity(_ value: Double) -> Double {
         guard value.isFinite else { return 0.8 }
         return min(max(value, 0.4), 1.0)
+    }
+
+    private static func clampedMaximumTranslationCount(
+        _ value: Int
+    ) -> Int {
+        min(
+            max(value, maximumTranslationCountRange.lowerBound),
+            maximumTranslationCountRange.upperBound
+        )
     }
 }

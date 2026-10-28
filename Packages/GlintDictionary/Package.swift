@@ -14,7 +14,10 @@ let package = Package(
         .target(
             name: "GlintDictionary",
             dependencies: [.product(name: "GlintCore", package: "GlintCore")],
-            linkerSettings: [.linkedLibrary("sqlite3")]
+            linkerSettings: [
+                .linkedLibrary("sqlite3"),
+                .linkedLibrary("z"),
+            ]
         ),
         .testTarget(
             name: "GlintDictionaryTests",

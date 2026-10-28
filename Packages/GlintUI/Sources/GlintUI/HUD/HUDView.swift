@@ -33,6 +33,7 @@ public struct HUDItem: Identifiable, Equatable, Sendable {
 
 struct HUDView: View {
     private let items: [HUDItem]
+    private let layoutStyle: HUDLayoutStyle
     private let appearance: HUDAppearance
     private let backgroundOpacity: Double
 
@@ -44,16 +45,19 @@ struct HUDView: View {
         self.items = [
             HUDItem(id: 0, text: text)
         ]
+        self.layoutStyle = .selectedTranslations
         self.appearance = appearance
         self.backgroundOpacity = backgroundOpacity
     }
 
     init(
         items: [HUDItem],
+        layoutStyle: HUDLayoutStyle = .candidateRow,
         appearance: HUDAppearance = .default,
         backgroundOpacity: Double = 0.8
     ) {
         self.items = items
+        self.layoutStyle = layoutStyle
         self.appearance = appearance
         self.backgroundOpacity = backgroundOpacity
     }
@@ -61,6 +65,7 @@ struct HUDView: View {
     var body: some View {
         HUDItemRow(
             items: items,
+            layoutStyle: layoutStyle,
             appearance: appearance,
             backgroundOpacity: backgroundOpacity,
             animatesBackground: false,
@@ -75,6 +80,7 @@ struct HUDView: View {
 
 struct HUDItemRow: View {
     let items: [HUDItem]
+    let layoutStyle: HUDLayoutStyle
     let appearance: HUDAppearance
     let backgroundOpacity: Double
     let animatesBackground: Bool
@@ -83,13 +89,13 @@ struct HUDItemRow: View {
     var body: some View {
         let metrics = HUDLayoutMetrics(appearance: appearance)
 
-        HStack(spacing: metrics.itemSpacing) {
+        HStack(spacing: metrics.itemSpacing(for: layoutStyle)) {
             ForEach(items) { item in
                 itemView(item, metrics: metrics)
                     .fixedSize(horizontal: true, vertical: false)
                     .frame(
                         minWidth: items.count > 1
-                            ? metrics.minimumItemWidth
+                            ? metrics.minimumItemWidth(for: layoutStyle)
                             : nil,
                         alignment: .leading
                     )
@@ -97,9 +103,10 @@ struct HUDItemRow: View {
         }
         .padding(
             .horizontal,
-            items.count > 1
-                ? metrics.multiItemHorizontalPadding
-                : metrics.singleItemHorizontalPadding
+            metrics.horizontalPadding(
+                for: layoutStyle,
+                itemCount: items.count
+            )
         )
         .padding(
             .vertical,
@@ -122,18 +129,23 @@ struct HUDItemRow: View {
 
     static func minimumPanelWidth(
         for itemCount: Int,
+        layoutStyle: HUDLayoutStyle = .candidateRow,
         appearance: HUDAppearance = .default
     ) -> CGFloat {
         guard itemCount > 1 else { return 120 }
         let metrics = HUDLayoutMetrics(appearance: appearance)
-        return metrics.multiItemHorizontalPadding * 2
-            + CGFloat(itemCount) * metrics.minimumItemWidth
-            + CGFloat(itemCount - 1) * metrics.itemSpacing
+        return metrics.horizontalPadding(
+            for: layoutStyle,
+            itemCount: itemCount
+        ) * 2
+            + CGFloat(itemCount) * metrics.minimumItemWidth(for: layoutStyle)
+            + CGFloat(itemCount - 1) * metrics.itemSpacing(for: layoutStyle)
     }
 
     @MainActor
     static func naturalPanelWidth(
         for items: [HUDItem],
+        layoutStyle: HUDLayoutStyle = .candidateRow,
         appearance: HUDAppearance = .default
     ) -> CGFloat {
         guard !items.isEmpty else { return 120 }
@@ -146,10 +158,10 @@ struct HUDItemRow: View {
             ofSize: metrics.numberFontSize,
             weight: .medium
         )
-        let horizontalPadding =
-            items.count > 1
-            ? metrics.multiItemHorizontalPadding
-            : metrics.singleItemHorizontalPadding
+        let horizontalPadding = metrics.horizontalPadding(
+            for: layoutStyle,
+            itemCount: items.count
+        )
         var width = horizontalPadding * 2
         for item in items {
             var itemWidth = ceil(
@@ -166,13 +178,19 @@ struct HUDItemRow: View {
                     ) + metrics.numberSpacing
             }
             if items.count > 1 {
-                itemWidth += metrics.itemHorizontalPadding * 2
-                itemWidth = max(itemWidth, metrics.minimumItemWidth)
+                itemWidth +=
+                    metrics.itemHorizontalPadding(for: layoutStyle) * 2
+                itemWidth = max(
+                    itemWidth,
+                    metrics.minimumItemWidth(for: layoutStyle)
+                )
             }
             width += itemWidth
         }
         if items.count > 1 {
-            width += CGFloat(items.count - 1) * metrics.itemSpacing
+            width +=
+                CGFloat(items.count - 1)
+                * metrics.itemSpacing(for: layoutStyle)
         }
         return ceil(width + metrics.measurementSafetyPadding)
     }
@@ -181,10 +199,15 @@ struct HUDItemRow: View {
     static func requiresSelectedOnly(
         for items: [HUDItem],
         maximumWidth: CGFloat,
+        layoutStyle: HUDLayoutStyle = .candidateRow,
         appearance: HUDAppearance = .default
     ) -> Bool {
-        naturalPanelWidth(
+        guard items.contains(where: \.isSelected) else {
+            return false
+        }
+        return naturalPanelWidth(
             for: items,
+            layoutStyle: layoutStyle,
             appearance: appearance
         ) > max(120, maximumWidth)
     }
@@ -227,7 +250,7 @@ struct HUDItemRow: View {
         .padding(
             .horizontal,
             items.count > 1
-                ? metrics.itemHorizontalPadding
+                ? metrics.itemHorizontalPadding(for: layoutStyle)
                 : 0
         )
         .padding(
@@ -330,7 +353,11 @@ struct HUDNativeMaterialBackground: NSViewRepresentable {
 }
 
 #Preview("HUD · 选中") {
-    HUDView(text: "hello")
+    HUDView(items: [
+        HUDItem(id: 0, number: 1, text: "Hello"),
+        HUDItem(id: 1, number: 2, text: "hi"),
+        HUDItem(id: 2, number: 3, text: "ciao"),
+    ], layoutStyle: .selectedTranslations)
         .padding(32)
         .background(Color.black.opacity(0.85))
         .preferredColorScheme(.dark)

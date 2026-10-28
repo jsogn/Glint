@@ -141,6 +141,9 @@ GlintCore
 - 翻译运行时准备完成后才启动 `MonitoringSession`。
 - HUD 使用 borderless、non-activating `NSPanel`，加入所有 Space 与全屏空间。
 - HUD 不抢焦点、不改变候选选择，也不创建新的内容根视图。
+- “插入译文”不读取输入框正文，也不写入系统剪贴板。插入前结束当前输入法组合，
+  通过全局 HID 键盘事件向已校验的前台宿主发送 Unicode 文本；无法确认焦点未
+  变化时静默放弃。
 - 主窗口和 HUD 都通过 `AppEnvironment` 获取状态，不互相直接调用。
 - 监控、候选 reader 和 HUD 均跳过 Glint 自身 PID。
 
@@ -172,6 +175,25 @@ MonitoringSession → AppDelegate + HUDEventCoordinator
 MainWindowModel → MainWindowView
 ```
 
+选中项产生译文后，`MonitoringController` 还会发布仅在内存中存在的
+`TranslationChoiceOffer`。界面默认最多显示四个翻译项，用户可在 `1–9`
+范围内调整上限；选中模式限制独立释义数量，一栏模式限制参与翻译的前 N 个
+可见候选，超出上限的候选不会创建翻译任务。只要当前译文
+有效，`TranslationChoiceShortcutCoordinator` 就临时注册用户在“通用配置”中通过
+本地录制控件配置的释义插入触发修饰键，默认是 `Option`。选中模式将独立释义显示
+为 `1–N` 序号，且不使用候选高亮；多个释义按自然文字宽度排列，间距默认
+`14pt`，用户可在 `8–24pt` 范围内调整。选中模式左右使用对称的内容内边距，
+不与一栏模式的候选槽位边距复用。
+白名单只包含 Control、Option、Command、Shift 和 Caps Lock，允许组合使用。
+录制仅在设置控件获得焦点时处理按键，不安装全局键盘监听。
+存在有效译文时，Glint 只按当前已发布选项数量动态注册
+“触发修饰键 + 数字”热键，两种模式都按用户上限注册 `1–N`。未显示或未发布
+的序号不会注册，也不会触发插入。
+“释义插入”开关关闭时保留已录制的触发键，但不注册任何数字选择热键。
+触发键只接受当前 revision；候选变化、Secure Input 或监控停止都会立即撤销。
+“一栏”模式按候选序号发布整行可见候选的首选翻译；任一 `触发键 + 数字`
+都插入该序号对应的译文，不要求该候选当前处于高亮状态。
+
 未知输入法的 Profile、资源上限和失败恢复见
 [未知输入法通用适配](GENERIC-INPUT-METHOD-ADAPTATION.md)。AX 结构、性能和验收
 边界见 [AX Candidate Validation](AX-CANDIDATE-VALIDATION.md)。
@@ -193,6 +215,7 @@ MainWindowModel → MainWindowView
 
 - `MonitoringController` 串行化输入源、焦点、候选、停留和翻译任务状态。
 - `MonitoringSession` 串行化 start/stop 意图，并长期持有事件流。
+- 插入选项和快捷键只在存在有效译文时存在；不轮询或保存普通键盘输入。
 - `AppDelegate` 只在 session 报告 running 后把 UI 置为已开启。
 - `TranslationRuntime` 和 `TranslationMemo` 串行化模型加载、推理和请求合并。
 - `PluginManager`、目录服务和本地导入服务以 actor 隔离文件操作。
@@ -207,8 +230,12 @@ MainWindowModel → MainWindowView
   - `cedict-sqlite`、`ecdict-rank`、`sqlite-v1`；
   - `ctranslate2` 仅用于内置 OPUS-MT；
   - `mlx` 用于可选翻译模型。
-- CC-CEDICT、ECDICT、Wiktionary、overrides 和 OPUS-MT 随 App 提供，不复制到
-  Application Support，也不允许卸载。
+- CC-CEDICT、ECDICT、Wiktionary、overrides 和 OPUS-MT 随 App 提供，不允许卸载。
+  ECDICT、Wiktionary 和 OPUS-MT 仅使用 bundled 数据；CC-CEDICT 可把经过校验的
+  更新安装到 Application Support 的同 ID 数据目录，加载失败时回退 bundled 基线。
+- CC-CEDICT 仅允许用户手动从 MDBG 官方地址检查更新。更新器使用 HEAD 条件请求、
+  同日 ETag 变化检测、gzip 流式解析、schema/数量/完整性校验和可回滚的原子插件
+  安装；取消或失败不会替换当前可用词典。
 - OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；
   权重不进入 Git，锁文件记录产物 SHA256。
 - 可选 MLX 模型优先国内镜像，失败后回退官方源；下载、校验和安装阶段不重叠。
@@ -219,6 +246,8 @@ MainWindowModel → MainWindowView
 
 - 词典为只读 SQLite；模型为本地目录；偏好保存到 UserDefaults/JSON。
 - 不保存候选文本、译文、输入历史、剪贴板或窗口标题。
+- 译文插入不使用剪贴板，不读取输入框正文；仅使用选区范围、组合状态和宿主 PID
+  判断是否允许写入。
 - 推理阶段不联网；只有用户主动下载或更新插件时使用 URLSession。
 - App target 只复制五个运行时核心资源，不从 `Resources` 整目录复制。
 - Xcode workspace 使用本地 Swift packages；构建、测试和运行统一走 `scripts/`。

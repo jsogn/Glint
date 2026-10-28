@@ -100,6 +100,7 @@ public enum MonitoringEvent: Sendable {
         revision: UInt64,
         isProgressive: Bool
     )
+    case insertionOffer(TranslationChoiceOffer)
 }
 
 struct CandidateTrackingIdentity: Sendable, Equatable {
@@ -132,17 +133,20 @@ public struct CandidateTranslationPresentation: Sendable, Equatable {
     public let index: Int
     public let candidateText: String
     public let translation: String?
+    public let insertionOptions: [String]
     public let isSelected: Bool
 
     public init(
         index: Int,
         candidateText: String,
         translation: String?,
+        insertionOptions: [String] = [],
         isSelected: Bool
     ) {
         self.index = index
         self.candidateText = candidateText
         self.translation = translation
+        self.insertionOptions = insertionOptions
         self.isSelected = isSelected
     }
 }
@@ -191,6 +195,7 @@ public actor MonitoringController {
     private let hostAccessibilityActivator: any HostAccessibilityActivating
     private let accessibilityIsTrusted: @Sendable () -> Bool
     private let secureInputIsEnabled: @Sendable () -> Bool
+    private let translationTextInserter: any TranslationTextInserting
     private let ownProcessIdentifier: pid_t
     private let router: SmartRouter
     private let stream: AsyncStream<MonitoringEvent>
@@ -200,6 +205,7 @@ public actor MonitoringController {
     private var translationTask: Task<Void, Never>?
     private var mode: TranslationMode = .dictionaryFirst
     private var translationScope: CandidateTranslationScope = .selected
+    private var maximumTranslationCount = 4
     private var candidateDwellNanoseconds: UInt64 = 120_000_000
     private var translationConfigurationToken =
         TranslationModelSelection.selected()
@@ -220,6 +226,8 @@ public actor MonitoringController {
     private var selectedCandidateIndex: Int?
     private var selectedCandidateIndexIsExact = false
     private var latestCandidateHighlight: CandidateRegion?
+    private var insertionOffer: TranslationChoiceOffer?
+    private var insertionHostProcessIdentifier: pid_t?
     private var dictionaryPrefetchRevision: UInt64?
     private var dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>] = [:]
     private var cachedPrefetchResults: [Int: TranslationResult] = [:]
@@ -246,7 +254,8 @@ public actor MonitoringController {
             },
             secureInputIsEnabled: {
                 FocusMonitor.isSecureInputEnabled()
-            }
+            },
+            translationTextInserter: SystemTranslationTextInserter()
         )
     }
 
@@ -260,6 +269,8 @@ public actor MonitoringController {
             DisabledHostAccessibilityActivator(),
         accessibilityIsTrusted: @escaping @Sendable () -> Bool,
         secureInputIsEnabled: @escaping @Sendable () -> Bool,
+        translationTextInserter: any TranslationTextInserting =
+            SystemTranslationTextInserter(),
         ownProcessIdentifier: pid_t =
             ProcessInfo.processInfo.processIdentifier
     ) {
@@ -270,6 +281,7 @@ public actor MonitoringController {
             hostAccessibilityActivator
         self.accessibilityIsTrusted = accessibilityIsTrusted
         self.secureInputIsEnabled = secureInputIsEnabled
+        self.translationTextInserter = translationTextInserter
         self.ownProcessIdentifier = ownProcessIdentifier
         self.router = router
         let pair = AsyncStream.makeStream(of: MonitoringEvent.self)
@@ -305,11 +317,72 @@ public actor MonitoringController {
         invalidateCandidate(immediate: true)
     }
 
+    public func setMaximumTranslationCount(_ count: Int) {
+        let clamped = min(
+            max(
+                count,
+                CandidateTranslationPipeline
+                    .maximumTranslationCountRange.lowerBound
+            ),
+            CandidateTranslationPipeline
+                .maximumTranslationCountRange.upperBound
+        )
+        guard maximumTranslationCount != clamped else { return }
+        maximumTranslationCount = clamped
+        invalidateCandidate(immediate: true)
+    }
+
+    var configuredMaximumTranslationCount: Int {
+        maximumTranslationCount
+    }
+
     public func setTranslationConfigurationToken(_ token: String) async {
         guard token != translationConfigurationToken else { return }
         translationConfigurationToken = token
         invalidateCandidate(immediate: true)
         await translationMemo.clear()
+    }
+
+    public func insertTranslation(
+        _ offer: TranslationChoiceOffer,
+        choiceIndex: Int
+    ) async -> Bool {
+        guard
+            offer == insertionOffer,
+            offer.revision == typingTracker.revision,
+            typingTracker.isDwelling,
+            candidateSessionActive,
+            offer.choices.indices.contains(choiceIndex),
+            !secureInputIsEnabled(),
+            let insertionHostProcessIdentifier,
+            let snapshot = focus.snapshot(),
+            snapshot.processIdentifier == insertionHostProcessIdentifier,
+            snapshot.isEditableTextInput,
+            !snapshot.hasTextSelection,
+            !snapshot.usesProcessFallback
+        else {
+            monitoringLogger.notice(
+                "translation insertion result=rejected"
+            )
+            return false
+        }
+
+        let inserted = await translationTextInserter.insert(
+            offer.choices[choiceIndex],
+            into: insertionHostProcessIdentifier
+        )
+        guard inserted else {
+            monitoringLogger.notice(
+                "translation insertion result=failed"
+            )
+            return false
+        }
+        insertionOffer = nil
+        invalidateCandidate(immediate: true)
+        monitoringLogger.notice(
+            "translation insertion result=success choices=\(offer.choices.count, privacy: .public)"
+        )
+        return true
     }
 
     public func start() {
@@ -401,6 +474,10 @@ public actor MonitoringController {
             emitStatus("已跳过 Glint 自身窗口")
             return 250_000_000
         }
+        if insertionHostProcessIdentifier != snapshot.processIdentifier {
+            insertionOffer = nil
+        }
+        insertionHostProcessIdentifier = snapshot.processIdentifier
         guard !snapshot.hasTextSelection else {
             invalidateCandidate(immediate: true)
             emitStatus("已跳过文字选区")
@@ -788,11 +865,15 @@ public actor MonitoringController {
         let configurationToken = translationConfigurationToken
         let includesAlternatives =
             CandidateTranslationPipeline.displayOptionLimit(
-                for: translationScope
+                for: translationScope,
+                maximumTranslationCount: maximumTranslationCount
             ) > 1
         let memo = translationMemo
         let router = router
-        for (index, candidate) in candidates.enumerated() {
+        for (index, candidate) in candidates.enumerated()
+        where translationScope != .row
+            || index < maximumTranslationCount
+        {
             let key = CandidateTranslationPipeline.memoKey(
                 candidate: candidate,
                 mode: mode,
@@ -835,8 +916,13 @@ public actor MonitoringController {
         let configurationToken = translationConfigurationToken
         let displayOptionLimit =
             CandidateTranslationPipeline.displayOptionLimit(
-                for: translationScope
+                for: translationScope,
+                maximumTranslationCount: maximumTranslationCount
             )
+        let translationCandidates =
+            translationScope == .row
+            ? Array(candidates.prefix(maximumTranslationCount))
+            : candidates
         translationAttempts &+= 1
         translationStartedAt = .now
         cancelTranslationTask()
@@ -845,7 +931,7 @@ public actor MonitoringController {
                 weak self,
                 router,
                 memo,
-                candidates,
+                translationCandidates,
                 selectedIndex,
                 selectionIsExact,
                 configurationToken,
@@ -857,7 +943,7 @@ public actor MonitoringController {
             ] in
             guard !Task.isCancelled else { return }
             let presentations = await CandidateTranslationPipeline.translate(
-                candidates,
+                translationCandidates,
                 selectedIndex: selectedIndex,
                 selectionIsExact: selectionIsExact,
                 mode: mode,
@@ -918,6 +1004,10 @@ public actor MonitoringController {
                 isProgressive: true
             )
         )
+        publishInsertionOffer(
+            from: translations,
+            revision: revision
+        )
     }
 
     private func completeTranslation(
@@ -971,6 +1061,7 @@ public actor MonitoringController {
                 index: item.index,
                 candidateText: item.candidateText,
                 translation: item.translation,
+                insertionOptions: item.insertionOptions,
                 isSelected:
                     selectedCandidateIndexIsExact
                     && item.index == latestSelectedIndex
@@ -989,6 +1080,10 @@ public actor MonitoringController {
                 isProgressive: false
             )
         )
+        publishInsertionOffer(
+            from: presentations,
+            revision: revision
+        )
     }
 
     private func invalidateCandidate(immediate: Bool = false) {
@@ -998,6 +1093,8 @@ public actor MonitoringController {
         selectedCandidateIndex = nil
         selectedCandidateIndexIsExact = false
         latestCandidateHighlight = nil
+        insertionOffer = nil
+        insertionHostProcessIdentifier = nil
         cancelDictionaryPrefetch()
         handledRevision = nil
         dwellDetectedAt = nil
@@ -1060,6 +1157,55 @@ public actor MonitoringController {
         translationTask.cancel()
         self.translationTask = nil
         cancelledTranslationAttempts &+= 1
+    }
+
+    private func publishInsertionOffer(
+        from presentations: [CandidateTranslationPresentation],
+        revision: UInt64
+    ) {
+        guard insertionHostProcessIdentifier != nil else {
+            insertionOffer = nil
+            return
+        }
+
+        let choices: [String]
+        switch translationScope {
+        case .selected:
+            guard
+                let selected = presentations.first(where: \.isSelected),
+                let translation = selected.translation
+            else {
+                insertionOffer = nil
+                return
+            }
+            let options =
+                selected.insertionOptions.isEmpty
+                ? [translation]
+                : selected.insertionOptions
+            choices = Array(options.prefix(maximumTranslationCount))
+        case .row:
+            let ordered = presentations
+                .sorted { $0.index < $1.index }
+                .prefix(maximumTranslationCount)
+            guard
+                !ordered.isEmpty,
+                ordered.allSatisfy({ $0.translation != nil })
+            else {
+                insertionOffer = nil
+                return
+            }
+            choices = ordered.compactMap(\.translation)
+        }
+        guard !choices.isEmpty else {
+            insertionOffer = nil
+            return
+        }
+        let offer = TranslationChoiceOffer(
+            revision: revision,
+            choices: choices
+        )
+        insertionOffer = offer
+        continuation.yield(.insertionOffer(offer))
     }
 
     private func emitStatus(_ status: String) {

@@ -159,6 +159,11 @@ final class DisplayPreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.hudOpacity, 0.8, accuracy: 0.001)
         XCTAssertEqual(preferences.hudFontSize, 14)
         XCTAssertEqual(preferences.hudDensity, .standard)
+        XCTAssertEqual(preferences.maximumTranslationCount, 4)
+        XCTAssertEqual(
+            preferences.hudSelectedTranslationSpacing,
+            14
+        )
         XCTAssertEqual(preferences.hudAppearance, .default)
     }
 
@@ -178,10 +183,53 @@ final class DisplayPreferencesTests: XCTestCase {
         )
         preferences.hudFontSize = 18
         preferences.hudDensity = .spacious
+        preferences.hudSelectedTranslationSpacing = 22
 
         preferences.resetHUDAppearance()
 
         XCTAssertEqual(preferences.hudAppearance, .default)
+    }
+
+    @MainActor
+    func testSelectedTranslationSpacingPersistsAndClamps() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = DisplayPreferences(defaults: defaults)
+        preferences.hudSelectedTranslationSpacing = 20
+
+        let reloaded = DisplayPreferences(defaults: defaults)
+        XCTAssertEqual(reloaded.hudSelectedTranslationSpacing, 20)
+
+        reloaded.hudSelectedTranslationSpacing = 30
+        XCTAssertEqual(reloaded.hudSelectedTranslationSpacing, 24)
+
+        reloaded.hudSelectedTranslationSpacing = 2
+        XCTAssertEqual(reloaded.hudSelectedTranslationSpacing, 8)
+    }
+
+    @MainActor
+    func testMaximumTranslationCountPersistsClampsAndNotifies() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = DisplayPreferences(defaults: defaults)
+        var observed: [Int] = []
+        preferences.maximumTranslationCountDidChange = {
+            observed.append($0)
+        }
+        preferences.maximumTranslationCount = 6
+
+        let reloaded = DisplayPreferences(defaults: defaults)
+        XCTAssertEqual(reloaded.maximumTranslationCount, 6)
+
+        reloaded.maximumTranslationCount = 12
+        XCTAssertEqual(reloaded.maximumTranslationCount, 9)
+        reloaded.maximumTranslationCount = 0
+        XCTAssertEqual(reloaded.maximumTranslationCount, 1)
+        XCTAssertEqual(observed, [6])
     }
 
     @MainActor

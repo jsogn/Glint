@@ -5,6 +5,7 @@ import SwiftUI
 @Observable
 final class HUDPresentationModel {
     var items: [HUDItem]
+    var layoutStyle: HUDLayoutStyle
     var appearance: HUDAppearance
     var backgroundOpacity: Double
     var textOpacity: Double
@@ -19,6 +20,7 @@ final class HUDPresentationModel {
         animatesTransitions: Bool
     ) {
         self.items = [HUDItem(id: 0, text: text)]
+        self.layoutStyle = .candidateRow
         self.appearance = appearance
         self.backgroundOpacity = backgroundOpacity
         self.textOpacity = textOpacity
@@ -33,6 +35,7 @@ struct HUDLiveView: View {
     var body: some View {
         HUDItemRow(
             items: displayedItems,
+            layoutStyle: model.layoutStyle,
             appearance: model.appearance,
             backgroundOpacity: model.backgroundOpacity,
             animatesBackground: model.animatesTransitions,
@@ -50,9 +53,8 @@ struct HUDLiveView: View {
         }
         guard
             let selected = model.items.first(where: \.isSelected)
-                ?? model.items.first
         else {
-            return []
+            return model.items
         }
         return [
             HUDItem(

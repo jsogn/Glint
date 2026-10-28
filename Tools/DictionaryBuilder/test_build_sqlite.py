@@ -24,6 +24,7 @@ class DictionaryBuilderTests(unittest.TestCase):
             archive = directory_path / "cedict.gz"
             output = directory_path / "cedict.sqlite3"
             with gzip.open(archive, "wt", encoding="utf-8") as handle:
+                handle.write("#! date=2026-10-28T00:15:09Z\n")
                 handle.write("打 打 [da2] /dozen/\n")
                 handle.write("打 打 [da3] /to hit/\n")
 
@@ -41,6 +42,11 @@ class DictionaryBuilderTests(unittest.TestCase):
                 version = connection.execute(
                     "PRAGMA user_version"
                 ).fetchone()[0]
+                metadata = dict(
+                    connection.execute(
+                        "SELECT key, value FROM metadata"
+                    ).fetchall()
+                )
             finally:
                 connection.close()
 
@@ -48,6 +54,9 @@ class DictionaryBuilderTests(unittest.TestCase):
         self.assertEqual(senses, 2)
         self.assertEqual(version, 2)
         self.assertEqual(rows, [("da2", "dozen"), ("da3", "to hit")])
+        self.assertEqual(metadata["source_date"], "2026-10-28T00:15:09Z")
+        self.assertEqual(metadata["entry_count"], "2")
+        self.assertEqual(metadata["sense_count"], "2")
 
 
 if __name__ == "__main__":

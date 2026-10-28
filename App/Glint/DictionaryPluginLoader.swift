@@ -70,8 +70,25 @@ enum DictionaryPluginLoader {
                 $0.lastPathComponent < $1.lastPathComponent
             },
             firstPriority: 10
-        ).filter { !bundledIDs.contains($0.id) }
-        return bundledRoutes + installedRoutes
+        )
+        var installedByID: [String: DictionaryRoute] = [:]
+        for route in installedRoutes where installedByID[route.id] == nil {
+            installedByID[route.id] = route
+        }
+        let effectiveBundledRoutes = bundledRoutes.map { bundled in
+            guard let installed = installedByID[bundled.id] else {
+                return bundled
+            }
+            return DictionaryRoute(
+                id: bundled.id,
+                priority: bundled.priority,
+                engine: installed.engine
+            )
+        }
+        let additionalRoutes = installedRoutes.filter {
+            !bundledIDs.contains($0.id)
+        }
+        return effectiveBundledRoutes + additionalRoutes
     }
 
     private static func routes(
@@ -113,7 +130,10 @@ enum DictionaryPluginLoader {
             let overrides = directory.appendingPathComponent(
                 "overrides.json"
             )
-            guard FileManager.default.fileExists(atPath: database.path) else {
+            guard
+                FileManager.default.fileExists(atPath: database.path),
+                CedictDatabaseBuilder.isCompatible(databaseURL: database)
+            else {
                 return nil
             }
             return CedictDictionary(

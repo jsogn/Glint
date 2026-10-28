@@ -17,17 +17,20 @@ public struct MonitoringSettings: Sendable, Equatable {
     public let mode: TranslationMode
     public let candidateDwellDuration: Double
     public let translationScope: CandidateTranslationScope
+    public let maximumTranslationCount: Int
     public let configurationToken: String
 
     public init(
         mode: TranslationMode,
         candidateDwellDuration: Double,
         translationScope: CandidateTranslationScope,
+        maximumTranslationCount: Int = 4,
         configurationToken: String
     ) {
         self.mode = mode
         self.candidateDwellDuration = candidateDwellDuration
         self.translationScope = translationScope
+        self.maximumTranslationCount = maximumTranslationCount
         self.configurationToken = configurationToken
     }
 }
@@ -79,6 +82,16 @@ public actor MonitoringSession {
         enqueue(.stop)
     }
 
+    public func insertTranslation(
+        _ offer: TranslationChoiceOffer,
+        choiceIndex: Int
+    ) async -> Bool {
+        await controller.insertTranslation(
+            offer,
+            choiceIndex: choiceIndex
+        )
+    }
+
     private func enqueue(_ intent: Intent) {
         pending.append(intent)
         guard !isProcessing else { return }
@@ -109,6 +122,9 @@ public actor MonitoringSession {
             settings.candidateDwellDuration
         )
         await controller.setTranslationScope(settings.translationScope)
+        await controller.setMaximumTranslationCount(
+            settings.maximumTranslationCount
+        )
         await controller.setTranslationConfigurationToken(
             settings.configurationToken
         )

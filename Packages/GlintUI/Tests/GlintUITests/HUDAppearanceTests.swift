@@ -3,6 +3,19 @@ import XCTest
 @testable import GlintUI
 
 final class HUDAppearanceTests: XCTestCase {
+    func testSelectedTranslationSpacingIsClamped() {
+        XCTAssertEqual(
+            HUDAppearance(selectedTranslationSpacing: 2)
+                .selectedTranslationSpacing,
+            8
+        )
+        XCTAssertEqual(
+            HUDAppearance(selectedTranslationSpacing: 30)
+                .selectedTranslationSpacing,
+            24
+        )
+    }
+
     func testBackgroundStyleTitlesStaySimple() {
         XCTAssertEqual(
             HUDBackgroundStyle.allCases.map(\.title),

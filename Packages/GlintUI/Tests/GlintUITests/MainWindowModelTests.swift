@@ -94,6 +94,126 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
+    func testInstalledCoreDictionaryOverlayReplacesBundledVersion()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintCoreDictionaryOverlayTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let bundled = dictionaryManifest(
+            id: "dict-cedict",
+            version: "2026.10.3"
+        )
+        let overlay = dictionaryManifest(
+            id: "dict-cedict",
+            version: "2026.10.28",
+            sourceDate: "2026-10-28T00:15:09Z"
+        )
+        let manager = PluginManager(baseDirectory: root)
+        try await install(overlay, using: manager, root: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            builtInPlugins: [bundled],
+            catalogURL: nil
+        )
+
+        await model.refreshInstalledPlugins()
+
+        XCTAssertEqual(model.dictionaryPlugins.count, 1)
+        XCTAssertEqual(
+            model.dictionaryPlugins.first?.version,
+            "2026.10.28"
+        )
+        XCTAssertEqual(
+            model.dictionaryPlugins.first?.sourceDate,
+            "2026-10-28T00:15:09Z"
+        )
+    }
+
+    @MainActor
+    func testManualCoreDictionaryUpdateShowsStatus() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintCoreDictionaryUpdateTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let manager = PluginManager(baseDirectory: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            builtInPlugins: [
+                dictionaryManifest(id: "dict-cedict")
+            ],
+            catalogURL: nil
+        )
+        var refreshCount = 0
+        model.dictionaryConfigurationChangedAction = {
+            refreshCount += 1
+        }
+        model.checkCoreDictionaryUpdateAction = {
+            "CC-CEDICT 已是最新"
+        }
+
+        model.checkCoreDictionaryUpdate()
+        for _ in 0..<200 where model.isCheckingCoreDictionaryUpdate {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertEqual(
+            model.coreDictionaryUpdateStatusText,
+            "CC-CEDICT 已是最新"
+        )
+        XCTAssertFalse(model.coreDictionaryUpdateStatusIsError)
+        XCTAssertEqual(refreshCount, 1)
+    }
+
+    @MainActor
+    func testCoreDictionaryUpdateCanBeCancelled() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintCoreDictionaryCancelTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            builtInPlugins: [
+                dictionaryManifest(id: "dict-cedict")
+            ],
+            catalogURL: nil
+        )
+        model.checkCoreDictionaryUpdateAction = {
+            try await Task.sleep(for: .seconds(10))
+            return "unexpected"
+        }
+
+        model.checkCoreDictionaryUpdate()
+        try await Task.sleep(for: .milliseconds(20))
+        model.cancelCoreDictionaryUpdate()
+        for _ in 0..<200 where model.isCheckingCoreDictionaryUpdate {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertFalse(model.isCheckingCoreDictionaryUpdate)
+        XCTAssertNil(model.coreDictionaryUpdateStatusText)
+    }
+
+    @MainActor
     func testFailedLocalImportRestoresPreviousModelAndCleanup() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -599,20 +719,23 @@ final class MainWindowModelTests: XCTestCase {
     @MainActor
     private func dictionaryManifest(
         id: String = "dict-bundled-test",
-        source: PluginSource = .bundled
+        version: String = "1.0",
+        source: PluginSource = .bundled,
+        sourceDate: String? = nil
     ) -> PluginManifest {
         PluginManifest(
             id: id,
             type: .dictionary,
             name: "Bundled Test Dictionary",
-            version: "1.0",
+            version: version,
             runtime: "sqlite-v1",
             sizeBytes: 10,
             sha256: "test",
             url: URL(string: "https://example.invalid/dictionary.zip")!,
             license: "MIT",
             minRAMBytes: 0,
-            source: source
+            source: source,
+            sourceDate: sourceDate
         )
     }
 

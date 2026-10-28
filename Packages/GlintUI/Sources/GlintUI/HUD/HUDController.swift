@@ -65,6 +65,7 @@ public final class HUDController {
     private struct PresentationRequest {
         let revision: UInt64?
         let items: [HUDItem]
+        let layoutStyle: HUDLayoutStyle
         let appearance: HUDAppearance
         let screenRect: CGRect
         let position: HUDPosition
@@ -176,6 +177,7 @@ public final class HUDController {
     public func show(
         items: [HUDItem],
         near screenRect: CGRect,
+        layoutStyle: HUDLayoutStyle = .candidateRow,
         position: HUDPosition = .automatic,
         spacing: Double = 8,
         opacity: Double = 0.8,
@@ -186,6 +188,7 @@ public final class HUDController {
             PresentationRequest(
                 revision: revision,
                 items: items,
+                layoutStyle: layoutStyle,
                 appearance: appearance,
                 screenRect: screenRect,
                 position: position,
@@ -299,12 +302,14 @@ public final class HUDController {
         let showsOnlySelectedItem = HUDItemRow.requiresSelectedOnly(
             for: request.items,
             maximumWidth: maximumWidth,
+            layoutStyle: request.layoutStyle,
             appearance: request.appearance
         )
         let proposedPanelSize = Self.panelSize(
             for: request.items,
             maximumWidth: maximumWidth,
             selectedOnly: showsOnlySelectedItem,
+            layoutStyle: request.layoutStyle,
             appearance: request.appearance
         )
         let resolvedPanelSize = proposedPanelSize
@@ -541,6 +546,7 @@ public final class HUDController {
     ) {
         let changes = {
             self.contentModel.items = request.items
+            self.contentModel.layoutStyle = request.layoutStyle
             self.contentModel.appearance = request.appearance
             self.contentModel.backgroundOpacity = request.opacity
             if let showsOnlySelectedItem {
@@ -611,6 +617,7 @@ public final class HUDController {
         for items: [HUDItem],
         maximumWidth: CGFloat,
         selectedOnly: Bool = false,
+        layoutStyle: HUDLayoutStyle = .candidateRow,
         appearance: HUDAppearance = .default
     ) -> NSSize {
         let metrics = HUDLayoutMetrics(appearance: appearance)
@@ -624,23 +631,29 @@ public final class HUDController {
                 items.map {
                     HUDItemRow.naturalPanelWidth(
                         for: [$0],
+                        layoutStyle: layoutStyle,
                         appearance: appearance
                     )
                 }.max() ?? 120
         } else {
             width = HUDItemRow.naturalPanelWidth(
                 for: items,
+                layoutStyle: layoutStyle,
                 appearance: appearance
             )
         }
         let minimumWidth: CGFloat
-        if selectedOnly || items.count <= 1 {
+        if selectedOnly
+            || items.count <= 1
+            || layoutStyle == .selectedTranslations
+        {
             minimumWidth = 120
         } else {
             minimumWidth = max(
                 220,
                 HUDItemRow.minimumPanelWidth(
                     for: items.count,
+                    layoutStyle: layoutStyle,
                     appearance: appearance
                 )
             )

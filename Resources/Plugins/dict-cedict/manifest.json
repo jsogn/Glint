@@ -2,13 +2,14 @@
   "id": "dict-cedict",
   "type": "dictionary",
   "name": "CC-CEDICT",
-  "version": "2026.10.2",
+  "version": "2026.10.3",
   "runtime": "cedict-sqlite",
-  "sizeBytes": 10588299,
-  "sha256": "REPLACE_ME",
+  "sizeBytes": 23613440,
+  "sha256": "118b43127b25b40ce59695a6e53ab9c00c7c73cb1661a81d76e764b10c591d60",
   "url": "https://example.invalid/glint/dict-cedict.zip",
   "license": "CC-BY-SA-4.0",
   "minRAMBytes": 0,
   "source": "bundled",
+  "sourceDate": "2026-10-28T00:15:09Z",
   "summary": "覆盖常用中文词汇和短语，适合日常输入与英语学习。"
 }

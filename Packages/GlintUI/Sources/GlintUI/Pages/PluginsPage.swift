@@ -4,6 +4,8 @@ import GlintPlugins
 import SwiftUI
 
 struct PluginsPage: View {
+    private static let coreDictionaryID = "dict-cedict"
+
     let model: MainWindowModel
     @Binding var selectedTab: PluginTab
     @State private var pluginToRemove: PluginManifest?
@@ -220,8 +222,48 @@ struct PluginsPage: View {
                                 : Color.secondary
                         )
                 }
+                if plugin.id == Self.coreDictionaryID {
+                    if model.isCheckingCoreDictionaryUpdate {
+                        Text("正在检查 CC-CEDICT 更新…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if let status =
+                        model.coreDictionaryUpdateStatusText
+                    {
+                        Text(status)
+                            .font(.caption)
+                            .foregroundStyle(
+                                model.coreDictionaryUpdateStatusIsError
+                                    ? Color.red
+                                    : Color.secondary
+                            )
+                    }
+                }
             }
             Spacer()
+            if plugin.id == Self.coreDictionaryID,
+                plugin.source == .bundled
+            {
+                if model.isCheckingCoreDictionaryUpdate {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Button("取消") {
+                            model.cancelCoreDictionaryUpdate()
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Button("检查更新") {
+                        model.checkCoreDictionaryUpdate()
+                    }
+                    .disabled(
+                        model.isInstalling != nil
+                            || model.isImportingLocalModel
+                    )
+                }
+            }
             if plugin.type == .translation {
                 if model.isActiveTranslationModel(plugin) {
                     Text("使用中")
