@@ -7,6 +7,7 @@ struct HUDLayoutResult: Equatable {
 
 enum HUDLayout {
     static let screenEdgeInset: CGFloat = 8
+    static let automaticFlipHysteresis: CGFloat = 32
 
     static func placement(
         near candidateRect: CGRect,
@@ -40,14 +41,26 @@ enum HUDLayout {
         let proposedY: CGFloat
         switch position {
         case .automatic:
+            // Input methods flip the candidate bar above the input line when
+            // there is not enough room below. Keep the HUD on the roomier
+            // side of the screen and retain the current side near the center
+            // so small candidate movement cannot make it jump.
+            let centerY = visibleFrame.midY
+            let desiredPlacesBelow: Bool
             if let preferredPlacesBelow {
-                if preferredPlacesBelow, belowFits {
-                    placesBelow = true
-                } else if !preferredPlacesBelow, aboveFits {
-                    placesBelow = false
-                } else {
-                    placesBelow = belowFits
-                }
+                desiredPlacesBelow =
+                    preferredPlacesBelow
+                    ? candidateRect.midY
+                        >= centerY - Self.automaticFlipHysteresis
+                    : candidateRect.midY
+                        > centerY + Self.automaticFlipHysteresis
+            } else {
+                desiredPlacesBelow = candidateRect.midY >= centerY
+            }
+            if desiredPlacesBelow, belowFits {
+                placesBelow = true
+            } else if !desiredPlacesBelow, aboveFits {
+                placesBelow = false
             } else {
                 placesBelow = belowFits
             }
