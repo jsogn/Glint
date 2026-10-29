@@ -1,0 +1,136 @@
+[
+  {
+    "text": "弹幕",
+    "category": "common",
+    "expected": ["barrage", "bullet screen", "danmaku"]
+  },
+  {
+    "text": "关于",
+    "category": "function",
+    "expected": ["about", "concerning", "regarding", "with regard to"]
+  },
+  {
+    "text": "通过",
+    "category": "function",
+    "expected": ["by", "through", "via", "pass", "adopt"]
+  },
+  {
+    "text": "设置",
+    "category": "technical",
+    "expected": ["set", "set up", "settings", "configuration"]
+  },
+  {
+    "text": "发布",
+    "category": "technical",
+    "expected": ["announce", "issue", "publish", "release"]
+  },
+  {
+    "text": "用户",
+    "category": "technical",
+    "expected": ["user"]
+  },
+  {
+    "text": "速度",
+    "category": "technical",
+    "expected": ["rate", "speed", "velocity"]
+  },
+  {
+    "text": "程序",
+    "category": "technical",
+    "expected": ["procedure", "procedures", "process", "program"]
+  },
+  {
+    "text": "对齐",
+    "category": "technical",
+    "expected": ["align", "alignment"]
+  },
+  {
+    "text": "处理",
+    "category": "ambiguous",
+    "expected": ["deal with", "handle", "process"]
+  },
+  {
+    "text": "解释",
+    "category": "ambiguous",
+    "expected": ["explain", "explanation", "interpretation"]
+  },
+  {
+    "text": "翻译",
+    "category": "common",
+    "expected": ["translate", "translation"]
+  },
+  {
+    "text": "学习",
+    "category": "general",
+    "expected": ["learn", "learning", "study"]
+  },
+  {
+    "text": "需要",
+    "category": "general",
+    "expected": ["need", "needs", "require"]
+  },
+  {
+    "text": "可以",
+    "category": "general",
+    "expected": ["can", "may", "it's possible"]
+  },
+  {
+    "text": "以后",
+    "category": "daily",
+    "expected": ["afterwards", "in the future", "later"]
+  },
+  {
+    "text": "担心",
+    "category": "daily",
+    "expected": ["anxiety", "concerned", "worried", "worry"]
+  },
+  {
+    "text": "发现",
+    "category": "daily",
+    "expected": ["discover", "discovery", "find"]
+  },
+  {
+    "text": "地方",
+    "category": "daily",
+    "expected": ["local", "place", "region"]
+  },
+  {
+    "text": "输入",
+    "category": "technical",
+    "expected": ["enter", "import", "input"]
+  },
+  {
+    "text": "运动",
+    "category": "daily",
+    "expected": ["exercise", "sport", "sports"]
+  },
+  {
+    "text": "安排",
+    "category": "ambiguous",
+    "expected": ["arrange", "arrangement", "arrangements", "plan"]
+  },
+  {
+    "text": "申请",
+    "category": "ambiguous",
+    "expected": ["application", "applications"]
+  },
+  {
+    "text": "请稍等",
+    "category": "phrase",
+    "expected": ["please wait", "please wait a moment", "wait a moment"]
+  },
+  {
+    "text": "谢谢帮助",
+    "category": "phrase",
+    "expected": [
+      "thanks for the help",
+      "thank you for the help",
+      "thank you for your help"
+    ]
+  },
+  {
+    "text": "复盘",
+    "category": "model",
+    "expected": ["replay", "retrospective", "review"]
+  }
+]
