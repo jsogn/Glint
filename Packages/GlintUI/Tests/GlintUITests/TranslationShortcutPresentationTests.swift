@@ -80,4 +80,58 @@ final class TranslationShortcutPresentationTests: XCTestCase {
             ]
         )
     }
+
+    @MainActor
+    func testRecorderReleasesFocusAfterSuccessfulRecording() throws {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 240, height: 80),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        let button = ShortcutRecorderNSButton(
+            frame: NSRect(x: 20, y: 20, width: 128, height: 26),
+            shortcut: .defaultTrigger
+        )
+        window.contentView = button
+
+        button.startRecording()
+        XCTAssertTrue(window.firstResponder === button)
+
+        button.flagsChanged(
+            with: try modifierEvent(
+                flags: .option,
+                windowNumber: window.windowNumber
+            )
+        )
+        button.flagsChanged(
+            with: try modifierEvent(
+                flags: [],
+                windowNumber: window.windowNumber
+            )
+        )
+
+        XCTAssertFalse(button.isRecordingShortcut)
+        XCTAssertFalse(window.firstResponder === button)
+    }
+
+    private func modifierEvent(
+        flags: NSEvent.ModifierFlags,
+        windowNumber: Int
+    ) throws -> NSEvent {
+        try XCTUnwrap(
+            NSEvent.keyEvent(
+                with: .flagsChanged,
+                location: .zero,
+                modifierFlags: flags,
+                timestamp: 0,
+                windowNumber: windowNumber,
+                context: nil,
+                characters: "",
+                charactersIgnoringModifiers: "",
+                isARepeat: false,
+                keyCode: 58
+            )
+        )
+    }
 }

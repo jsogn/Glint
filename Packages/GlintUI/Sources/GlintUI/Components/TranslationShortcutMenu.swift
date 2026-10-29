@@ -77,7 +77,7 @@ private struct TranslationShortcutRecorderButton: NSViewRepresentable {
 }
 
 @MainActor
-private final class ShortcutRecorderNSButton: NSButton {
+final class ShortcutRecorderNSButton: NSButton {
     private(set) var isRecordingShortcut = false
     var onShortcutRecorded: ((TranslationInsertionShortcut) -> Void)?
     private var showsInputError = false
@@ -135,6 +135,7 @@ private final class ShortcutRecorderNSButton: NSButton {
     func setInteractionEnabled(_ enabled: Bool) {
         if !enabled, isRecordingShortcut {
             cancelRecording()
+            releaseRecordingFocus()
         }
         isEnabled = enabled
     }
@@ -142,6 +143,7 @@ private final class ShortcutRecorderNSButton: NSButton {
     func startRecording() {
         if isRecordingShortcut {
             cancelRecording()
+            releaseRecordingFocus()
             return
         }
         clearInputError()
@@ -213,6 +215,7 @@ private final class ShortcutRecorderNSButton: NSButton {
     private func rejectKey(_ event: NSEvent) {
         if event.keyCode == 53 {
             cancelRecording()
+            releaseRecordingFocus()
             return
         }
         showInputError()
@@ -231,6 +234,7 @@ private final class ShortcutRecorderNSButton: NSButton {
         pendingModifiers = []
         apply(shortcut: shortcut)
         onShortcutRecorded?(shortcut)
+        releaseRecordingFocus()
     }
 
     override func resignFirstResponder() -> Bool {
@@ -253,6 +257,13 @@ private final class ShortcutRecorderNSButton: NSButton {
         if let shortcut = storedShortcut {
             apply(shortcut: shortcut)
         }
+    }
+
+    private func releaseRecordingFocus() {
+        guard let window, window.firstResponder === self else {
+            return
+        }
+        window.makeFirstResponder(nil)
     }
 
     private func showInputError() {
