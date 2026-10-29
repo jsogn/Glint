@@ -1,7 +1,7 @@
 # Glint AX Candidate Validation
 
 - 状态：现行
-- 最近校准：2026-10-26
+- 最近校准：2026-10-29
 - 验证环境：Apple M4 Pro、48GB、macOS 26.6.2（25G83）
 
 本文记录 Glint 使用的公开 Accessibility 候选结构、兼容边界和验证证据。通用
@@ -43,6 +43,9 @@ TextEdit AXWindow / AXDialog
 - 候选自身的 `AXSelected` 不可用于判断高亮。
 - 当前候选由父列表的 `AXSelectedChildren` 给出。
 - 候选 `AXFrame` 提供屏幕位置；方向键切换后 frame 同步移动。
+- 候选 item frame 包含上下各约 `2.5pt` 的视觉装饰留白。专属 reader 只将
+  派生纵向边界向内校准，原始 frame 不修改，用户设置的 HUD 间距从可见候选行
+  边界开始计算。
 - 组合结束后候选列表消失。Escape、提交、失焦和切换输入源均会结束会话。
 
 TextEdit、Safari 和 Chrome 已完成代表性验证。Electron/Chromium 的自动化键盘

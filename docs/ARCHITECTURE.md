@@ -175,7 +175,9 @@ GlintCore
 
 候选 reader 输出 `AXCandidateGeometry`，区分横向锚点和纵向边界来自 `window`、
 `list`、`item` 还是 `text`。输入法专属视觉校准由 reader 完成，HUD 只消费最终
-presentation frame。panel 是唯一尺寸来源，`NSHostingView` 不得反向压缩窗口高度。
+presentation frame。苹果简体拼音的候选 item frame 包含上下各 `2.5pt` 的装饰
+留白；专属 reader 只缩放派生纵向边界，原始 item frame 仍用于候选跟踪。panel
+是唯一尺寸来源，`NSHostingView` 不得反向压缩窗口高度。
 
 ## 7. 运行时数据流
 

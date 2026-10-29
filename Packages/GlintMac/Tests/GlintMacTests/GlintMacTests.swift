@@ -2292,7 +2292,58 @@ final class SelectedTextItemCandidateParserTests: XCTestCase {
     }
 }
 
+final class ApplePinyinCandidateReaderTests: XCTestCase {
+    func testReaderInsetsVerticalPresentationBoundsWithoutChangingRawFrames() {
+        let rawFrame = CGRect(x: 100, y: 200, width: 80, height: 32)
+        let geometry = AXCandidateGeometry(
+            horizontalFrame: rawFrame,
+            horizontalSource: .item,
+            verticalFrame: rawFrame,
+            verticalSource: .item
+        )
+        let candidate = AXCandidateSnapshot(
+            text: "候选",
+            visibleTexts: [],
+            frame: rawFrame,
+            candidateListFrame: nil,
+            geometry: geometry,
+            selectedIndex: 0
+        )
+        let reader = ApplePinyinCandidateReader(
+            upstream: FixedSnapshotCandidates(candidate: candidate)
+        )
+
+        let adjusted = reader.snapshot(
+            processIdentifier: nil,
+            includeVisibleCandidates: false,
+            includeVisibleTexts: true
+        )
+
+        XCTAssertEqual(adjusted?.frame, rawFrame)
+        XCTAssertEqual(
+            adjusted?.geometry?.verticalBounds,
+            CGRect(x: 100, y: 202.5, width: 80, height: 27)
+        )
+        XCTAssertEqual(
+            adjusted?.geometry?.horizontalAnchor,
+            rawFrame
+        )
+    }
+}
+
 final class CandidateReaderRouterTests: XCTestCase {
+    func testStandardConfigurationRoutesApplePinyinThroughVisualCalibration() {
+        let router = CandidateReaderConfiguration.standard()
+        let reader = router.reader(
+            for: ActiveInputSource(
+                id: InputMethodIdentifier.applePinyinInputMode,
+                kind: .applePinyin
+            )
+        )
+
+        XCTAssertTrue(reader is ApplePinyinCandidateReader)
+    }
+
     func testProcessFallbackUsesStandardAndVerifiedReaders() {
         let router = CandidateReaderRouter(
             fallback: RecordingCandidates(),

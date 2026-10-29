@@ -153,6 +153,15 @@ enum CandidateReaderConfiguration {
             fallback: AXCandidateReader(),
             registrations: [
                 CandidateReaderRegistration(
+                    bundleIdentifiers: [],
+                    inputSourceIdentifiers: [
+                        InputMethodIdentifier.applePinyinInputMode
+                    ],
+                    reader: ApplePinyinCandidateReader(
+                        upstream: AXCandidateReader()
+                    )
+                ),
+                CandidateReaderRegistration(
                     bundleIdentifiers: [
                         InputMethodIdentifier.weTypeBundle
                     ],
