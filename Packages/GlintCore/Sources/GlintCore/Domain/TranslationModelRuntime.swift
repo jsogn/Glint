@@ -20,6 +20,12 @@ public enum TranslationPromptProfile: String, Codable, Sendable {
     }
 }
 
+public enum TranslationAdapterMode: String, Codable, Sendable {
+    case directSource = "direct-source"
+    case translationInstruction = "translation-instruction"
+    case systemInstruction = "system-instruction"
+}
+
 public enum ResolvedTranslationModel: Sendable, Equatable {
     case mlx(
         modelID: String,

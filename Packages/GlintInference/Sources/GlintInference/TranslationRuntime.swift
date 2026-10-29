@@ -69,7 +69,7 @@ public actor TranslationRuntime: TranslationEngine {
         do {
             let engine = try makeEngine(for: descriptor)
             if let mlx = engine as? MLXTranslationEngine {
-                _ = try await mlx.prepare()
+                try await mlx.prepareForTranslation()
                 try? await mlx.warmUp()
             }
             activeModel = descriptor

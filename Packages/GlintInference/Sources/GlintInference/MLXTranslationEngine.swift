@@ -14,6 +14,7 @@ public enum MLXTranslationError: Error, LocalizedError, Sendable {
     case modelNotFound
     case emptyOutput
     case invalidOutput
+    case incompatibleAdapter
 
     public var errorDescription: String? {
         switch self {
@@ -23,11 +24,13 @@ public enum MLXTranslationError: Error, LocalizedError, Sendable {
             return "翻译模型没有返回内容"
         case .invalidOutput:
             return "翻译模型返回了无效内容"
+        case .incompatibleAdapter:
+            return "模型未通过中英翻译兼容性验证"
         }
     }
 }
 
-internal enum MLXPromptProfile: Sendable {
+internal enum MLXPromptProfile: Sendable, Equatable {
     case qwenGeneral
     case hyMT2
     case indexTranslate
@@ -50,12 +53,14 @@ internal enum MLXPromptProfile: Sendable {
         }
     }
 
-    var instructions: String? {
+    var defaultAdapterMode: TranslationAdapterMode {
         switch self {
-        case .qwenGeneral, .generic:
-            MLXTranslationEngine.qwenSystemPrompt
+        case .qwenGeneral:
+            .systemInstruction
         case .hyMT2, .indexTranslate:
-            nil
+            .translationInstruction
+        case .generic:
+            .directSource
         }
     }
 
@@ -68,17 +73,60 @@ internal enum MLXPromptProfile: Sendable {
         }
     }
 
-    func prompt(for input: String) -> String {
-        switch self {
-        case .qwenGeneral:
-            input
+    func instructions(for adapterMode: TranslationAdapterMode) -> String? {
+        if adapterMode == .systemInstruction {
+            return MLXTranslationEngine.qwenSystemPrompt
+        }
+        return nil
+    }
+
+    func prompt(
+        for input: String,
+        adapterMode: TranslationAdapterMode
+    ) -> String {
+        guard adapterMode == .translationInstruction else {
+            return input
+        }
+        return switch self {
         case .hyMT2:
             "将以下文本翻译为英语，注意只需要输出翻译后的结果，不要额外解释：\n\n\(input)"
         case .indexTranslate:
-            "请将以下文本翻译为英语，直接输出翻译结果，不要进行任何解释。\n\n\(input)"
-        case .generic:
-            input
+            "请将以下中文文本翻译为英语，直接输出翻译结果，不要进行任何解释。\n\n\(input)"
+        case .qwenGeneral, .generic:
+            "将以下文本翻译为英语，只输出翻译结果，不要解释：\n\n\(input)"
         }
+    }
+
+    func generationParameters(maxTokens: Int) -> GenerateParameters {
+        switch self {
+        case .qwenGeneral:
+            GenerateParameters(
+                maxTokens: maxTokens,
+                temperature: 0.7,
+                topP: 0.8,
+                topK: 20
+            )
+        case .hyMT2:
+            GenerateParameters(
+                maxTokens: maxTokens,
+                temperature: 0.7,
+                topP: 0.6,
+                topK: 20,
+                repetitionPenalty: 1.05
+            )
+        case .indexTranslate, .generic:
+            GenerateParameters(
+                maxTokens: maxTokens,
+                temperature: 0
+            )
+        }
+    }
+
+    func probeGenerationParameters(maxTokens: Int) -> GenerateParameters {
+        GenerateParameters(
+            maxTokens: maxTokens,
+            temperature: 0
+        )
     }
 
     func batchPrompt(for inputs: [String]) -> String {
@@ -110,6 +158,14 @@ internal enum MLXPromptProfile: Sendable {
     }
 }
 
+private struct CachedTranslationAdapter: Codable {
+    static let fileName = ".glint-translation-adapter.json"
+    static let currentSchemaVersion = 1
+
+    let schemaVersion: Int
+    let mode: TranslationAdapterMode
+}
+
 /// Local-only translation through MLX.
 ///
 /// The application never downloads weights from this type. A plugin installer
@@ -134,6 +190,8 @@ public actor MLXTranslationEngine: TranslationEngine {
     private var lastLoadSeconds: Double?
     private(set) public var lastWarmUpSeconds: Double?
     private let profile: MLXPromptProfile
+    private var adapterMode: TranslationAdapterMode
+    private var adapterModeIsResolved: Bool
     private var generationIsBusy = false
     private var generationWaiters: [CheckedContinuation<Void, Never>] = []
 
@@ -142,17 +200,34 @@ public actor MLXTranslationEngine: TranslationEngine {
         modelID: String = "llm-qwen3-1.7b",
         promptProfile: TranslationPromptProfile? = nil
     ) {
-        self.profile = MLXPromptProfile(
+        let profile = MLXPromptProfile(
             profile: promptProfile ?? .inferred(from: modelID)
         )
-        self.modelDirectory = Self.resolveDirectory(
+        self.profile = profile
+        let modelDirectory = Self.resolveDirectory(
             explicit: modelDirectory,
             modelID: modelID
         )
+        self.modelDirectory = modelDirectory
+        let defaultMode = profile.defaultAdapterMode
+        if profile == .generic,
+            let modelDirectory,
+            let cached = Self.cachedAdapter(in: modelDirectory)
+        {
+            self.adapterMode = cached.mode
+            self.adapterModeIsResolved = true
+        } else {
+            self.adapterMode = defaultMode
+            self.adapterModeIsResolved = profile != .generic
+        }
     }
 
     public var loadSeconds: Double? {
         lastLoadSeconds
+    }
+
+    var resolvedAdapterMode: TranslationAdapterMode {
+        adapterMode
     }
 
     @discardableResult
@@ -189,23 +264,44 @@ public actor MLXTranslationEngine: TranslationEngine {
         }
     }
 
+    @discardableResult
+    public func prepareForTranslation() async throws -> ModelContainer {
+        let container = try await prepare()
+        guard profile == .generic, !adapterModeIsResolved else {
+            return container
+        }
+        adapterMode = try await detectAdapterMode()
+        adapterModeIsResolved = true
+        persistAdapterMode()
+        return container
+    }
+
     public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
         try Task.checkCancellation()
         let input = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty else { return nil }
 
-        let container = try await prepare()
+        let container = try await prepareForTranslation()
         await acquireGenerationSlot()
         defer { releaseGenerationSlot() }
         try Task.checkCancellation()
         let session = Self.makeSession(
             container,
             profile: profile,
+            adapterMode: adapterMode,
             maxTokens: 64
         )
-        let output = try await session.respond(to: profile.prompt(for: input))
+        let output = try await session.respond(
+            to: profile.prompt(
+                for: input,
+                adapterMode: adapterMode
+            )
+        )
         guard let translated = Self.clean(output), !translated.isEmpty else {
             throw MLXTranslationError.emptyOutput
+        }
+        guard !Self.isInstructionEcho(translated, for: input) else {
+            throw MLXTranslationError.invalidOutput
         }
         return TranslationResult(text: translated)
     }
@@ -228,7 +324,7 @@ public actor MLXTranslationEngine: TranslationEngine {
             throw MLXTranslationError.invalidOutput
         }
 
-        let container = try await prepare()
+        let container = try await prepareForTranslation()
         await acquireGenerationSlot()
         defer { releaseGenerationSlot() }
         try Task.checkCancellation()
@@ -236,6 +332,7 @@ public actor MLXTranslationEngine: TranslationEngine {
         let session = Self.makeSession(
             container,
             profile: profile,
+            adapterMode: adapterMode,
             maxTokens: maximumTokens
         )
         let output = try await session.respond(
@@ -245,6 +342,13 @@ public actor MLXTranslationEngine: TranslationEngine {
             output,
             expectedCount: inputs.count
         )
+        guard
+            !zip(translations, inputs).contains(where: {
+                Self.isInstructionEcho($0.0, for: $0.1)
+            })
+        else {
+            throw MLXTranslationError.invalidOutput
+        }
         return translations.map {
             TranslationResult(text: $0)
         }
@@ -253,7 +357,7 @@ public actor MLXTranslationEngine: TranslationEngine {
     /// Compile and exercise the first generation path without user text.
     public func warmUp() async throws {
         try Task.checkCancellation()
-        let container = try await prepare()
+        let container = try await prepareForTranslation()
         await acquireGenerationSlot()
         defer { releaseGenerationSlot() }
         try Task.checkCancellation()
@@ -261,9 +365,15 @@ public actor MLXTranslationEngine: TranslationEngine {
         let session = Self.makeSession(
             container,
             profile: profile,
+            adapterMode: adapterMode,
             maxTokens: 16
         )
-        _ = try await session.respond(to: profile.prompt(for: "今天天气不错"))
+        _ = try await session.respond(
+            to: profile.prompt(
+                for: "今天天气不错",
+                adapterMode: adapterMode
+            )
+        )
         lastWarmUpSeconds = started.duration(to: .now).seconds
         if let lastWarmUpSeconds {
             inferenceLogger.notice(
@@ -275,15 +385,31 @@ public actor MLXTranslationEngine: TranslationEngine {
     private nonisolated static func makeSession(
         _ container: ModelContainer,
         profile: MLXPromptProfile,
+        adapterMode: TranslationAdapterMode,
         maxTokens: Int
+    ) -> ChatSession {
+        makeSession(
+            container,
+            profile: profile,
+            adapterMode: adapterMode,
+            parameters: profile.generationParameters(
+                maxTokens: maxTokens
+            )
+        )
+    }
+
+    private nonisolated static func makeSession(
+        _ container: ModelContainer,
+        profile: MLXPromptProfile,
+        adapterMode: TranslationAdapterMode,
+        parameters: GenerateParameters
     ) -> ChatSession {
         ChatSession(
             container,
-            instructions: profile.instructions,
-            generateParameters: GenerateParameters(
-                maxTokens: maxTokens,
-                temperature: 0
+            instructions: profile.instructions(
+                for: adapterMode
             ),
+            generateParameters: parameters,
             additionalContext: profile.additionalContext
         )
     }
@@ -304,6 +430,147 @@ public actor MLXTranslationEngine: TranslationEngine {
             return
         }
         generationWaiters.removeFirst().resume()
+    }
+
+    private func detectAdapterMode() async throws -> TranslationAdapterMode {
+        guard let container else {
+            throw MLXTranslationError.modelNotFound
+        }
+        await acquireGenerationSlot()
+        defer { releaseGenerationSlot() }
+
+        let modes: [TranslationAdapterMode] = [
+            .directSource,
+            .translationInstruction,
+            .systemInstruction,
+        ]
+        for mode in modes {
+            try Task.checkCancellation()
+            let session = Self.makeSession(
+                container,
+                profile: profile,
+                adapterMode: mode,
+                parameters: profile.probeGenerationParameters(
+                    maxTokens: 32
+                )
+            )
+            var passed = true
+            for probe in Self.adapterProbes {
+                do {
+                    let raw = try await session.respond(
+                        to: profile.prompt(
+                            for: probe.source,
+                            adapterMode: mode
+                        )
+                    )
+                    guard
+                        let translated = Self.clean(raw),
+                        !Self.isInstructionEcho(
+                            translated,
+                            for: probe.source
+                        ),
+                        Self.isAcceptedProbeOutput(
+                            translated,
+                            expected: probe.expected
+                        )
+                    else {
+                        passed = false
+                        break
+                    }
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    passed = false
+                    break
+                }
+            }
+            if passed {
+                return mode
+            }
+        }
+        throw MLXTranslationError.incompatibleAdapter
+    }
+
+    private func persistAdapterMode() {
+        guard let modelDirectory else { return }
+        let cached = CachedTranslationAdapter(
+            schemaVersion: CachedTranslationAdapter.currentSchemaVersion,
+            mode: adapterMode
+        )
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            try encoder.encode(cached).write(
+                to: modelDirectory.appendingPathComponent(
+                    CachedTranslationAdapter.fileName
+                ),
+                options: .atomic
+            )
+        } catch {
+            inferenceLogger.notice(
+                "adapter cache write failed model=\(modelDirectory.lastPathComponent, privacy: .public)"
+            )
+        }
+    }
+
+    private static func cachedAdapter(
+        in modelDirectory: URL
+    ) -> CachedTranslationAdapter? {
+        guard
+            let data = try? Data(
+                contentsOf: modelDirectory.appendingPathComponent(
+                    CachedTranslationAdapter.fileName
+                )
+            ),
+            let cached = try? JSONDecoder().decode(
+                CachedTranslationAdapter.self,
+                from: data
+            ),
+            cached.schemaVersion
+                == CachedTranslationAdapter.currentSchemaVersion
+        else {
+            return nil
+        }
+        return cached
+    }
+
+    private struct AdapterProbe {
+        let source: String
+        let expected: Set<String>
+    }
+
+    private static let adapterProbes = [
+        AdapterProbe(
+            source: "你好",
+            expected: ["hello", "hi"]
+        ),
+        AdapterProbe(
+            source: "天气",
+            expected: ["weather"]
+        ),
+        AdapterProbe(
+            source: "翻译",
+            expected: ["translate", "translation"]
+        ),
+    ]
+
+    static func isAcceptedProbeOutput(
+        _ output: String,
+        expected: Set<String>
+    ) -> Bool {
+        let normalized =
+            output
+            .lowercased()
+            .split(whereSeparator: { !$0.isLetter })
+            .map(String.init)
+            .joined(separator: " ")
+        let words = normalized.split(separator: " ")
+        guard !words.isEmpty, words.count <= 6 else {
+            return false
+        }
+        return expected.contains {
+            words.contains(Substring($0))
+        }
     }
 
     public static func availableModelDirectory(
@@ -410,6 +677,41 @@ public actor MLXTranslationEngine: TranslationEngine {
         guard !output.isEmpty else { return nil }
         guard han <= max(1, output.count / 5) else { return nil }
         return output
+    }
+
+    static func isInstructionEcho(
+        _ output: String,
+        for input: String
+    ) -> Bool {
+        let source = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard source.count <= 8 else { return false }
+
+        let value =
+            output
+            .lowercased()
+            .split(whereSeparator: { !$0.isLetter })
+            .joined(separator: " ")
+        let markers = [
+            "translate the following",
+            "translated result",
+            "additional explanation",
+            "directly output the translation",
+            "word or short word",
+            "most common concise english equivalent",
+            "just output one answer",
+            "list of synonyms",
+        ]
+        let markerCount = markers.count {
+            value.contains($0)
+        }
+        let wordCount = value.split(separator: " ").count
+        if markerCount >= 2, wordCount >= 8 {
+            return true
+        }
+
+        return wordCount >= 12
+            && (value.contains("translation") || value.contains("translate"))
+            && (value.contains("explanation") || value.contains("synonym"))
     }
 
     static func parseBatchTranslations(
