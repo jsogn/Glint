@@ -24,6 +24,9 @@ public final class HUDController {
     )
     private var panelSize = HUDGeometry.initialPanelSize
     private var displayedRevision: UInt64?
+    private var currentRequest: HUDPresentationRequest?
+    private var pendingLayoutRequest: HUDPresentationRequest?
+    private var contentPresentationPending = false
     private var entryAnimationIsActive = false
     private var entryAnimationGeneration = 0
     private var transitionGeneration = 0
@@ -108,25 +111,56 @@ public final class HUDController {
         near screenRect: CGRect,
         inputCaretRect: CGRect? = nil,
         layoutStyle: HUDLayoutStyle = .candidateRow,
-        position: HUDPosition = .automatic,
         spacing: Double = 8,
         opacity: Double = 0.8,
         appearance: HUDAppearance = .default,
         revision: UInt64? = nil
     ) {
-        scheduler.enqueue(
-            HUDPresentationRequest(
-                revision: revision,
-                items: items,
-                layoutStyle: layoutStyle,
-                appearance: appearance,
-                screenRect: screenRect,
-                inputCaretRect: inputCaretRect,
-                position: position,
-                spacing: spacing,
-                opacity: opacity
-            )
+        let request = HUDPresentationRequest(
+            revision: revision,
+            items: items,
+            layoutStyle: layoutStyle,
+            appearance: appearance,
+            screenRect: screenRect,
+            inputCaretRect: inputCaretRect,
+            spacing: spacing,
+            opacity: opacity
         )
+        currentRequest = request
+        pendingLayoutRequest = nil
+        contentPresentationPending = true
+        scheduler.enqueue(
+            request
+        )
+    }
+
+    public func updateLayout(
+        screenRect: CGRect,
+        inputCaretRect: CGRect?
+    ) {
+        guard let currentRequest else { return }
+        let updated = currentRequest.updatingLayout(
+            screenRect: screenRect,
+            inputCaretRect: inputCaretRect
+        )
+        guard
+            updated.screenRect != currentRequest.screenRect
+                || updated.inputCaretRect
+                    != currentRequest.inputCaretRect
+        else {
+            return
+        }
+        self.currentRequest = updated
+        if contentPresentationPending {
+            scheduler.enqueue(updated)
+            return
+        }
+        guard panel.isVisible else { return }
+        guard !entryAnimationIsActive else {
+            pendingLayoutRequest = updated
+            return
+        }
+        applyLayoutOnly(updated)
     }
 
     private func present(_ request: HUDPresentationRequest) {
@@ -147,6 +181,7 @@ public final class HUDController {
                 textOpacity: 1,
                 animatesText: false
             )
+            contentPresentationPending = false
             panel.alphaValue = 1
             panel.orderFrontRegardless()
             displayedRevision = request.revision
@@ -172,6 +207,7 @@ public final class HUDController {
         _ layout: HUDPresentationLayout,
         reduceMotion: Bool
     ) {
+        contentPresentationPending = false
         panelSize = layout.panelSize
         applyContent(
             layout.request,
@@ -214,6 +250,10 @@ public final class HUDController {
         }
         entryAnimationIsActive = false
         panel.alphaValue = 1
+        if let pendingLayoutRequest {
+            self.pendingLayoutRequest = nil
+            applyLayoutOnly(pendingLayoutRequest)
+        }
         guard let request = scheduler.takePendingRequest() else { return }
         present(request)
     }
@@ -223,6 +263,7 @@ public final class HUDController {
         update: HUDContentUpdate,
         reduceMotion: Bool
     ) {
+        contentPresentationPending = false
         panelSize = layout.panelSize
         if reduceMotion {
             panel.alphaValue = 1
@@ -255,8 +296,40 @@ public final class HUDController {
         displayedRevision = layout.request.revision
     }
 
+    private func applyLayoutOnly(
+        _ request: HUDPresentationRequest
+    ) {
+        guard panel.isVisible else { return }
+        if let targetFrame = geometryResolver.resolveLayoutOnly(
+            request,
+            panelSize: panelSize
+        ) {
+            if panel.frame != targetFrame {
+                panel.setFrame(targetFrame, display: false)
+            }
+            return
+        }
+        guard let layout = geometryResolver.resolve(request) else {
+            return
+        }
+        panelSize = layout.panelSize
+        applyContent(
+            layout.request,
+            showsOnlySelectedItem: layout.showsOnlySelectedItem,
+            textOpacity: contentModel.textOpacity,
+            animatesText: false
+        )
+        panel.contentView?.layoutSubtreeIfNeeded()
+        if panel.frame != layout.targetFrame {
+            panel.setFrame(layout.targetFrame, display: true)
+        }
+    }
+
     public func hide(animated: Bool = true) {
         scheduler.reset()
+        currentRequest = nil
+        pendingLayoutRequest = nil
+        contentPresentationPending = false
         entryAnimationGeneration &+= 1
         entryAnimationIsActive = false
         transitionGeneration &+= 1
@@ -304,6 +377,9 @@ public final class HUDController {
         panel.orderOut(nil)
         panel.alphaValue = 0
         displayedRevision = nil
+        currentRequest = nil
+        pendingLayoutRequest = nil
+        contentPresentationPending = false
         geometryResolver.reset()
     }
 

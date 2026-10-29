@@ -2,27 +2,12 @@ import Foundation
 import GlintCore
 import Observation
 
-public enum HUDPosition: String, CaseIterable, Sendable {
-    case automatic
-    case above
-    case below
-
-    public var title: String {
-        switch self {
-        case .automatic: return "自动"
-        case .above: return "候选栏上方"
-        case .below: return "候选栏下方"
-        }
-    }
-}
-
 @MainActor
 @Observable
 public final class DisplayPreferences {
     public static let maximumTranslationCountRange = 1...9
 
     private enum Key {
-        static let position = "display.position"
         static let candidateDwellDuration = "display.candidateDwellDuration"
         static let candidateSpacing = "display.candidateSpacing"
         static let hudBackgroundStyle = "display.hudBackgroundStyle"
@@ -49,12 +34,6 @@ public final class DisplayPreferences {
     public var translationScopeDidChange: (@MainActor (CandidateTranslationScope) -> Void)?
     @ObservationIgnored
     public var maximumTranslationCountDidChange: (@MainActor (Int) -> Void)?
-
-    public var position: HUDPosition {
-        didSet {
-            defaults.set(position.rawValue, forKey: Key.position)
-        }
-    }
 
     public var candidateDwellDuration: Double {
         didSet {
@@ -225,8 +204,6 @@ public final class DisplayPreferences {
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        let storedPosition = defaults.string(forKey: Key.position)
-        self.position = HUDPosition(rawValue: storedPosition ?? "") ?? .automatic
 
         let storedDwellDuration =
             defaults.object(

@@ -93,6 +93,10 @@ public enum MonitoringEvent: Sendable {
     case inputSourceChanged(InputMethodIdentity)
     case candidateChanged(revision: UInt64)
     case selectionChanged(index: Int, revision: UInt64)
+    case layoutChanged(
+        CandidateRegion,
+        inputCaretRect: CGRect?
+    )
     case candidateEnded(immediate: Bool)
     case results(
         [CandidateTranslationPresentation],
@@ -213,6 +217,48 @@ public actor MonitoringController {
         let inputCaretRect: CGRect?
     }
 
+    private struct CandidateLayoutSnapshot: Equatable {
+        let highlight: CandidateRegion
+        let inputCaretRect: CGRect?
+
+        func approximatelyEquals(
+            _ other: Self,
+            tolerance: CGFloat
+        ) -> Bool {
+            let highlightMatches =
+                abs(highlight.x - other.highlight.x) <= tolerance
+                && abs(highlight.y - other.highlight.y) <= tolerance
+                && abs(highlight.width - other.highlight.width)
+                    <= tolerance
+                && abs(highlight.height - other.highlight.height)
+                    <= tolerance
+            return highlightMatches
+                && Self.rect(
+                    inputCaretRect,
+                    approximatelyEquals: other.inputCaretRect,
+                    tolerance: tolerance
+                )
+        }
+
+        private static func rect(
+            _ lhs: CGRect?,
+            approximatelyEquals rhs: CGRect?,
+            tolerance: CGFloat
+        ) -> Bool {
+            switch (lhs, rhs) {
+            case (nil, nil):
+                return true
+            case (let lhs?, let rhs?):
+                return abs(lhs.minX - rhs.minX) <= tolerance
+                    && abs(lhs.minY - rhs.minY) <= tolerance
+                    && abs(lhs.width - rhs.width) <= tolerance
+                    && abs(lhs.height - rhs.height) <= tolerance
+            default:
+                return false
+            }
+        }
+    }
+
     private let inputSource: any InputSourceReading
     private let focus: any FocusReading
     private let candidateReaders: any CandidateReaderRouting
@@ -247,6 +293,8 @@ public actor MonitoringController {
     private var lastInputSourceCheck: UInt64 = 0
     private var lastReportedInputMethod: InputMethodIdentity?
     private var candidateSessionActive = false
+    private var latestInputCaretRect: CGRect?
+    private var lastPublishedLayout: CandidateLayoutSnapshot?
     private var selectedCandidateIndex: Int?
     private var selectedCandidateIndexIsExact = false
     private var latestCandidateHighlight: CandidateRegion?
@@ -470,6 +518,9 @@ public actor MonitoringController {
         case .ready(let snapshot):
             focusSnapshot = snapshot
         }
+        if let inputCaretRect = focusSnapshot.caretRect {
+            latestInputCaretRect = inputCaretRect
+        }
 
         let observationStartedAt = ContinuousClock.now
         let observation: CandidateObservation
@@ -663,6 +714,10 @@ public actor MonitoringController {
                 )
             )
         }
+        publishLayoutIfNeeded(
+            highlight: context.selection.displayAnchor,
+            inputCaretRect: latestInputCaretRect
+        )
         return nextCandidatePollInterval(after: context.timestamp)
     }
 
@@ -1122,6 +1177,8 @@ public actor MonitoringController {
             return
         }
         let presentationHighlight = latestCandidateHighlight ?? highlight
+        let presentationInputCaretRect =
+            latestInputCaretRect ?? inputCaretRect
         if let translationStartedAt {
             let now = DispatchTime.now().uptimeNanoseconds
             let total =
@@ -1140,7 +1197,7 @@ public actor MonitoringController {
             .results(
                 translations,
                 presentationHighlight,
-                inputCaretRect: inputCaretRect,
+                inputCaretRect: presentationInputCaretRect,
                 revision: revision,
                 isProgressive: true
             )
@@ -1163,6 +1220,8 @@ public actor MonitoringController {
             return
         }
         let presentationHighlight = latestCandidateHighlight ?? highlight
+        let presentationInputCaretRect =
+            latestInputCaretRect ?? inputCaretRect
         translationTask = nil
         let finishedAt = ContinuousClock.now
         if let translationStartedAt {
@@ -1218,7 +1277,7 @@ public actor MonitoringController {
             .results(
                 presentations,
                 presentationHighlight,
-                inputCaretRect: inputCaretRect,
+                inputCaretRect: presentationInputCaretRect,
                 revision: revision,
                 isProgressive: false
             )
@@ -1236,6 +1295,8 @@ public actor MonitoringController {
         selectedCandidateIndex = nil
         selectedCandidateIndexIsExact = false
         latestCandidateHighlight = nil
+        latestInputCaretRect = nil
+        lastPublishedLayout = nil
         insertionOffer = nil
         insertionHostProcessIdentifier = nil
         cancelDictionaryPrefetch()
@@ -1362,6 +1423,32 @@ public actor MonitoringController {
     private func emitCandidateChanged(revision: UInt64) {
         candidateSessionActive = true
         continuation.yield(.candidateChanged(revision: revision))
+    }
+
+    private func publishLayoutIfNeeded(
+        highlight: CandidateRegion,
+        inputCaretRect: CGRect?
+    ) {
+        guard candidateSessionActive else { return }
+        let next = CandidateLayoutSnapshot(
+            highlight: highlight,
+            inputCaretRect: inputCaretRect
+        )
+        if let lastPublishedLayout,
+            next.approximatelyEquals(
+                lastPublishedLayout,
+                tolerance: 2
+            )
+        {
+            return
+        }
+        lastPublishedLayout = next
+        continuation.yield(
+            .layoutChanged(
+                highlight,
+                inputCaretRect: inputCaretRect
+            )
+        )
     }
 
     private func emitCandidateEnded(immediate: Bool) {

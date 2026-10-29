@@ -11,7 +11,6 @@ final class DisplayPreferencesTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let first = DisplayPreferences(defaults: defaults)
-        first.position = .above
         first.candidateDwellDuration = 0.24
         first.candidateSpacing = 14
         first.hudBackgroundStyle = .solid
@@ -27,7 +26,6 @@ final class DisplayPreferencesTests: XCTestCase {
         first.translationScope = .row
 
         let second = DisplayPreferences(defaults: defaults)
-        XCTAssertEqual(second.position, .above)
         XCTAssertEqual(second.candidateDwellDuration, 0.24)
         XCTAssertEqual(second.candidateSpacing, 14)
         XCTAssertEqual(second.hudOpacity, 0.72)

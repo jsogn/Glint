@@ -65,6 +65,20 @@ Tools/GlintEval/.build/debug/CandidateAXProbe --pid <目标 App PID>
 接口不能满足拼音消歧；当前候选兼容边界见
 `docs/AX-CANDIDATE-VALIDATION.md`。
 
+## 组合输入几何探针
+
+`FocusGeometryProbe` 在真实拼音组合期间记录焦点元素、选区、零长度和单字符
+bounds、前后字符 bounds、Web marker、候选栏和屏幕可见区域。探针不读取或输出
+输入框正文：
+
+```bash
+swift run --package-path Tools/GlintEval FocusGeometryProbe \
+  --bundle com.openai.codex \
+  --seconds 30
+```
+
+运行后需要在目标应用输入拼音，并保持候选栏显示。
+
 ## 微信输入法结构探针
 
 `WeTypeAXProbe` 从 `WeType` 独立进程读取候选窗口，不依赖宿主 App 的

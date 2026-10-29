@@ -27,10 +27,6 @@ struct OverviewPage: View {
                     actionTitle: "调整",
                     rows: [
                         OverviewInfoRow(
-                            label: "位置",
-                            value: model.displayPreferences.position.title
-                        ),
-                        OverviewInfoRow(
                             label: "停留",
                             value: OverviewFormatting.dwellDuration(
                                 model.displayPreferences

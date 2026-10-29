@@ -52,9 +52,24 @@ struct HUDPresentationRequest {
     let appearance: HUDAppearance
     let screenRect: CGRect
     let inputCaretRect: CGRect?
-    let position: HUDPosition
     let spacing: Double
     let opacity: Double
+
+    func updatingLayout(
+        screenRect: CGRect,
+        inputCaretRect: CGRect?
+    ) -> Self {
+        Self(
+            revision: revision,
+            items: items,
+            layoutStyle: layoutStyle,
+            appearance: appearance,
+            screenRect: screenRect,
+            inputCaretRect: inputCaretRect,
+            spacing: spacing,
+            opacity: opacity
+        )
+    }
 }
 
 struct HUDPresentationLayout {
@@ -67,57 +82,26 @@ struct HUDPresentationLayout {
 
 @MainActor
 struct HUDGeometryResolver {
+    private struct ResolvedScreenContext {
+        let candidateRect: CGRect
+        let inputCaretRect: CGRect?
+        let screen: NSScreen
+        let fixedOriginX: CGFloat?
+    }
+
     private var horizontalAnchor: HUDHorizontalAnchor?
+    private var previousPlacesBelow: Bool?
+    private var resolvedScreenFrame: NSRect?
 
     mutating func resolve(
         _ request: HUDPresentationRequest
     ) -> HUDPresentationLayout? {
-        guard
-            let mainScreen = NSScreen.screens.first(where: {
-                $0.frame.origin == .zero
-            })
-                ?? NSScreen.main
-        else {
+        guard let context = screenContext(for: request) else {
             return nil
         }
-        let appKitRect = CGRect(
-            x: request.screenRect.minX,
-            y: mainScreen.frame.maxY - request.screenRect.maxY,
-            width: request.screenRect.width,
-            height: request.screenRect.height
-        )
-        let appKitInputCaretRect = request.inputCaretRect.map {
-            CGRect(
-                x: $0.minX,
-                y: mainScreen.frame.maxY - $0.maxY,
-                width: $0.width,
-                height: $0.height
-            )
-        }
-        let targetScreen =
-            NSScreen.screens.first {
-                $0.frame.contains(
-                    NSPoint(x: appKitRect.midX, y: appKitRect.midY)
-                )
-            } ?? mainScreen
-        let candidateOriginX = appKitRect.minX
-        let fixedOriginX = horizontalAnchor.flatMap { anchor -> CGFloat? in
-            guard anchor.screenFrame == targetScreen.frame else {
-                return nil
-            }
-            let hudOriginX = anchor.resolvedHUDOriginX(
-                candidateOriginX: candidateOriginX
-            )
-            let availableWidth =
-                targetScreen.visibleFrame.maxX
-                - hudOriginX
-            return availableWidth >= HUDGeometry.minimumPanelWidth
-                ? hudOriginX
-                : nil
-        }
         let maximumWidth = Self.maximumPanelWidth(
-            in: targetScreen.visibleFrame,
-            fixedOriginX: fixedOriginX
+            in: context.screen.visibleFrame,
+            fixedOriginX: context.fixedOriginX
         )
         let showsOnlySelectedItem = HUDLayoutPlan.requiresSelectedOnly(
             for: request.items,
@@ -132,18 +116,10 @@ struct HUDGeometryResolver {
             layoutStyle: request.layoutStyle,
             appearance: request.appearance
         )
-        let layout = HUDLayout.placement(
-            near: appKitRect,
+        let layout = placement(
+            context: context,
             panelSize: panelSize,
-            visibleFrame: targetScreen.visibleFrame,
-            position: request.position,
             spacing: request.spacing,
-            horizontalOrigin: fixedOriginX,
-            inputCaretRect: appKitInputCaretRect
-        )
-        horizontalAnchor = HUDHorizontalAnchor.initial(
-            screenFrame: targetScreen.frame,
-            hudOriginX: layout.frame.minX,
             candidateOriginX: request.screenRect.minX
         )
         return HUDPresentationLayout(
@@ -155,8 +131,34 @@ struct HUDGeometryResolver {
         )
     }
 
+    mutating func resolveLayoutOnly(
+        _ request: HUDPresentationRequest,
+        panelSize: NSSize
+    ) -> NSRect? {
+        guard let context = screenContext(for: request) else {
+            return nil
+        }
+        let maximumWidth = Self.maximumPanelWidth(
+            in: context.screen.visibleFrame,
+            fixedOriginX: context.fixedOriginX
+        )
+        // Nil asks the controller to run the full content layout when the
+        // current panel is wider than the remaining target-screen space.
+        guard panelSize.width <= maximumWidth + 0.5 else {
+            return nil
+        }
+        return placement(
+            context: context,
+            panelSize: panelSize,
+            spacing: request.spacing,
+            candidateOriginX: request.screenRect.minX
+        ).frame
+    }
+
     mutating func reset() {
         horizontalAnchor = nil
+        previousPlacesBelow = nil
+        resolvedScreenFrame = nil
     }
 
     static func maximumPanelWidth(
@@ -172,6 +174,129 @@ struct HUDGeometryResolver {
         return max(
             HUDGeometry.minimumPanelWidth,
             min(fullWidth, availableWidth)
+        )
+    }
+
+    private func screenContext(
+        for request: HUDPresentationRequest
+    ) -> ResolvedScreenContext? {
+        guard
+            let mainScreen = NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            })
+                ?? NSScreen.main
+        else {
+            return nil
+        }
+        let candidateRect = CGRect(
+            x: request.screenRect.minX,
+            y: mainScreen.frame.maxY - request.screenRect.maxY,
+            width: request.screenRect.width,
+            height: request.screenRect.height
+        )
+        let inputCaretRect = request.inputCaretRect.map {
+            CGRect(
+                x: $0.minX,
+                y: mainScreen.frame.maxY - $0.maxY,
+                width: $0.width,
+                height: $0.height
+            )
+        }
+        let targetScreen =
+            NSScreen.screens.first {
+                $0.frame.contains(
+                    NSPoint(
+                        x: candidateRect.midX,
+                        y: candidateRect.midY
+                    )
+                )
+            } ?? mainScreen
+        let candidateOriginX = candidateRect.minX
+        let fixedOriginX = horizontalAnchor.flatMap { anchor -> CGFloat? in
+            guard anchor.screenFrame == targetScreen.frame else {
+                return nil
+            }
+            let hudOriginX = anchor.resolvedHUDOriginX(
+                candidateOriginX: candidateOriginX
+            )
+            let availableWidth =
+                targetScreen.visibleFrame.maxX
+                - hudOriginX
+            return availableWidth >= HUDGeometry.minimumPanelWidth
+                ? hudOriginX
+                : nil
+        }
+        return ResolvedScreenContext(
+            candidateRect: candidateRect,
+            inputCaretRect: inputCaretRect,
+            screen: targetScreen,
+            fixedOriginX: fixedOriginX
+        )
+    }
+
+    private mutating func placement(
+        context: ResolvedScreenContext,
+        panelSize: NSSize,
+        spacing: Double,
+        candidateOriginX: CGFloat
+    ) -> HUDLayoutResult {
+        let stablePlacesBelow =
+            resolvedScreenFrame == context.screen.frame
+            ? previousPlacesBelow
+            : nil
+        let layout = HUDLayout.placement(
+            near: context.candidateRect,
+            panelSize: panelSize,
+            visibleFrame: context.screen.visibleFrame,
+            spacing: spacing,
+            horizontalOrigin: context.fixedOriginX,
+            inputCaretRect: context.inputCaretRect,
+            stablePlacesBelow: stablePlacesBelow
+        )
+        let alignedFrame = Self.pixelAligned(
+            layout.frame,
+            scale: context.screen.backingScaleFactor
+        )
+        let alignedLayout = HUDLayoutResult(
+            frame: alignedFrame,
+            placesBelow: layout.placesBelow,
+            placementMode: layout.placementMode
+        )
+        if alignedLayout.placementMode == .candidate {
+            if let horizontalAnchor,
+                context.fixedOriginX != nil,
+                horizontalAnchor.screenFrame == context.screen.frame
+            {
+                self.horizontalAnchor =
+                    horizontalAnchor.following(
+                        candidateOriginX: candidateOriginX
+                    )
+            } else {
+                self.horizontalAnchor =
+                    HUDHorizontalAnchor.initial(
+                        screenFrame: context.screen.frame,
+                        hudOriginX: alignedLayout.frame.minX,
+                        candidateOriginX: candidateOriginX
+                    )
+            }
+        } else {
+            horizontalAnchor = nil
+        }
+        resolvedScreenFrame = context.screen.frame
+        previousPlacesBelow = alignedLayout.placesBelow
+        return alignedLayout
+    }
+
+    private static func pixelAligned(
+        _ frame: CGRect,
+        scale: CGFloat
+    ) -> CGRect {
+        guard scale.isFinite, scale > 0 else { return frame }
+        return CGRect(
+            x: (frame.minX * scale).rounded() / scale,
+            y: (frame.minY * scale).rounded() / scale,
+            width: frame.width,
+            height: frame.height
         )
     }
 }

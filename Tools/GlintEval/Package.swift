@@ -48,6 +48,12 @@ let package = Package(
             name: "CandidateAXProbe"
         ),
         .executableTarget(
+            name: "FocusGeometryProbe",
+            dependencies: [
+                .product(name: "GlintMac", package: "GlintMac")
+            ]
+        ),
+        .executableTarget(
             name: "WeTypeAXProbe"
         ),
         .executableTarget(

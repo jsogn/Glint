@@ -18,6 +18,35 @@ private struct InsertionFocus: FocusReading {
     }
 }
 
+private final class MutableInsertionFocus:
+    FocusReading, @unchecked Sendable
+{
+    private let caretRect = OSAllocatedUnfairLock(
+        initialState: CGRect(
+            x: 120,
+            y: 160,
+            width: 2,
+            height: 20
+        )
+    )
+
+    func snapshot() -> FocusSnapshot? {
+        FocusSnapshot(
+            caretRect: caretRect.withLock { $0 },
+            elementFrame: nil,
+            compositionState: .composing,
+            isEditableTextInput: true,
+            processIdentifier: 4242
+        )
+    }
+
+    func moveCaret(to rect: CGRect) {
+        caretRect.withLock {
+            $0 = rect
+        }
+    }
+}
+
 private struct InsertionCandidates: AXCandidateReading {
     func snapshot(
         processIdentifier: pid_t?,
@@ -123,13 +152,19 @@ private final class InsertionOfferRecorder: Sendable {
 private final class PresentationRecorder: Sendable {
     private let presentations =
         OSAllocatedUnfairLock<[CandidateTranslationPresentation]?>(initialState: nil)
+    private let count = OSAllocatedUnfairLock(initialState: 0)
 
     func record(_ value: [CandidateTranslationPresentation]) {
         presentations.withLock { $0 = value }
+        count.withLock { $0 += 1 }
     }
 
     var latest: [CandidateTranslationPresentation]? {
         presentations.withLock { $0 }
+    }
+
+    var recordedCount: Int {
+        count.withLock { $0 }
     }
 }
 
@@ -144,6 +179,63 @@ private final class InputCaretRectRecorder: Sendable {
     var latest: CGRect? {
         inputCaretRect.withLock { $0 }
     }
+}
+
+private final class LayoutGeometryRecorder: Sendable {
+    private let geometry =
+        OSAllocatedUnfairLock<(CandidateRegion, CGRect?)?>(
+            initialState: nil
+        )
+
+    func record(
+        highlight: CandidateRegion,
+        inputCaretRect: CGRect?
+    ) {
+        geometry.withLock {
+            $0 = (highlight, inputCaretRect)
+        }
+    }
+
+    var latest: (CandidateRegion, CGRect?)? {
+        geometry.withLock { $0 }
+    }
+}
+
+private actor TranslationGate {
+    private var started = false
+    private var released = false
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func wait() async {
+        started = true
+        guard !released else { return }
+        await withCheckedContinuation {
+            continuation = $0
+        }
+    }
+
+    func waitUntilStarted(
+        timeout: Duration = .seconds(2)
+    ) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while !started {
+            guard clock.now < deadline else {
+                throw TranslationGateError.timedOut
+            }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+    }
+
+    func release() {
+        released = true
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
+private enum TranslationGateError: Error {
+    case timedOut
 }
 
 private final class MutableSecureInput: Sendable {
@@ -427,6 +519,134 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         )
     }
 
+    func testCaretMovementPublishesGeometryWithoutNewTranslation()
+        async throws
+    {
+        let focus = MutableInsertionFocus()
+        let writer = RecordingTranslationTextWriter()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyInsertionDictionary(),
+                translation: InsertionMultiOptionTranslation()
+            ),
+            inputSource: InsertionInputSource(),
+            focus: focus,
+            candidateReaders: InsertionCandidateRouter(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false },
+            translationTextInserter: writer
+        )
+        let presentations = PresentationRecorder()
+        let geometry = LayoutGeometryRecorder()
+        let events = await controller.events
+        let collector = Task {
+            for await event in events {
+                switch event {
+                case .results(let value, _, _, _, _):
+                    presentations.record(value)
+                case .layoutChanged(
+                    let highlight,
+                    let inputCaretRect
+                ):
+                    geometry.record(
+                        highlight: highlight,
+                        inputCaretRect: inputCaretRect
+                    )
+                default:
+                    break
+                }
+            }
+        }
+        defer { collector.cancel() }
+
+        await controller.setCandidateDwellDuration(0.08)
+        _ = await controller.tick()
+        try await Task.sleep(for: .milliseconds(90))
+        _ = await controller.tick()
+        try await waitUntil { presentations.latest != nil }
+        let translationResultCount = presentations.recordedCount
+
+        let movedCaret = CGRect(
+            x: 300,
+            y: 160,
+            width: 2,
+            height: 20
+        )
+        focus.moveCaret(to: movedCaret)
+        _ = await controller.tick()
+        try await waitUntil {
+            geometry.latest?.1 == movedCaret
+        }
+
+        XCTAssertEqual(
+            geometry.latest?.0,
+            CandidateRegion(x: 120, y: 120, width: 48, height: 28)
+        )
+        XCTAssertEqual(geometry.latest?.1, movedCaret)
+        XCTAssertEqual(
+            presentations.latest?.map(\.candidateText),
+            ["并且"]
+        )
+        XCTAssertEqual(
+            presentations.recordedCount,
+            translationResultCount
+        )
+    }
+
+    func testCompletedTranslationUsesLatestCaretRect()
+        async throws
+    {
+        let focus = MutableInsertionFocus()
+        let gate = TranslationGate()
+        defer {
+            Task {
+                await gate.release()
+            }
+        }
+        let writer = RecordingTranslationTextWriter()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyInsertionDictionary(),
+                translation: GatedInsertionTranslation(gate: gate)
+            ),
+            inputSource: InsertionInputSource(),
+            focus: focus,
+            candidateReaders: InsertionCandidateRouter(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false },
+            translationTextInserter: writer
+        )
+        let recorder = InputCaretRectRecorder()
+        let events = await controller.events
+        let collector = Task {
+            for await event in events {
+                if case .results(_, _, let inputCaretRect, _, _) = event {
+                    recorder.record(inputCaretRect)
+                }
+            }
+        }
+        defer { collector.cancel() }
+
+        await controller.setCandidateDwellDuration(0.08)
+        _ = await controller.tick()
+        try await Task.sleep(for: .milliseconds(90))
+        _ = await controller.tick()
+        try await gate.waitUntilStarted()
+
+        let movedCaret = CGRect(
+            x: 420,
+            y: 160,
+            width: 2,
+            height: 20
+        )
+        focus.moveCaret(to: movedCaret)
+        _ = await controller.tick()
+        await gate.release()
+        try await waitUntil { recorder.latest != nil }
+
+        XCTAssertEqual(recorder.latest, movedCaret)
+    }
+
     private func waitUntil(
         timeout: TimeInterval = 2,
         _ condition: @escaping @Sendable () -> Bool
@@ -437,7 +657,12 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(10))
         }
         XCTFail("timed out waiting for condition")
+        throw TestWaitError.timedOut
     }
+}
+
+private enum TestWaitError: Error {
+    case timedOut
 }
 
 private struct EmptyInsertionDictionary: DictionaryEngine {
@@ -497,6 +722,17 @@ private struct RowInsertionTranslation: TranslationEngine {
 private struct EchoInsertionTranslation: TranslationEngine {
     func translate(_ candidate: Candidate) async throws -> TranslationResult? {
         TranslationResult(text: candidate.text)
+    }
+}
+
+private struct GatedInsertionTranslation: TranslationEngine {
+    let gate: TranslationGate
+
+    func translate(_ candidate: Candidate) async throws
+        -> TranslationResult?
+    {
+        await gate.wait()
+        return TranslationResult(text: "primary")
     }
 }
 

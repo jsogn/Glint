@@ -15,7 +15,7 @@ struct DisplayPage: View {
 
     var body: some View {
         PageContainer {
-            SettingsCard("位置与触发") {
+            SettingsCard("释义与触发") {
                 VStack(spacing: 0) {
                     segmentedSetting(
                         title: "翻译",
@@ -58,18 +58,6 @@ struct DisplayPage: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 10)
-
-                    Divider()
-
-                    segmentedSetting(
-                        title: "显示位置",
-                        selection: $preferences.position
-                    ) {
-                        ForEach(HUDPosition.allCases, id: \.self) {
-                            position in
-                            Text(position.title).tag(position)
-                        }
-                    }
 
                     Divider()
 
@@ -344,10 +332,6 @@ private struct HUDPreview: View {
         Candidate(id: 6, text: "你"),
     ]
 
-    private var effectivePosition: HUDPosition {
-        preferences.position == .above ? .above : .below
-    }
-
     private var previewItems: [HUDItem] {
         switch preferences.translationScope {
         case .selected:
@@ -383,17 +367,10 @@ private struct HUDPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if effectivePosition == .above {
-                hudPreview
-                    .padding(.bottom, preferences.candidateSpacing)
-            }
-
             candidateBar
 
-            if effectivePosition == .below {
-                hudPreview
-                    .padding(.top, preferences.candidateSpacing)
-            }
+            hudPreview
+                .padding(.top, preferences.candidateSpacing)
         }
         .padding(12)
         .frame(
@@ -413,7 +390,6 @@ private struct HUDPreview: View {
             previewAnimation,
             value: preferences.translationScope
         )
-        .animation(previewAnimation, value: preferences.position)
         .animation(previewAnimation, value: preferences.candidateSpacing)
         .animation(previewAnimation, value: preferences.hudOpacity)
         .animation(previewAnimation, value: preferences.hudAppearance)

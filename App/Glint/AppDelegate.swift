@@ -534,6 +534,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 index: index,
                 revision: revision
             )
+        case .layoutChanged(let highlight, let inputCaretRect):
+            hudEventCoordinator.layoutChanged(
+                highlight: highlight,
+                inputCaretRect: inputCaretRect
+            )
         case .candidateEnded(let immediate):
             translationChoiceShortcutCoordinator.update(nil)
             hudEventCoordinator.candidateEnded(immediate: immediate)

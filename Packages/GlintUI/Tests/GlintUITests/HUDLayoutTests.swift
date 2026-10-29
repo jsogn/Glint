@@ -19,20 +19,30 @@ final class HUDLayoutTests: XCTestCase {
         height: 32
     )
 
-    func testAboveAndBelowUseTheSameConfiguredSpacing() {
+    func testAutomaticPlacementUsesSameConfiguredSpacingAboveAndBelow() {
         let above = HUDLayout.placement(
             near: candidateRect,
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .above,
-            spacing: 7
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 300,
+                y: 300,
+                width: 2,
+                height: 24
+            )
         )
         let below = HUDLayout.placement(
             near: candidateRect,
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .below,
-            spacing: 7
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 300,
+                y: 500,
+                width: 2,
+                height: 24
+            )
         )
 
         XCTAssertEqual(
@@ -54,14 +64,12 @@ final class HUDLayoutTests: XCTestCase {
             near: CGRect(x: 300, y: 600, width: 180, height: 32),
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .automatic,
             spacing: 7
         )
         let lower = HUDLayout.placement(
             near: CGRect(x: 300, y: 100, width: 180, height: 32),
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .automatic,
             spacing: 7
         )
 
@@ -80,7 +88,6 @@ final class HUDLayoutTests: XCTestCase {
             near: nearBottom,
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .automatic,
             spacing: 7
         )
 
@@ -103,7 +110,6 @@ final class HUDLayoutTests: XCTestCase {
             near: nearTop,
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .automatic,
             spacing: 7,
             inputCaretRect: CGRect(
                 x: 300,
@@ -126,7 +132,6 @@ final class HUDLayoutTests: XCTestCase {
             near: CGRect(x: 300, y: 600, width: 180, height: 32),
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .automatic,
             spacing: 7,
             inputCaretRect: CGRect(x: 300, y: 550, width: 2, height: 24)
         )
@@ -139,7 +144,6 @@ final class HUDLayoutTests: XCTestCase {
             near: CGRect(x: 300, y: 300, width: 180, height: 32),
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .automatic,
             spacing: 7,
             inputCaretRect: CGRect(x: 300, y: 360, width: 2, height: 24)
         )
@@ -147,12 +151,210 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertTrue(placement.placesBelow)
     }
 
+    func testAutomaticPlacementRetainsPreviousSideInsideDeadband() {
+        let placement = HUDLayout.placement(
+            near: candidateRect,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 300,
+                y: 403,
+                width: 2,
+                height: 24
+            ),
+            stablePlacesBelow: true
+        )
+
+        XCTAssertTrue(placement.placesBelow)
+    }
+
+    func testAutomaticPlacementMovesRightOfCaretWhenFlippedHUDWouldCoverInput() {
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 300, y: 20, width: 180, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 350,
+                y: 60,
+                width: 0,
+                height: 24
+            )
+        )
+
+        XCTAssertEqual(
+            placement.frame.minX,
+            357,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(placement.placementMode, .rightOfCaret)
+    }
+
+    func testAutomaticPlacementKeepsCandidateAlignedRightOfCaret() {
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 600, y: 20, width: 180, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 350,
+                y: 60,
+                width: 0,
+                height: 24
+            )
+        )
+
+        XCTAssertEqual(
+            placement.frame.minX,
+            600,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(placement.placementMode, .candidate)
+    }
+
+    func testAutomaticPlacementKeepsCandidateAnchorWithoutInputOverlap() {
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 300, y: 20, width: 180, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 350,
+                y: 120,
+                width: 0,
+                height: 24
+            )
+        )
+
+        XCTAssertEqual(
+            placement.frame.minX,
+            300,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(placement.placementMode, .candidate)
+    }
+
+    func testAutomaticPlacementAvoidsInputLineBeyondHUDHorizontalRange() {
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 300, y: 20, width: 180, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 900,
+                y: 60,
+                width: 0,
+                height: 24
+            )
+        )
+
+        XCTAssertEqual(
+            placement.frame.minX,
+            907,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(placement.placementMode, .rightOfCaret)
+    }
+
+    func testAutomaticPlacementClearsInputRowWhenRightSideCannotFit() {
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 0, y: 20, width: 180, height: 32),
+            panelSize: CGSize(width: 900, height: 36),
+            visibleFrame: CGRect(
+                x: 0,
+                y: 0,
+                width: 1_000,
+                height: 900
+            ),
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 850,
+                y: 60,
+                width: 0,
+                height: 24
+            )
+        )
+
+        XCTAssertEqual(
+            placement.frame.minY,
+            91,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(placement.placementMode, .verticalClearance)
+        XCTAssertGreaterThanOrEqual(
+            placement.frame.minY,
+            60 + 24 + 7
+        )
+    }
+
+    func testCollisionPlacementIgnoresStaleCandidateHorizontalOrigin() {
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 300, y: 20, width: 180, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            horizontalOrigin: 200,
+            inputCaretRect: CGRect(
+                x: 350,
+                y: 60,
+                width: 0,
+                height: 24
+            )
+        )
+
+        XCTAssertEqual(
+            placement.frame.minX,
+            357,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(placement.placementMode, .rightOfCaret)
+    }
+
+    func testPresentationLayoutUpdatePreservesTranslationAndRevision() {
+        let original = HUDPresentationRequest(
+            revision: 42,
+            items: [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "Dinner",
+                    isSelected: true
+                )
+            ],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: CGRect(x: 300, y: 20, width: 180, height: 32),
+            inputCaretRect: CGRect(x: 350, y: 60, width: 0, height: 24),
+            spacing: 7,
+            opacity: 0.8
+        )
+        let updated = original.updatingLayout(
+            screenRect: CGRect(x: 500, y: 20, width: 200, height: 32),
+            inputCaretRect: CGRect(x: 700, y: 60, width: 0, height: 24)
+        )
+
+        XCTAssertEqual(updated.revision, 42)
+        XCTAssertEqual(updated.items, original.items)
+        XCTAssertEqual(updated.layoutStyle, original.layoutStyle)
+        XCTAssertEqual(updated.appearance, original.appearance)
+        XCTAssertEqual(updated.spacing, original.spacing)
+        XCTAssertEqual(updated.opacity, original.opacity)
+        XCTAssertEqual(
+            updated.screenRect,
+            CGRect(x: 500, y: 20, width: 200, height: 32)
+        )
+        XCTAssertEqual(
+            updated.inputCaretRect,
+            CGRect(x: 700, y: 60, width: 0, height: 24)
+        )
+    }
+
     func testHorizontalPlacementClampsInsideVisibleFrame() {
         let placement = HUDLayout.placement(
             near: CGRect(x: 1_400, y: 400, width: 30, height: 32),
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .above,
             spacing: 7
         )
 
@@ -163,12 +365,11 @@ final class HUDLayoutTests: XCTestCase {
         )
     }
 
-    func testExplicitHorizontalOriginKeepsPlacementStable() {
+    func testHorizontalOriginKeepsPlacementStable() {
         let first = HUDLayout.placement(
             near: CGRect(x: 320, y: 400, width: 500, height: 32),
             panelSize: CGSize(width: 440, height: 36),
             visibleFrame: visibleFrame,
-            position: .above,
             spacing: 7,
             horizontalOrigin: 300
         )
@@ -176,7 +377,6 @@ final class HUDLayoutTests: XCTestCase {
             near: CGRect(x: 270, y: 400, width: 600, height: 32),
             panelSize: CGSize(width: 520, height: 36),
             visibleFrame: visibleFrame,
-            position: .above,
             spacing: 7,
             horizontalOrigin: 300
         )
@@ -219,6 +419,49 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(moved.candidateOriginX, 370)
     }
 
+    @MainActor
+    func testResolverAccumulatesSmallCandidateMovementBeforeFollowing() throws {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let item = HUDItem(id: 0, number: 1, text: "Dinner")
+        let baseX = screen.visibleFrame.minX + 300
+        let candidateY = screen.frame.maxY - 400
+        var resolver = HUDGeometryResolver()
+        let frames = try [0, 3, 6, 9].map { offset in
+            let layout = try XCTUnwrap(
+                resolver.resolve(
+                    HUDPresentationRequest(
+                        revision: UInt64(offset + 1),
+                        items: [item],
+                        layoutStyle: .candidateRow,
+                        appearance: .default,
+                        screenRect: CGRect(
+                            x: baseX + offset,
+                            y: candidateY,
+                            width: 180,
+                            height: 32
+                        ),
+                        inputCaretRect: nil,
+                        spacing: 7,
+                        opacity: 0.8
+                    )
+                )
+            )
+            return layout.targetFrame
+        }
+
+        XCTAssertEqual(frames[1].minX, frames[0].minX, accuracy: 0.001)
+        XCTAssertEqual(frames[2].minX, frames[0].minX, accuracy: 0.001)
+        XCTAssertEqual(
+            frames[3].minX - frames[0].minX,
+            9,
+            accuracy: 0.001
+        )
+    }
+
     func testAutomaticPlacementFlipsAboveWhenBelowDoesNotFit() {
         let nearBottom = CGRect(
             x: 300,
@@ -230,11 +473,15 @@ final class HUDLayoutTests: XCTestCase {
             near: nearBottom,
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .automatic,
             spacing: 7
         )
 
         XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.minY - nearBottom.maxY,
+            7,
+            accuracy: 0.001
+        )
     }
 
     func testAutomaticPlacementFallsBelowWhenAboveDoesNotFit() {
@@ -248,50 +495,8 @@ final class HUDLayoutTests: XCTestCase {
             near: nearTop,
             panelSize: panelSize,
             visibleFrame: visibleFrame,
-            position: .automatic,
             spacing: 7,
             inputCaretRect: CGRect(x: 300, y: 820, width: 2, height: 24)
-        )
-
-        XCTAssertTrue(placement.placesBelow)
-    }
-
-    func testExplicitBelowFlipsAboveWhenBottomHasNoRoom() {
-        let nearBottom = CGRect(
-            x: 300,
-            y: 20,
-            width: 180,
-            height: 32
-        )
-        let placement = HUDLayout.placement(
-            near: nearBottom,
-            panelSize: panelSize,
-            visibleFrame: visibleFrame,
-            position: .below,
-            spacing: 7
-        )
-
-        XCTAssertFalse(placement.placesBelow)
-        XCTAssertEqual(
-            placement.frame.minY - nearBottom.maxY,
-            7,
-            accuracy: 0.001
-        )
-    }
-
-    func testExplicitAboveFlipsBelowWhenTopHasNoRoom() {
-        let nearTop = CGRect(
-            x: 300,
-            y: 860,
-            width: 180,
-            height: 32
-        )
-        let placement = HUDLayout.placement(
-            near: nearTop,
-            panelSize: panelSize,
-            visibleFrame: visibleFrame,
-            position: .above,
-            spacing: 7
         )
 
         XCTAssertTrue(placement.placesBelow)
@@ -318,6 +523,212 @@ final class HUDLayoutTests: XCTestCase {
                 fixedOriginX: nil
             ),
             1_440,
+            accuracy: 0.001
+        )
+    }
+
+    @MainActor
+    func testCollisionPlacementDoesNotLeaveAStaleHorizontalAnchor() throws {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let screenHeight = screen.frame.maxY
+        let candidateX = screen.visibleFrame.minX + 300
+        let item = HUDItem(id: 0, number: 1, text: "Dinner")
+        var resolver = HUDGeometryResolver()
+        let bottomCandidate = CGRect(
+            x: candidateX,
+            y: screenHeight - 52,
+            width: 180,
+            height: 32
+        )
+        let inputCaret = CGRect(
+            x: candidateX + 50,
+            y: screenHeight - 84,
+            width: 0,
+            height: 24
+        )
+        let collision = resolver.resolve(
+            HUDPresentationRequest(
+                revision: 1,
+                items: [item],
+                layoutStyle: .candidateRow,
+                appearance: .default,
+                screenRect: bottomCandidate,
+                inputCaretRect: inputCaret,
+                spacing: 7,
+                opacity: 0.8
+            )
+        )
+        let regular = resolver.resolve(
+            HUDPresentationRequest(
+                revision: 2,
+                items: [item],
+                layoutStyle: .candidateRow,
+                appearance: .default,
+                screenRect: CGRect(
+                    x: candidateX,
+                    y: screenHeight - 432,
+                    width: 180,
+                    height: 32
+                ),
+                inputCaretRect: nil,
+                spacing: 7,
+                opacity: 0.8
+            )
+        )
+
+        XCTAssertEqual(
+            try XCTUnwrap(collision).targetFrame.minX,
+            candidateX + 50 + 7,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            try XCTUnwrap(regular).targetFrame.minX,
+            candidateX,
+            accuracy: 0.001
+        )
+    }
+
+    @MainActor
+    func testGeometryOnlyResolutionReusesProvidedPanelSize() throws {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let candidateX = screen.visibleFrame.minX + 300
+        let request = HUDPresentationRequest(
+            revision: 1,
+            items: [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "Dinner",
+                    isSelected: true
+                )
+            ],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: CGRect(
+                x: candidateX,
+                y: screen.frame.maxY - 52,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: CGRect(
+                x: candidateX + 50,
+                y: screen.frame.maxY - 84,
+                width: 0,
+                height: 24
+            ),
+            spacing: 7,
+            opacity: 0.8
+        )
+        let panelSize = NSSize(width: 440, height: 36)
+        var resolver = HUDGeometryResolver()
+
+        let frame = resolver.resolveLayoutOnly(
+            request,
+            panelSize: panelSize
+        )
+
+        XCTAssertEqual(try XCTUnwrap(frame).size, panelSize)
+    }
+
+    @MainActor
+    func testGeometryOnlyResolutionRequestsFullLayoutWhenWidthNoLongerFits()
+        throws
+    {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let item = HUDItem(id: 0, number: 1, text: "Dinner")
+        let startingRequest = HUDPresentationRequest(
+            revision: 1,
+            items: [item],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: CGRect(
+                x: screen.visibleFrame.minX + 300,
+                y: screen.frame.maxY - 400,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: nil,
+            spacing: 7,
+            opacity: 0.8
+        )
+        let narrowRemainingSpaceRequest = startingRequest.updatingLayout(
+            screenRect: CGRect(
+                x: screen.visibleFrame.maxX - 200,
+                y: screen.frame.maxY - 400,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: nil
+        )
+        var resolver = HUDGeometryResolver()
+        _ = resolver.resolve(startingRequest)
+
+        XCTAssertNil(
+            resolver.resolveLayoutOnly(
+                narrowRemainingSpaceRequest,
+                panelSize: NSSize(width: 440, height: 36)
+            )
+        )
+    }
+
+    @MainActor
+    func testGeometryOnlyResolutionPixelsAlignFrameToDisplayScale() throws {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let request = HUDPresentationRequest(
+            revision: 1,
+            items: [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "Dinner",
+                    isSelected: true
+                )
+            ],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: CGRect(
+                x: screen.visibleFrame.minX + 300.37,
+                y: screen.frame.maxY - 400.37,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: nil,
+            spacing: 7,
+            opacity: 0.8
+        )
+        var resolver = HUDGeometryResolver()
+        let frame = try XCTUnwrap(
+            resolver.resolveLayoutOnly(
+                request,
+                panelSize: NSSize(width: 440, height: 36)
+            )
+        )
+        let scale = screen.backingScaleFactor
+
+        XCTAssertEqual(
+            frame.minX * scale,
+            (frame.minX * scale).rounded(),
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            frame.minY * scale,
+            (frame.minY * scale).rounded(),
             accuracy: 0.001
         )
     }

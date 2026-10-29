@@ -34,6 +34,17 @@ final class HUDEventCoordinator {
         hud.updateSelection(itemID: index)
     }
 
+    func layoutChanged(
+        highlight: CandidateRegion,
+        inputCaretRect: CGRect?
+    ) {
+        guard displayedRevision != nil else { return }
+        hud.updateLayout(
+            screenRect: highlight.cgRect,
+            inputCaretRect: inputCaretRect
+        )
+    }
+
     func candidateEnded(immediate: Bool) {
         clear()
         hud.hide(animated: !immediate)
@@ -68,7 +79,6 @@ final class HUDEventCoordinator {
                 scope == .row
                 ? .candidateRow
                 : .selectedTranslations,
-            position: model.displayPreferences.position,
             spacing: model.displayPreferences.candidateSpacing,
             opacity: model.displayPreferences.hudOpacity,
             appearance: model.displayPreferences.hudAppearance,

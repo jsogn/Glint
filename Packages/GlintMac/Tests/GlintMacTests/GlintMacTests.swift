@@ -1446,6 +1446,83 @@ final class GlintMacTests: XCTestCase {
         )
     }
 
+    func testCaretGeometryUsesTextMarkerWhenRangeBoundsAreUnavailable() {
+        let marker = CGRect(x: 618, y: 1067, width: 0, height: 16)
+        let elementFrame = CGRect(x: 606, y: 1065, width: 713, height: 44)
+
+        XCTAssertEqual(
+            CaretGeometryPolicy.preferred(
+                rangeBounds: nil,
+                markerBounds: marker,
+                elementFrame: elementFrame
+            ),
+            marker
+        )
+    }
+
+    func testCaretGeometryReadsMarkerWhenRangeBoundsCollapseToOrigin() {
+        XCTAssertTrue(
+            CaretGeometryPolicy.shouldReadMarker(
+                rangeBounds: CGRect(
+                    x: 0,
+                    y: 1169,
+                    width: 0,
+                    height: 0
+                ),
+                rangeLength: 0
+            )
+        )
+    }
+
+    func testCaretGeometryKeepsDirectRangeBoundsWhenAvailable() {
+        let direct = CGRect(x: 300, y: 200, width: 0, height: 18)
+        let marker = CGRect(x: 618, y: 1067, width: 0, height: 16)
+        let elementFrame = CGRect(x: 606, y: 1065, width: 713, height: 44)
+
+        XCTAssertEqual(
+            CaretGeometryPolicy.preferred(
+                rangeBounds: direct,
+                markerBounds: marker,
+                elementFrame: elementFrame
+            ),
+            direct
+        )
+    }
+
+    func testCaretGeometryRejectsMarkerSpanningTheWholeTextElement() {
+        let elementFrame = CGRect(x: 606, y: 1065, width: 713, height: 44)
+
+        XCTAssertNil(
+            CaretGeometryPolicy.preferred(
+                rangeBounds: nil,
+                markerBounds: CGRect(
+                    x: 606,
+                    y: 1065,
+                    width: 713,
+                    height: 20
+                ),
+                elementFrame: elementFrame
+            )
+        )
+    }
+
+    func testCaretGeometryRejectsMarkerOutsideTheTextElement() {
+        let elementFrame = CGRect(x: 606, y: 1065, width: 713, height: 44)
+
+        XCTAssertNil(
+            CaretGeometryPolicy.preferred(
+                rangeBounds: nil,
+                markerBounds: CGRect(
+                    x: 500,
+                    y: 1067,
+                    width: 0,
+                    height: 16
+                ),
+                elementFrame: elementFrame
+            )
+        )
+    }
+
     func testAXCandidateIdentityDeduplicatesEquivalentFrame() {
         let frame = CGRect(x: 120, y: 80, width: 48, height: 28)
         let first = AXCandidateItem(text: "吃", frame: frame)
