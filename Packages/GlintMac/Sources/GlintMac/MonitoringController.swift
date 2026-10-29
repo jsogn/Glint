@@ -97,7 +97,7 @@ public enum MonitoringEvent: Sendable {
     case results(
         [CandidateTranslationPresentation],
         CandidateRegion,
-        CGRect?,
+        inputCaretRect: CGRect?,
         revision: UInt64,
         isProgressive: Bool
     )
@@ -210,7 +210,7 @@ public actor MonitoringController {
         let activity: CandidateActivity
         let timestamp: UInt64
         let changed: Bool
-        let inputLineRect: CGRect?
+        let inputCaretRect: CGRect?
     }
 
     private let inputSource: any InputSourceReading
@@ -485,7 +485,7 @@ public actor MonitoringController {
 
         return await processCandidateObservation(
             observation: observation,
-            inputLineRect: focusSnapshot.caretRect,
+            inputCaretRect: focusSnapshot.caretRect,
             observationStartedAt: observationStartedAt
         )
     }
@@ -619,7 +619,7 @@ public actor MonitoringController {
 
     private func processCandidateObservation(
         observation: CandidateObservation,
-        inputLineRect: CGRect?,
+        inputCaretRect: CGRect?,
         observationStartedAt: ContinuousClock.Instant
     ) async -> UInt64 {
         candidateMissDebouncer.observeCandidate()
@@ -629,7 +629,7 @@ public actor MonitoringController {
         latestCandidateHighlight = selection.displayAnchor
         let context = candidateActivityContext(
             selection: selection,
-            inputLineRect: inputLineRect
+            inputCaretRect: inputCaretRect
         )
         await startCandidatePrefetchIfNeeded(
             candidates: context.selection.candidates,
@@ -710,7 +710,7 @@ public actor MonitoringController {
 
     private func candidateActivityContext(
         selection: CandidateSelectionContext,
-        inputLineRect: CGRect?
+        inputCaretRect: CGRect?
     ) -> CandidateActivityContext {
         let observationTimestamp = DispatchTime.now().uptimeNanoseconds
         let activity = typingTracker.observe(
@@ -727,7 +727,7 @@ public actor MonitoringController {
                 if case .changed = activity { return true }
                 return false
             }(),
-            inputLineRect: inputLineRect
+            inputCaretRect: inputCaretRect
         )
     }
 
@@ -775,7 +775,7 @@ public actor MonitoringController {
             selectionIsExact: context.selection.selectionIsExact,
             highlight: context.selection.displayAnchor,
             revision: revision,
-            inputLineRect: context.inputLineRect,
+            inputCaretRect: context.inputCaretRect,
             dictionaryPrefetchTasks: dictionaryPrefetchTasks,
             cachedPrefetchResults: cachedPrefetchResults
         )
@@ -1037,7 +1037,7 @@ public actor MonitoringController {
         selectionIsExact: Bool,
         highlight: CandidateRegion,
         revision: UInt64,
-        inputLineRect: CGRect?,
+        inputCaretRect: CGRect?,
         dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>],
         cachedPrefetchResults: [Int: TranslationResult]
     ) {
@@ -1075,7 +1075,7 @@ public actor MonitoringController {
                 cachedPrefetchResults,
                 highlight,
                 revision,
-                inputLineRect,
+                inputCaretRect,
                 mode,
             ] in
             guard !Task.isCancelled else { return }
@@ -1095,7 +1095,7 @@ public actor MonitoringController {
                         presentations,
                         highlight: highlight,
                         revision: revision,
-                        inputLineRect: inputLineRect
+                        inputCaretRect: inputCaretRect
                     )
                 }
             )
@@ -1104,7 +1104,7 @@ public actor MonitoringController {
                 presentations,
                 highlight: highlight,
                 revision: revision,
-                inputLineRect: inputLineRect
+                inputCaretRect: inputCaretRect
             )
         }
     }
@@ -1113,7 +1113,7 @@ public actor MonitoringController {
         _ translations: [CandidateTranslationPresentation],
         highlight: CandidateRegion,
         revision: UInt64,
-        inputLineRect: CGRect?
+        inputCaretRect: CGRect?
     ) {
         guard revision == typingTracker.revision,
             typingTracker.isDwelling,
@@ -1140,7 +1140,7 @@ public actor MonitoringController {
             .results(
                 translations,
                 presentationHighlight,
-                inputLineRect,
+                inputCaretRect: inputCaretRect,
                 revision: revision,
                 isProgressive: true
             )
@@ -1155,7 +1155,7 @@ public actor MonitoringController {
         _ translations: [CandidateTranslationPresentation],
         highlight: CandidateRegion,
         revision: UInt64,
-        inputLineRect: CGRect?
+        inputCaretRect: CGRect?
     ) {
         guard revision == typingTracker.revision,
             typingTracker.isDwelling
@@ -1218,7 +1218,7 @@ public actor MonitoringController {
             .results(
                 presentations,
                 presentationHighlight,
-                inputLineRect,
+                inputCaretRect: inputCaretRect,
                 revision: revision,
                 isProgressive: false
             )

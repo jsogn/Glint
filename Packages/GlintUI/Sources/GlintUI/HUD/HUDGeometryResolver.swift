@@ -51,7 +51,7 @@ struct HUDPresentationRequest {
     let layoutStyle: HUDLayoutStyle
     let appearance: HUDAppearance
     let screenRect: CGRect
-    let inputLineRect: CGRect?
+    let inputCaretRect: CGRect?
     let position: HUDPosition
     let spacing: Double
     let opacity: Double
@@ -86,7 +86,7 @@ struct HUDGeometryResolver {
             width: request.screenRect.width,
             height: request.screenRect.height
         )
-        let appKitInputLineRect = request.inputLineRect.map {
+        let appKitInputCaretRect = request.inputCaretRect.map {
             CGRect(
                 x: $0.minX,
                 y: mainScreen.frame.maxY - $0.maxY,
@@ -140,7 +140,7 @@ struct HUDGeometryResolver {
             position: request.position,
             spacing: request.spacing,
             horizontalOrigin: fixedOriginX,
-            inputLineRect: appKitInputLineRect
+            inputCaretRect: appKitInputCaretRect
         )
         horizontalAnchor = HUDHorizontalAnchor.initial(
             screenFrame: targetScreen.frame,

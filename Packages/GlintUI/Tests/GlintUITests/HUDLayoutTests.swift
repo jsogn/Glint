@@ -49,7 +49,7 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertTrue(below.placesBelow)
     }
 
-    func testAutomaticPlacementDefaultsBelowWithoutInputLine() {
+    func testAutomaticPlacementDefaultsBelowWithoutInputCaret() {
         let upper = HUDLayout.placement(
             near: CGRect(x: 300, y: 600, width: 180, height: 32),
             panelSize: panelSize,
@@ -69,27 +69,27 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertTrue(lower.placesBelow)
     }
 
-    func testAutomaticPlacementMovesAboveWhenCandidateIsAboveInputLine() {
+    func testAutomaticPlacementMovesAboveWhenCandidateIsAboveInputCaret() {
         let placement = HUDLayout.placement(
             near: CGRect(x: 300, y: 600, width: 180, height: 32),
             panelSize: panelSize,
             visibleFrame: visibleFrame,
             position: .automatic,
             spacing: 7,
-            inputLineRect: CGRect(x: 300, y: 550, width: 180, height: 24)
+            inputCaretRect: CGRect(x: 300, y: 550, width: 2, height: 24)
         )
 
         XCTAssertFalse(placement.placesBelow)
     }
 
-    func testAutomaticPlacementMovesBelowWhenCandidateIsBelowInputLine() {
+    func testAutomaticPlacementMovesBelowWhenCandidateIsBelowInputCaret() {
         let placement = HUDLayout.placement(
             near: CGRect(x: 300, y: 300, width: 180, height: 32),
             panelSize: panelSize,
             visibleFrame: visibleFrame,
             position: .automatic,
             spacing: 7,
-            inputLineRect: CGRect(x: 300, y: 360, width: 180, height: 24)
+            inputCaretRect: CGRect(x: 300, y: 360, width: 2, height: 24)
         )
 
         XCTAssertTrue(placement.placesBelow)
@@ -198,7 +198,7 @@ final class HUDLayoutTests: XCTestCase {
             visibleFrame: visibleFrame,
             position: .automatic,
             spacing: 7,
-            inputLineRect: CGRect(x: 300, y: 820, width: 180, height: 24)
+            inputCaretRect: CGRect(x: 300, y: 820, width: 2, height: 24)
         )
 
         XCTAssertTrue(placement.placesBelow)

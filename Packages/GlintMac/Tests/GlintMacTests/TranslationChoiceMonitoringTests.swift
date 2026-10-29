@@ -133,16 +133,16 @@ private final class PresentationRecorder: Sendable {
     }
 }
 
-private final class InputLineRectRecorder: Sendable {
-    private let inputLineRect =
+private final class InputCaretRectRecorder: Sendable {
+    private let inputCaretRect =
         OSAllocatedUnfairLock<CGRect?>(initialState: nil)
 
     func record(_ value: CGRect?) {
-        inputLineRect.withLock { $0 = value }
+        inputCaretRect.withLock { $0 = value }
     }
 
     var latest: CGRect? {
-        inputLineRect.withLock { $0 }
+        inputCaretRect.withLock { $0 }
     }
 }
 
@@ -390,7 +390,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         )
     }
 
-    func testResultsCarryFocusedInputLineRect() async throws {
+    func testResultsCarryFocusedInputCaretRect() async throws {
         let writer = RecordingTranslationTextWriter()
         let controller = MonitoringController(
             router: SmartRouter(
@@ -404,12 +404,12 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
             secureInputIsEnabled: { false },
             translationTextInserter: writer
         )
-        let recorder = InputLineRectRecorder()
+        let recorder = InputCaretRectRecorder()
         let events = await controller.events
         let collector = Task {
             for await event in events {
-                if case .results(_, _, let inputLineRect, _, _) = event {
-                    recorder.record(inputLineRect)
+                if case .results(_, _, let inputCaretRect, _, _) = event {
+                    recorder.record(inputCaretRect)
                 }
             }
         }

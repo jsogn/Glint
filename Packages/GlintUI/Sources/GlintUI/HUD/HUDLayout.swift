@@ -15,7 +15,7 @@ enum HUDLayout {
         position: HUDPosition,
         spacing: Double,
         horizontalOrigin: CGFloat? = nil,
-        inputLineRect: CGRect? = nil
+        inputCaretRect: CGRect? = nil
     ) -> HUDLayoutResult {
         let gap = CGFloat(max(0, spacing))
         let minimumX = visibleFrame.minX + screenEdgeInset
@@ -40,11 +40,11 @@ enum HUDLayout {
         let proposedY: CGFloat
         switch position {
         case .automatic:
-            // Move away from the input line. Without reliable input-line
+            // Move away from the input caret. Without reliable caret
             // geometry, prefer below because macOS commonly places the
             // candidate bar under the edited line.
             let desiredPlacesBelow =
-                inputLineRect.map {
+                inputCaretRect.map {
                     candidateRect.midY <= $0.midY
                 } ?? true
             if desiredPlacesBelow, belowFits {
