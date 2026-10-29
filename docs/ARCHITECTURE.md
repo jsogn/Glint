@@ -234,6 +234,9 @@ MainWindowModel → MainWindowView
 - `TranslationRuntime` 和 `TranslationMemo` 串行化模型加载、推理和请求合并。
 - `PluginManager`、目录服务和本地导入服务以 actor 隔离文件操作。
 - `MainWindowModel` 和 `HUDController` 保持在 `@MainActor`。
+- `MainWindowModel` 是设置窗口范围内唯一的可观察协调状态；下载器、安装事务和
+  翻译运行时仍由独立模块执行。`GlintUI` 对 `GlintPlugins` 的依赖仅用于 manifest、
+  市场摘要、进度和生命周期适配，不在视图层直接访问 URLSession、下载文件或数据库。
 - 候选 revision 变化时取消旧翻译；只允许当前 revision 更新 HUD。
 - 候选、翻译结果和输入历史不落盘；精确结果缓存只在内存中使用。
 
