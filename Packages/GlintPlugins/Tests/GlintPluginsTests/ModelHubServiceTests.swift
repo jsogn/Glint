@@ -30,6 +30,9 @@ final class ModelHubServiceTests: XCTestCase {
                           "private": false,
                           "gated": false,
                           "pipeline_tag": "translation",
+                          "cardData": {
+                            "base_model": "Tencent-Hunyuan/Hy-MT2-1.8B"
+                          },
                           "safetensors": {"total": 1800000000},
                           "tags": [
                             "mlx",
@@ -92,6 +95,33 @@ final class ModelHubServiceTests: XCTestCase {
         XCTAssertEqual(snapshot.parameterCount, 1_800_000_000)
         XCTAssertEqual(snapshot.quantizationBits, 4)
         XCTAssertEqual(snapshot.pipelineTag, "translation")
+        XCTAssertEqual(
+            snapshot.baseModels,
+            ["Tencent-Hunyuan/Hy-MT2-1.8B"]
+        )
+    }
+
+    func testManifestInfersKnownAdapterFromBaseModel() throws {
+        let snapshot = UpstreamModelSnapshot(
+            repository: "example/opaque-community-quant",
+            revision: "revision",
+            lastModified: nil,
+            modelType: "hunyuan_v1_dense",
+            sizeBytes: 1_000,
+            license: "apache-2.0",
+            hasChatTemplate: true,
+            parameterCount: nil,
+            quantizationBits: 4,
+            pipelineTag: "translation",
+            baseModels: ["Tencent-Hunyuan/Hy-MT2-1.8B"]
+        )
+
+        let manifest = ModelHubService.manifest(
+            for: snapshot,
+            matching: nil
+        )
+
+        XCTAssertEqual(manifest.promptProfile, .hyMT2)
     }
 
     func testInspectRejectsOverflowingSnapshotSize() async {

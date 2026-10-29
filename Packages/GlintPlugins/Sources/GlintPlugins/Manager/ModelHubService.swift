@@ -72,6 +72,7 @@ public struct UpstreamModelSnapshot: Sendable, Equatable {
     public let parameterCount: Int64?
     public let quantizationBits: Double?
     public let pipelineTag: String?
+    public let baseModels: [String]
 
     public init(
         repository: String,
@@ -92,7 +93,8 @@ public struct UpstreamModelSnapshot: Sendable, Equatable {
             hasChatTemplate: hasChatTemplate,
             parameterCount: nil,
             quantizationBits: nil,
-            pipelineTag: nil
+            pipelineTag: nil,
+            baseModels: []
         )
     }
 
@@ -108,6 +110,34 @@ public struct UpstreamModelSnapshot: Sendable, Equatable {
         quantizationBits: Double?,
         pipelineTag: String?
     ) {
+        self.init(
+            repository: repository,
+            revision: revision,
+            lastModified: lastModified,
+            modelType: modelType,
+            sizeBytes: sizeBytes,
+            license: license,
+            hasChatTemplate: hasChatTemplate,
+            parameterCount: parameterCount,
+            quantizationBits: quantizationBits,
+            pipelineTag: pipelineTag,
+            baseModels: []
+        )
+    }
+
+    public init(
+        repository: String,
+        revision: String,
+        lastModified: String?,
+        modelType: String,
+        sizeBytes: Int64,
+        license: String,
+        hasChatTemplate: Bool,
+        parameterCount: Int64?,
+        quantizationBits: Double?,
+        pipelineTag: String?,
+        baseModels: [String]
+    ) {
         self.repository = repository
         self.revision = revision
         self.lastModified = lastModified
@@ -118,6 +148,7 @@ public struct UpstreamModelSnapshot: Sendable, Equatable {
         self.parameterCount = parameterCount
         self.quantizationBits = quantizationBits
         self.pipelineTag = pipelineTag
+        self.baseModels = baseModels
     }
 }
 
@@ -368,7 +399,10 @@ public actor ModelHubService {
                     config: config,
                     tags: record.tags
                 ),
-                pipelineTag: record.pipelineTag
+                pipelineTag: record.pipelineTag,
+                baseModels: Self.baseModels(
+                    record: record
+                )
             )
         }
     }
@@ -423,7 +457,8 @@ public actor ModelHubService {
                 revision: snapshot.revision,
                 source: .catalog,
                 promptProfile: inferredPromptProfile(
-                    for: snapshot.repository
+                    for: snapshot.repository,
+                    baseModels: snapshot.baseModels
                 )
             )
         return PluginManifest(
@@ -444,9 +479,21 @@ public actor ModelHubService {
             revision: snapshot.revision,
             modelscopeURL: identifier.modelscopeURL,
             source: .catalog,
-            promptProfile: identifier.promptProfile
-                ?? inferredPromptProfile(for: snapshot.repository)
+            promptProfile: Self.preferredPromptProfile(
+                inferred: inferredPromptProfile(
+                    for: snapshot.repository,
+                    baseModels: snapshot.baseModels
+                ),
+                installed: identifier.promptProfile
+            )
         )
+    }
+
+    private static func preferredPromptProfile(
+        inferred: TranslationPromptProfile,
+        installed: TranslationPromptProfile?
+    ) -> TranslationPromptProfile {
+        inferred == .generic ? installed ?? .generic : inferred
     }
 
     private func withEndpoints<T: Sendable>(
@@ -622,19 +669,46 @@ public actor ModelHubService {
     }
 
     private static func inferredPromptProfile(
-        for repository: String
+        for repository: String,
+        baseModels: [String] = []
     ) -> TranslationPromptProfile {
-        let value = repository.lowercased()
-        if value.contains("hy-mt") {
+        let value =
+            ([repository] + baseModels)
+            .joined(separator: " ")
+            .lowercased()
+        let compact = value.filter(\.isLetter)
+        if value.contains("hy-mt")
+            || compact.contains("hymt2")
+            || compact.contains("hunyuanmt")
+            || compact.contains("hunyuangmt")
+        {
             return .hyMT2
         }
-        if value.contains("index-translate") {
+        if value.contains("index-translate")
+            || compact.contains("indextranslate")
+        {
             return .indexTranslate
         }
         if value.contains("qwen") {
             return .qwenGeneral
         }
         return .generic
+    }
+
+    private static func baseModels(
+        record: ModelDetailsRecord
+    ) -> [String] {
+        var values = record.tags.compactMap { tag -> String? in
+            let prefix = "base_model:"
+            guard tag.hasPrefix(prefix) else { return nil }
+            let value = tag.dropFirst(prefix.count)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return value.isEmpty ? nil : value
+        }
+        if let cardValues = record.cardData?.baseModel?.values {
+            values.append(contentsOf: cardValues)
+        }
+        return Array(Set(values)).sorted()
     }
 
     private static func defaultEndpoints() -> [URL] {
@@ -691,6 +765,7 @@ private struct ModelDetailsRecord: Decodable {
     let tags: [String]
     let pipelineTag: String?
     let safetensors: ModelDetailSafetensorsRecord?
+    let cardData: ModelCardData?
 
     private enum CodingKeys: String, CodingKey {
         case sha
@@ -700,6 +775,28 @@ private struct ModelDetailsRecord: Decodable {
         case tags
         case pipelineTag = "pipeline_tag"
         case safetensors
+        case cardData
+    }
+}
+
+private struct ModelCardData: Decodable {
+    let baseModel: FlexibleStringList?
+
+    private enum CodingKeys: String, CodingKey {
+        case baseModel = "base_model"
+    }
+}
+
+private struct FlexibleStringList: Decodable {
+    let values: [String]
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let value = try? container.decode(String.self) {
+            values = [value]
+        } else {
+            values = try container.decode([String].self)
+        }
     }
 }
 
