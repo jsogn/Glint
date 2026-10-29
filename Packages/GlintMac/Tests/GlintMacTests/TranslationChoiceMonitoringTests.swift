@@ -35,12 +35,46 @@ private struct InsertionCandidates: AXCandidateReading {
     }
 }
 
+private struct OffsetInsertionCandidates: AXCandidateReading {
+    func snapshot(
+        processIdentifier: pid_t?,
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
+    ) -> AXCandidateSnapshot? {
+        AXCandidateSnapshot(
+            text: "five",
+            visibleTexts: [
+                "one", "two", "three", "four", "five", "six",
+            ],
+            frame: CGRect(x: 120, y: 120, width: 48, height: 28),
+            candidateListFrame: nil,
+            selectedIndex: 4,
+            selectionIsExact: true
+        )
+    }
+}
+
 private struct InsertionCandidateRouter: CandidateReaderRouting {
     func reader(
         for source: ActiveInputSource,
         allowProfileDiscovery: Bool
     ) -> any AXCandidateReading {
         InsertionCandidates()
+    }
+
+    func allowsProcessFallback(
+        for source: ActiveInputSource
+    ) -> Bool {
+        false
+    }
+}
+
+private struct OffsetInsertionCandidateRouter: CandidateReaderRouting {
+    func reader(
+        for source: ActiveInputSource,
+        allowProfileDiscovery: Bool
+    ) -> any AXCandidateReading {
+        OffsetInsertionCandidates()
     }
 
     func allowsProcessFallback(
@@ -83,6 +117,19 @@ private final class InsertionOfferRecorder: Sendable {
 
     var current: TranslationChoiceOffer? {
         offer.withLock { $0 }
+    }
+}
+
+private final class PresentationRecorder: Sendable {
+    private let presentations =
+        OSAllocatedUnfairLock<[CandidateTranslationPresentation]?>(initialState: nil)
+
+    func record(_ value: [CandidateTranslationPresentation]) {
+        presentations.withLock { $0 = value }
+    }
+
+    var latest: [CandidateTranslationPresentation]? {
+        presentations.withLock { $0 }
     }
 }
 
@@ -289,6 +336,47 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         XCTAssertTrue(writer.recordedRequests.isEmpty)
     }
 
+    func testRowModeKeepsVisibleChoicesWhenSelectionExceedsLimit()
+        async throws
+    {
+        let writer = RecordingTranslationTextWriter()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyInsertionDictionary(),
+                translation: EchoInsertionTranslation()
+            ),
+            inputSource: InsertionInputSource(),
+            focus: InsertionFocus(),
+            candidateReaders: OffsetInsertionCandidateRouter(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false },
+            translationTextInserter: writer
+        )
+        let recorder = PresentationRecorder()
+        let events = await controller.events
+        let collector = Task {
+            for await event in events {
+                if case .results(let presentations, _, _, _) = event {
+                    recorder.record(presentations)
+                }
+            }
+        }
+        defer { collector.cancel() }
+
+        await controller.setMaximumTranslationCount(2)
+        await controller.setTranslationScope(.row)
+        await controller.setCandidateDwellDuration(0.08)
+        _ = await controller.tick()
+        try await Task.sleep(for: .milliseconds(90))
+        _ = await controller.tick()
+        try await waitUntil { recorder.latest != nil }
+
+        XCTAssertEqual(
+            recorder.latest?.map(\.translation),
+            ["one", "two"]
+        )
+    }
+
     private func waitUntil(
         timeout: TimeInterval = 2,
         _ condition: @escaping @Sendable () -> Bool
@@ -353,6 +441,12 @@ private struct RowInsertionTranslation: TranslationEngine {
             return nil
         }
         return TranslationResult(text: text)
+    }
+}
+
+private struct EchoInsertionTranslation: TranslationEngine {
+    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        TranslationResult(text: candidate.text)
     }
 }
 

@@ -923,6 +923,13 @@ public actor MonitoringController {
             translationScope == .row
             ? Array(candidates.prefix(maximumTranslationCount))
             : candidates
+        let pipelineSelectedIndex =
+            translationCandidates.indices.contains(selectedIndex)
+            ? selectedIndex
+            : 0
+        let pipelineSelectionIsExact =
+            selectionIsExact
+            && pipelineSelectedIndex == selectedIndex
         translationAttempts &+= 1
         translationStartedAt = .now
         cancelTranslationTask()
@@ -932,8 +939,6 @@ public actor MonitoringController {
                 router,
                 memo,
                 translationCandidates,
-                selectedIndex,
-                selectionIsExact,
                 configurationToken,
                 dictionaryPrefetchTasks,
                 cachedPrefetchResults,
@@ -944,8 +949,8 @@ public actor MonitoringController {
             guard !Task.isCancelled else { return }
             let presentations = await CandidateTranslationPipeline.translate(
                 translationCandidates,
-                selectedIndex: selectedIndex,
-                selectionIsExact: selectionIsExact,
+                selectedIndex: pipelineSelectedIndex,
+                selectionIsExact: pipelineSelectionIsExact,
                 mode: mode,
                 configurationToken: configurationToken,
                 router: router,
