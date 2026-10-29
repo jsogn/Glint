@@ -483,6 +483,89 @@ final class PluginCatalogServiceTests: XCTestCase {
         )
     }
 
+    func testMLXSnapshotRejectsOverflowingFileSize() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintOverflowingModelCatalog-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: [
+                "siblings": [
+                    [
+                        "rfilename": "config.json",
+                        "size": 1,
+                    ],
+                    [
+                        "rfilename": "model-a.safetensors",
+                        "size": Int64.max,
+                    ],
+                    [
+                        "rfilename": "model-b.safetensors",
+                        "size": 1,
+                    ],
+                    [
+                        "rfilename": "tokenizer.json",
+                        "size": 1,
+                    ],
+                ]
+            ]
+        )
+        StubURLProtocol.handler = { request in
+            guard let url = request.url,
+                ["hf-mirror.com", "huggingface.co"].contains(url.host),
+                url.path
+                    == "/api/models/example/overflow/revision/overflow-revision"
+            else {
+                return nil
+            }
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            return (response, snapshotData)
+        }
+        defer { StubURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let service = PluginCatalogService(
+            manager: PluginManager(baseDirectory: root),
+            session: URLSession(configuration: configuration)
+        )
+        let manifest = PluginManifest(
+            id: "overflow-model",
+            type: .translation,
+            name: "Overflow Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 0,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/overflow"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "overflow-revision"
+        )
+
+        do {
+            _ = try await service.install(manifest)
+            XCTFail("Expected overflowing file size to be rejected")
+        } catch let error as PluginCatalogError {
+            XCTAssertEqual(error, .invalidModelSnapshot)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
     func testMLXSnapshotUpgradeRetainsPreviousRevisionForRollback()
         async throws
     {

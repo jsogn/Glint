@@ -86,6 +86,36 @@ final class CedictDatabaseBuilderTests: XCTestCase {
         )
     }
 
+    func testPreservesSourceDateContainingApostrophe() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("cedict.gz")
+        let database = directory.appendingPathComponent("cedict.sqlite3")
+        let sourceDate = "2026-10-28T00:15:09Z'; DROP TABLE entries; --"
+        try writeGzip(
+            """
+            #! date=\(sourceDate)
+            做 做 [zuo4] /to do/
+            """,
+            to: source
+        )
+
+        let summary = try CedictDatabaseBuilder.build(
+            fromGzipURL: source,
+            to: database
+        )
+
+        XCTAssertEqual(summary.sourceDate, sourceDate)
+        let dictionary = CedictDictionary(
+            databaseURL: database,
+            ranker: nil
+        )
+        let result = try await dictionary.lookup(
+            Candidate(text: "做", kind: .word)
+        )
+        XCTAssertEqual(result?.options.first?.text, "do")
+    }
+
     private func makeTemporaryDirectory() throws -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(

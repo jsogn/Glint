@@ -94,6 +94,69 @@ final class ModelHubServiceTests: XCTestCase {
         XCTAssertEqual(snapshot.pipelineTag, "translation")
     }
 
+    func testInspectRejectsOverflowingSnapshotSize() async {
+        let repository = "example/overflowing-size"
+        ModelHubStubURLProtocol.handler = { request in
+            guard let url = request.url,
+                url.host == "hf-mirror.com"
+            else {
+                return nil
+            }
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            switch url.path {
+            case "/api/models/\(repository)":
+                return (
+                    response,
+                    Self.data(
+                        """
+                        {
+                          "sha": "overflow-revision",
+                          "private": false,
+                          "gated": false,
+                          "tags": ["mlx", "translation"],
+                          "pipeline_tag": "translation"
+                        }
+                        """
+                    )
+                )
+            case "/api/models/\(repository)/revision/overflow-revision":
+                return (
+                    response,
+                    Self.data(
+                        """
+                        {
+                          "siblings": [
+                            {"rfilename": "config.json", "size": 1},
+                            {"rfilename": "model-a.safetensors", "size": 9223372036854775807},
+                            {"rfilename": "model-b.safetensors", "size": 1},
+                            {"rfilename": "tokenizer.json", "size": 1},
+                            {"rfilename": "chat_template.jinja", "size": 1}
+                          ]
+                        }
+                        """
+                    )
+                )
+            case "/\(repository)/resolve/overflow-revision/config.json":
+                return (response, Self.data(#"{"model_type":"qwen3"}"#))
+            default:
+                return nil
+            }
+        }
+        defer { ModelHubStubURLProtocol.handler = nil }
+
+        do {
+            _ = try await makeService().inspect(repository: repository)
+            XCTFail("Expected overflowing size to be rejected")
+        } catch {
+            XCTAssertEqual(error as? ModelHubError, .invalidResponse)
+        }
+    }
+
     func testUpdateReturnsNilWhenInstalledRevisionMatchesUpstream() async throws {
         let repository = "mlx-community/Qwen3-0.6B-4bit"
         ModelHubStubURLProtocol.handler = snapshotHandler(

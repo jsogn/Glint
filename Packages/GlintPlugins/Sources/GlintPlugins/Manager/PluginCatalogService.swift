@@ -697,15 +697,29 @@ public actor PluginCatalogService {
         guard Self.isCompleteModelSnapshot(files) else {
             throw PluginCatalogError.invalidModelSnapshot
         }
-        let expectedBytes = files.reduce(Int64(0)) {
-            $0 + $1.size
+        guard
+            let expectedBytes = RemoteByteCount.checkedSum(
+                files.lazy.map(\.size)
+            )
+        else {
+            throw PluginCatalogError.invalidModelSnapshot
         }
         let available =
             try directory.resourceValues(
                 forKeys: [.volumeAvailableCapacityForImportantUsageKey]
             ).volumeAvailableCapacityForImportantUsage ?? 0
-        if expectedBytes > 0, available > 0, available < expectedBytes * 2 {
-            throw PluginCatalogError.insufficientDiskSpace
+        if expectedBytes > 0, available > 0 {
+            guard
+                let requiredBytes = RemoteByteCount.checkedProduct(
+                    expectedBytes,
+                    2
+                )
+            else {
+                throw PluginCatalogError.invalidModelSnapshot
+            }
+            if available < requiredBytes {
+                throw PluginCatalogError.insufficientDiskSpace
+            }
         }
 
         var completedBytes = Int64(0)

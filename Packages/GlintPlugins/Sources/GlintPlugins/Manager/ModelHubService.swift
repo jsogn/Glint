@@ -154,6 +154,9 @@ public struct UpstreamModelUpdate: Sendable, Equatable {
 }
 
 public actor ModelHubService {
+    private static let maximumModelSizeBytes: Int64 =
+        1_024 * 1_073_741_824
+
     private let session: URLSession
     private let endpoints: [URL]
 
@@ -344,8 +347,13 @@ public actor ModelHubService {
                 throw ModelHubError.incompleteModel
             }
 
-            let sizeBytes = files.reduce(Int64(0)) { total, file in
-                total + max(0, file.size ?? 0)
+            guard
+                let sizeBytes = RemoteByteCount.checkedSum(
+                    files.lazy.map { max(0, $0.size ?? 0) }
+                ),
+                sizeBytes <= Self.maximumModelSizeBytes
+            else {
+                throw ModelHubError.invalidResponse
             }
             return UpstreamModelSnapshot(
                 repository: repository,
@@ -607,7 +615,10 @@ public actor ModelHubService {
     }
 
     private static func estimatedRAM(for sizeBytes: Int64) -> Int64 {
-        max(6 * 1_073_741_824, sizeBytes * 6)
+        let estimated =
+            RemoteByteCount.checkedProduct(sizeBytes, 6)
+            ?? Int64.max
+        return max(6 * 1_073_741_824, estimated)
     }
 
     private static func inferredPromptProfile(

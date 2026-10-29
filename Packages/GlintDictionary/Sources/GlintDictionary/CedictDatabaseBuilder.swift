@@ -210,15 +210,18 @@ public enum CedictDatabaseBuilder {
                 ("entry_count", String(entryCount)),
                 ("sense_count", String(senseCount)),
             ]
+            let insertMetadata = try prepare(
+                database,
+                "INSERT INTO metadata(key, value) VALUES (?, ?)"
+            )
+            defer { sqlite3_finalize(insertMetadata) }
             for (key, value) in metadata {
+                sqlite3_reset(insertMetadata)
+                sqlite3_clear_bindings(insertMetadata)
+                bind(key, to: 1, in: insertMetadata)
+                bind(value, to: 2, in: insertMetadata)
                 guard
-                    sqlite3_exec(
-                        database,
-                        "INSERT INTO metadata(key, value) VALUES ('\(key)', '\(value)');",
-                        nil,
-                        nil,
-                        nil
-                    ) == SQLITE_OK
+                    sqlite3_step(insertMetadata) == SQLITE_DONE
                 else {
                     throw CedictDatabaseBuilderError.sqlite(
                         String(cString: sqlite3_errmsg(database))
