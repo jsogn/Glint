@@ -72,6 +72,8 @@ Glint/
 
 - 当前输入源、焦点、文字选区、Secure Input 和辅助功能状态。
 - `MonitoringController` actor：权限节流、候选轮询、停留、取消和事件发布。
+- 候选轮询按权限/输入源、焦点目标、候选读取、活动判定和翻译触发分阶段执行；
+  actor 仍集中持有会话状态，避免把并发状态分散到多个对象。
 - `CandidateReaderRouter`：Apple、显式 reader 和未知输入法 Profile。
 - `AXReadSession`：消息超时、属性调用上限和总截止时间。
 - 不包含 UI、插件下载、词典数据或推理实现。
@@ -258,6 +260,8 @@ MainWindowModel → MainWindowView
 - OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；
   权重不进入 Git，锁文件记录产物 SHA256。
 - 可选 MLX 模型优先国内镜像，失败后回退官方源；下载、校验和安装阶段不重叠。
+- Hugging Face 镜像顺序、URL 会话和远程地址白名单由单一策略统一提供；模型快照
+  下载按来源选择、单文件下载、磁盘检查、进度上报和 SHA256 校验拆分。
 - MLX 模型按 profile 使用官方输入协议和解码参数：Hy-MT2 使用单条 user 翻译
   模板与官方采样参数，Index-Translate 使用贪心解码并关闭 thinking，Qwen 使用
   system/user 分离。未知导入模型只发送原文；短输入出现指令回显时静默回退词典。
