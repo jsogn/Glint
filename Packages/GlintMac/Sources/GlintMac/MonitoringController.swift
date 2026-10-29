@@ -189,6 +189,28 @@ public actor MonitoringController {
         )
     }
 
+    private enum TickGate<Value> {
+        case poll(UInt64)
+        case ready(Value)
+    }
+
+    private struct CandidateSelectionContext {
+        let candidates: [Candidate]
+        let selectedIndex: Int
+        let previousSelectedIndex: Int?
+        let selectionIsExact: Bool
+        let displayAnchor: CandidateRegion
+        let trackingText: String
+        let trackingFrame: CGRect
+    }
+
+    private struct CandidateActivityContext {
+        let selection: CandidateSelectionContext
+        let activity: CandidateActivity
+        let timestamp: UInt64
+        let changed: Bool
+    }
+
     private let inputSource: any InputSourceReading
     private let focus: any FocusReading
     private let candidateReaders: any CandidateReaderRouting
@@ -424,55 +446,103 @@ public actor MonitoringController {
     }
 
     func tick() async -> UInt64 {
-        let permissionCheckTimestamp = DispatchTime.now().uptimeNanoseconds
-        let shouldCheckPermissions =
-            lastPermissionCheck == 0
-            || permissionCheckTimestamp >= lastPermissionCheck
-                && permissionCheckTimestamp - lastPermissionCheck
-                    >= 1_000_000_000
-        if shouldCheckPermissions {
-            lastPermissionCheck = permissionCheckTimestamp
-            guard accessibilityIsTrusted() else {
-                invalidateCandidate(immediate: true)
-                emitStatus("需要辅助功能权限")
-                return 1_000_000_000
-            }
+        switch permissionGate() {
+        case .poll(let interval):
+            return interval
+        case .ready:
+            break
         }
-        let activeInputSource = await currentInputSource()
-        reportInputSourceIfNeeded(
-            activeInputSource.identity
+
+        let activeInputSource: ActiveInputSource
+        switch await activeInputSourceGate() {
+        case .poll(let interval):
+            return interval
+        case .ready(let source):
+            activeInputSource = source
+        }
+
+        let focusSnapshot: FocusSnapshot
+        switch focusGate(for: activeInputSource) {
+        case .poll(let interval):
+            return interval
+        case .ready(let snapshot):
+            focusSnapshot = snapshot
+        }
+
+        let observationStartedAt = ContinuousClock.now
+        let observation: CandidateObservation
+        switch await candidateObservationGate(
+            source: activeInputSource,
+            focus: focusSnapshot
+        ) {
+        case .poll(let interval):
+            return interval
+        case .ready(let value):
+            observation = value
+        }
+
+        return await processCandidateObservation(
+            observation: observation,
+            observationStartedAt: observationStartedAt
         )
-        if activeInputSource.kind == .keyboardLayout {
+    }
+
+    private func permissionGate() -> TickGate<Void> {
+        let timestamp = DispatchTime.now().uptimeNanoseconds
+        let shouldCheck =
+            lastPermissionCheck == 0
+            || timestamp >= lastPermissionCheck
+                && timestamp - lastPermissionCheck >= 1_000_000_000
+        guard shouldCheck else { return .ready(()) }
+        lastPermissionCheck = timestamp
+        guard accessibilityIsTrusted() else {
+            invalidateCandidate(immediate: true)
+            emitStatus("需要辅助功能权限")
+            return .poll(1_000_000_000)
+        }
+        return .ready(())
+    }
+
+    private func activeInputSourceGate() async -> TickGate<ActiveInputSource> {
+        let source = await currentInputSource()
+        reportInputSourceIfNeeded(source.identity)
+        guard source.kind != .keyboardLayout else {
             invalidateCandidate(immediate: true)
             emitStatus("等待中文输入")
-            return 250_000_000
+            return .poll(250_000_000)
         }
         guard !secureInputIsEnabled() else {
             invalidateCandidate(immediate: true)
             emitStatus("安全输入场景已跳过")
-            return 500_000_000
+            return .poll(500_000_000)
         }
+        return .ready(source)
+    }
+
+    private func focusGate(
+        for source: ActiveInputSource
+    ) -> TickGate<FocusSnapshot> {
         guard
             let snapshot = FocusResolutionPolicy.resolve(
                 direct: focus.snapshot(),
                 allowsProcessFallback:
-                    candidateReaders.allowsProcessFallback(
-                        for: activeInputSource
-                    ),
+                    candidateReaders.allowsProcessFallback(for: source),
                 fallback: {
                     focus.processFallbackSnapshot()
                 }
             )
         else {
-            return observeCandidateMiss(
-                status: "未找到文本光标",
-                pollInterval: 60_000_000
+            return .poll(
+                observeCandidateMiss(
+                    status: "未找到文本光标",
+                    pollInterval: 60_000_000
+                )
             )
         }
         guard snapshot.processIdentifier != ownProcessIdentifier else {
             invalidateCandidate(immediate: true)
             emitStatus("已跳过 Glint 自身窗口")
-            return 250_000_000
+            return .poll(250_000_000)
         }
         if insertionHostProcessIdentifier != snapshot.processIdentifier {
             insertionOffer = nil
@@ -481,12 +551,12 @@ public actor MonitoringController {
         guard !snapshot.hasTextSelection else {
             invalidateCandidate(immediate: true)
             emitStatus("已跳过文字选区")
-            return 100_000_000
+            return .poll(100_000_000)
         }
         if compositionTransitions.observe(snapshot.compositionState) {
             invalidateCandidate(immediate: true)
             emitStatus("候选会话已结束")
-            return 40_000_000
+            return .poll(40_000_000)
         }
         guard
             CandidateScanGate.allowsScanning(
@@ -498,54 +568,103 @@ public actor MonitoringController {
         else {
             invalidateCandidate(immediate: true)
             emitStatus("已跳过非文本控件")
-            return 200_000_000
+            return .poll(200_000_000)
         }
         guard
             snapshot.usesProcessFallback
                 || snapshot.caretRect != nil
                 || snapshot.elementFrame != nil
         else {
-            return observeCandidateMiss(
-                status: "未找到文本光标",
-                pollInterval: 60_000_000
+            return .poll(
+                observeCandidateMiss(
+                    status: "未找到文本光标",
+                    pollInterval: 60_000_000
+                )
             )
         }
+        return .ready(snapshot)
+    }
 
-        let observationStartedAt = ContinuousClock.now
-        let outcome = readCandidate(
-            source: activeInputSource,
-            focus: snapshot
-        )
-        let observation: CandidateObservation
+    private func candidateObservationGate(
+        source: ActiveInputSource,
+        focus snapshot: FocusSnapshot
+    ) async -> TickGate<CandidateObservation> {
+        let outcome = readCandidate(source: source, focus: snapshot)
         switch outcome {
-        case .found(let candidate):
-            observation = candidate
+        case .found(let observation):
+            return .ready(observation)
         case .miss(let status, let reason):
-            if Self.shouldEndCandidateImmediately(
-                for: reason
-            ) {
+            if Self.shouldEndCandidateImmediately(for: reason) {
                 emitStatus(status)
                 invalidateCandidate(immediate: true)
-                return CandidatePollingPolicy.stableInterval
+                return .poll(CandidatePollingPolicy.stableInterval)
             }
             if await activateHostAccessibilityIfNeeded(
-                source: activeInputSource,
+                source: source,
                 focus: snapshot
             ) {
-                return 40_000_000
+                return .poll(40_000_000)
             }
-            return observeCandidateMiss(
-                status: status,
-                pollInterval: 60_000_000
+            return .poll(
+                observeCandidateMiss(
+                    status: status,
+                    pollInterval: 60_000_000
+                )
             )
         }
-        let axCandidate = observation.snapshot
-        let candidateFrame = observation.selectedFrame
-        let displayFrame = observation.displayFrame
-        let displayAnchor = observation.displayAnchor
-        candidateMissDebouncer.observeCandidate()
-        latestCandidateHighlight = displayAnchor
+    }
 
+    private func processCandidateObservation(
+        observation: CandidateObservation,
+        observationStartedAt: ContinuousClock.Instant
+    ) async -> UInt64 {
+        candidateMissDebouncer.observeCandidate()
+        let selection = candidateSelectionContext(
+            observation: observation
+        )
+        latestCandidateHighlight = selection.displayAnchor
+        let context = candidateActivityContext(
+            selection: selection
+        )
+        await startCandidatePrefetchIfNeeded(
+            candidates: context.selection.candidates,
+            revision: typingTracker.revision
+        )
+
+        switch context.activity {
+        case .changed(let revision):
+            handleChangedActivity(context, revision: revision)
+        case .dwelling(let revision):
+            if let interval = handleDwellingActivity(
+                context,
+                revision: revision,
+                observationStartedAt: observationStartedAt
+            ) {
+                return interval
+            }
+        case .observing:
+            break
+        }
+        if candidateSessionActive,
+            !context.changed,
+            selectedCandidateIndexIsExact,
+            context.selection.previousSelectedIndex
+                != context.selection.selectedIndex
+        {
+            continuation.yield(
+                .selectionChanged(
+                    index: context.selection.selectedIndex,
+                    revision: typingTracker.revision
+                )
+            )
+        }
+        return nextCandidatePollInterval(after: context.timestamp)
+    }
+
+    private func candidateSelectionContext(
+        observation: CandidateObservation
+    ) -> CandidateSelectionContext {
+        let axCandidate = observation.snapshot
         let candidateTexts =
             translationScope == .row
                 && !axCandidate.visibleTexts.isEmpty
@@ -561,95 +680,98 @@ public actor MonitoringController {
             candidateTexts.count - 1
         )
         let candidates = candidateTexts.map {
-            Candidate(
-                text: $0,
-                kind: CandidateClassifier.classify($0)
-            )
+            Candidate(text: $0, kind: CandidateClassifier.classify($0))
         }
         let trackingIdentity = CandidateTrackingIdentity.make(
             scope: translationScope,
             selectedText: axCandidate.text,
-            selectedFrame: candidateFrame,
+            selectedFrame: observation.selectedFrame,
             rowTexts: candidateTexts,
-            rowFrame: displayFrame
+            rowFrame: observation.displayFrame
         )
         let previousSelectedIndex = selectedCandidateIndex
         selectedCandidateIndex = selectedIndex
-        selectedCandidateIndexIsExact =
-            axCandidate.selectionIsExact
+        selectedCandidateIndexIsExact = axCandidate.selectionIsExact
+        return CandidateSelectionContext(
+            candidates: candidates,
+            selectedIndex: selectedIndex,
+            previousSelectedIndex: previousSelectedIndex,
+            selectionIsExact: axCandidate.selectionIsExact,
+            displayAnchor: observation.displayAnchor,
+            trackingText: trackingIdentity.text,
+            trackingFrame: trackingIdentity.frame
+        )
+    }
+
+    private func candidateActivityContext(
+        selection: CandidateSelectionContext
+    ) -> CandidateActivityContext {
         let observationTimestamp = DispatchTime.now().uptimeNanoseconds
         let activity = typingTracker.observe(
-            text: trackingIdentity.text,
-            highlightRect: trackingIdentity.frame,
+            text: selection.trackingText,
+            highlightRect: selection.trackingFrame,
             timestamp: observationTimestamp,
             dwellDurationNanoseconds: candidateDwellNanoseconds
         )
-        let candidateChanged: Bool
-        switch activity {
-        case .changed:
-            candidateChanged = true
-        case .observing, .dwelling:
-            candidateChanged = false
-        }
-        await startCandidatePrefetchIfNeeded(
-            candidates: candidates,
-            revision: typingTracker.revision
+        return CandidateActivityContext(
+            selection: selection,
+            activity: activity,
+            timestamp: observationTimestamp,
+            changed: {
+                if case .changed = activity { return true }
+                return false
+            }()
         )
+    }
 
-        switch activity {
-        case .changed(let revision):
-            handledRevision = nil
-            dwellDetectedAt = nil
-            translationStartedAt = nil
-            dwellConfirmedAtNanoseconds = nil
-            candidateChangedAtNanoseconds = observationTimestamp
-            cancelTranslationTask()
-            emitCandidateChanged(revision: revision)
-            let selectedCandidate = candidates[selectedIndex]
-            monitoringLogger.debug(
-                "candidate source=accessibility kind=\(selectedCandidate.kind.rawValue, privacy: .public) length=\(selectedCandidate.text.count, privacy: .public) row_count=\(candidates.count, privacy: .public) revision=\(revision, privacy: .public) changed"
-            )
-        case .dwelling(let revision):
-            guard handledRevision != revision else {
-                return CandidatePollingPolicy.stableInterval
-            }
-            handledRevision = revision
-            dwellDetectedAt = .now
-            dwellConfirmedAtNanoseconds = observationTimestamp
-            if let candidateChangedAtNanoseconds {
-                monitoringLogger.debug(
-                    "perf latency phase=dwell revision=\(revision, privacy: .public) scope=\(self.translationScope.rawValue, privacy: .public) mode=\(self.mode.rawValue, privacy: .public) row_count=\(candidates.count, privacy: .public) dwell_ms=\(Self.elapsedMilliseconds(from: candidateChangedAtNanoseconds, to: observationTimestamp), privacy: .public)"
-                )
-            }
-            monitoringLogger.debug(
-                "perf candidate_detect_ms=\(Self.elapsedMilliseconds(observationStartedAt.duration(to: .now)), privacy: .public)"
-            )
-            startTranslation(
-                candidates: candidates,
-                selectedIndex: selectedIndex,
-                selectionIsExact:
-                    axCandidate.selectionIsExact,
-                highlight: displayAnchor,
-                revision: revision,
-                dictionaryPrefetchTasks: dictionaryPrefetchTasks,
-                cachedPrefetchResults: cachedPrefetchResults
-            )
-        case .observing:
-            break
+    private func handleChangedActivity(
+        _ context: CandidateActivityContext,
+        revision: UInt64
+    ) {
+        handledRevision = nil
+        dwellDetectedAt = nil
+        translationStartedAt = nil
+        dwellConfirmedAtNanoseconds = nil
+        candidateChangedAtNanoseconds = context.timestamp
+        cancelTranslationTask()
+        emitCandidateChanged(revision: revision)
+        let selected = context.selection.candidates[
+            context.selection.selectedIndex
+        ]
+        monitoringLogger.debug(
+            "candidate source=accessibility kind=\(selected.kind.rawValue, privacy: .public) length=\(selected.text.count, privacy: .public) row_count=\(context.selection.candidates.count, privacy: .public) revision=\(revision, privacy: .public) changed"
+        )
+    }
+
+    private func handleDwellingActivity(
+        _ context: CandidateActivityContext,
+        revision: UInt64,
+        observationStartedAt: ContinuousClock.Instant
+    ) -> UInt64? {
+        guard handledRevision != revision else {
+            return CandidatePollingPolicy.stableInterval
         }
-        if candidateSessionActive,
-            !candidateChanged,
-            selectedCandidateIndexIsExact,
-            previousSelectedIndex != selectedIndex
-        {
-            continuation.yield(
-                .selectionChanged(
-                    index: selectedIndex,
-                    revision: typingTracker.revision
-                )
+        handledRevision = revision
+        dwellDetectedAt = .now
+        dwellConfirmedAtNanoseconds = context.timestamp
+        if let candidateChangedAtNanoseconds {
+            monitoringLogger.debug(
+                "perf latency phase=dwell revision=\(revision, privacy: .public) scope=\(self.translationScope.rawValue, privacy: .public) mode=\(self.mode.rawValue, privacy: .public) row_count=\(context.selection.candidates.count, privacy: .public) dwell_ms=\(Self.elapsedMilliseconds(from: candidateChangedAtNanoseconds, to: context.timestamp), privacy: .public)"
             )
         }
-        return nextCandidatePollInterval(after: observationTimestamp)
+        monitoringLogger.debug(
+            "perf candidate_detect_ms=\(Self.elapsedMilliseconds(observationStartedAt.duration(to: .now)), privacy: .public)"
+        )
+        startTranslation(
+            candidates: context.selection.candidates,
+            selectedIndex: context.selection.selectedIndex,
+            selectionIsExact: context.selection.selectionIsExact,
+            highlight: context.selection.displayAnchor,
+            revision: revision,
+            dictionaryPrefetchTasks: dictionaryPrefetchTasks,
+            cachedPrefetchResults: cachedPrefetchResults
+        )
+        return nil
     }
 
     private func activateHostAccessibilityIfNeeded(
