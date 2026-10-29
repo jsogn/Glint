@@ -269,6 +269,40 @@ final class CedictDictionaryTests: XCTestCase {
         }
     }
 
+    func testQuotedHeadwordDropsTrailingExplanation() async throws {
+        let dictionary = makeDictionary()
+        let result = try await dictionary.lookup(
+            Candidate(text: "弹幕", kind: .word)
+        )
+        let surfaces = result?.options.map(\.text) ?? []
+
+        XCTAssertTrue(surfaces.contains("barrage"))
+        XCTAssertTrue(surfaces.contains("bullet screen"))
+        XCTAssertTrue(surfaces.contains("danmaku"))
+        XCTAssertFalse(
+            surfaces.contains {
+                $0.contains("allows viewers to post on-screen comments")
+            }
+        )
+    }
+
+    func testQuotedHeadwordPreservesCommaInsidePhrase() async throws {
+        let dictionary = makeDictionary()
+        let result = try await dictionary.lookup(
+            Candidate(text: "一中一台", kind: .word)
+        )
+        let surfaces = result?.options.map(\.text) ?? []
+
+        XCTAssertTrue(
+            surfaces.contains("one China, one Taiwan")
+        )
+        XCTAssertFalse(
+            surfaces.contains {
+                $0.contains("the notion that China and Taiwan")
+            }
+        )
+    }
+
     func testMissingTermIsLeftForModelFallback() async throws {
         let dictionary = makeDictionary()
 

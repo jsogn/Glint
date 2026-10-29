@@ -125,6 +125,42 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
             .map(String.init)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty && !$0.hasPrefix("CL:") }
+            .map(Self.leadingQuotedHeadword)
+    }
+
+    private static func leadingQuotedHeadword(
+        from value: String
+    ) -> String {
+        var remaining = value
+        while remaining.first == "(" {
+            guard let closing = remaining.firstIndex(of: ")") else {
+                return value
+            }
+            remaining = String(remaining[remaining.index(after: closing)...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        guard let opening = remaining.first else { return value }
+        let closingCharacter: Character
+        switch opening {
+        case "\"":
+            closingCharacter = "\""
+        case "“":
+            closingCharacter = "”"
+        default:
+            return value
+        }
+        let contentStart = remaining.index(after: remaining.startIndex)
+        guard
+            let closing = remaining[contentStart...].firstIndex(
+                of: closingCharacter
+            ),
+            closing > contentStart
+        else {
+            return value
+        }
+        return String(remaining[contentStart..<closing])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func rankedSenseOptions(
