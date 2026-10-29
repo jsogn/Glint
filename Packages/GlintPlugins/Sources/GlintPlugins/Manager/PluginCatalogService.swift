@@ -419,6 +419,45 @@ public actor PluginCatalogService {
         _ manifest: PluginManifest,
         progress: (@Sendable (PluginInstallProgress) -> Void)?
     ) async throws -> PluginManifest {
+        let sources = try modelDownloadSources(for: manifest)
+        let reporter = InstallProgressReporter(progress)
+
+        let workDirectory = fileManager.temporaryDirectory
+            .appendingPathComponent("GlintMLX-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.createDirectory(
+            at: workDirectory,
+            withIntermediateDirectories: true
+        )
+        defer { try? fileManager.removeItem(at: workDirectory) }
+
+        let modelDirectory = workDirectory.appendingPathComponent(
+            "model",
+            isDirectory: true
+        )
+        try fileManager.createDirectory(
+            at: modelDirectory,
+            withIntermediateDirectories: true
+        )
+        try await downloadModelSnapshot(
+            sources: sources,
+            into: modelDirectory,
+            reporter: reporter
+        )
+
+        let pluginDirectory = try prepareDownloadedPlugin(
+            manifest,
+            modelDirectory: modelDirectory,
+            workDirectory: workDirectory
+        )
+        return try await installPreparedSnapshot(
+            pluginDirectory,
+            reporter: reporter
+        )
+    }
+
+    private func modelDownloadSources(
+        for manifest: PluginManifest
+    ) throws -> [MLXDownloadSource] {
         guard
             let huggingFaceRepository = Self.repositoryID(
                 from: manifest.url
@@ -454,25 +493,14 @@ public actor PluginCatalogService {
                 )
             }
         )
-        let reporter = InstallProgressReporter(progress)
+        return sources
+    }
 
-        let workDirectory = fileManager.temporaryDirectory
-            .appendingPathComponent("GlintMLX-\(UUID().uuidString)", isDirectory: true)
-        try fileManager.createDirectory(
-            at: workDirectory,
-            withIntermediateDirectories: true
-        )
-        defer { try? fileManager.removeItem(at: workDirectory) }
-
-        let modelDirectory = workDirectory.appendingPathComponent(
-            "model",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(
-            at: modelDirectory,
-            withIntermediateDirectories: true
-        )
-
+    private func downloadModelSnapshot(
+        sources: [MLXDownloadSource],
+        into modelDirectory: URL,
+        reporter: InstallProgressReporter
+    ) async throws {
         var lastError: Error?
         for source in sources {
             try Task.checkCancellation()
@@ -521,7 +549,13 @@ public actor PluginCatalogService {
             throw lastError
         }
         try Task.checkCancellation()
+    }
 
+    private func prepareDownloadedPlugin(
+        _ manifest: PluginManifest,
+        modelDirectory: URL,
+        workDirectory: URL
+    ) throws -> URL {
         let pluginDirectory = workDirectory.appendingPathComponent(
             "plugin",
             isDirectory: true
@@ -537,7 +571,13 @@ public actor PluginCatalogService {
         try JSONEncoder().encode(manifest).write(
             to: pluginDirectory.appendingPathComponent("manifest.json")
         )
+        return pluginDirectory
+    }
 
+    private func installPreparedSnapshot(
+        _ pluginDirectory: URL,
+        reporter: InstallProgressReporter
+    ) async throws -> PluginManifest {
         try Task.checkCancellation()
         reporter.emit(
             PluginInstallProgress(
