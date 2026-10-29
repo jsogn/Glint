@@ -80,6 +80,47 @@ final class SmartRouterTests: XCTestCase {
         XCTAssertEqual(output, result)
     }
 
+    func testDictionaryFirstUsesModelBeforeDictionaryForSentence()
+        async throws
+    {
+        let dictionaryResult = TranslationResult(
+            text: "dictionary result"
+        )
+        let modelResult = TranslationResult(
+            text: "What do you think?"
+        )
+        let router = SmartRouter(
+            dictionary: MockDictionary(result: dictionaryResult),
+            translation: MockTranslator(result: modelResult)
+        )
+
+        let output = try await router.route(
+            Candidate(text: "你觉得呢", kind: .sentence),
+            mode: .dictionaryFirst
+        )
+
+        XCTAssertEqual(output, modelResult)
+    }
+
+    func testDictionaryFirstFallsBackToDictionaryWhenSentenceModelMisses()
+        async throws
+    {
+        let dictionaryResult = TranslationResult(
+            text: "dictionary result"
+        )
+        let router = SmartRouter(
+            dictionary: MockDictionary(result: dictionaryResult),
+            translation: MockTranslator(result: nil)
+        )
+
+        let output = try await router.route(
+            Candidate(text: "你觉得呢", kind: .sentence),
+            mode: .dictionaryFirst
+        )
+
+        XCTAssertEqual(output, dictionaryResult)
+    }
+
     func testDictionaryFirstFallsBackToModelOnDictionaryError() async throws {
         let result = TranslationResult(
             text: "hello"

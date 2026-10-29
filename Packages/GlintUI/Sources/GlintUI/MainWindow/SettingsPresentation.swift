@@ -13,7 +13,7 @@ extension TranslationMode {
     var explanation: String {
         switch self {
         case .dictionaryFirst:
-            "先查词典，未命中或失败时自动使用当前翻译模型。"
+            "单词和短语先查词典；短句优先使用模型，失败时自动回退词典。"
         case .modelFirst:
             "先使用当前翻译模型，失败或无结果时自动查词典。"
         }

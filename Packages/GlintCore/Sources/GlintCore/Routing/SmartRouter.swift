@@ -22,6 +22,13 @@ public struct SmartRouter: Sendable {
 
         switch mode {
         case .dictionaryFirst:
+            if candidate.kind == .sentence,
+                let modelResult = try? await translation.translate(candidate),
+                !modelResult.options.isEmpty
+            {
+                return modelResult
+            }
+            try Task.checkCancellation()
             if let dictionaryResult = await dictionaryResult(
                 for: candidate,
                 prefetch: dictionaryPrefetch
