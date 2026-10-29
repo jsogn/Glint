@@ -29,6 +29,64 @@ struct CatalogUpdatePolicy {
     }
 }
 
+struct TranslationModelUpdatePolicy {
+    static let successInterval: TimeInterval = 6 * 60 * 60
+    static let failureInterval: TimeInterval = 15 * 60
+
+    static func shouldCheck(
+        force: Bool,
+        now: Date,
+        lastSuccess: Date?,
+        lastFailure: Date?
+    ) -> Bool {
+        if force { return true }
+        if let lastFailure,
+            now.timeIntervalSince(lastFailure) < failureInterval
+        {
+            return false
+        }
+        guard let lastSuccess else { return true }
+        return now.timeIntervalSince(lastSuccess) >= successInterval
+    }
+}
+
+private struct CachedTranslationModelUpdate: Codable {
+    let currentRevision: String
+    let latestRevision: String
+    let lastModified: String?
+    let manifest: PluginManifest
+
+    init(_ update: UpstreamModelUpdate) {
+        currentRevision = update.currentRevision
+        latestRevision = update.latestRevision
+        lastModified = update.lastModified
+        manifest = update.manifest
+    }
+
+    var upstreamUpdate: UpstreamModelUpdate {
+        UpstreamModelUpdate(
+            currentRevision: currentRevision,
+            latestRevision: latestRevision,
+            lastModified: lastModified,
+            manifest: manifest
+        )
+    }
+}
+
+private enum TranslationModelUpdateKey {
+    static func lastSuccess(_ modelID: String) -> String {
+        "translationModelUpdate.lastSuccess.\(modelID)"
+    }
+
+    static func lastFailure(_ modelID: String) -> String {
+        "translationModelUpdate.lastFailure.\(modelID)"
+    }
+
+    static func cachedUpdate(_ modelID: String) -> String {
+        "translationModelUpdate.update.\(modelID)"
+    }
+}
+
 public enum LaunchAtLoginStatus: Equatable, Sendable {
     case disabled
     case enabled
@@ -319,6 +377,7 @@ public final class MainWindowModel {
             (effectiveBuiltIns
             + managedPlugins.filter { !builtInIDs.contains($0.id) })
             .sorted { $0.name < $1.name }
+        hydrateCachedTranslationModelUpdateStates()
         reconcileActiveTranslationModel()
         isLoadingPlugins = false
         translationConfigurationChangedAction()
@@ -396,12 +455,29 @@ public final class MainWindowModel {
     }
 
     public func checkTranslationModelUpdate(
-        _ plugin: PluginManifest
+        _ plugin: PluginManifest,
+        force: Bool = false
     ) {
         guard plugin.type == .translation,
             plugin.source == .catalog,
             plugin.revision != nil,
             translationModelUpdateTasks[plugin.id] == nil
+        else {
+            return
+        }
+        let lastSuccess = cachedTranslationModelUpdateDate(
+            key: TranslationModelUpdateKey.lastSuccess(plugin.id)
+        )
+        let lastFailure = cachedTranslationModelUpdateDate(
+            key: TranslationModelUpdateKey.lastFailure(plugin.id)
+        )
+        guard
+            TranslationModelUpdatePolicy.shouldCheck(
+                force: force,
+                now: now(),
+                lastSuccess: lastSuccess,
+                lastFailure: lastFailure
+            )
         else {
             return
         }
@@ -422,14 +498,10 @@ public final class MainWindowModel {
                     plugin
                 )
                 try Task.checkCancellation()
-                translationModelUpdateStates[plugin.id] =
-                    TranslationModelUpdateState(
-                        isChecking: false,
-                        statusText:
-                            update == nil ? "已是最新" : "上游有新版本",
-                        isError: false,
-                        update: update
-                    )
+                recordSuccessfulTranslationModelUpdateCheck(
+                    pluginID: plugin.id,
+                    update: update
+                )
             } catch {
                 if Task.isCancelled {
                     translationModelUpdateStates[plugin.id] = nil
@@ -441,6 +513,116 @@ public final class MainWindowModel {
                         statusText:
                             "更新检查失败：\(error.localizedDescription)",
                         isError: true,
+                        update: nil
+                    )
+                defaults.set(
+                    now(),
+                    forKey: TranslationModelUpdateKey.lastFailure(
+                        plugin.id
+                    )
+                )
+            }
+        }
+    }
+
+    public func checkActiveTranslationModelUpdateAfterLaunch() {
+        guard let plugin = activeTranslationPlugin else { return }
+        checkTranslationModelUpdate(plugin)
+    }
+
+    private func cachedTranslationModelUpdateDate(
+        key: String
+    ) -> Date? {
+        defaults.object(forKey: key) as? Date
+    }
+
+    private func recordSuccessfulTranslationModelUpdateCheck(
+        pluginID: String,
+        update: UpstreamModelUpdate?
+    ) {
+        let checkedAt = now()
+        defaults.set(
+            checkedAt,
+            forKey: TranslationModelUpdateKey.lastSuccess(pluginID)
+        )
+        defaults.removeObject(
+            forKey: TranslationModelUpdateKey.lastFailure(pluginID)
+        )
+        if let update,
+            let data = try? JSONEncoder().encode(
+                CachedTranslationModelUpdate(update)
+            )
+        {
+            defaults.set(
+                data,
+                forKey: TranslationModelUpdateKey.cachedUpdate(pluginID)
+            )
+        } else {
+            defaults.removeObject(
+                forKey: TranslationModelUpdateKey.cachedUpdate(pluginID)
+            )
+        }
+        translationModelUpdateStates[pluginID] =
+            TranslationModelUpdateState(
+                isChecking: false,
+                statusText:
+                    update == nil ? "已是最新" : "上游有新版本",
+                isError: false,
+                update: update
+            )
+    }
+
+    private func hydrateCachedTranslationModelUpdateStates() {
+        for plugin in translationPlugins
+        where plugin.source == .catalog
+            && translationModelUpdateStates[plugin.id] == nil
+        {
+            let lastSuccess = cachedTranslationModelUpdateDate(
+                key: TranslationModelUpdateKey.lastSuccess(plugin.id)
+            )
+            let lastFailure = cachedTranslationModelUpdateDate(
+                key: TranslationModelUpdateKey.lastFailure(plugin.id)
+            )
+            if let lastFailure,
+                lastSuccess.map({ lastFailure > $0 }) ?? true
+            {
+                translationModelUpdateStates[plugin.id] =
+                    TranslationModelUpdateState(
+                        isChecking: false,
+                        statusText: "上次更新检查失败",
+                        isError: true,
+                        update: nil
+                    )
+                continue
+            }
+            let update =
+                defaults
+                .data(
+                    forKey: TranslationModelUpdateKey.cachedUpdate(
+                        plugin.id
+                    )
+                )
+                .flatMap {
+                    try? JSONDecoder().decode(
+                        CachedTranslationModelUpdate.self,
+                        from: $0
+                    )
+                }
+                .map(\.upstreamUpdate)
+            if update != nil {
+                translationModelUpdateStates[plugin.id] =
+                    TranslationModelUpdateState(
+                        isChecking: false,
+                        statusText: "上游有新版本",
+                        isError: false,
+                        update: update
+                    )
+            } else if lastSuccess != nil {
+                translationModelUpdateStates[plugin.id] =
+                    TranslationModelUpdateState(
+                        isChecking: false,
+                        statusText: "已是最新",
+                        isError: false,
                         update: nil
                     )
             }
@@ -883,25 +1065,19 @@ public final class MainWindowModel {
                     translationModelStatusText = nil
                     translationModelStatusIsError = false
                     translationModelStatusModelID = nil
-                    translationModelUpdateStates[plugin.id] =
-                        TranslationModelUpdateState(
-                            isChecking: false,
-                            statusText: "已是最新",
-                            isError: false,
-                            update: nil
-                        )
+                    recordSuccessfulTranslationModelUpdateCheck(
+                        pluginID: plugin.id,
+                        update: nil
+                    )
                 }
                 translationConfigurationChangedAction()
             } else {
                 try await pluginLifecycle.commitPendingUpgrade()
                 if plugin.type == .translation {
-                    translationModelUpdateStates[plugin.id] =
-                        TranslationModelUpdateState(
-                            isChecking: false,
-                            statusText: "已是最新",
-                            isError: false,
-                            update: nil
-                        )
+                    recordSuccessfulTranslationModelUpdateCheck(
+                        pluginID: plugin.id,
+                        update: nil
+                    )
                 }
             }
             installProgress[plugin.id] = PluginInstallProgress(
@@ -969,6 +1145,15 @@ public final class MainWindowModel {
             await releaseTranslationModelAction(plugin.id)
             try await pluginLifecycle.uninstall(id: plugin.id)
             translationModelUpdateStates.removeValue(forKey: plugin.id)
+            defaults.removeObject(
+                forKey: TranslationModelUpdateKey.lastSuccess(plugin.id)
+            )
+            defaults.removeObject(
+                forKey: TranslationModelUpdateKey.lastFailure(plugin.id)
+            )
+            defaults.removeObject(
+                forKey: TranslationModelUpdateKey.cachedUpdate(plugin.id)
+            )
             if translationModelStatusModelID == plugin.id {
                 translationModelStatusText = nil
                 translationModelStatusIsError = false

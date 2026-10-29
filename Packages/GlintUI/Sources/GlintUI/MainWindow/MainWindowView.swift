@@ -29,6 +29,7 @@ public struct MainWindowView: View {
         .task {
             await model.refreshInstalledPlugins()
             await model.checkForCatalogUpdatesAfterLaunch()
+            model.checkActiveTranslationModelUpdateAfterLaunch()
         }
     }
 

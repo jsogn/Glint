@@ -829,6 +829,189 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
+    func testTranslationModelUpdateCheckHonorsCooldown() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelUpdateCooldown-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let suiteName = "GlintModelUpdateCooldown.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let manager = PluginManager(baseDirectory: root)
+        let installed = PluginManifest(
+            id: "cooldown-test-model",
+            type: .translation,
+            name: "Cooldown Test Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 10,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/cooldown"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "current-revision"
+        )
+        try await install(installed, using: manager, root: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil,
+            defaults: defaults
+        )
+        await model.refreshInstalledPlugins()
+        var checkCount = 0
+        model.checkTranslationModelUpdateAction = { _ in
+            checkCount += 1
+            return nil
+        }
+
+        model.checkTranslationModelUpdate(installed)
+        try await waitForTranslationModelUpdate(
+            installed.id,
+            in: model
+        )
+        model.checkTranslationModelUpdate(installed)
+        try await Task.sleep(for: .milliseconds(20))
+
+        XCTAssertEqual(checkCount, 1)
+    }
+
+    @MainActor
+    func testManualTranslationModelUpdateCheckBypassesCooldown()
+        async throws
+    {
+        let fixture = try await makeCatalogTranslationFixture(
+            prefix: "GlintModelManualUpdate"
+        )
+        defer {
+            fixture.defaults.removePersistentDomain(
+                forName: fixture.suiteName
+            )
+            try? FileManager.default.removeItem(at: fixture.root)
+        }
+        var checkCount = 0
+        fixture.model.checkTranslationModelUpdateAction = { _ in
+            checkCount += 1
+            return nil
+        }
+
+        fixture.model.checkTranslationModelUpdate(fixture.manifest)
+        try await waitForTranslationModelUpdate(
+            fixture.manifest.id,
+            in: fixture.model
+        )
+        fixture.model.checkTranslationModelUpdate(
+            fixture.manifest,
+            force: true
+        )
+        try await waitForTranslationModelUpdate(
+            fixture.manifest.id,
+            in: fixture.model
+        )
+
+        XCTAssertEqual(checkCount, 2)
+    }
+
+    @MainActor
+    func testTranslationModelUpdateStateRestoresFromCache() async throws {
+        let fixture = try await makeCatalogTranslationFixture(
+            prefix: "GlintModelUpdateCache"
+        )
+        defer {
+            fixture.defaults.removePersistentDomain(
+                forName: fixture.suiteName
+            )
+            try? FileManager.default.removeItem(at: fixture.root)
+        }
+        fixture.model.checkTranslationModelUpdateAction = { _ in nil }
+
+        fixture.model.checkTranslationModelUpdate(fixture.manifest)
+        try await waitForTranslationModelUpdate(
+            fixture.manifest.id,
+            in: fixture.model
+        )
+        let reloaded = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: fixture.root),
+            catalogURL: nil,
+            defaults: fixture.defaults
+        )
+        await reloaded.refreshInstalledPlugins()
+
+        XCTAssertEqual(
+            reloaded.translationModelUpdateState(
+                for: fixture.manifest.id
+            )?.statusText,
+            "已是最新"
+        )
+    }
+
+    @MainActor
+    func testLaunchUpdateCheckOnlyChecksActiveTranslationModel()
+        async throws
+    {
+        let fixture = try await makeCatalogTranslationFixture(
+            prefix: "GlintModelActiveUpdate"
+        )
+        defer {
+            fixture.defaults.removePersistentDomain(
+                forName: fixture.suiteName
+            )
+            try? FileManager.default.removeItem(at: fixture.root)
+        }
+        let other = PluginManifest(
+            id: "other-update-model",
+            type: .translation,
+            name: "Other Update Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 10,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/other-update"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "other-revision"
+        )
+        try await install(
+            other,
+            using: PluginManager(baseDirectory: fixture.root),
+            root: fixture.root
+        )
+        TranslationModelSelection.select(
+            fixture.manifest.id,
+            in: fixture.defaults
+        )
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: fixture.root),
+            catalogURL: nil,
+            defaults: fixture.defaults
+        )
+        await model.refreshInstalledPlugins()
+        var checkedModelIDs: [String] = []
+        model.checkTranslationModelUpdateAction = { plugin in
+            checkedModelIDs.append(plugin.id)
+            return nil
+        }
+
+        model.checkActiveTranslationModelUpdateAfterLaunch()
+        try await waitForTranslationModelUpdate(
+            fixture.manifest.id,
+            in: model
+        )
+        try await Task.sleep(for: .milliseconds(20))
+
+        XCTAssertEqual(checkedModelIDs, [fixture.manifest.id])
+    }
+
+    @MainActor
     func testTranslationModelUpdateShowsLatestUpstreamRevision() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -1413,6 +1596,74 @@ final class MainWindowModelTests: XCTestCase {
         try Data(repeating: 1, count: 64).write(
             to: directory.appendingPathComponent("model.safetensors")
         )
+    }
+
+    @MainActor
+    private func makeCatalogTranslationFixture(
+        prefix: String
+    ) async throws -> (
+        root: URL,
+        suiteName: String,
+        defaults: UserDefaults,
+        manifest: PluginManifest,
+        model: MainWindowModel
+    ) {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "\(prefix)-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        let suiteName = "\(prefix).\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let manager = PluginManager(baseDirectory: root)
+        let installed = PluginManifest(
+            id: "\(prefix.lowercased())-model",
+            type: .translation,
+            name: "\(prefix) Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 10,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/\(prefix)"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "current-revision"
+        )
+        try await install(installed, using: manager, root: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil,
+            defaults: defaults
+        )
+        await model.refreshInstalledPlugins()
+        return (
+            root,
+            suiteName,
+            defaults,
+            installed,
+            model
+        )
+    }
+
+    @MainActor
+    private func waitForTranslationModelUpdate(
+        _ modelID: String,
+        in model: MainWindowModel
+    ) async throws {
+        for _ in 0..<200 {
+            if model.translationModelUpdateState(for: modelID)?.isChecking
+                == false
+            {
+                return
+            }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        XCTFail("Translation model update check did not finish")
     }
 
     @MainActor

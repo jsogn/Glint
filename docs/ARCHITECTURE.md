@@ -255,6 +255,9 @@ MainWindowModel → MainWindowView
 - OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；
   权重不进入 Git，锁文件记录产物 SHA256。
 - 可选 MLX 模型优先国内镜像，失败后回退官方源；下载、校验和安装阶段不重叠。
+- 翻译模型更新的检查结果和检查时间按模型持久化。进入“翻译模型”页面只读取
+  缓存，不自动联网；App 启动后仅自动检查当前模型，成功冷却 6 小时、失败冷却
+  15 分钟。行内“检查更新”由用户主动触发，并绕过冷却。
 - 模型市场直接查询 Hugging Face / 国内镜像的上游仓库，不需要维护远端目录服务。
   搜索只负责发现；下载前读取 `config.json`、文件清单和 tokenizer 信息，并检查
   当前 MLX runtime 是否支持该 `model_type`。

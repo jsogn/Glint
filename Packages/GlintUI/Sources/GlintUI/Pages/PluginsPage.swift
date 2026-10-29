@@ -38,17 +38,6 @@ struct PluginsPage: View {
             await model.checkForCatalogUpdates()
         }
         .task(id: selectedTab) {
-            if selectedTab == .translation {
-                for plugin in model.translationPlugins
-                where plugin.source == .catalog {
-                    if model.translationModelUpdateState(for: plugin.id)
-                        == nil
-                    {
-                        model.checkTranslationModelUpdate(plugin)
-                    }
-                }
-                return
-            }
             guard selectedTab == .market,
                 model.modelMarketResults.isEmpty
             else {
@@ -361,7 +350,10 @@ struct PluginsPage: View {
                         )
                     } else {
                         Button("检查更新") {
-                            model.checkTranslationModelUpdate(plugin)
+                            model.checkTranslationModelUpdate(
+                                plugin,
+                                force: true
+                            )
                         }
                         .disabled(
                             model.isInstalling != nil
