@@ -110,6 +110,13 @@ public struct TranslationModelUpdateState: Equatable, Sendable {
 @MainActor
 @Observable
 public final class MainWindowModel {
+    private struct InstallationAttempt {
+        let plugin: PluginManifest
+        let previousModelID: String
+        let wasActiveTranslation: Bool
+        let shouldValidateTranslation: Bool
+    }
+
     public var isMonitoring = false
     public var isPreparingMonitoring = false
     public var accessibilityGranted = false
@@ -969,108 +976,18 @@ public final class MainWindowModel {
     }
 
     private func performInstallation(_ plugin: PluginManifest) async {
-        let previousModelID = activeModelID
-        let wasActiveTranslation =
-            plugin.type == .translation
-            && activeModelID == plugin.id
-        let shouldValidateTranslation =
-            plugin.type == .translation
-            && (wasActiveTranslation || modelMarketInstallPluginID == plugin.id)
+        let attempt = installationAttempt(for: plugin)
         var hadPendingUpgrade = false
-        defer {
-            installTask = nil
-            isInstalling = nil
-            isCancellingInstallation = false
-            installProgress.removeValue(forKey: plugin.id)
-            if modelMarketInstallPluginID == plugin.id {
-                modelMarketInstallRepository = nil
-                modelMarketInstallPluginID = nil
-            }
-        }
+        defer { finishInstallationAttempt(for: plugin.id) }
 
         do {
-            _ = try await pluginLifecycle.install(plugin) { [weak self] value in
-                Task { @MainActor [weak self] in
-                    self?.applyInstallProgress(
-                        value,
-                        for: plugin.id
-                    )
-                }
-            }
-            hadPendingUpgrade = await pluginLifecycle.hasPendingUpgrade()
-            await refreshInstalledPlugins()
-            if plugin.type == .dictionary {
-                await dictionaryConfigurationChangedAction()
-            }
-
-            if shouldValidateTranslation {
-                translationModelStatusText =
-                    wasActiveTranslation ? "正在加载新版本…" : "正在验证模型…"
-                translationModelStatusIsError = false
-                translationModelStatusModelID = plugin.id
-                let error = await activateTranslationModelAction(plugin.id)
-                if let error {
-                    let wasCancelled = Task.isCancelled
-                    if hadPendingUpgrade {
-                        try await pluginLifecycle.rollbackPendingUpgrade()
-                        await refreshInstalledPlugins()
-                        if !wasCancelled {
-                            translationModelStatusText =
-                                "更新失败，已恢复旧版本：\(error)"
-                        }
-                    } else {
-                        await releaseTranslationModelAction(plugin.id)
-                        try await pluginLifecycle.uninstall(id: plugin.id)
-                        await refreshInstalledPlugins()
-                        if !wasCancelled {
-                            translationModelStatusText =
-                                "模型加载失败：\(error)"
-                        }
-                    }
-                    let recoveryModelID =
-                        hadPendingUpgrade ? plugin.id : previousModelID
-                    if recoveryModelID != plugin.id || hadPendingUpgrade {
-                        let restoreError = await activateTranslationModelAction(
-                            recoveryModelID
-                        )
-                        if let restoreError, !wasCancelled {
-                            translationModelStatusText =
-                                "模型验证失败，且原模型恢复失败：\(restoreError)"
-                        }
-                    }
-                    if wasCancelled {
-                        translationModelStatusText = nil
-                        translationModelStatusIsError = false
-                        translationModelStatusModelID = nil
-                    } else {
-                        translationModelStatusIsError = true
-                        translationModelStatusModelID = plugin.id
-                        catalogError = error
-                    }
-                    translationConfigurationChangedAction()
-                    return
-                } else {
-                    if !wasActiveTranslation {
-                        await releaseTranslationModelAction(plugin.id)
-                        if let restoreError =
-                            await activateTranslationModelAction(
-                                previousModelID
-                            )
-                        {
-                            catalogError =
-                                "模型已安装，但恢复原模型失败：\(restoreError)"
-                        }
-                    }
-                    try await pluginLifecycle.commitPendingUpgrade()
-                    translationModelStatusText = nil
-                    translationModelStatusIsError = false
-                    translationModelStatusModelID = nil
-                    recordSuccessfulTranslationModelUpdateCheck(
-                        pluginID: plugin.id,
-                        update: nil
-                    )
-                }
-                translationConfigurationChangedAction()
+            hadPendingUpgrade = try await installPackage(attempt.plugin)
+            if attempt.shouldValidateTranslation {
+                let succeeded = try await validateTranslationInstallation(
+                    attempt,
+                    hadPendingUpgrade: hadPendingUpgrade
+                )
+                guard succeeded else { return }
             } else {
                 try await pluginLifecycle.commitPendingUpgrade()
                 if plugin.type == .translation {
@@ -1085,37 +1002,179 @@ public final class MainWindowModel {
                 phase: .installing
             )
         } catch {
-            try? await pluginLifecycle.rollbackPendingUpgrade()
-            if wasActiveTranslation, hadPendingUpgrade {
-                await releaseTranslationModelAction(plugin.id)
+            await recoverInstallationFailure(
+                attempt,
+                hadPendingUpgrade: hadPendingUpgrade,
+                error: error
+            )
+        }
+    }
+
+    private func installationAttempt(
+        for plugin: PluginManifest
+    ) -> InstallationAttempt {
+        InstallationAttempt(
+            plugin: plugin,
+            previousModelID: activeModelID,
+            wasActiveTranslation:
+                plugin.type == .translation
+                && activeModelID == plugin.id,
+            shouldValidateTranslation:
+                plugin.type == .translation
+                && (activeModelID == plugin.id
+                    || modelMarketInstallPluginID == plugin.id)
+        )
+    }
+
+    private func finishInstallationAttempt(for pluginID: String) {
+        installTask = nil
+        isInstalling = nil
+        isCancellingInstallation = false
+        installProgress.removeValue(forKey: pluginID)
+        if modelMarketInstallPluginID == pluginID {
+            modelMarketInstallRepository = nil
+            modelMarketInstallPluginID = nil
+        }
+    }
+
+    private func installPackage(
+        _ plugin: PluginManifest
+    ) async throws -> Bool {
+        _ = try await pluginLifecycle.install(plugin) { [weak self] value in
+            Task { @MainActor [weak self] in
+                self?.applyInstallProgress(value, for: plugin.id)
             }
+        }
+        let hadPendingUpgrade = await pluginLifecycle.hasPendingUpgrade()
+        await refreshInstalledPlugins()
+        if plugin.type == .dictionary {
+            await dictionaryConfigurationChangedAction()
+        }
+        return hadPendingUpgrade
+    }
+
+    private func validateTranslationInstallation(
+        _ attempt: InstallationAttempt,
+        hadPendingUpgrade: Bool
+    ) async throws -> Bool {
+        let plugin = attempt.plugin
+        translationModelStatusText =
+            attempt.wasActiveTranslation ? "正在加载新版本…" : "正在验证模型…"
+        translationModelStatusIsError = false
+        translationModelStatusModelID = plugin.id
+        let error = await activateTranslationModelAction(plugin.id)
+        if let error {
+            try await recoverTranslationValidationFailure(
+                attempt,
+                hadPendingUpgrade: hadPendingUpgrade,
+                error: error
+            )
+            return false
+        }
+        if !attempt.wasActiveTranslation {
+            await releaseTranslationModelAction(plugin.id)
+            if let restoreError =
+                await activateTranslationModelAction(
+                    attempt.previousModelID
+                )
+            {
+                catalogError =
+                    "模型已安装，但恢复原模型失败：\(restoreError)"
+            }
+        }
+        try await pluginLifecycle.commitPendingUpgrade()
+        translationModelStatusText = nil
+        translationModelStatusIsError = false
+        translationModelStatusModelID = nil
+        recordSuccessfulTranslationModelUpdateCheck(
+            pluginID: plugin.id,
+            update: nil
+        )
+        translationConfigurationChangedAction()
+        return true
+    }
+
+    private func recoverTranslationValidationFailure(
+        _ attempt: InstallationAttempt,
+        hadPendingUpgrade: Bool,
+        error: String
+    ) async throws {
+        let plugin = attempt.plugin
+        let wasCancelled = Task.isCancelled
+        if hadPendingUpgrade {
+            try await pluginLifecycle.rollbackPendingUpgrade()
             await refreshInstalledPlugins()
-            if plugin.type == .dictionary {
-                await dictionaryConfigurationChangedAction()
+            if !wasCancelled {
+                translationModelStatusText =
+                    "更新失败，已恢复旧版本：\(error)"
             }
-            if wasActiveTranslation, hadPendingUpgrade {
-                let recoveryError =
-                    await activateTranslationModelAction(plugin.id)
-                if Self.isCancellation(error) {
-                    translationModelStatusText = nil
-                    translationModelStatusIsError = false
-                    translationModelStatusModelID = nil
-                } else if let recoveryError {
-                    translationModelStatusText =
-                        "更新失败，模型恢复失败：\(recoveryError)"
-                    translationModelStatusIsError = true
-                    translationModelStatusModelID = plugin.id
-                } else {
-                    translationModelStatusText =
-                        "更新失败，已恢复当前版本：\(error)"
-                    translationModelStatusIsError = true
-                    translationModelStatusModelID = plugin.id
-                }
-                translationConfigurationChangedAction()
+        } else {
+            await releaseTranslationModelAction(plugin.id)
+            try await pluginLifecycle.uninstall(id: plugin.id)
+            await refreshInstalledPlugins()
+            if !wasCancelled {
+                translationModelStatusText =
+                    "模型加载失败：\(error)"
             }
-            if !Self.isCancellation(error) {
-                catalogError = error.localizedDescription
+        }
+        let recoveryModelID =
+            hadPendingUpgrade ? plugin.id : attempt.previousModelID
+        if recoveryModelID != plugin.id || hadPendingUpgrade {
+            let restoreError =
+                await activateTranslationModelAction(recoveryModelID)
+            if let restoreError, !wasCancelled {
+                translationModelStatusText =
+                    "模型验证失败，且原模型恢复失败：\(restoreError)"
             }
+        }
+        if wasCancelled {
+            translationModelStatusText = nil
+            translationModelStatusIsError = false
+            translationModelStatusModelID = nil
+        } else {
+            translationModelStatusIsError = true
+            translationModelStatusModelID = plugin.id
+            catalogError = error
+        }
+        translationConfigurationChangedAction()
+    }
+
+    private func recoverInstallationFailure(
+        _ attempt: InstallationAttempt,
+        hadPendingUpgrade: Bool,
+        error: Error
+    ) async {
+        let plugin = attempt.plugin
+        try? await pluginLifecycle.rollbackPendingUpgrade()
+        if attempt.wasActiveTranslation, hadPendingUpgrade {
+            await releaseTranslationModelAction(plugin.id)
+        }
+        await refreshInstalledPlugins()
+        if plugin.type == .dictionary {
+            await dictionaryConfigurationChangedAction()
+        }
+        if attempt.wasActiveTranslation, hadPendingUpgrade {
+            let recoveryError =
+                await activateTranslationModelAction(plugin.id)
+            if Self.isCancellation(error) {
+                translationModelStatusText = nil
+                translationModelStatusIsError = false
+                translationModelStatusModelID = nil
+            } else if let recoveryError {
+                translationModelStatusText =
+                    "更新失败，模型恢复失败：\(recoveryError)"
+                translationModelStatusIsError = true
+                translationModelStatusModelID = plugin.id
+            } else {
+                translationModelStatusText =
+                    "更新失败，已恢复当前版本：\(error)"
+                translationModelStatusIsError = true
+                translationModelStatusModelID = plugin.id
+            }
+            translationConfigurationChangedAction()
+        }
+        if !Self.isCancellation(error) {
+            catalogError = error.localizedDescription
         }
     }
 
