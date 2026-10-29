@@ -305,6 +305,7 @@ public final class DisplayPreferences {
         hudFontSize = 14
         hudDensity = .standard
         hudSelectedTranslationSpacing = 14
+        candidateSpacing = 8
     }
 
     private func persist(_ color: HUDColor, forKey key: String) {

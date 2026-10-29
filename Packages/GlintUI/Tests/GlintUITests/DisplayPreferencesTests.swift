@@ -182,10 +182,22 @@ final class DisplayPreferencesTests: XCTestCase {
         preferences.hudFontSize = 18
         preferences.hudDensity = .spacious
         preferences.hudSelectedTranslationSpacing = 22
+        preferences.candidateSpacing = 18
 
         preferences.resetHUDAppearance()
 
         XCTAssertEqual(preferences.hudAppearance, .default)
+        XCTAssertEqual(
+            preferences.candidateSpacing,
+            8,
+            accuracy: 0.001
+        )
+        let reloaded = DisplayPreferences(defaults: defaults)
+        XCTAssertEqual(
+            reloaded.candidateSpacing,
+            8,
+            accuracy: 0.001
+        )
     }
 
     @MainActor
