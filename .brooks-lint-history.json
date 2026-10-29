@@ -1,0 +1,13 @@
+[
+  {
+    "date": "2026-10-29",
+    "mode": "Health Dashboard",
+    "score": 92,
+    "findings": {
+      "critical": 1,
+      "warning": 3,
+      "suggestion": 1
+    },
+    "scope": "Glint full repository at 4fe5196; release changes v0.4.1..HEAD"
+  }
+]
