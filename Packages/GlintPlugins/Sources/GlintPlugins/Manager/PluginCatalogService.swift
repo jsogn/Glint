@@ -694,11 +694,50 @@ public actor PluginCatalogService {
 
     private func downloadSnapshotFiles(
         _ files: [SnapshotDownloadFile],
-        downloadURL: (SnapshotDownloadFile) -> URL?,
+        downloadURL: @escaping @Sendable (SnapshotDownloadFile) -> URL?,
         sourceHost: String?,
         into directory: URL,
         reporter: InstallProgressReporter
     ) async throws {
+        let expectedBytes = try validateSnapshotDownload(
+            files,
+            into: directory
+        )
+        var completedBytes = Int64(0)
+        var downloadedFiles: [DownloadedSnapshotFile] = []
+        for (index, file) in files.enumerated() {
+            let progress = SnapshotFileProgress(
+                downloadURL: downloadURL,
+                sourceHost: sourceHost,
+                expectedBytes: expectedBytes,
+                completedBytes: completedBytes,
+                fileCount: files.count,
+                reporter: reporter
+            )
+            let downloaded = try await downloadSnapshotFile(
+                file,
+                index: index,
+                into: directory,
+                progress: progress
+            )
+            completedBytes += downloaded.actualBytes
+            downloadedFiles.append(downloaded)
+            progress.reportCompletion(
+                index: index,
+                completedBytes: completedBytes
+            )
+        }
+        try verifySnapshotFiles(
+            downloadedFiles,
+            expectedBytes: expectedBytes,
+            reporter: reporter
+        )
+    }
+
+    private func validateSnapshotDownload(
+        _ files: [SnapshotDownloadFile],
+        into directory: URL
+    ) throws -> Int64 {
         guard Self.isCompleteModelSnapshot(files) else {
             throw PluginCatalogError.invalidModelSnapshot
         }
@@ -726,109 +765,73 @@ public actor PluginCatalogService {
                 throw PluginCatalogError.insufficientDiskSpace
             }
         }
+        return expectedBytes
+    }
 
-        var completedBytes = Int64(0)
-        var downloadedFiles: [DownloadedSnapshotFile] = []
-        for (index, file) in files.enumerated() {
-            try Task.checkCancellation()
-            guard
-                let destination = Self.safeDestination(
-                    for: file.path,
-                    in: directory
-                )
-            else {
-                throw PluginCatalogError.invalidModelSnapshot
-            }
-            try fileManager.createDirectory(
-                at: destination.deletingLastPathComponent(),
-                withIntermediateDirectories: true
+    private func downloadSnapshotFile(
+        _ file: SnapshotDownloadFile,
+        index: Int,
+        into directory: URL,
+        progress: SnapshotFileProgress
+    ) async throws -> DownloadedSnapshotFile {
+        try Task.checkCancellation()
+        guard
+            let destination = Self.safeDestination(
+                for: file.path,
+                in: directory
             )
-            guard
-                let resolvedDownloadURL = downloadURL(file)
-            else {
-                throw PluginCatalogError.invalidModelRepository
-            }
-
-            let fileBytes = file.size
-            let completedBeforeFile = completedBytes
-            let fileCount = files.count
-            let (temporaryURL, response) = try await downloadTemporaryFile(
-                from: resolvedDownloadURL
-            ) {
-                [
-                    completedBeforeFile,
-                    expectedBytes,
-                    index,
-                    fileCount,
-                    sourceHost,
-                    reporter,
-                ]
-                received,
-                _,
-                speed in
-                let fraction = MLXDownloadProgress.fraction(
-                    completedBytes: completedBeforeFile,
-                    currentFileBytes: received,
-                    totalBytes: expectedBytes,
-                    completedFiles: index,
-                    totalFiles: fileCount
-                )
-                let reportedBytes =
-                    expectedBytes > 0
-                    ? min(expectedBytes, completedBeforeFile + received)
-                    : completedBeforeFile + received
-                reporter.emit(
-                    PluginInstallProgress(
-                        fraction: fraction,
-                        phase: .downloading,
-                        completedBytes: reportedBytes,
-                        totalBytes: expectedBytes,
-                        bytesPerSecond: speed,
-                        sourceHost: sourceHost
-                    )
-                )
-            }
-            try Task.checkCancellation()
-            guard let http = response as? HTTPURLResponse,
-                (200..<300).contains(http.statusCode)
-            else {
-                throw PluginCatalogError.invalidResponse
-            }
-            try fileManager.moveItem(at: temporaryURL, to: destination)
-
-            let actualBytes =
-                try destination.resourceValues(
-                    forKeys: [.fileSizeKey]
-                ).fileSize ?? 0
-            if fileBytes > 0, actualBytes != fileBytes {
-                throw PluginCatalogError.invalidModelSnapshot
-            }
-            try Task.checkCancellation()
-            completedBytes += Int64(actualBytes)
-            downloadedFiles.append(
-                DownloadedSnapshotFile(
-                    destination: destination,
-                    actualBytes: Int64(actualBytes),
-                    expectedSHA256: file.sha256
-                )
-            )
-            reporter.emit(
-                PluginInstallProgress(
-                    fraction: MLXDownloadProgress.fraction(
-                        completedBytes: completedBytes,
-                        currentFileBytes: 0,
-                        totalBytes: expectedBytes,
-                        completedFiles: index + 1,
-                        totalFiles: fileCount
-                    ),
-                    phase: .downloading,
-                    completedBytes: completedBytes,
-                    totalBytes: expectedBytes,
-                    sourceHost: sourceHost
-                )
-            )
+        else {
+            throw PluginCatalogError.invalidModelSnapshot
+        }
+        try fileManager.createDirectory(
+            at: destination.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        guard
+            let resolvedDownloadURL = progress.downloadURL(file)
+        else {
+            throw PluginCatalogError.invalidModelRepository
         }
 
+        let (temporaryURL, response) = try await downloadTemporaryFile(
+            from: resolvedDownloadURL
+        ) { received, _, speed in
+            progress.reportDownload(
+                index: index,
+                received: received,
+                speed: speed
+            )
+        }
+        try Task.checkCancellation()
+        guard let http = response as? HTTPURLResponse,
+            (200..<300).contains(http.statusCode)
+        else {
+            throw PluginCatalogError.invalidResponse
+        }
+        try fileManager.moveItem(at: temporaryURL, to: destination)
+
+        let actualBytes =
+            try destination.resourceValues(
+                forKeys: [.fileSizeKey]
+            ).fileSize ?? 0
+        if file.size > 0, actualBytes != file.size {
+            throw PluginCatalogError.invalidModelSnapshot
+        }
+        return DownloadedSnapshotFile(
+            destination: destination,
+            actualBytes: Int64(actualBytes),
+            expectedSHA256: file.sha256
+        )
+    }
+
+    private func verifySnapshotFiles(
+        _ downloadedFiles: [DownloadedSnapshotFile],
+        expectedBytes: Int64,
+        reporter: InstallProgressReporter
+    ) throws {
+        let completedBytes = downloadedFiles.reduce(Int64(0)) {
+            $0 + $1.actualBytes
+        }
         reporter.emit(
             PluginInstallProgress(
                 fraction: PluginInstallProgressRange.verifyingStart,
@@ -891,6 +894,64 @@ public actor PluginCatalogService {
                     phase: .verifying,
                     completedBytes: verifiedBytes,
                     totalBytes: expectedBytes
+                )
+            )
+        }
+    }
+
+    private struct SnapshotFileProgress: Sendable {
+        let downloadURL: @Sendable (SnapshotDownloadFile) -> URL?
+        let sourceHost: String?
+        let expectedBytes: Int64
+        let completedBytes: Int64
+        let fileCount: Int
+        let reporter: InstallProgressReporter
+
+        func reportDownload(
+            index: Int,
+            received: Int64,
+            speed: Int64?
+        ) {
+            let fraction = MLXDownloadProgress.fraction(
+                completedBytes: completedBytes,
+                currentFileBytes: received,
+                totalBytes: expectedBytes,
+                completedFiles: index,
+                totalFiles: fileCount
+            )
+            let reportedBytes =
+                expectedBytes > 0
+                ? min(expectedBytes, completedBytes + received)
+                : completedBytes + received
+            reporter.emit(
+                PluginInstallProgress(
+                    fraction: fraction,
+                    phase: .downloading,
+                    completedBytes: reportedBytes,
+                    totalBytes: expectedBytes,
+                    bytesPerSecond: speed,
+                    sourceHost: sourceHost
+                )
+            )
+        }
+
+        func reportCompletion(
+            index: Int,
+            completedBytes: Int64
+        ) {
+            reporter.emit(
+                PluginInstallProgress(
+                    fraction: MLXDownloadProgress.fraction(
+                        completedBytes: completedBytes,
+                        currentFileBytes: 0,
+                        totalBytes: expectedBytes,
+                        completedFiles: index + 1,
+                        totalFiles: fileCount
+                    ),
+                    phase: .downloading,
+                    completedBytes: completedBytes,
+                    totalBytes: expectedBytes,
+                    sourceHost: sourceHost
                 )
             )
         }
