@@ -835,7 +835,7 @@ public actor MonitoringController {
         scope: CandidateTranslationScope
     ) -> Bool {
         switch mode {
-        case .dictionaryFirst:
+        case .smartFusion, .dictionaryFirst:
             return true
         case .modelFirst:
             return scope == .selected

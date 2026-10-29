@@ -81,6 +81,7 @@ public struct TranslationResult: Sendable, Equatable {
 }
 
 public enum TranslationMode: String, Sendable, Equatable, CaseIterable {
+    case smartFusion = "smart-fusion"
     case dictionaryFirst
     case modelFirst
 }

@@ -496,7 +496,7 @@ private struct OverviewPagePreview: View {
         if state == .attention {
             model.statusText = "翻译模型暂时不可用，请检查插件与模型。"
         }
-        model.setTranslationMode(.modelFirst)
+        model.setTranslationMode(.dictionaryFirst)
         _model = State(initialValue: model)
     }
 

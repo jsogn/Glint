@@ -824,6 +824,18 @@ final class GlintMacTests: XCTestCase {
     func testPrefetchDictionaryDependsOnModeAndScope() {
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                mode: .smartFusion,
+                scope: .row
+            )
+        )
+        XCTAssertTrue(
+            MonitoringController.shouldPrefetchDictionary(
+                mode: .smartFusion,
+                scope: .selected
+            )
+        )
+        XCTAssertTrue(
+            MonitoringController.shouldPrefetchDictionary(
                 mode: .dictionaryFirst,
                 scope: .row
             )

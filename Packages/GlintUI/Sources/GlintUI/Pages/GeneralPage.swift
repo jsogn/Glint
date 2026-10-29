@@ -25,7 +25,7 @@ struct GeneralPage: View {
                         }
                         .labelsHidden()
                         .pickerStyle(.segmented)
-                        .frame(width: 240, alignment: .trailing)
+                        .frame(width: 300, alignment: .trailing)
                         .accessibilityHint(model.translationMode.explanation)
                     }
 

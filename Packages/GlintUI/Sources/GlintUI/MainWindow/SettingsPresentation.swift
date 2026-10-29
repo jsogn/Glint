@@ -3,6 +3,8 @@ import GlintCore
 extension TranslationMode {
     var title: String {
         switch self {
+        case .smartFusion:
+            "智能融合"
         case .dictionaryFirst:
             "词典优先"
         case .modelFirst:
@@ -12,6 +14,8 @@ extension TranslationMode {
 
     var explanation: String {
         switch self {
+        case .smartFusion:
+            "综合模型与词典结果，优先采用多来源一致的译法。"
         case .dictionaryFirst:
             "单词和短语先查词典；短句优先使用模型，失败时自动回退词典。"
         case .modelFirst:

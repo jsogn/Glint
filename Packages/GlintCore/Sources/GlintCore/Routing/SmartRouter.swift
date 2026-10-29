@@ -21,6 +21,41 @@ public struct SmartRouter: Sendable {
         }
 
         switch mode {
+        case .smartFusion:
+            if candidate.kind == .sentence {
+                if let modelResult = try? await translation.translate(candidate),
+                    !modelResult.options.isEmpty
+                {
+                    return modelResult
+                }
+                try Task.checkCancellation()
+                return await dictionaryResult(
+                    for: candidate,
+                    prefetch: dictionaryPrefetch
+                )
+            }
+            async let modelResultTask = translation.translate(candidate)
+            async let dictionaryResultTask = dictionaryResult(
+                for: candidate,
+                prefetch: dictionaryPrefetch
+            )
+            let modelResult = try? await modelResultTask
+            let dictionaryResult = await dictionaryResultTask
+            try Task.checkCancellation()
+            if let modelResult,
+                !modelResult.options.isEmpty,
+                let dictionaryResult,
+                !dictionaryResult.options.isEmpty
+            {
+                return Self.smartMerged(
+                    model: modelResult,
+                    dictionary: dictionaryResult
+                )
+            }
+            if let modelResult, !modelResult.options.isEmpty {
+                return modelResult
+            }
+            return dictionaryResult
         case .dictionaryFirst:
             if candidate.kind == .sentence,
                 let modelResult = try? await translation.translate(candidate),
@@ -102,5 +137,73 @@ public struct SmartRouter: Sendable {
         return TranslationResult(
             options: model.options + dictionaryOptions
         )
+    }
+
+    private static func smartMerged(
+        model: TranslationResult,
+        dictionary: TranslationResult
+    ) -> TranslationResult {
+        var dictionaryRanks: [String: Int] = [:]
+        for (index, option) in dictionary.options.enumerated() {
+            guard let key = surfaceKey(option.text) else { continue }
+            dictionaryRanks[key] = dictionaryRanks[key] ?? index
+        }
+        let modelKeys = Set(
+            model.options.compactMap {
+                surfaceKey($0.text)
+            }
+        )
+        var options: [TranslationOption] = []
+
+        for (index, option) in model.options.enumerated() {
+            let key = surfaceKey(option.text)
+            let dictionaryRank = key.flatMap { dictionaryRanks[$0] }
+            let modelSignal =
+                FusionWeights.modelRank / Double(index + 1)
+            let dictionarySignal =
+                dictionaryRank.map {
+                    FusionWeights.dictionaryRank / Double($0 + 1)
+                } ?? 0
+            let consensusBonus =
+                dictionaryRank == nil
+                ? 0
+                : FusionWeights.consensusBonus
+            options.append(
+                TranslationOption(
+                    text: option.text,
+                    score:
+                        modelSignal
+                        + dictionarySignal
+                        + consensusBonus
+                )
+            )
+        }
+
+        for (index, option) in dictionary.options.enumerated() {
+            if let key = surfaceKey(option.text),
+                modelKeys.contains(key)
+            {
+                continue
+            }
+            options.append(
+                TranslationOption(
+                    text: option.text,
+                    score:
+                        FusionWeights.dictionaryRank
+                        / Double(index + 1)
+                )
+            )
+        }
+        return TranslationResult(options: options)
+    }
+
+    private static func surfaceKey(_ text: String) -> String? {
+        DictionarySurface.normalize(text)?.lowercased()
+    }
+
+    private enum FusionWeights {
+        static let modelRank = 0.55
+        static let dictionaryRank = 0.60
+        static let consensusBonus = 0.35
     }
 }
