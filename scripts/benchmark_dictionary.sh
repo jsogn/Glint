@@ -8,4 +8,6 @@ swift run \
   GlintBenchmark \
   --root "$root" \
   --cases "$root/Resources/Evaluation/dictionary-benchmark.json" \
-  --output "$root/build/dictionary-benchmark.json"
+  --output "$root/build/dictionary-benchmark.json" \
+  --min-dictionary-top1 0.98 \
+  --min-dictionary-top3 0.98

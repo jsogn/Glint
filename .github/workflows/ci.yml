@@ -49,3 +49,6 @@ jobs:
 
       - name: Run Python tool tests
         run: zsh ./scripts/test_python_tools.sh
+
+      - name: Run dictionary quality gate
+        run: ./scripts/benchmark_dictionary.sh

@@ -29,7 +29,8 @@ python3 Tools/DictionaryBuilder/build_sqlite.py \
 - 来源：[ECDICT](https://github.com/skywind3000/ECDICT)
 - 许可证：MIT
 - 角色：英语词频和义项排序补充
-- 状态：已内置；仅作为词频、Collins 和 Oxford 排序层，不作为完整中文义项库
+- 状态：已内置；作为词频、Collins 和 Oxford 排序层，同时可把 CC-CEDICT 的
+  多词释义拆成更高频的英文头词候选，不作为完整中文义项库
 - 数据：提交 `9c46923fb81a2eb6c264a3a1689562ea7bc56b6a`，CSV SHA256
   `d1ecbdf9ee2b920afb6f430ca6b6bb9f559588cf0dff86e04bd255f9390843cc`；
   生成 101,755 个中文词项和 152,449 条排序记录
@@ -47,6 +48,16 @@ python3 Tools/DictionaryBuilder/build_ecdict_ranker.py \
 ```
 
 该兼容脚本同样调用 `glint-dictionary-builder`，不会另行实现排序规则。
+
+## 排序质量门禁
+
+```bash
+./scripts/benchmark_dictionary.sh
+```
+
+基准覆盖日常、通用、技术、歧义、短语和无效片段。短语以及词典源没有覆盖的
+现代义项属于本地模型路径，单独报告；词典类别必须同时满足 `Top-1 >= 98%` 和
+`Top-3 >= 98%`。同一门槛在 CI 与 Release workflow 中执行。
 
 ### Wiktionary / Kaikki
 

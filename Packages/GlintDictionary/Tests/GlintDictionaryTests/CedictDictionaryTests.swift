@@ -79,6 +79,42 @@ final class CedictDictionaryTests: XCTestCase {
         )
     }
 
+    func testECDICTHeadwordCompetesWhenCedictSenseOrderMissesCommonMeaning()
+        async throws
+    {
+        let dictionary = makeDictionary()
+        let result = try await dictionary.lookup(
+            Candidate(text: "程序", kind: .word)
+        )
+
+        XCTAssertEqual(result?.text, "program")
+    }
+
+    func testLiteralTechnicalHeadwordOutranksBroaderSynonym() async throws {
+        let dictionary = makeDictionary()
+        let result = try await dictionary.lookup(
+            Candidate(text: "用户", kind: .word)
+        )
+
+        XCTAssertEqual(result?.text, "user")
+    }
+
+    func testUnrelatedECDICTHeadwordsDoNotReplaceExactCedictMeaning()
+        async throws
+    {
+        let dictionary = makeDictionary()
+
+        let important = try await dictionary.lookup(
+            Candidate(text: "重要", kind: .word)
+        )
+        let need = try await dictionary.lookup(
+            Candidate(text: "需要", kind: .word)
+        )
+
+        XCTAssertEqual(important?.text, "important")
+        XCTAssertEqual(need?.text, "need")
+    }
+
     func testSchemaV2PreservesReadingsAndSenses() async throws {
         let dictionary = makeDictionary()
 

@@ -11,6 +11,7 @@
     "text": "谢谢",
     "category": "general",
     "expected": [
+      "thank",
       "thank you",
       "thanks"
     ]
@@ -298,12 +299,853 @@
     "category": "ambiguous",
     "expected": [
       "trade-off",
-      "balance"
+      "tradeoff",
+      "balance",
+      "weigh"
+    ]
+  },
+  {
+    "text": "天气",
+    "category": "daily",
+    "expected": [
+      "weather"
+    ]
+  },
+  {
+    "text": "早上",
+    "category": "daily",
+    "expected": [
+      "morning"
+    ]
+  },
+  {
+    "text": "晚上",
+    "category": "daily",
+    "expected": [
+      "evening",
+      "night"
+    ]
+  },
+  {
+    "text": "昨天",
+    "category": "daily",
+    "expected": [
+      "yesterday"
+    ]
+  },
+  {
+    "text": "明天",
+    "category": "daily",
+    "expected": [
+      "tomorrow"
+    ]
+  },
+  {
+    "text": "现在",
+    "category": "daily",
+    "expected": [
+      "now"
+    ]
+  },
+  {
+    "text": "以前",
+    "category": "daily",
+    "expected": [
+      "before",
+      "previously",
+      "ago"
+    ]
+  },
+  {
+    "text": "以后",
+    "category": "daily",
+    "expected": [
+      "later",
+      "afterwards"
+    ]
+  },
+  {
+    "text": "家庭",
+    "category": "daily",
+    "expected": [
+      "family"
+    ]
+  },
+  {
+    "text": "公司",
+    "category": "daily",
+    "expected": [
+      "company"
+    ]
+  },
+  {
+    "text": "同事",
+    "category": "daily",
+    "expected": [
+      "colleague",
+      "coworker"
+    ]
+  },
+  {
+    "text": "医院",
+    "category": "daily",
+    "expected": [
+      "hospital"
+    ]
+  },
+  {
+    "text": "医生",
+    "category": "daily",
+    "expected": [
+      "doctor"
+    ]
+  },
+  {
+    "text": "健康",
+    "category": "daily",
+    "expected": [
+      "health",
+      "healthy"
+    ]
+  },
+  {
+    "text": "开心",
+    "category": "daily",
+    "expected": [
+      "happy",
+      "glad",
+      "rejoice",
+      "feel happy"
+    ]
+  },
+  {
+    "text": "难过",
+    "category": "daily",
+    "expected": [
+      "sad",
+      "upset",
+      "feel sad",
+      "feel unwell"
+    ]
+  },
+  {
+    "text": "担心",
+    "category": "daily",
+    "expected": [
+      "worry",
+      "concerned"
+    ]
+  },
+  {
+    "text": "希望",
+    "category": "daily",
+    "expected": [
+      "hope",
+      "wish"
+    ]
+  },
+  {
+    "text": "决定",
+    "category": "daily",
+    "expected": [
+      "decide",
+      "decision"
+    ]
+  },
+  {
+    "text": "选择",
+    "category": "daily",
+    "expected": [
+      "choose",
+      "choice",
+      "select",
+      "pick"
+    ]
+  },
+  {
+    "text": "开始",
+    "category": "daily",
+    "expected": [
+      "start",
+      "begin"
+    ]
+  },
+  {
+    "text": "结束",
+    "category": "daily",
+    "expected": [
+      "end",
+      "finish"
+    ]
+  },
+  {
+    "text": "完成",
+    "category": "daily",
+    "expected": [
+      "complete",
+      "finish"
+    ]
+  },
+  {
+    "text": "准备",
+    "category": "daily",
+    "expected": [
+      "prepare",
+      "ready"
+    ]
+  },
+  {
+    "text": "发现",
+    "category": "daily",
+    "expected": [
+      "discover",
+      "find"
+    ]
+  },
+  {
+    "text": "认为",
+    "category": "daily",
+    "expected": [
+      "think",
+      "believe"
+    ]
+  },
+  {
+    "text": "知道",
+    "category": "daily",
+    "expected": [
+      "know"
+    ]
+  },
+  {
+    "text": "明白",
+    "category": "daily",
+    "expected": [
+      "understand",
+      "clear",
+      "sensible",
+      "obvious"
+    ]
+  },
+  {
+    "text": "记得",
+    "category": "daily",
+    "expected": [
+      "remember"
+    ]
+  },
+  {
+    "text": "忘记",
+    "category": "daily",
+    "expected": [
+      "forget"
+    ]
+  },
+  {
+    "text": "回答",
+    "category": "daily",
+    "expected": [
+      "answer",
+      "reply"
+    ]
+  },
+  {
+    "text": "说话",
+    "category": "daily",
+    "expected": [
+      "speak",
+      "talk"
+    ]
+  },
+  {
+    "text": "告诉",
+    "category": "daily",
+    "expected": [
+      "tell"
+    ]
+  },
+  {
+    "text": "购买",
+    "category": "daily",
+    "expected": [
+      "buy",
+      "purchase"
+    ]
+  },
+  {
+    "text": "价格",
+    "category": "daily",
+    "expected": [
+      "price"
+    ]
+  },
+  {
+    "text": "地方",
+    "category": "daily",
+    "expected": [
+      "place"
+    ]
+  },
+  {
+    "text": "房间",
+    "category": "daily",
+    "expected": [
+      "room"
+    ]
+  },
+  {
+    "text": "电脑",
+    "category": "daily",
+    "expected": [
+      "computer"
+    ]
+  },
+  {
+    "text": "手机",
+    "category": "daily",
+    "expected": [
+      "phone",
+      "mobile phone",
+      "cell phone"
+    ]
+  },
+  {
+    "text": "照片",
+    "category": "daily",
+    "expected": [
+      "photo",
+      "picture",
+      "photograph"
+    ]
+  },
+  {
+    "text": "音乐",
+    "category": "daily",
+    "expected": [
+      "music"
+    ]
+  },
+  {
+    "text": "电影",
+    "category": "daily",
+    "expected": [
+      "movie",
+      "film"
+    ]
+  },
+  {
+    "text": "游戏",
+    "category": "daily",
+    "expected": [
+      "game"
+    ]
+  },
+  {
+    "text": "运动",
+    "category": "daily",
+    "expected": [
+      "exercise",
+      "sport"
+    ]
+  },
+  {
+    "text": "休息",
+    "category": "daily",
+    "expected": [
+      "rest",
+      "break"
+    ]
+  },
+  {
+    "text": "数据",
+    "category": "technical",
+    "expected": [
+      "data"
+    ]
+  },
+  {
+    "text": "系统",
+    "category": "technical",
+    "expected": [
+      "system"
+    ]
+  },
+  {
+    "text": "用户",
+    "category": "technical",
+    "expected": [
+      "user"
+    ]
+  },
+  {
+    "text": "产品",
+    "category": "technical",
+    "expected": [
+      "product"
+    ]
+  },
+  {
+    "text": "团队",
+    "category": "technical",
+    "expected": [
+      "team"
+    ]
+  },
+  {
+    "text": "客户",
+    "category": "technical",
+    "expected": [
+      "customer",
+      "client"
+    ]
+  },
+  {
+    "text": "服务",
+    "category": "technical",
+    "expected": [
+      "service",
+      "serve"
+    ]
+  },
+  {
+    "text": "需求",
+    "category": "technical",
+    "expected": [
+      "requirement",
+      "demand"
+    ]
+  },
+  {
+    "text": "版本",
+    "category": "technical",
+    "expected": [
+      "version"
+    ]
+  },
+  {
+    "text": "功能",
+    "category": "technical",
+    "expected": [
+      "function",
+      "feature"
+    ]
+  },
+  {
+    "text": "设置",
+    "category": "technical",
+    "expected": [
+      "settings",
+      "configuration",
+      "set",
+      "set up"
+    ]
+  },
+  {
+    "text": "更新",
+    "category": "technical",
+    "expected": [
+      "update",
+      "renew",
+      "renovate",
+      "upgrade"
+    ]
+  },
+  {
+    "text": "安装",
+    "category": "technical",
+    "expected": [
+      "install",
+      "installation"
+    ]
+  },
+  {
+    "text": "下载",
+    "category": "technical",
+    "expected": [
+      "download"
+    ]
+  },
+  {
+    "text": "上传",
+    "category": "technical",
+    "expected": [
+      "upload"
+    ]
+  },
+  {
+    "text": "错误",
+    "category": "technical",
+    "expected": [
+      "error",
+      "mistake"
+    ]
+  },
+  {
+    "text": "安全",
+    "category": "technical",
+    "expected": [
+      "safe",
+      "security",
+      "safety"
+    ]
+  },
+  {
+    "text": "隐私",
+    "category": "technical",
+    "expected": [
+      "privacy"
+    ]
+  },
+  {
+    "text": "性能",
+    "category": "technical",
+    "expected": [
+      "performance"
+    ]
+  },
+  {
+    "text": "速度",
+    "category": "technical",
+    "expected": [
+      "speed"
+    ]
+  },
+  {
+    "text": "内存",
+    "category": "technical",
+    "expected": [
+      "memory"
+    ]
+  },
+  {
+    "text": "插件",
+    "category": "technical",
+    "expected": [
+      "plugin"
+    ]
+  },
+  {
+    "text": "模型",
+    "category": "technical",
+    "expected": [
+      "model"
+    ]
+  },
+  {
+    "text": "翻译",
+    "category": "technical",
+    "expected": [
+      "translate",
+      "translation"
+    ]
+  },
+  {
+    "text": "词典",
+    "category": "technical",
+    "expected": [
+      "dictionary"
+    ]
+  },
+  {
+    "text": "单词",
+    "category": "technical",
+    "expected": [
+      "word"
+    ]
+  },
+  {
+    "text": "句子",
+    "category": "technical",
+    "expected": [
+      "sentence"
+    ]
+  },
+  {
+    "text": "输入",
+    "category": "technical",
+    "expected": [
+      "input",
+      "import",
+      "bring in"
+    ]
+  },
+  {
+    "text": "输出",
+    "category": "technical",
+    "expected": [
+      "output"
+    ]
+  },
+  {
+    "text": "候选",
+    "category": "technical",
+    "expected": [
+      "candidate"
+    ]
+  },
+  {
+    "text": "配置",
+    "category": "technical",
+    "expected": [
+      "configuration",
+      "settings",
+      "deploy",
+      "allocation",
+      "configure"
+    ]
+  },
+  {
+    "text": "默认",
+    "category": "technical",
+    "expected": [
+      "default"
+    ]
+  },
+  {
+    "text": "自动",
+    "category": "technical",
+    "expected": [
+      "automatic",
+      "automatically"
+    ]
+  },
+  {
+    "text": "手动",
+    "category": "technical",
+    "expected": [
+      "manual",
+      "manually"
+    ]
+  },
+  {
+    "text": "修改",
+    "category": "technical",
+    "expected": [
+      "modify",
+      "change",
+      "amend",
+      "alter"
+    ]
+  },
+  {
+    "text": "安排",
+    "category": "ambiguous",
+    "expected": [
+      "arrange",
+      "schedule"
+    ]
+  },
+  {
+    "text": "理解",
+    "category": "ambiguous",
+    "expected": [
+      "understand",
+      "comprehend"
+    ]
+  },
+  {
+    "text": "支持",
+    "category": "ambiguous",
+    "expected": [
+      "support",
+      "back",
+      "backing"
+    ]
+  },
+  {
+    "text": "影响",
+    "category": "ambiguous",
+    "expected": [
+      "affect",
+      "impact",
+      "influence",
+      "effect"
+    ]
+  },
+  {
+    "text": "反映",
+    "category": "ambiguous",
+    "expected": [
+      "reflect",
+      "reflection",
+      "mirror"
+    ]
+  },
+  {
+    "text": "解决",
+    "category": "ambiguous",
+    "expected": [
+      "solve",
+      "resolve"
+    ]
+  },
+  {
+    "text": "执行",
+    "category": "ambiguous",
+    "expected": [
+      "execute",
+      "execution",
+      "implement",
+      "run",
+      "carry out"
+    ]
+  },
+  {
+    "text": "提升",
+    "category": "ambiguous",
+    "expected": [
+      "improve",
+      "improvement",
+      "promote",
+      "lift",
+      "elevate",
+      "boost",
+      "upgrade"
+    ]
+  },
+  {
+    "text": "降低",
+    "category": "ambiguous",
+    "expected": [
+      "reduce",
+      "lower"
+    ]
+  },
+  {
+    "text": "满足",
+    "category": "ambiguous",
+    "expected": [
+      "satisfy",
+      "meet"
+    ]
+  },
+  {
+    "text": "申请",
+    "category": "ambiguous",
+    "expected": [
+      "apply",
+      "application"
+    ]
+  },
+  {
+    "text": "发布",
+    "category": "ambiguous",
+    "expected": [
+      "release",
+      "publish"
+    ]
+  },
+  {
+    "text": "审核",
+    "category": "ambiguous",
+    "expected": [
+      "review",
+      "audit"
+    ]
+  },
+  {
+    "text": "适配",
+    "category": "ambiguous",
+    "expected": [
+      "adapt",
+      "compatibility",
+      "adaptation"
+    ]
+  },
+  {
+    "text": "你好吗",
+    "category": "phrase",
+    "expected": [
+      "how are you"
+    ]
+  },
+  {
+    "text": "没问题",
+    "category": "phrase",
+    "expected": [
+      "no problem",
+      "certainly",
+      "sure"
+    ]
+  },
+  {
+    "text": "不客气",
+    "category": "phrase",
+    "expected": [
+      "you're welcome",
+      "you are welcome"
+    ]
+  },
+  {
+    "text": "对不起",
+    "category": "phrase",
+    "expected": [
+      "sorry",
+      "I'm sorry"
+    ]
+  },
+  {
+    "text": "再见",
+    "category": "phrase",
+    "expected": [
+      "goodbye",
+      "bye"
+    ]
+  },
+  {
+    "text": "请稍等",
+    "category": "phrase",
+    "expected": [
+      "please wait",
+      "wait a moment"
+    ]
+  },
+  {
+    "text": "我不知道",
+    "category": "phrase",
+    "expected": [
+      "I don't know"
+    ]
+  },
+  {
+    "text": "你觉得呢",
+    "category": "phrase",
+    "expected": [
+      "what do you think"
+    ]
+  },
+  {
+    "text": "谢谢帮助",
+    "category": "phrase",
+    "expected": [
+      "thanks for the help",
+      "thank you for your help"
+    ]
+  },
+  {
+    "text": "今天天气不错",
+    "category": "phrase",
+    "expected": [
+      "the weather is nice today"
+    ]
+  },
+  {
+    "text": "请打开文件",
+    "category": "phrase",
+    "expected": [
+      "please open the file"
+    ]
+  },
+  {
+    "text": "我们需要更多时间",
+    "category": "phrase",
+    "expected": [
+      "we need more time"
     ]
   },
   {
     "text": "复盘",
-    "category": "ambiguous",
+    "category": "model",
     "expected": [
       "retrospective",
       "review"
@@ -311,6 +1153,11 @@
   },
   {
     "text": "你号",
+    "category": "blocked",
+    "expected": []
+  },
+  {
+    "text": "的的",
     "category": "blocked",
     "expected": []
   }

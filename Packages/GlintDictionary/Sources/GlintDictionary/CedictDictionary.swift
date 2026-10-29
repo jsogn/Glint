@@ -131,18 +131,26 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         term: String,
         senses: [DictionarySense]
     ) -> [TranslationOption] {
+        let rankings = (ranker?.rankings(for: term) ?? [])
+            .filter {
+                $0.frequency <= 100_000
+                    && $0.english.count > 1
+            }
         var rankingByEnglish: [String: EnglishRanking] = [:]
-        for ranking in ranker?.rankings(for: term) ?? [] {
+        var rankingIndexByEnglish: [String: Int] = [:]
+        for (index, ranking) in rankings.enumerated() {
             let key = EnglishWordNormalizer.normalize(ranking.english)
             if rankingByEnglish[key] == nil {
                 rankingByEnglish[key] = ranking
+                rankingIndexByEnglish[key] = index
             }
         }
         var options: [TranslationOption] = []
+        var sourceSurfaces: [String] = []
         for sense in senses {
             let orderPenalty =
                 Double(sense.lineOrder) * 0.00000001
-                + Double(sense.senseOrder) * 0.000000001
+                + Double(sense.senseOrder) * 0.03
             for (index, value) in glossCandidates(
                 from: sense.gloss
             ).enumerated() {
@@ -153,6 +161,7 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 guard !key.isEmpty else {
                     continue
                 }
+                sourceSurfaces.append(compact)
 
                 var score = 1.0 - Double(index) * 0.06 - orderPenalty
                 if let ranking = rankingByEnglish[key] {
@@ -160,6 +169,18 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                     score += max(0, 0.25 - log10(frequency) * 0.04)
                     score += Double(ranking.collins) * 0.012
                     score += Double(ranking.oxford) * 0.008
+                    let rankingIndex = rankingIndexByEnglish[key] ?? 0
+                    if rankingIndex > 0,
+                        !Self.matchesRankingSurface(
+                            compact,
+                            rankingEnglish: ranking.english
+                        )
+                    {
+                        score -= min(
+                            0.20,
+                            Double(rankingIndex) * 0.04
+                        )
+                    }
                 }
                 if compact.contains(" ") {
                     score -= 0.05
@@ -169,7 +190,76 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 )
             }
         }
+        let representedKeys = Set(
+            sourceSurfaces.map(EnglishWordNormalizer.normalize)
+        )
+        for (index, ranking) in rankings.prefix(6).enumerated() {
+            guard
+                let compact = DictionarySurface.normalize(ranking.english),
+                !compact.isEmpty,
+                !representedKeys.contains(
+                    EnglishWordNormalizer.normalize(compact)
+                ),
+                Self.containsPhrase(compact, in: sourceSurfaces)
+            else {
+                continue
+            }
+            let frequency = Double(max(1, ranking.frequency))
+            let frequencyBoost = max(
+                0,
+                0.25 - log10(frequency) * 0.04
+            )
+            var score =
+                0.82
+                - Double(index) * 0.035
+                + frequencyBoost
+                + Double(ranking.collins) * 0.012
+                + Double(ranking.oxford) * 0.008
+            if compact.contains(" ") {
+                score -= 0.05
+            }
+            options.append(
+                TranslationOption(text: compact, score: score)
+            )
+        }
         return options
+    }
+
+    private static func containsPhrase(
+        _ phrase: String,
+        in surfaces: [String]
+    ) -> Bool {
+        let phrase = phraseTokens(phrase)
+        guard !phrase.isEmpty else { return false }
+        let needle = " \(phrase.joined(separator: " ")) "
+        return surfaces.contains { surface in
+            let value = phraseTokens(surface)
+            return " \(value.joined(separator: " ")) ".contains(needle)
+        }
+    }
+
+    private static func matchesRankingSurface(
+        _ surface: String,
+        rankingEnglish: String
+    ) -> Bool {
+        guard
+            let rankingSurface = DictionarySurface.normalize(
+                rankingEnglish
+            )
+        else {
+            return false
+        }
+        return surface.compare(
+            rankingSurface,
+            options: [.caseInsensitive]
+        ) == .orderedSame
+    }
+
+    private static func phraseTokens(_ value: String) -> [String] {
+        value
+            .lowercased()
+            .split(whereSeparator: { !$0.isLetter })
+            .map(String.init)
     }
 
     private static func columnText(
