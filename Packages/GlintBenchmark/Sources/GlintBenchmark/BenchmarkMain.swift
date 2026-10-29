@@ -7,17 +7,21 @@ private struct BenchmarkCase: Decodable {
     let text: String
     let category: String
     let expected: [String]
+    let forbidden: [String]?
 }
 
 private struct CaseResult: Encodable {
     let text: String
     let category: String
     let expected: [String]
+    let forbidden: [String]
     let primary: String?
     let displayed: String?
     let latencyMilliseconds: Double
     let top1: Bool
     let top3: Bool
+    let violations: [String]
+    let forbiddenPass: Bool
 }
 
 private struct BenchmarkReport: Encodable {
@@ -32,6 +36,7 @@ private struct BenchmarkReport: Encodable {
     let modelTotal: Int
     let modelTop1: Int
     let modelTop3: Int
+    let forbiddenViolations: Int
     let cases: [CaseResult]
 }
 
@@ -61,6 +66,7 @@ struct BenchmarkMain {
             DictionaryRoute(
                 id: "dict-cedict",
                 priority: 0,
+                role: .authoritative,
                 engine: CedictDictionary(
                     databaseURL: rootURL.appendingPathComponent(
                         "Resources/Plugins/dict-cedict/cedict.sqlite3"
@@ -71,6 +77,7 @@ struct BenchmarkMain {
             DictionaryRoute(
                 id: "dict-ecdict",
                 priority: 1,
+                role: .fallback,
                 engine: ECDICTDictionary(ranker: ecdictRanker)
             ),
         ]
@@ -85,6 +92,7 @@ struct BenchmarkMain {
                 DictionaryRoute(
                     id: "dict-wiktionary-zh-en",
                     priority: 2,
+                    role: .fallback,
                     engine: wiktionary
                 )
             )
@@ -107,6 +115,8 @@ struct BenchmarkMain {
             let options = result?.options.map(\.text) ?? []
             let expected = benchmarkCase.expected.map(normalize)
             let actual = options.map(normalize)
+            let forbiddenValues = benchmarkCase.forbidden ?? []
+            let forbidden = forbiddenValues.map(normalize)
             let top1 =
                 !expected.isEmpty
                 && !actual.isEmpty
@@ -116,16 +126,20 @@ struct BenchmarkMain {
                 && !actual.isEmpty
                 && actual.prefix(3).contains { expected.contains($0) }
             let blockedPass = expected.isEmpty && actual.isEmpty
+            let violations = actual.filter(forbidden.contains)
             results.append(
                 CaseResult(
                     text: benchmarkCase.text,
                     category: benchmarkCase.category,
                     expected: benchmarkCase.expected,
+                    forbidden: forbiddenValues,
                     primary: options.first,
                     displayed: result?.displayText,
                     latencyMilliseconds: milliseconds,
                     top1: top1 || blockedPass,
-                    top3: top3 || blockedPass
+                    top3: top3 || blockedPass,
+                    violations: violations,
+                    forbiddenPass: violations.isEmpty
                 )
             )
         }
@@ -155,6 +169,9 @@ struct BenchmarkMain {
             modelTotal: modelResults.count,
             modelTop1: modelResults.filter(\.top1).count,
             modelTop3: modelResults.filter(\.top3).count,
+            forbiddenViolations: results.filter {
+                !$0.forbiddenPass
+            }.count,
             cases: results
         )
 
@@ -187,6 +204,7 @@ struct BenchmarkMain {
         print(
             "model_top3=\(report.modelTop3)/\(report.modelTotal)"
         )
+        print("forbidden_violations=\(report.forbiddenViolations)")
         print("report=\(outputPath)")
 
         let minimumDictionaryTop1 =
@@ -208,13 +226,15 @@ struct BenchmarkMain {
             report.dictionaryTotal
         )
         guard dictionaryTop1Rate >= minimumDictionaryTop1,
-            dictionaryTop3Rate >= minimumDictionaryTop3
+            dictionaryTop3Rate >= minimumDictionaryTop3,
+            report.forbiddenViolations == 0
         else {
             let message = String(
                 format:
-                    "Dictionary quality gate failed: top1=%.1f%% top3=%.1f%%\n",
+                    "Dictionary quality gate failed: top1=%.1f%% top3=%.1f%% forbidden=%d\n",
                 dictionaryTop1Rate * 100,
-                dictionaryTop3Rate * 100
+                dictionaryTop3Rate * 100,
+                report.forbiddenViolations
             )
             FileHandle.standardError.write(Data(message.utf8))
             exit(EXIT_FAILURE)

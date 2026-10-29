@@ -27,8 +27,8 @@ final class ECDICTRankBuilderTests: XCTestCase {
             summary.sourceRevision,
             "9c46923fb81a2eb6c264a3a1689562ea7bc56b6a"
         )
-        XCTAssertEqual(summary.termCount, 101_755)
-        XCTAssertEqual(summary.rankCount, 152_449)
+        XCTAssertEqual(summary.termCount, 96_558)
+        XCTAssertEqual(summary.rankCount, 144_791)
     }
 
     func testBuildsQuotedCSVAndRanksTerms() throws {
@@ -73,6 +73,41 @@ final class ECDICTRankBuilderTests: XCTestCase {
         )
         XCTAssertEqual(ranker.rankings(for: "设计").first?.english, "design")
         XCTAssertTrue(ranker.rankings(for: "一个").isEmpty)
+    }
+
+    func testSkipsParentheticalMetadataAndTitleFragments() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("ecdict.csv")
+        let database = directory.appendingPathComponent(
+            "ecdict_rank.sqlite3"
+        )
+        try Data(
+            """
+            word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
+            tonic,,,"n. 补药, (音乐)主调音",,1,,ielts gre,,100,,
+            wigg,,,"[人名] 英格兰人姓氏",,,,,,200,,
+            homerun,,,"跑吧！孩子",,,,,,300,,
+            """.utf8
+        ).write(to: source)
+
+        try ECDICTRankBuilder.build(
+            fromCSVURL: source,
+            to: database
+        )
+        let ranker = ECDICTRanker(databaseURL: database)
+
+        XCTAssertEqual(
+            ranker.rankings(for: "补药").first?.english,
+            "tonic"
+        )
+        XCTAssertEqual(
+            ranker.rankings(for: "补药").first?.examTagged,
+            true
+        )
+        XCTAssertTrue(ranker.rankings(for: "音乐").isEmpty)
+        XCTAssertTrue(ranker.rankings(for: "英格兰人姓氏").isEmpty)
+        XCTAssertTrue(ranker.rankings(for: "孩子").isEmpty)
     }
 
     func testRejectsMissingTranslationColumnAndRemovesDatabase() throws {

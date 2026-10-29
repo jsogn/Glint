@@ -51,6 +51,7 @@ public enum ECDICTRankBuilder {
         let frequency: Int
         let collins: Int
         let oxford: Int
+        let examTagged: Bool
 
         static func < (lhs: Ranking, rhs: Ranking) -> Bool {
             if lhs.frequency != rhs.frequency {
@@ -59,7 +60,10 @@ public enum ECDICTRankBuilder {
             if lhs.collins != rhs.collins {
                 return lhs.collins > rhs.collins
             }
-            return lhs.oxford > rhs.oxford
+            if lhs.oxford != rhs.oxford {
+                return lhs.oxford > rhs.oxford
+            }
+            return lhs.examTagged && !rhs.examTagged
         }
     }
 
@@ -160,7 +164,7 @@ public enum ECDICTRankBuilder {
         }
     }
 
-    private static let schema = "ecdict-rank-v1"
+    private static let schema = "ecdict-rank-v2"
     private static let sqliteTransient = unsafeBitCast(
         -1,
         to: sqlite3_destructor_type.self
@@ -175,6 +179,12 @@ public enum ECDICTRankBuilder {
     ]
     private static let termSeparators: Set<Character> = [
         ";", "；", "\n", ",", "，", "/",
+    ]
+    private static let metadataMarkers = [
+        "[人名]", "[地名]", "[电影]", "[书名]", "[影视]", "[歌曲]", "[品牌]",
+    ]
+    private static let sentencePunctuation: Set<Character> = [
+        "!", "！", "?", "？",
     ]
 
     @discardableResult
@@ -218,6 +228,7 @@ public enum ECDICTRankBuilder {
                     frequency INTEGER NOT NULL,
                     collins INTEGER NOT NULL,
                     oxford INTEGER NOT NULL,
+                    exam_tag INTEGER NOT NULL,
                     PRIMARY KEY (term, english)
                 );
                 CREATE TABLE metadata (
@@ -276,6 +287,13 @@ public enum ECDICTRankBuilder {
                         fields: fields,
                         indexes: indexes
                     ),
+                    examTagged: value(
+                        "tag",
+                        from: fields,
+                        indexes: indexes
+                    )?.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                    ).isEmpty == false,
                     candidates: &candidates
                 )
             }
@@ -292,8 +310,9 @@ public enum ECDICTRankBuilder {
                     english,
                     frequency,
                     collins,
-                    oxford
-                ) VALUES (?, ?, ?, ?, ?)
+                    oxford,
+                    exam_tag
+                ) VALUES (?, ?, ?, ?, ?, ?)
                 """
             )
             defer { sqlite3_finalize(insertRank) }
@@ -333,6 +352,11 @@ public enum ECDICTRankBuilder {
                             5,
                             Int32(item.ranking.oxford)
                         )
+                        sqlite3_bind_int(
+                            insertRank,
+                            6,
+                            item.ranking.examTagged ? 1 : 0
+                        )
                         guard sqlite3_step(insertRank) == SQLITE_DONE else {
                             throw ECDICTRankBuilderError.sqlite(
                                 String(cString: sqlite3_errmsg(database))
@@ -355,7 +379,7 @@ public enum ECDICTRankBuilder {
                     ],
                     into: database
                 )
-                try execute(database, "PRAGMA user_version = 1;")
+                try execute(database, "PRAGMA user_version = 2;")
                 try execute(database, "COMMIT;")
             } catch {
                 try? execute(database, "ROLLBACK;")
@@ -454,6 +478,7 @@ public enum ECDICTRankBuilder {
         collins: Int,
         oxford: Bool,
         frequency: Int,
+        examTagged: Bool,
         candidates: inout [String: [String: Ranking]]
     ) throws {
         let word = word.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -472,7 +497,8 @@ public enum ECDICTRankBuilder {
         let ranking = Ranking(
             frequency: frequency,
             collins: collins,
-            oxford: oxford ? 1 : 0
+            oxford: oxford ? 1 : 0,
+            examTagged: examTagged
         )
         for term in terms(in: translation) {
             let previous = candidates[term]?[word]
@@ -487,8 +513,14 @@ public enum ECDICTRankBuilder {
         for part in translation.split(
             whereSeparator: { termSeparators.contains($0) }
         ) {
+            let value = removingParentheticals(String(part))
+            guard !isMetadataFragment(value),
+                !value.contains(where: sentencePunctuation.contains)
+            else {
+                continue
+            }
             var run: [Character] = []
-            for character in part {
+            for character in value {
                 if isHan(character) {
                     run.append(character)
                 } else {
@@ -497,6 +529,30 @@ public enum ECDICTRankBuilder {
                 }
             }
             appendTerms(from: run, to: &result)
+        }
+        return result
+    }
+
+    private static func isMetadataFragment(_ value: String) -> Bool {
+        metadataMarkers.contains { value.contains($0) }
+    }
+
+    private static func removingParentheticals(
+        _ value: String
+    ) -> String {
+        var result = ""
+        var depth = 0
+        for character in value {
+            switch character {
+            case "(", "（":
+                depth += 1
+            case ")", "）":
+                depth = max(0, depth - 1)
+            default:
+                if depth == 0 {
+                    result.append(character)
+                }
+            }
         }
         return result
     }
@@ -585,6 +641,7 @@ public enum ECDICTRankBuilder {
     ) -> Bool {
         let required = Set([
             "term", "english", "frequency", "collins", "oxford",
+            "exam_tag",
         ])
         var statement: OpaquePointer?
         guard

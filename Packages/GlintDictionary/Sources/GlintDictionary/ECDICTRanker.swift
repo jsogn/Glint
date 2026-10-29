@@ -6,6 +6,7 @@ struct EnglishRanking: Sendable, Equatable {
     let frequency: Int
     let collins: Int
     let oxford: Int
+    let examTagged: Bool
 }
 
 public final class ECDICTRanker: @unchecked Sendable {
@@ -30,7 +31,7 @@ public final class ECDICTRanker: @unchecked Sendable {
         let prepareResult = sqlite3_prepare_v2(
             database,
             """
-            SELECT english, frequency, collins, oxford
+            SELECT english, frequency, collins, oxford, exam_tag
             FROM ranks
             WHERE term = ?
             ORDER BY frequency ASC, collins DESC, oxford DESC
@@ -90,7 +91,8 @@ public final class ECDICTRanker: @unchecked Sendable {
                     english: english,
                     frequency: Int(sqlite3_column_int(statement, 1)),
                     collins: Int(sqlite3_column_int(statement, 2)),
-                    oxford: Int(sqlite3_column_int(statement, 3))
+                    oxford: Int(sqlite3_column_int(statement, 3)),
+                    examTagged: sqlite3_column_int(statement, 4) != 0
                 )
             )
         }

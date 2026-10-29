@@ -21,6 +21,10 @@
     "category": "general",
     "expected": [
       "world"
+    ],
+    "forbidden": [
+      "extremely",
+      "super"
     ]
   },
   {
@@ -35,6 +39,9 @@
     "category": "general",
     "expected": [
       "friend"
+    ],
+    "forbidden": [
+      "large number of retainers"
     ]
   },
   {
@@ -152,6 +159,9 @@
     "category": "general",
     "expected": [
       "city"
+    ],
+    "forbidden": [
+      "Ipswich"
     ]
   },
   {
@@ -174,6 +184,9 @@
     "expected": [
       "child",
       "children"
+    ],
+    "forbidden": [
+      "homerun"
     ]
   },
   {
@@ -181,6 +194,10 @@
     "category": "general",
     "expected": [
       "school"
+    ],
+    "forbidden": [
+      "dept",
+      "poly"
     ]
   },
   {
@@ -209,6 +226,9 @@
     "category": "general",
     "expected": [
       "English"
+    ],
+    "forbidden": [
+      "wigg"
     ]
   },
   {
@@ -338,6 +358,9 @@
     "category": "daily",
     "expected": [
       "tomorrow"
+    ],
+    "forbidden": [
+      "morn"
     ]
   },
   {
@@ -598,6 +621,10 @@
     "category": "daily",
     "expected": [
       "computer"
+    ],
+    "forbidden": [
+      "logon",
+      "dsp"
     ]
   },
   {
@@ -623,6 +650,10 @@
     "category": "daily",
     "expected": [
       "music"
+    ],
+    "forbidden": [
+      "tonic",
+      "blaring"
     ]
   },
   {
@@ -689,6 +720,9 @@
     "category": "technical",
     "expected": [
       "team"
+    ],
+    "forbidden": [
+      "roadshow"
     ]
   },
   {
@@ -844,6 +878,9 @@
     "category": "technical",
     "expected": [
       "dictionary"
+    ],
+    "forbidden": [
+      "dick"
     ]
   },
   {

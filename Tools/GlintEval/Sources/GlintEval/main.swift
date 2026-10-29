@@ -6,8 +6,18 @@ import GlintInference
 struct GlintEval {
     static func main() async throws {
         let dictionary = DictionaryRouter(routes: [
-            DictionaryRoute(id: "dict-cedict", priority: 0, engine: CedictDictionary()),
-            DictionaryRoute(id: "dict-ecdict", priority: 1, engine: ECDICTDictionary()),
+            DictionaryRoute(
+                id: "dict-cedict",
+                priority: 0,
+                role: .authoritative,
+                engine: CedictDictionary()
+            ),
+            DictionaryRoute(
+                id: "dict-ecdict",
+                priority: 1,
+                role: .fallback,
+                engine: ECDICTDictionary()
+            ),
         ])
         for word in ["你好", "算法", "计算", "复盘", "中国", "苹果", "打", "计算机", "程序", "开发", "设计", "数据", "内卷", "躺平"] {
             let result = await dictionary.lookup(

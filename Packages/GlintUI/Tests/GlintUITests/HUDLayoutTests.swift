@@ -351,7 +351,7 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(metrics.numberFontSize, 10)
         XCTAssertEqual(metrics.minimumItemWidth, 44)
         XCTAssertEqual(metrics.itemSpacing, 4)
-        XCTAssertEqual(metrics.selectedHorizontalPadding, 10)
+        XCTAssertEqual(metrics.selectedHorizontalPadding, 8)
         XCTAssertEqual(metrics.multiItemHorizontalPadding, 3)
         XCTAssertEqual(metrics.singleItemHorizontalPadding, 12)
         XCTAssertEqual(metrics.itemHorizontalPadding, 5)
@@ -388,7 +388,7 @@ final class HUDLayoutTests: XCTestCase {
                 for: .selectedTranslations,
                 itemCount: items.count
             ),
-            11.5
+            8
         )
 
         let defaultSize = HUDController.panelSize(
@@ -406,6 +406,29 @@ final class HUDLayoutTests: XCTestCase {
         )
 
         XCTAssertGreaterThan(wideSize.width, defaultSize.width)
+    }
+
+    @MainActor
+    func testSelectedTranslationInsetMatchesCandidateTextStart() {
+        for fontSize in stride(from: 12.0, through: 18.0, by: 1) {
+            for density in HUDDensity.allCases {
+                let metrics = HUDLayoutMetrics(
+                    appearance: HUDAppearance(
+                        fontSize: fontSize,
+                        density: density
+                    )
+                )
+
+                XCTAssertEqual(
+                    metrics.horizontalPadding(
+                        for: .selectedTranslations,
+                        itemCount: 2
+                    ),
+                    metrics.multiItemHorizontalPadding
+                        + metrics.itemHorizontalPadding
+                )
+            }
+        }
     }
 
     @MainActor

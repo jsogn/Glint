@@ -133,7 +133,7 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
     ) -> [TranslationOption] {
         let rankings = (ranker?.rankings(for: term) ?? [])
             .filter {
-                $0.frequency <= 100_000
+                ($0.frequency <= 100_000 || $0.examTagged)
                     && $0.english.count > 1
             }
         var rankingByEnglish: [String: EnglishRanking] = [:]
@@ -193,17 +193,31 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         let representedKeys = Set(
             sourceSurfaces.map(EnglishWordNormalizer.normalize)
         )
+        let sourceOptionCount = options.count
+        guard
+            let sourceScoreFloor = options.map(\.score).min()
+        else {
+            return options
+        }
+        var supplementCount = 0
         for (index, ranking) in rankings.prefix(6).enumerated() {
             guard
                 let compact = DictionarySurface.normalize(ranking.english),
                 !compact.isEmpty,
                 !representedKeys.contains(
                     EnglishWordNormalizer.normalize(compact)
-                ),
-                Self.containsPhrase(compact, in: sourceSurfaces)
+                )
             else {
                 continue
             }
+            let supportedBySource = Self.containsPhrase(
+                compact,
+                in: sourceSurfaces
+            )
+            let supportedByTag =
+                ranking.examTagged
+                && sourceOptionCount + supplementCount < 3
+            guard supportedBySource || supportedByTag else { continue }
             let frequency = Double(max(1, ranking.frequency))
             let frequencyBoost = max(
                 0,
@@ -215,8 +229,20 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 + frequencyBoost
                 + Double(ranking.collins) * 0.012
                 + Double(ranking.oxford) * 0.008
+            // Prefer a concise source-backed headword over a multi-word gloss.
+            if !compact.contains(" ") {
+                score += 0.04
+            }
             if compact.contains(" ") {
                 score -= 0.05
+            }
+            if !supportedBySource {
+                score = min(
+                    score,
+                    sourceScoreFloor - 0.005
+                        - Double(supplementCount) * 0.005
+                )
+                supplementCount += 1
             }
             options.append(
                 TranslationOption(text: compact, score: score)

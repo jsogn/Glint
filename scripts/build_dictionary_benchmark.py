@@ -190,25 +190,39 @@ MODEL_REQUIRED = {
 
 BLOCKED = ["你号", "的的"]
 
+FORBIDDEN = {
+    "世界": ["extremely", "super"],
+    "朋友": ["large number of retainers"],
+    "城市": ["Ipswich"],
+    "孩子": ["homerun"],
+    "学校": ["dept", "poly"],
+    "英语": ["wigg"],
+    "明天": ["morn"],
+    "团队": ["roadshow"],
+    "电脑": ["logon", "dsp"],
+    "音乐": ["tonic", "blaring"],
+    "词典": ["dick"],
+}
+
 
 def main() -> None:
     cases = []
     for text, expected in GENERAL.items():
-        cases.append({"text": text, "category": "general", "expected": expected})
+        cases.append(case(text, "general", expected))
     for text, expected in AMBIGUOUS.items():
-        cases.append({"text": text, "category": "ambiguous", "expected": expected})
+        cases.append(case(text, "ambiguous", expected))
     for text, expected in DAILY.items():
-        cases.append({"text": text, "category": "daily", "expected": expected})
+        cases.append(case(text, "daily", expected))
     for text, expected in TECHNICAL.items():
-        cases.append({"text": text, "category": "technical", "expected": expected})
+        cases.append(case(text, "technical", expected))
     for text, expected in AMBIGUOUS_EXTRA.items():
-        cases.append({"text": text, "category": "ambiguous", "expected": expected})
+        cases.append(case(text, "ambiguous", expected))
     for text, expected in PHRASES.items():
-        cases.append({"text": text, "category": "phrase", "expected": expected})
+        cases.append(case(text, "phrase", expected))
     for text, expected in MODEL_REQUIRED.items():
-        cases.append({"text": text, "category": "model", "expected": expected})
+        cases.append(case(text, "model", expected))
     for text in BLOCKED:
-        cases.append({"text": text, "category": "blocked", "expected": []})
+        cases.append(case(text, "blocked", []))
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(
@@ -216,6 +230,17 @@ def main() -> None:
         encoding="utf-8",
     )
     print(f"wrote {len(cases)} cases to {OUTPUT}")
+
+
+def case(text: str, category: str, expected: list[str]) -> dict[str, object]:
+    value: dict[str, object] = {
+        "text": text,
+        "category": category,
+        "expected": expected,
+    }
+    if text in FORBIDDEN:
+        value["forbidden"] = FORBIDDEN[text]
+    return value
 
 
 if __name__ == "__main__":

@@ -43,11 +43,13 @@ struct DictionaryChoices {
             DictionaryRoute(
                 id: "dict-cedict",
                 priority: 0,
+                role: .authoritative,
                 engine: CedictDictionary()
             ),
             DictionaryRoute(
                 id: "dict-ecdict",
                 priority: 1,
+                role: .fallback,
                 engine: ECDICTDictionary()
             ),
         ]
@@ -66,6 +68,7 @@ struct DictionaryChoices {
                     DictionaryRoute(
                         id: "dict-wiktionary-zh-en",
                         priority: 10,
+                        role: .fallback,
                         engine: engine
                     )
                 )

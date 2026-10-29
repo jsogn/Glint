@@ -190,10 +190,6 @@ struct HUDLayoutMetrics: Equatable {
         minimumItemWidth = max(40, (44 * scale).rounded())
         itemSpacing = max(3, (4 * scale).rounded())
         selectedItemSpacing = CGFloat(appearance.selectedTranslationSpacing)
-        selectedHorizontalPadding = max(
-            8,
-            (10 * scale).rounded() + density.multiItemHorizontalDelta
-        )
         multiItemHorizontalPadding = max(
             2,
             (3 * scale).rounded() + density.multiItemHorizontalDelta
@@ -206,6 +202,8 @@ struct HUDLayoutMetrics: Equatable {
             3,
             (5 * scale).rounded() + density.itemHorizontalDelta
         )
+        selectedHorizontalPadding =
+            multiItemHorizontalPadding + itemHorizontalPadding
         numberSpacing = max(1, (2 * scale).rounded())
         singleItemVerticalPadding = max(
             4,
@@ -272,9 +270,7 @@ struct HUDLayoutMetrics: Equatable {
         } else {
             padding = singleItemHorizontalPadding
         }
-        return layoutStyle == .selectedTranslations
-            ? padding + measurementSafetyPadding / 2
-            : padding
+        return padding
     }
 }
 

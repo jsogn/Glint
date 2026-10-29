@@ -29,6 +29,49 @@ final class CedictDictionaryTests: XCTestCase {
         )
     }
 
+    private func makeRouter() -> DictionaryRouter {
+        let ecdictURL = rootURL.appendingPathComponent(
+            "Resources/Plugins/dict-ecdict/ecdict_rank.sqlite3"
+        )
+        let ranker = ECDICTRanker(databaseURL: ecdictURL)
+        var routes = [
+            DictionaryRoute(
+                id: "dict-cedict",
+                priority: 0,
+                role: .authoritative,
+                engine: CedictDictionary(
+                    databaseURL: rootURL.appendingPathComponent(
+                        "Resources/Plugins/dict-cedict/cedict.sqlite3"
+                    ),
+                    ranker: ranker
+                )
+            ),
+            DictionaryRoute(
+                id: "dict-ecdict",
+                priority: 1,
+                role: .fallback,
+                engine: ECDICTDictionary(ranker: ranker)
+            ),
+        ]
+        if let wiktionary = GenericSQLiteDictionary(
+            databaseURL: rootURL.appendingPathComponent(
+                "Resources/Plugins/dict-wiktionary-zh-en/dictionary.sqlite3"
+            ),
+            sourceLanguage: "zh-Hans",
+            targetLanguage: "en"
+        ) {
+            routes.append(
+                DictionaryRoute(
+                    id: "dict-wiktionary-zh-en",
+                    priority: 2,
+                    role: .fallback,
+                    engine: wiktionary
+                )
+            )
+        }
+        return DictionaryRouter(routes: routes)
+    }
+
     func testKnownWord() async throws {
         let dictionary = makeDictionary()
         let result = try await dictionary.lookup(Candidate(text: "你好", kind: .word))
@@ -88,6 +131,67 @@ final class CedictDictionaryTests: XCTestCase {
         )
 
         XCTAssertEqual(result?.text, "program")
+    }
+
+    func testAuthoritativeRoutingKeepsConciseHeadwordFirst() async {
+        let router = makeRouter()
+        let result = await router.lookup(
+            Candidate(text: "中文", kind: .word)
+        )
+
+        XCTAssertEqual(result?.text, "Chinese")
+    }
+
+    func testAuthoritativeRoutingIncludesTaggedSynonyms() async {
+        let router = makeRouter()
+        let dictionary = await router.lookup(
+            Candidate(text: "词典", kind: .word)
+        )
+        let child = await router.lookup(
+            Candidate(text: "孩子", kind: .word)
+        )
+
+        XCTAssertTrue(
+            dictionary?.options.contains { $0.text == "lexicon" } == true
+        )
+        XCTAssertTrue(
+            child?.options.contains { $0.text == "children" } == true
+        )
+    }
+
+    func testAuthoritativeRoutingSuppressesUntaggedFallbacks()
+        async
+    {
+        let router = makeRouter()
+        let dictionary = await router.lookup(
+            Candidate(text: "词典", kind: .word)
+        )
+        let world = await router.lookup(
+            Candidate(text: "世界", kind: .word)
+        )
+        let child = await router.lookup(
+            Candidate(text: "孩子", kind: .word)
+        )
+        let music = await router.lookup(
+            Candidate(text: "音乐", kind: .word)
+        )
+
+        XCTAssertFalse(
+            dictionary?.options.contains { $0.text == "dick" } == true
+        )
+        XCTAssertFalse(
+            world?.options.contains {
+                ["extremely", "super"].contains($0.text)
+            } == true
+        )
+        XCTAssertFalse(
+            child?.options.contains { $0.text == "homerun" } == true
+        )
+        XCTAssertFalse(
+            music?.options.contains {
+                ["tonic", "blaring"].contains($0.text)
+            } == true
+        )
     }
 
     func testLiteralTechnicalHeadwordOutranksBroaderSynonym() async throws {

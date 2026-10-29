@@ -65,6 +65,7 @@ enum DictionaryPluginLoader {
             return DictionaryRoute(
                 id: bundled.id,
                 priority: bundled.priority,
+                role: bundled.role,
                 engine: installed.engine
             )
         }
@@ -151,6 +152,9 @@ enum DictionaryPluginLoader {
                 return DictionaryRoute(
                     id: manifest.id,
                     priority: firstPriority + index,
+                    role: manifest.id == "dict-cedict"
+                        ? .authoritative
+                        : .fallback,
                     engine: engine
                 )
             }

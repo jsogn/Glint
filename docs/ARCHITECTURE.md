@@ -79,7 +79,10 @@ Glint/
 ### GlintDictionary
 
 - 查询 CC-CEDICT、ECDICT 和 Wiktionary SQLite 资源。
-- 合并多来源义项，按词频和短语特征排序；不加载人工词表。
+- CC-CEDICT 精确命中时作为权威来源返回，并继续使用 ECDICT 词频信号提升
+  CC-CEDICT 支持的英文头词；只有当权威结果少于三项时，才允许带考试标签的
+  ECDICT 词作为低优先级补充。ECDICT、Wiktionary 和用户词典默认按优先级依次
+  作为回退，独立回退结果不追加到权威结果中。
 - 通过固定 runtime 接口加载词典插件，不执行插件代码。
 
 ### GlintInference

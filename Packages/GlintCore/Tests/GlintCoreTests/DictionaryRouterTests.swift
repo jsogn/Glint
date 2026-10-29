@@ -16,17 +16,47 @@ private struct FailingDictionary: DictionaryEngine {
     }
 }
 
+private actor CountingDictionary: DictionaryEngine {
+    let value: String?
+    private var count = 0
+
+    init(value: String?) {
+        self.value = value
+    }
+
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        count += 1
+        return value.map(TranslationResult.init(text:))
+    }
+
+    func lookupCount() -> Int {
+        count
+    }
+}
+
 final class DictionaryRouterTests: XCTestCase {
+    func testRouteDefaultsToFallbackRole() {
+        let route = DictionaryRoute(
+            id: "optional",
+            priority: 0,
+            engine: OrderedDictionary(value: "fallback")
+        )
+
+        XCTAssertEqual(route.role, .fallback)
+    }
+
     func testRoutesByPriority() async throws {
         let router = DictionaryRouter(routes: [
             DictionaryRoute(
                 id: "second",
                 priority: 1,
+                role: .authoritative,
                 engine: OrderedDictionary(value: "second result")
             ),
             DictionaryRoute(
                 id: "first",
                 priority: 0,
+                role: .authoritative,
                 engine: OrderedDictionary(value: "first result")
             ),
         ])
@@ -40,11 +70,13 @@ final class DictionaryRouterTests: XCTestCase {
             DictionaryRoute(
                 id: "cedict",
                 priority: 0,
+                role: .authoritative,
                 engine: OrderedDictionary(value: nil)
             ),
             DictionaryRoute(
                 id: "ecdict",
                 priority: 1,
+                role: .authoritative,
                 engine: OrderedDictionary(value: "fallback")
             ),
         ])
@@ -58,11 +90,13 @@ final class DictionaryRouterTests: XCTestCase {
             DictionaryRoute(
                 id: "broken",
                 priority: 0,
+                role: .authoritative,
                 engine: FailingDictionary()
             ),
             DictionaryRoute(
                 id: "fallback",
                 priority: 1,
+                role: .authoritative,
                 engine: OrderedDictionary(value: "fallback")
             ),
         ])
@@ -79,11 +113,13 @@ final class DictionaryRouterTests: XCTestCase {
             DictionaryRoute(
                 id: "primary",
                 priority: 0,
+                role: .authoritative,
                 engine: OrderedDictionary(value: "primary")
             ),
             DictionaryRoute(
                 id: "secondary",
                 priority: 1,
+                role: .authoritative,
                 engine: OrderedDictionary(value: "secondary")
             ),
         ])
@@ -96,12 +132,70 @@ final class DictionaryRouterTests: XCTestCase {
         )
     }
 
+    func testAuthoritativeMatchSkipsFallbackRoutes() async {
+        let fallback = CountingDictionary(value: "fallback")
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "authoritative",
+                priority: 0,
+                role: .authoritative,
+                engine: OrderedDictionary(value: "trusted")
+            ),
+            DictionaryRoute(
+                id: "fallback",
+                priority: 1,
+                role: .fallback,
+                engine: fallback
+            ),
+        ])
+
+        let result = await router.lookup(Candidate(text: "测试", kind: .word))
+
+        XCTAssertEqual(result?.options.map(\.text), ["trusted"])
+        let fallbackCount = await fallback.lookupCount()
+        XCTAssertEqual(fallbackCount, 0)
+    }
+
+    func testFallbackRoutesStopAfterFirstMatch() async {
+        let firstFallback = CountingDictionary(value: "first fallback")
+        let secondFallback = CountingDictionary(value: "second fallback")
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "authoritative",
+                priority: 0,
+                role: .authoritative,
+                engine: OrderedDictionary(value: nil)
+            ),
+            DictionaryRoute(
+                id: "first-fallback",
+                priority: 1,
+                role: .fallback,
+                engine: firstFallback
+            ),
+            DictionaryRoute(
+                id: "second-fallback",
+                priority: 2,
+                role: .fallback,
+                engine: secondFallback
+            ),
+        ])
+
+        let result = await router.lookup(Candidate(text: "测试", kind: .word))
+
+        XCTAssertEqual(result?.options.map(\.text), ["first fallback"])
+        let firstCount = await firstFallback.lookupCount()
+        let secondCount = await secondFallback.lookupCount()
+        XCTAssertEqual(firstCount, 1)
+        XCTAssertEqual(secondCount, 0)
+    }
+
     func testBlockedTermsStayHiddenAcrossDictionaryRoutes() async throws {
         let router = DictionaryRouter(
             routes: [
                 DictionaryRoute(
                     id: "example",
                     priority: 0,
+                    role: .authoritative,
                     engine: OrderedDictionary(value: "should not appear")
                 )
             ],
@@ -117,6 +211,7 @@ final class DictionaryRouterTests: XCTestCase {
             DictionaryRoute(
                 id: "example",
                 priority: 0,
+                role: .authoritative,
                 engine: OrderedDictionary(value: "result")
             )
         ])
