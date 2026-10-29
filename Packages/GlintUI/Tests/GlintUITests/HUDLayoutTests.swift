@@ -69,6 +69,29 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertTrue(lower.placesBelow)
     }
 
+    func testAutomaticPlacementUsesBottomEdgeWithoutExtraInset() {
+        let nearBottom = CGRect(
+            x: 300,
+            y: 50,
+            width: 180,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: nearBottom,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .automatic,
+            spacing: 7
+        )
+
+        XCTAssertTrue(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.minY,
+            7,
+            accuracy: 0.001
+        )
+    }
+
     func testAutomaticPlacementMovesAboveWhenCandidateIsAboveInputCaret() {
         let placement = HUDLayout.placement(
             near: CGRect(x: 300, y: 600, width: 180, height: 32),
