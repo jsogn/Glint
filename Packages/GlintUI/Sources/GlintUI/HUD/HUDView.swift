@@ -87,37 +87,37 @@ struct HUDItemRow: View {
     let textOpacity: Double
 
     var body: some View {
-        let metrics = HUDLayoutMetrics(appearance: appearance)
+        let plan = HUDLayoutPlan(
+            itemCount: items.count,
+            layoutStyle: layoutStyle,
+            appearance: appearance
+        )
 
-        HStack(spacing: metrics.itemSpacing(for: layoutStyle)) {
+        HStack(spacing: plan.interItemSpacing) {
             ForEach(items) { item in
-                itemView(item, metrics: metrics)
+                itemView(item, plan: plan)
                     .fixedSize(horizontal: true, vertical: false)
                     .frame(
                         minWidth: items.count > 1
-                            ? metrics.minimumItemWidth(for: layoutStyle)
+                            ? plan.minimumItemWidth
                             : nil,
                         alignment: .leading
                     )
             }
         }
         .padding(
-            .horizontal,
-            metrics.horizontalPadding(
-                for: layoutStyle,
-                itemCount: items.count
-            )
+            .leading,
+            plan.leadingHorizontalPadding
         )
         .padding(
-            .vertical,
-            items.count > 1
-                ? metrics.multiItemVerticalPadding
-                : metrics.singleItemVerticalPadding
+            .trailing,
+            plan.trailingHorizontalPadding
         )
+        .padding(.vertical, plan.verticalPadding)
         // Keep the visible capsule on the same exact geometry as NSPanel.
         // Otherwise intrinsic SwiftUI height can leave a transparent strip on
         // the side facing the candidate row when HUD placement flips above it.
-        .frame(height: metrics.panelHeight(for: items.count))
+        .frame(height: plan.panelHeight)
         .modifier(
             HUDSurfaceStyle(
                 appearance: appearance,
@@ -127,101 +127,16 @@ struct HUDItemRow: View {
         )
     }
 
-    static func minimumPanelWidth(
-        for itemCount: Int,
-        layoutStyle: HUDLayoutStyle = .candidateRow,
-        appearance: HUDAppearance = .default
-    ) -> CGFloat {
-        guard itemCount > 1 else { return 120 }
-        let metrics = HUDLayoutMetrics(appearance: appearance)
-        return metrics.horizontalPadding(
-            for: layoutStyle,
-            itemCount: itemCount
-        ) * 2
-            + CGFloat(itemCount) * metrics.minimumItemWidth(for: layoutStyle)
-            + CGFloat(itemCount - 1) * metrics.itemSpacing(for: layoutStyle)
-    }
-
-    @MainActor
-    static func naturalPanelWidth(
-        for items: [HUDItem],
-        layoutStyle: HUDLayoutStyle = .candidateRow,
-        appearance: HUDAppearance = .default
-    ) -> CGFloat {
-        guard !items.isEmpty else { return 120 }
-        let metrics = HUDLayoutMetrics(appearance: appearance)
-        let textFont = NSFont.systemFont(
-            ofSize: metrics.textFontSize,
-            weight: .medium
-        )
-        let numberFont = NSFont.systemFont(
-            ofSize: metrics.numberFontSize,
-            weight: .medium
-        )
-        let horizontalPadding = metrics.horizontalPadding(
-            for: layoutStyle,
-            itemCount: items.count
-        )
-        var width = horizontalPadding * 2
-        for item in items {
-            var itemWidth = ceil(
-                (item.text as NSString).size(
-                    withAttributes: [.font: textFont]
-                ).width
-            )
-            if let number = item.number {
-                itemWidth +=
-                    ceil(
-                        ("\(number)" as NSString).size(
-                            withAttributes: [.font: numberFont]
-                        ).width
-                    ) + metrics.numberSpacing
-            }
-            if items.count > 1 {
-                itemWidth +=
-                    metrics.itemHorizontalPadding(for: layoutStyle) * 2
-                itemWidth = max(
-                    itemWidth,
-                    metrics.minimumItemWidth(for: layoutStyle)
-                )
-            }
-            width += itemWidth
-        }
-        if items.count > 1 {
-            width +=
-                CGFloat(items.count - 1)
-                * metrics.itemSpacing(for: layoutStyle)
-        }
-        return ceil(width + metrics.measurementSafetyPadding)
-    }
-
-    @MainActor
-    static func requiresSelectedOnly(
-        for items: [HUDItem],
-        maximumWidth: CGFloat,
-        layoutStyle: HUDLayoutStyle = .candidateRow,
-        appearance: HUDAppearance = .default
-    ) -> Bool {
-        guard items.contains(where: \.isSelected) else {
-            return false
-        }
-        return naturalPanelWidth(
-            for: items,
-            layoutStyle: layoutStyle,
-            appearance: appearance
-        ) > max(120, maximumWidth)
-    }
-
     private func itemView(
         _ item: HUDItem,
-        metrics: HUDLayoutMetrics
+        plan: HUDLayoutPlan
     ) -> some View {
-        HStack(spacing: metrics.numberSpacing) {
+        HStack(spacing: plan.metrics.numberSpacing) {
             if let number = item.number {
                 Text("\(number)")
                     .font(
                         .system(
-                            size: metrics.numberFontSize,
+                            size: plan.metrics.numberFontSize,
                             weight: .medium
                         )
                     )
@@ -235,7 +150,7 @@ struct HUDItemRow: View {
             Text(item.text)
                 .font(
                     .system(
-                        size: metrics.textFontSize,
+                        size: plan.metrics.textFontSize,
                         weight: .medium
                     )
                 )
@@ -249,13 +164,11 @@ struct HUDItemRow: View {
         .opacity(textOpacity)
         .padding(
             .horizontal,
-            items.count > 1
-                ? metrics.itemHorizontalPadding(for: layoutStyle)
-                : 0
+            items.count > 1 ? plan.itemHorizontalPadding : 0
         )
         .padding(
             .vertical,
-            items.count > 1 ? metrics.itemVerticalPadding : 0
+            items.count > 1 ? plan.metrics.itemVerticalPadding : 0
         )
         .background {
             if item.isSelected, items.count > 1 {

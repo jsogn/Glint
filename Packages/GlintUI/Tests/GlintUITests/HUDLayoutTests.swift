@@ -294,7 +294,7 @@ final class HUDLayoutTests: XCTestCase {
     @MainActor
     func testAnchoredPanelWidthIsLimitedToRemainingScreenSpace() {
         XCTAssertEqual(
-            HUDController.maximumPanelWidth(
+            HUDGeometryResolver.maximumPanelWidth(
                 in: visibleFrame,
                 fixedOriginX: 1_000
             ),
@@ -302,7 +302,7 @@ final class HUDLayoutTests: XCTestCase {
             accuracy: 0.001
         )
         XCTAssertEqual(
-            HUDController.maximumPanelWidth(
+            HUDGeometryResolver.maximumPanelWidth(
                 in: visibleFrame,
                 fixedOriginX: nil
             ),
@@ -314,8 +314,8 @@ final class HUDLayoutTests: XCTestCase {
     @MainActor
     func testHUDMinimumWidthReservesSlotForEveryItem() {
         let metrics = HUDLayoutMetrics()
-        let sixItems = HUDItemRow.minimumPanelWidth(for: 6)
-        let nineItems = HUDItemRow.minimumPanelWidth(for: 9)
+        let sixItems = HUDLayoutPlan.minimumPanelWidth(for: 6)
+        let nineItems = HUDLayoutPlan.minimumPanelWidth(for: 9)
         let sixMinimum =
             metrics.multiItemHorizontalPadding * 2
             + 6 * metrics.minimumItemWidth
@@ -351,7 +351,7 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(metrics.numberFontSize, 10)
         XCTAssertEqual(metrics.minimumItemWidth, 44)
         XCTAssertEqual(metrics.itemSpacing, 4)
-        XCTAssertEqual(metrics.selectedHorizontalPadding, 8)
+        XCTAssertEqual(metrics.selectedLeadingHorizontalPadding, 3)
         XCTAssertEqual(metrics.multiItemHorizontalPadding, 3)
         XCTAssertEqual(metrics.singleItemHorizontalPadding, 12)
         XCTAssertEqual(metrics.itemHorizontalPadding, 5)
@@ -362,7 +362,6 @@ final class HUDLayoutTests: XCTestCase {
 
     @MainActor
     func testSelectedTranslationLayoutUsesConfiguredSpacing() {
-        let metrics = HUDLayoutMetrics()
         let items = [
             HUDItem(id: 0, number: 1, text: "Hello"),
             HUDItem(id: 1, number: 2, text: "hi"),
@@ -370,33 +369,34 @@ final class HUDLayoutTests: XCTestCase {
             HUDItem(id: 3, number: 4, text: "hiya"),
             HUDItem(id: 4, number: 5, text: "Bonjour"),
         ]
+        let plan = HUDLayoutPlan(
+            itemCount: items.count,
+            layoutStyle: .selectedTranslations
+        )
 
         XCTAssertEqual(
-            metrics.minimumItemWidth(for: .selectedTranslations),
+            plan.minimumItemWidth,
             0
         )
         XCTAssertEqual(
-            metrics.itemSpacing(for: .selectedTranslations),
+            plan.interItemSpacing,
             14
         )
         XCTAssertEqual(
-            metrics.itemHorizontalPadding(for: .selectedTranslations),
+            plan.itemHorizontalPadding,
             0
         )
         XCTAssertEqual(
-            metrics.horizontalPadding(
-                for: .selectedTranslations,
-                itemCount: items.count
-            ),
-            8
+            plan.leadingHorizontalPadding,
+            3
         )
 
-        let defaultSize = HUDController.panelSize(
+        let defaultSize = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 1_400,
             layoutStyle: .selectedTranslations
         )
-        let wideSize = HUDController.panelSize(
+        let wideSize = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 1_400,
             layoutStyle: .selectedTranslations,
@@ -412,7 +412,9 @@ final class HUDLayoutTests: XCTestCase {
     func testSelectedTranslationInsetMatchesCandidateTextStart() {
         for fontSize in stride(from: 12.0, through: 18.0, by: 1) {
             for density in HUDDensity.allCases {
-                let metrics = HUDLayoutMetrics(
+                let plan = HUDLayoutPlan(
+                    itemCount: 2,
+                    layoutStyle: .selectedTranslations,
                     appearance: HUDAppearance(
                         fontSize: fontSize,
                         density: density
@@ -420,15 +422,75 @@ final class HUDLayoutTests: XCTestCase {
                 )
 
                 XCTAssertEqual(
-                    metrics.horizontalPadding(
-                        for: .selectedTranslations,
-                        itemCount: 2
-                    ),
-                    metrics.multiItemHorizontalPadding
-                        + metrics.itemHorizontalPadding
+                    plan.leadingHorizontalPadding,
+                    plan.metrics.multiItemHorizontalPadding
                 )
             }
         }
+    }
+
+    @MainActor
+    func testSelectedSingleTranslationUsesAsymmetricInsets() {
+        let plan = HUDLayoutPlan(
+            itemCount: 1,
+            layoutStyle: .selectedTranslations
+        )
+
+        XCTAssertEqual(
+            plan.leadingHorizontalPadding,
+            3
+        )
+        XCTAssertEqual(
+            plan.trailingHorizontalPadding,
+            10
+        )
+    }
+
+    @MainActor
+    func testSelectedTranslationNaturalWidthReservesMoreTrailingSpace() {
+        let items = [
+            HUDItem(id: 0, number: 1, text: "A"),
+            HUDItem(id: 1, number: 2, text: "B"),
+        ]
+        let metrics = HUDLayoutMetrics()
+        let textFont = NSFont.systemFont(
+            ofSize: metrics.textFontSize,
+            weight: .medium
+        )
+        let numberFont = NSFont.systemFont(
+            ofSize: metrics.numberFontSize,
+            weight: .medium
+        )
+        let contentWidth = items.reduce(CGFloat.zero) { width, item in
+            let textWidth = ceil(
+                (item.text as NSString).size(
+                    withAttributes: [.font: textFont]
+                ).width
+            )
+            let numberWidth =
+                ceil(
+                    ("\(item.number ?? 0)" as NSString).size(
+                        withAttributes: [.font: numberFont]
+                    ).width
+                ) + metrics.numberSpacing
+            return width + textWidth + numberWidth
+        }
+        let expectedWidth = ceil(
+            3
+                + 10
+                + contentWidth
+                + metrics.selectedItemSpacing
+                + metrics.measurementSafetyPadding
+        )
+
+        XCTAssertEqual(
+            HUDLayoutPlan.naturalPanelWidth(
+                for: items,
+                layoutStyle: .selectedTranslations
+            ),
+            expectedWidth,
+            accuracy: 0.001
+        )
     }
 
     @MainActor
@@ -447,11 +509,11 @@ final class HUDLayoutTests: XCTestCase {
             )
         )
         hostingView.layoutSubtreeIfNeeded()
-        let naturalWidth = HUDItemRow.naturalPanelWidth(
+        let naturalWidth = HUDLayoutPlan.naturalPanelWidth(
             for: items,
             layoutStyle: .selectedTranslations
         )
-        let panelSize = HUDController.panelSize(
+        let panelSize = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 1_400,
             layoutStyle: .selectedTranslations
@@ -483,12 +545,12 @@ final class HUDLayoutTests: XCTestCase {
             density: .spacious
         )
 
-        let standardSize = HUDController.panelSize(
+        let standardSize = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 1_400,
             appearance: standard
         )
-        let enlargedSize = HUDController.panelSize(
+        let enlargedSize = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 1_400,
             appearance: enlarged
@@ -546,7 +608,7 @@ final class HUDLayoutTests: XCTestCase {
             )
         }
 
-        let size = HUDController.panelSize(
+        let size = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 1_400
         )
@@ -599,7 +661,7 @@ final class HUDLayoutTests: XCTestCase {
                 + metrics.measurementSafetyPadding
         )
 
-        let size = HUDController.panelSize(
+        let size = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 1_400
         )
@@ -625,7 +687,7 @@ final class HUDLayoutTests: XCTestCase {
 
         XCTAssertGreaterThan(fittingWidth, 400)
         XCTAssertGreaterThanOrEqual(
-            HUDItemRow.naturalPanelWidth(for: items),
+            HUDLayoutPlan.naturalPanelWidth(for: items),
             fittingWidth
         )
     }
@@ -651,11 +713,11 @@ final class HUDLayoutTests: XCTestCase {
                     )
                 )
                 hostingView.layoutSubtreeIfNeeded()
-                let natural = HUDItemRow.naturalPanelWidth(
+                let natural = HUDLayoutPlan.naturalPanelWidth(
                     for: items,
                     appearance: appearance
                 )
-                let panelSize = HUDController.panelSize(
+                let panelSize = HUDLayoutPlan.panelSize(
                     for: items,
                     maximumWidth: 1_400,
                     appearance: appearance
@@ -693,7 +755,7 @@ final class HUDLayoutTests: XCTestCase {
             fontSize: 15,
             density: .standard
         )
-        let panelSize = HUDController.panelSize(
+        let panelSize = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 1_400,
             appearance: appearance
@@ -738,19 +800,19 @@ final class HUDLayoutTests: XCTestCase {
         }
 
         XCTAssertTrue(
-            HUDItemRow.requiresSelectedOnly(
+            HUDLayoutPlan.requiresSelectedOnly(
                 for: items,
                 maximumWidth: 600
             )
         )
-        let size = HUDController.panelSize(
+        let size = HUDLayoutPlan.panelSize(
             for: items,
             maximumWidth: 600,
             selectedOnly: true
         )
         let widestSingleItem =
             items.map {
-                HUDItemRow.naturalPanelWidth(for: [$0])
+                HUDLayoutPlan.naturalPanelWidth(for: [$0])
             }.max() ?? 120
 
         XCTAssertGreaterThanOrEqual(size.width, widestSingleItem)
@@ -768,46 +830,10 @@ final class HUDLayoutTests: XCTestCase {
         }
 
         XCTAssertFalse(
-            HUDItemRow.requiresSelectedOnly(
+            HUDLayoutPlan.requiresSelectedOnly(
                 for: items,
                 maximumWidth: 300
             )
-        )
-    }
-
-    @MainActor
-    func testSameRevisionUsesInPlaceContentPatch() {
-        XCTAssertEqual(
-            HUDController.contentUpdate(
-                displayedRevision: 42,
-                incomingRevision: 42,
-                isVisible: true
-            ),
-            .patch
-        )
-    }
-
-    @MainActor
-    func testChangedRevisionUsesTransition() {
-        XCTAssertEqual(
-            HUDController.contentUpdate(
-                displayedRevision: 42,
-                incomingRevision: 43,
-                isVisible: true
-            ),
-            .transition
-        )
-    }
-
-    @MainActor
-    func testHiddenHUDUsesEntryRegardlessOfRevision() {
-        XCTAssertEqual(
-            HUDController.contentUpdate(
-                displayedRevision: nil,
-                incomingRevision: 42,
-                isVisible: false
-            ),
-            .entry
         )
     }
 

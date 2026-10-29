@@ -1,102 +1,32 @@
 import AppKit
 import SwiftUI
 
-enum HUDContentUpdate: Equatable {
-    case entry
-    case patch
-    case transition
-}
-
-struct HUDHorizontalAnchor: Equatable {
-    static let followThreshold: CGFloat = 8
-
-    let screenFrame: NSRect
-    let offsetX: CGFloat
-    private(set) var candidateOriginX: CGFloat
-
-    static func initial(
-        screenFrame: NSRect,
-        hudOriginX: CGFloat,
-        candidateOriginX: CGFloat
-    ) -> HUDHorizontalAnchor {
-        HUDHorizontalAnchor(
-            screenFrame: screenFrame,
-            offsetX: hudOriginX - candidateOriginX,
-            candidateOriginX: candidateOriginX
-        )
-    }
-
-    func resolvedHUDOriginX(candidateOriginX: CGFloat) -> CGFloat {
-        let acceptedCandidateOriginX =
-            shouldFollow(candidateOriginX: candidateOriginX)
-            ? candidateOriginX
-            : self.candidateOriginX
-        return acceptedCandidateOriginX + offsetX
-    }
-
-    func following(candidateOriginX: CGFloat) -> HUDHorizontalAnchor {
-        guard shouldFollow(candidateOriginX: candidateOriginX) else {
-            return self
-        }
-        return HUDHorizontalAnchor(
-            screenFrame: screenFrame,
-            offsetX: offsetX,
-            candidateOriginX: candidateOriginX
-        )
-    }
-
-    func shouldFollow(candidateOriginX: CGFloat) -> Bool {
-        abs(candidateOriginX - self.candidateOriginX)
-            >= Self.followThreshold
-    }
-}
-
 @MainActor
 public final class HUDController {
     private enum Timing {
         static let enter = 0.06
         static let leave = 0.06
         static let textTransition = 0.06
-        static let presentationCoalescingNanoseconds: UInt64 = 8_000_000
-        static let staleDimNanoseconds: UInt64 = 80_000_000
         static let staleOpacity = 0.3
-    }
-
-    private struct PresentationRequest {
-        let revision: UInt64?
-        let items: [HUDItem]
-        let layoutStyle: HUDLayoutStyle
-        let appearance: HUDAppearance
-        let screenRect: CGRect
-        let position: HUDPosition
-        let spacing: Double
-        let opacity: Double
-    }
-
-    private struct PresentationLayout {
-        let request: PresentationRequest
-        let showsOnlySelectedItem: Bool
-        let panelSize: NSSize
-        let targetFrame: NSRect
-        let placesBelow: Bool
-        let screenFrame: NSRect
-        let usesHorizontalAnchor: Bool
     }
 
     private let panel: NSPanel
     private let contentModel: HUDPresentationModel
-    private var panelSize = NSSize(width: 440, height: 36)
+    private var geometryResolver = HUDGeometryResolver()
+    private lazy var scheduler = HUDPresentationScheduler(
+        present: { [weak self] request in
+            self?.present(request)
+        },
+        dimStaleContent: { [weak self] in
+            guard let self, self.panel.isVisible else { return }
+            self.animateTextOpacity(Timing.staleOpacity)
+        }
+    )
+    private var panelSize = HUDGeometry.initialPanelSize
     private var displayedRevision: UInt64?
-    private var pendingPresentation: PresentationRequest?
-    private var coalescedPresentation: PresentationRequest?
-    private var presentationCoalescingTask: Task<Void, Never>?
-    private var horizontalAnchor: HUDHorizontalAnchor?
-    private var preferredPlacesBelow: Bool?
     private var entryAnimationIsActive = false
     private var entryAnimationGeneration = 0
     private var transitionGeneration = 0
-    private var stalePresentationTask: Task<Void, Never>?
-    private var stalePresentationGeneration = 0
 
     public init() {
         let contentModel = HUDPresentationModel(
@@ -123,9 +53,9 @@ public final class HUDController {
         let hostingView = NSHostingView(
             rootView: HUDLiveView(model: contentModel)
         )
-        // HUDLayout owns the panel geometry. Without this, NSHostingView can
-        // shrink the panel to its intrinsic content height after ordering it
-        // on screen, moving only the candidate-facing edge when placed above.
+        // HUDGeometryResolver owns the panel geometry. Without this,
+        // NSHostingView can shrink the panel to its intrinsic content height
+        // after ordering it on screen, moving the candidate-facing edge.
         hostingView.sizingOptions = []
         panel.contentView = hostingView
         self.contentModel = contentModel
@@ -133,8 +63,7 @@ public final class HUDController {
     }
 
     public func beginUpdate() {
-        cancelCoalescedPresentation()
-        pendingPresentation = nil
+        scheduler.cancelQueuedPresentations()
         guard panel.isVisible else { return }
         transitionGeneration &+= 1
         let reduceMotion =
@@ -151,12 +80,12 @@ public final class HUDController {
                 frame: nil
             )
         }
-        guard stalePresentationTask == nil,
+        guard !scheduler.isStaleDimPending,
             contentModel.textOpacity >= 0.999
         else {
             return
         }
-        beginStalePresentation()
+        scheduler.startStaleDimmingIfNeeded()
     }
 
     public func updateSelection(itemID: Int) {
@@ -184,8 +113,8 @@ public final class HUDController {
         appearance: HUDAppearance = .default,
         revision: UInt64? = nil
     ) {
-        enqueuePresentation(
-            PresentationRequest(
+        scheduler.enqueue(
+            HUDPresentationRequest(
                 revision: revision,
                 items: items,
                 layoutStyle: layoutStyle,
@@ -198,41 +127,19 @@ public final class HUDController {
         )
     }
 
-    private func enqueuePresentation(_ request: PresentationRequest) {
-        coalescedPresentation = request
-        guard presentationCoalescingTask == nil else { return }
-
-        presentationCoalescingTask = Task { @MainActor [weak self] in
-            do {
-                try await Task.sleep(
-                    nanoseconds: Timing.presentationCoalescingNanoseconds
-                )
-                guard let self else { return }
-                self.presentationCoalescingTask = nil
-                guard let request = self.coalescedPresentation else {
-                    return
-                }
-                self.coalescedPresentation = nil
-                self.present(request)
-            } catch {
-                return
-            }
-        }
-    }
-
-    private func present(_ request: PresentationRequest) {
-        cancelStalePresentation()
+    private func present(_ request: HUDPresentationRequest) {
+        scheduler.cancelStaleDimming()
         let reduceMotion =
             NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         contentModel.animatesTransitions = !reduceMotion
         transitionGeneration &+= 1
 
         if panel.isVisible, entryAnimationIsActive {
-            pendingPresentation = request
+            scheduler.deferUntilPresentationReady(request)
             return
         }
 
-        guard let layout = resolveLayout(for: request) else {
+        guard let layout = geometryResolver.resolve(request) else {
             applyContent(
                 request,
                 textOpacity: 1,
@@ -243,7 +150,7 @@ public final class HUDController {
             displayedRevision = request.revision
             return
         }
-        let update = Self.contentUpdate(
+        let update = HUDPresentationScheduler.contentUpdate(
             displayedRevision: displayedRevision,
             incomingRevision: request.revision,
             isVisible: panel.isVisible
@@ -259,86 +166,8 @@ public final class HUDController {
         }
     }
 
-    private func resolveLayout(
-        for request: PresentationRequest
-    ) -> PresentationLayout? {
-        guard
-            let mainScreen = NSScreen.screens.first(where: {
-                $0.frame.origin == .zero
-            })
-                ?? NSScreen.main
-        else {
-            return nil
-        }
-        let appKitRect = CGRect(
-            x: request.screenRect.minX,
-            y: mainScreen.frame.maxY - request.screenRect.maxY,
-            width: request.screenRect.width,
-            height: request.screenRect.height
-        )
-        let targetScreen =
-            NSScreen.screens.first {
-                $0.frame.contains(NSPoint(x: appKitRect.midX, y: appKitRect.midY))
-            } ?? mainScreen
-        let candidateOriginX = appKitRect.minX
-        // Follow meaningful candidate-row movement while ignoring IME jitter.
-        let fixedOriginX = horizontalAnchor.flatMap { anchor -> CGFloat? in
-            guard anchor.screenFrame == targetScreen.frame else {
-                return nil
-            }
-            let hudOriginX = anchor.resolvedHUDOriginX(
-                candidateOriginX: candidateOriginX
-            )
-            let availableWidth =
-                targetScreen.visibleFrame.maxX
-                - HUDLayout.screenEdgeInset
-                - hudOriginX
-            return availableWidth >= 120 ? hudOriginX : nil
-        }
-        let maximumWidth = Self.maximumPanelWidth(
-            in: targetScreen.visibleFrame,
-            fixedOriginX: fixedOriginX
-        )
-        let showsOnlySelectedItem = HUDItemRow.requiresSelectedOnly(
-            for: request.items,
-            maximumWidth: maximumWidth,
-            layoutStyle: request.layoutStyle,
-            appearance: request.appearance
-        )
-        let proposedPanelSize = Self.panelSize(
-            for: request.items,
-            maximumWidth: maximumWidth,
-            selectedOnly: showsOnlySelectedItem,
-            layoutStyle: request.layoutStyle,
-            appearance: request.appearance
-        )
-        let resolvedPanelSize = proposedPanelSize
-        let preferredSide =
-            horizontalAnchor?.screenFrame == targetScreen.frame
-            ? preferredPlacesBelow
-            : nil
-        let layout = HUDLayout.placement(
-            near: appKitRect,
-            panelSize: resolvedPanelSize,
-            visibleFrame: targetScreen.visibleFrame,
-            position: request.position,
-            spacing: request.spacing,
-            horizontalOrigin: fixedOriginX,
-            preferredPlacesBelow: preferredSide
-        )
-        return PresentationLayout(
-            request: request,
-            showsOnlySelectedItem: showsOnlySelectedItem,
-            panelSize: resolvedPanelSize,
-            targetFrame: layout.frame,
-            placesBelow: layout.placesBelow,
-            screenFrame: targetScreen.frame,
-            usesHorizontalAnchor: fixedOriginX != nil
-        )
-    }
-
     private func presentEntry(
-        _ layout: PresentationLayout,
+        _ layout: HUDPresentationLayout,
         reduceMotion: Bool
     ) {
         panelSize = layout.panelSize
@@ -357,12 +186,6 @@ public final class HUDController {
         panel.alphaValue = reduceMotion ? 1 : 0
         panel.orderFrontRegardless()
         displayedRevision = layout.request.revision
-        horizontalAnchor = HUDHorizontalAnchor.initial(
-            screenFrame: layout.screenFrame,
-            hudOriginX: layout.targetFrame.minX,
-            candidateOriginX: layout.request.screenRect.minX
-        )
-        preferredPlacesBelow = layout.placesBelow
         guard !reduceMotion else { return }
 
         entryAnimationGeneration &+= 1
@@ -389,13 +212,12 @@ public final class HUDController {
         }
         entryAnimationIsActive = false
         panel.alphaValue = 1
-        guard let pendingPresentation else { return }
-        self.pendingPresentation = nil
-        present(pendingPresentation)
+        guard let request = scheduler.takePendingRequest() else { return }
+        present(request)
     }
 
     private func presentVisible(
-        _ layout: PresentationLayout,
+        _ layout: HUDPresentationLayout,
         update: HUDContentUpdate,
         reduceMotion: Bool
     ) {
@@ -428,37 +250,18 @@ public final class HUDController {
         if panel.frame != layout.targetFrame {
             panel.setFrame(layout.targetFrame, display: true)
         }
-        let candidateOriginX = layout.request.screenRect.minX
-        if layout.usesHorizontalAnchor,
-            let anchor = horizontalAnchor,
-            anchor.screenFrame == layout.screenFrame
-        {
-            horizontalAnchor = anchor.following(
-                candidateOriginX: candidateOriginX
-            )
-        } else {
-            horizontalAnchor = HUDHorizontalAnchor.initial(
-                screenFrame: layout.screenFrame,
-                hudOriginX: layout.targetFrame.minX,
-                candidateOriginX: candidateOriginX
-            )
-        }
-        preferredPlacesBelow = layout.placesBelow
         displayedRevision = layout.request.revision
     }
 
     public func hide(animated: Bool = true) {
-        cancelStalePresentation()
-        cancelCoalescedPresentation()
-        pendingPresentation = nil
+        scheduler.reset()
         entryAnimationGeneration &+= 1
         entryAnimationIsActive = false
         transitionGeneration &+= 1
         let generation = transitionGeneration
         guard panel.isVisible else {
             panel.alphaValue = 0
-            horizontalAnchor = nil
-            preferredPlacesBelow = nil
+            geometryResolver.reset()
             return
         }
         let reduceMotion =
@@ -499,47 +302,11 @@ public final class HUDController {
         panel.orderOut(nil)
         panel.alphaValue = 0
         displayedRevision = nil
-        horizontalAnchor = nil
-        preferredPlacesBelow = nil
-    }
-
-    private func beginStalePresentation() {
-        stalePresentationGeneration &+= 1
-        let generation = stalePresentationGeneration
-
-        stalePresentationTask = Task { @MainActor [weak self] in
-            do {
-                try await Task.sleep(
-                    nanoseconds: Timing.staleDimNanoseconds
-                )
-                guard let self,
-                    self.stalePresentationGeneration == generation,
-                    self.panel.isVisible
-                else {
-                    return
-                }
-                self.animateTextOpacity(Timing.staleOpacity)
-                self.stalePresentationTask = nil
-            } catch {
-                return
-            }
-        }
-    }
-
-    private func cancelStalePresentation() {
-        stalePresentationGeneration &+= 1
-        stalePresentationTask?.cancel()
-        stalePresentationTask = nil
-    }
-
-    private func cancelCoalescedPresentation() {
-        presentationCoalescingTask?.cancel()
-        presentationCoalescingTask = nil
-        coalescedPresentation = nil
+        geometryResolver.reset()
     }
 
     private func applyContent(
-        _ request: PresentationRequest,
+        _ request: HUDPresentationRequest,
         showsOnlySelectedItem: Bool? = nil,
         textOpacity: Double,
         animatesText: Bool
@@ -584,87 +351,6 @@ public final class HUDController {
         var transaction = Transaction(animation: nil)
         transaction.disablesAnimations = true
         withTransaction(transaction, changes)
-    }
-
-    static func contentUpdate(
-        displayedRevision: UInt64?,
-        incomingRevision: UInt64?,
-        isVisible: Bool
-    ) -> HUDContentUpdate {
-        guard isVisible else { return .entry }
-        guard let displayedRevision,
-            let incomingRevision,
-            displayedRevision == incomingRevision
-        else {
-            return .transition
-        }
-        return .patch
-    }
-
-    static func maximumPanelWidth(
-        in visibleFrame: CGRect,
-        fixedOriginX: CGFloat?
-    ) -> CGFloat {
-        let fullWidth =
-            visibleFrame.width - HUDLayout.screenEdgeInset * 2
-        guard let fixedOriginX else { return max(120, fullWidth) }
-        let availableWidth =
-            visibleFrame.maxX - HUDLayout.screenEdgeInset - fixedOriginX
-        return max(120, min(fullWidth, availableWidth))
-    }
-
-    static func panelSize(
-        for items: [HUDItem],
-        maximumWidth: CGFloat,
-        selectedOnly: Bool = false,
-        layoutStyle: HUDLayoutStyle = .candidateRow,
-        appearance: HUDAppearance = .default
-    ) -> NSSize {
-        let metrics = HUDLayoutMetrics(appearance: appearance)
-        let height = metrics.panelHeight(
-            for: selectedOnly ? 1 : items.count
-        )
-        let widthLimit = max(120, maximumWidth)
-        let width: CGFloat
-        if selectedOnly {
-            width =
-                items.map {
-                    HUDItemRow.naturalPanelWidth(
-                        for: [$0],
-                        layoutStyle: layoutStyle,
-                        appearance: appearance
-                    )
-                }.max() ?? 120
-        } else {
-            width = HUDItemRow.naturalPanelWidth(
-                for: items,
-                layoutStyle: layoutStyle,
-                appearance: appearance
-            )
-        }
-        let minimumWidth: CGFloat
-        if selectedOnly
-            || items.count <= 1
-            || layoutStyle == .selectedTranslations
-        {
-            minimumWidth = 120
-        } else {
-            minimumWidth = max(
-                220,
-                HUDItemRow.minimumPanelWidth(
-                    for: items.count,
-                    layoutStyle: layoutStyle,
-                    appearance: appearance
-                )
-            )
-        }
-        return NSSize(
-            width: min(
-                widthLimit,
-                max(minimumWidth, width)
-            ),
-            height: height
-        )
     }
 
 }
