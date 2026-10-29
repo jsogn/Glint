@@ -110,6 +110,37 @@ final class SmartRouterTests: XCTestCase {
         XCTAssertEqual(output?.text, "danmaku")
     }
 
+    func testModelFirstDoesNotAppendExplanatoryDictionaryGloss()
+        async throws
+    {
+        let dictionary = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "cedict",
+                priority: 0,
+                role: .authoritative,
+                engine: MockDictionary(
+                    result: TranslationResult(
+                        text:
+                            "Beijing municipality, capital of the People's Republic of China"
+                    )
+                )
+            )
+        ])
+        let router = SmartRouter(
+            dictionary: dictionary,
+            translation: MockTranslator(
+                result: TranslationResult(text: "Beijing")
+            )
+        )
+
+        let output = try await router.route(
+            Candidate(text: "北京", kind: .word),
+            mode: .modelFirst
+        )
+
+        XCTAssertEqual(output?.options.map(\.text), ["Beijing"])
+    }
+
     func testSmartFusionKeepsHighestRankForEquivalentDictionarySurfaces()
         async throws
     {

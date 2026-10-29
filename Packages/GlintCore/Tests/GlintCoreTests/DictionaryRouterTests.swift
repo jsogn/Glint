@@ -10,6 +10,22 @@ private struct OrderedDictionary: DictionaryEngine {
     }
 }
 
+private struct OptionsDictionary: DictionaryEngine {
+    let options: [String]
+
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        guard !options.isEmpty else { return nil }
+        return TranslationResult(
+            options: options.enumerated().map {
+                TranslationOption(
+                    text: $0.element,
+                    score: 1 - Double($0.offset) * 0.01
+                )
+            }
+        )
+    }
+}
+
 private struct FailingDictionary: DictionaryEngine {
     func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
         throw GlintError.engineUnavailable
@@ -83,6 +99,108 @@ final class DictionaryRouterTests: XCTestCase {
 
         let result = await router.lookup(Candidate(text: "测试", kind: .word))
         XCTAssertEqual(result?.text, "fallback")
+    }
+
+    func testLongExplanatoryResultDoesNotBlockConciseFallback() async {
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "cedict",
+                priority: 0,
+                role: .authoritative,
+                engine: OrderedDictionary(
+                    value:
+                        "Beijing municipality, capital of the People's Republic of China"
+                )
+            ),
+            DictionaryRoute(
+                id: "ecdict",
+                priority: 1,
+                role: .fallback,
+                engine: OrderedDictionary(value: "Beijing")
+            ),
+        ])
+
+        let result = await router.lookup(
+            Candidate(text: "北京", kind: .word)
+        )
+
+        XCTAssertEqual(result?.options.map(\.text), ["Beijing"])
+    }
+
+    func testShortAppositiveDescriptionDoesNotBlockConciseFallback() async {
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "cedict",
+                priority: 0,
+                role: .authoritative,
+                engine: OrderedDictionary(
+                    value: "London, capital of United Kingdom"
+                )
+            ),
+            DictionaryRoute(
+                id: "ecdict",
+                priority: 1,
+                role: .fallback,
+                engine: OrderedDictionary(value: "London")
+            ),
+        ])
+
+        let result = await router.lookup(
+            Candidate(text: "伦敦", kind: .word)
+        )
+
+        XCTAssertEqual(result?.options.map(\.text), ["London"])
+    }
+
+    func testFiltersExplanatoryOptionsWithoutDroppingCompactSynonyms() async {
+        let fallback = CountingDictionary(value: "should not be used")
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "cedict",
+                priority: 0,
+                role: .authoritative,
+                engine: OptionsDictionary(
+                    options: [
+                        "London, capital of United Kingdom",
+                        "London",
+                    ]
+                )
+            ),
+            DictionaryRoute(
+                id: "fallback",
+                priority: 1,
+                role: .fallback,
+                engine: fallback
+            ),
+        ])
+
+        let result = await router.lookup(
+            Candidate(text: "伦敦", kind: .word)
+        )
+
+        XCTAssertEqual(result?.options.map(\.text), ["London"])
+        let fallbackCount = await fallback.lookupCount()
+        XCTAssertEqual(fallbackCount, 0)
+    }
+
+    func testOnlyExplanatoryOptionsProduceNoDictionaryMatch() async {
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "cedict",
+                priority: 0,
+                role: .authoritative,
+                engine: OrderedDictionary(
+                    value:
+                        "Beijing municipality, capital of the People's Republic of China"
+                )
+            )
+        ])
+
+        let result = await router.lookup(
+            Candidate(text: "北京", kind: .word)
+        )
+
+        XCTAssertNil(result)
     }
 
     func testFallsThroughWhenDictionaryFails() async throws {

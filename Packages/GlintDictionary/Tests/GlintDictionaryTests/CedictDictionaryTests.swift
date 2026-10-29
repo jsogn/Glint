@@ -142,6 +142,70 @@ final class CedictDictionaryTests: XCTestCase {
         XCTAssertEqual(result?.text, "Chinese")
     }
 
+    func testRouterFiltersLongPlaceDefinition() async {
+        let router = makeRouter()
+        let beijing = await router.lookup(
+            Candidate(text: "北京", kind: .word)
+        )
+        let london = await router.lookup(
+            Candidate(text: "伦敦", kind: .word)
+        )
+
+        XCTAssertEqual(beijing?.text, "Beijing")
+        XCTAssertFalse(
+            beijing?.options.contains {
+                $0.text.contains("capital of the People's Republic")
+            } == true
+        )
+        XCTAssertEqual(london?.text, "London")
+        XCTAssertFalse(
+            london?.options.contains {
+                $0.text.contains("capital of United Kingdom")
+            } == true
+        )
+    }
+
+    func testRouterPreservesCommasBelongingToCompactPhrases() async {
+        let router = makeRouter()
+        let washington = await router.lookup(
+            Candidate(text: "华盛顿", kind: .word)
+        )
+        let policy = await router.lookup(
+            Candidate(text: "一中一台", kind: .word)
+        )
+        let surly = await router.lookup(
+            Candidate(text: "倔头", kind: .word)
+        )
+
+        XCTAssertTrue(
+            washington?.options.contains {
+                $0.text == "Washington, D.C."
+            } == true,
+            "\(washington?.options.map(\.text) ?? [])"
+        )
+        XCTAssertFalse(
+            washington?.options.contains {
+                $0.text.contains("first US president")
+                    || $0.text == "Washington, US State"
+            } == true
+        )
+        XCTAssertTrue(
+            policy?.options.contains {
+                $0.text == "one China, one Taiwan"
+            } == true
+        )
+        XCTAssertTrue(
+            surly?.options.contains {
+                $0.text == "surly, irascible person"
+            } == true
+        )
+        XCTAssertFalse(
+            surly?.options.contains {
+                $0.text == "surly" || $0.text == "irascible person"
+            } == true
+        )
+    }
+
     func testAuthoritativeRoutingIncludesTaggedSynonyms() async {
         let router = makeRouter()
         let dictionary = await router.lookup(

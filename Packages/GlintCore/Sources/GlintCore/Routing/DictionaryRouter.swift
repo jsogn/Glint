@@ -81,16 +81,17 @@ public struct DictionaryRouter: DictionaryEngine {
         }
         let routeBoost = max(0, 0.2 - Double(route.priority) * 0.02)
         return result.options.flatMap { option in
-            DictionarySurface.split(option.text).enumerated().map {
-                index,
-                surface in
-                TranslationOption(
-                    text: surface,
-                    score: option.score + routeBoost
-                        - DictionarySurface.penalty(for: surface)
-                        - Double(index) * 0.01
-                )
-            }
+            DictionarySurface.split(option.text)
+                .filter(DictionarySurface.isDisplayable)
+                .enumerated()
+                .map { index, surface in
+                    TranslationOption(
+                        text: surface,
+                        score: option.score + routeBoost
+                            - DictionarySurface.penalty(for: surface)
+                            - Double(index) * 0.01
+                    )
+                }
         }
     }
 }
