@@ -273,6 +273,24 @@ private struct MultiOptionTranslation: TranslationEngine {
     }
 }
 
+private struct MixedLengthTranslation: TranslationEngine {
+    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        TranslationResult(
+            options: [
+                TranslationOption(text: "The curtain", score: 1),
+                TranslationOption(text: "barrage", score: 0.8),
+                TranslationOption(text: "danmaku", score: 0.7),
+                TranslationOption(
+                    text:
+                        "function which allows viewers to post on-screen comments in videos in real time",
+                    score: 0.6
+                ),
+                TranslationOption(text: "bullet screen", score: 0.5),
+            ]
+        )
+    }
+}
+
 private actor ParallelTranslation: TranslationEngine {
     private var activeCount = 0
     private var peakActiveCount = 0
@@ -910,6 +928,40 @@ final class GlintMacTests: XCTestCase {
                 "alternative",
                 "secondary",
                 "quaternary",
+            ]
+        )
+    }
+
+    func testShortCandidatePresentationDropsLongExplanations() async {
+        let presentations = await CandidateTranslationPipeline.translate(
+            [
+                Candidate(
+                    text: "弹幕",
+                    kind: .word
+                )
+            ],
+            selectedIndex: 0,
+            mode: .modelFirst,
+            configurationToken: "model-a",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: MixedLengthTranslation()
+            ),
+            memo: TranslationMemo(),
+            displayOptionLimit: 4
+        )
+
+        XCTAssertEqual(
+            presentations.first?.translation,
+            "The curtain · barrage · danmaku"
+        )
+        XCTAssertEqual(
+            presentations.first?.insertionOptions,
+            [
+                "The curtain",
+                "barrage",
+                "danmaku",
+                "bullet screen",
             ]
         )
     }

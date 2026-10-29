@@ -164,9 +164,12 @@ enum CandidateTranslationPipeline {
         selectionIsExact: Bool,
         displayOptionLimit: Int
     ) -> CandidateTranslationPresentation {
-        let result = results[index].flatMap { result -> TranslationResult? in
-            guard isDisplayable(result) else { return nil }
-            return result
+        let result = results[index].flatMap {
+            presentationResult(
+                for: candidates[index],
+                result: $0,
+                displayOptionLimit: displayOptionLimit
+            )
         }
         let translation: String? = result.flatMap { result -> String? in
             let text =
@@ -189,6 +192,31 @@ enum CandidateTranslationPipeline {
                 selectionIsExact
                 && index == selectedIndex
         )
+    }
+
+    private static func presentationResult(
+        for candidate: Candidate,
+        result: TranslationResult,
+        displayOptionLimit: Int
+    ) -> TranslationResult? {
+        let conciseOptions: [TranslationOption]
+        if displayOptionLimit > 1, candidate.text.count <= 4 {
+            conciseOptions = result.options.filter {
+                isConciseOption($0.text)
+            }
+        } else {
+            conciseOptions = result.options
+        }
+        let filtered =
+            conciseOptions.count >= 2
+            ? TranslationResult(options: conciseOptions)
+            : result
+        return isDisplayable(filtered) ? filtered : nil
+    }
+
+    private static func isConciseOption(_ text: String) -> Bool {
+        text.count <= 48
+            && text.split(whereSeparator: \.isWhitespace).count <= 8
     }
 
     private static func isDisplayable(_ result: TranslationResult) -> Bool {
