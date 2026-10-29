@@ -51,6 +51,7 @@ struct HUDPresentationRequest {
     let layoutStyle: HUDLayoutStyle
     let appearance: HUDAppearance
     let screenRect: CGRect
+    let inputLineRect: CGRect?
     let position: HUDPosition
     let spacing: Double
     let opacity: Double
@@ -67,7 +68,6 @@ struct HUDPresentationLayout {
 @MainActor
 struct HUDGeometryResolver {
     private var horizontalAnchor: HUDHorizontalAnchor?
-    private var preferredPlacesBelow: Bool?
 
     mutating func resolve(
         _ request: HUDPresentationRequest
@@ -86,6 +86,14 @@ struct HUDGeometryResolver {
             width: request.screenRect.width,
             height: request.screenRect.height
         )
+        let appKitInputLineRect = request.inputLineRect.map {
+            CGRect(
+                x: $0.minX,
+                y: mainScreen.frame.maxY - $0.maxY,
+                width: $0.width,
+                height: $0.height
+            )
+        }
         let targetScreen =
             NSScreen.screens.first {
                 $0.frame.contains(
@@ -125,10 +133,6 @@ struct HUDGeometryResolver {
             layoutStyle: request.layoutStyle,
             appearance: request.appearance
         )
-        let preferredSide =
-            horizontalAnchor?.screenFrame == targetScreen.frame
-            ? preferredPlacesBelow
-            : nil
         let layout = HUDLayout.placement(
             near: appKitRect,
             panelSize: panelSize,
@@ -136,14 +140,13 @@ struct HUDGeometryResolver {
             position: request.position,
             spacing: request.spacing,
             horizontalOrigin: fixedOriginX,
-            preferredPlacesBelow: preferredSide
+            inputLineRect: appKitInputLineRect
         )
         horizontalAnchor = HUDHorizontalAnchor.initial(
             screenFrame: targetScreen.frame,
             hudOriginX: layout.frame.minX,
             candidateOriginX: request.screenRect.minX
         )
-        preferredPlacesBelow = layout.placesBelow
         return HUDPresentationLayout(
             request: request,
             showsOnlySelectedItem: showsOnlySelectedItem,
@@ -155,7 +158,6 @@ struct HUDGeometryResolver {
 
     mutating func reset() {
         horizontalAnchor = nil
-        preferredPlacesBelow = nil
     }
 
     static func maximumPanelWidth(

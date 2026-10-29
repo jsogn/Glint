@@ -49,7 +49,7 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertTrue(below.placesBelow)
     }
 
-    func testAutomaticPlacementUsesScreenCenterDirection() {
+    func testAutomaticPlacementDefaultsBelowWithoutInputLine() {
         let upper = HUDLayout.placement(
             near: CGRect(x: 300, y: 600, width: 180, height: 32),
             panelSize: panelSize,
@@ -66,7 +66,33 @@ final class HUDLayoutTests: XCTestCase {
         )
 
         XCTAssertTrue(upper.placesBelow)
-        XCTAssertFalse(lower.placesBelow)
+        XCTAssertTrue(lower.placesBelow)
+    }
+
+    func testAutomaticPlacementMovesAboveWhenCandidateIsAboveInputLine() {
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 300, y: 600, width: 180, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .automatic,
+            spacing: 7,
+            inputLineRect: CGRect(x: 300, y: 550, width: 180, height: 24)
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+    }
+
+    func testAutomaticPlacementMovesBelowWhenCandidateIsBelowInputLine() {
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 300, y: 300, width: 180, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .automatic,
+            spacing: 7,
+            inputLineRect: CGRect(x: 300, y: 360, width: 180, height: 24)
+        )
+
+        XCTAssertTrue(placement.placesBelow)
     }
 
     func testHorizontalPlacementClampsInsideVisibleFrame() {
@@ -141,92 +167,7 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(moved.candidateOriginX, 370)
     }
 
-    func testAutomaticPlacementKeepsPreferredSideNearCenter() {
-        let centeredCandidate = CGRect(
-            x: 300,
-            y: 434,
-            width: 180,
-            height: 32
-        )
-        let above = HUDLayout.placement(
-            near: centeredCandidate,
-            panelSize: panelSize,
-            visibleFrame: visibleFrame,
-            position: .automatic,
-            spacing: 7,
-            preferredPlacesBelow: false
-        )
-        let below = HUDLayout.placement(
-            near: centeredCandidate,
-            panelSize: panelSize,
-            visibleFrame: visibleFrame,
-            position: .automatic,
-            spacing: 7,
-            preferredPlacesBelow: true
-        )
-
-        XCTAssertFalse(above.placesBelow)
-        XCTAssertTrue(below.placesBelow)
-    }
-
-    func testAutomaticPlacementKeepsPreferredBelowInsideCenterBand() {
-        let candidate = CGRect(
-            x: 300,
-            y: 418,
-            width: 180,
-            height: 32
-        )
-        let placement = HUDLayout.placement(
-            near: candidate,
-            panelSize: panelSize,
-            visibleFrame: visibleFrame,
-            position: .automatic,
-            spacing: 7,
-            preferredPlacesBelow: true
-        )
-
-        XCTAssertTrue(placement.placesBelow)
-    }
-
-    func testAutomaticPlacementFlipsBelowPreferenceAfterCrossingCenter() {
-        let candidate = CGRect(
-            x: 300,
-            y: 300,
-            width: 180,
-            height: 32
-        )
-        let placement = HUDLayout.placement(
-            near: candidate,
-            panelSize: panelSize,
-            visibleFrame: visibleFrame,
-            position: .automatic,
-            spacing: 7,
-            preferredPlacesBelow: true
-        )
-
-        XCTAssertFalse(placement.placesBelow)
-    }
-
-    func testAutomaticPlacementFlipsAbovePreferenceAfterCrossingCenter() {
-        let candidate = CGRect(
-            x: 300,
-            y: 600,
-            width: 180,
-            height: 32
-        )
-        let placement = HUDLayout.placement(
-            near: candidate,
-            panelSize: panelSize,
-            visibleFrame: visibleFrame,
-            position: .automatic,
-            spacing: 7,
-            preferredPlacesBelow: false
-        )
-
-        XCTAssertTrue(placement.placesBelow)
-    }
-
-    func testAutomaticPlacementStillFlipsWhenPreferredSideDoesNotFit() {
+    func testAutomaticPlacementFlipsAboveWhenBelowDoesNotFit() {
         let nearBottom = CGRect(
             x: 300,
             y: 20,
@@ -238,11 +179,29 @@ final class HUDLayoutTests: XCTestCase {
             panelSize: panelSize,
             visibleFrame: visibleFrame,
             position: .automatic,
-            spacing: 7,
-            preferredPlacesBelow: true
+            spacing: 7
         )
 
         XCTAssertFalse(placement.placesBelow)
+    }
+
+    func testAutomaticPlacementFallsBelowWhenAboveDoesNotFit() {
+        let nearTop = CGRect(
+            x: 300,
+            y: 860,
+            width: 180,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: nearTop,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .automatic,
+            spacing: 7,
+            inputLineRect: CGRect(x: 300, y: 820, width: 180, height: 24)
+        )
+
+        XCTAssertTrue(placement.placesBelow)
     }
 
     func testExplicitBelowFlipsAboveWhenBottomHasNoRoom() {

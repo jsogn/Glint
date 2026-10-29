@@ -76,6 +76,7 @@ final class HUDPresentationSchedulerTests: XCTestCase {
             layoutStyle: .selectedTranslations,
             appearance: .default,
             screenRect: CGRect(x: 100, y: 100, width: 200, height: 30),
+            inputLineRect: nil,
             position: .automatic,
             spacing: 8,
             opacity: 0.8

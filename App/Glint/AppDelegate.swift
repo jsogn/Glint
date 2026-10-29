@@ -540,12 +540,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .results(
             let translations,
             let highlight,
+            let inputLineRect,
             let revision,
             let isProgressive
         ):
             hudEventCoordinator.show(
                 translations: translations,
                 highlight: highlight,
+                inputLineRect: inputLineRect,
                 revision: revision,
                 isProgressive: isProgressive,
                 isMonitoring: windowModel.isMonitoring

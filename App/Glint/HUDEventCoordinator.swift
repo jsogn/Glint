@@ -42,6 +42,7 @@ final class HUDEventCoordinator {
     func show(
         translations: [CandidateTranslationPresentation],
         highlight: CandidateRegion,
+        inputLineRect: CGRect?,
         revision: UInt64,
         isProgressive: Bool,
         isMonitoring: Bool
@@ -62,6 +63,7 @@ final class HUDEventCoordinator {
         hud.show(
             items: items,
             near: highlight.cgRect,
+            inputLineRect: inputLineRect,
             layoutStyle:
                 scope == .row
                 ? .candidateRow

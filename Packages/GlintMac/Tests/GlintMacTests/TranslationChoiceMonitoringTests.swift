@@ -133,6 +133,19 @@ private final class PresentationRecorder: Sendable {
     }
 }
 
+private final class InputLineRectRecorder: Sendable {
+    private let inputLineRect =
+        OSAllocatedUnfairLock<CGRect?>(initialState: nil)
+
+    func record(_ value: CGRect?) {
+        inputLineRect.withLock { $0 = value }
+    }
+
+    var latest: CGRect? {
+        inputLineRect.withLock { $0 }
+    }
+}
+
 private final class MutableSecureInput: Sendable {
     private let enabled = OSAllocatedUnfairLock(initialState: false)
 
@@ -356,7 +369,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         let events = await controller.events
         let collector = Task {
             for await event in events {
-                if case .results(let presentations, _, _, _) = event {
+                if case .results(let presentations, _, _, _, _) = event {
                     recorder.record(presentations)
                 }
             }
@@ -374,6 +387,43 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         XCTAssertEqual(
             recorder.latest?.map(\.translation),
             ["one", "two"]
+        )
+    }
+
+    func testResultsCarryFocusedInputLineRect() async throws {
+        let writer = RecordingTranslationTextWriter()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyInsertionDictionary(),
+                translation: InsertionMultiOptionTranslation()
+            ),
+            inputSource: InsertionInputSource(),
+            focus: InsertionFocus(),
+            candidateReaders: InsertionCandidateRouter(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false },
+            translationTextInserter: writer
+        )
+        let recorder = InputLineRectRecorder()
+        let events = await controller.events
+        let collector = Task {
+            for await event in events {
+                if case .results(_, _, let inputLineRect, _, _) = event {
+                    recorder.record(inputLineRect)
+                }
+            }
+        }
+        defer { collector.cancel() }
+
+        await controller.setCandidateDwellDuration(0.08)
+        _ = await controller.tick()
+        try await Task.sleep(for: .milliseconds(90))
+        _ = await controller.tick()
+        try await waitUntil { recorder.latest != nil }
+
+        XCTAssertEqual(
+            recorder.latest,
+            CGRect(x: 120, y: 160, width: 2, height: 20)
         )
     }
 

@@ -106,6 +106,7 @@ public final class HUDController {
     public func show(
         items: [HUDItem],
         near screenRect: CGRect,
+        inputLineRect: CGRect? = nil,
         layoutStyle: HUDLayoutStyle = .candidateRow,
         position: HUDPosition = .automatic,
         spacing: Double = 8,
@@ -120,6 +121,7 @@ public final class HUDController {
                 layoutStyle: layoutStyle,
                 appearance: appearance,
                 screenRect: screenRect,
+                inputLineRect: inputLineRect,
                 position: position,
                 spacing: spacing,
                 opacity: opacity

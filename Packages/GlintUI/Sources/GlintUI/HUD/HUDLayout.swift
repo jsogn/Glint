@@ -7,7 +7,6 @@ struct HUDLayoutResult: Equatable {
 
 enum HUDLayout {
     static let screenEdgeInset: CGFloat = 8
-    static let automaticFlipHysteresis: CGFloat = 32
 
     static func placement(
         near candidateRect: CGRect,
@@ -16,7 +15,7 @@ enum HUDLayout {
         position: HUDPosition,
         spacing: Double,
         horizontalOrigin: CGFloat? = nil,
-        preferredPlacesBelow: Bool? = nil
+        inputLineRect: CGRect? = nil
     ) -> HUDLayoutResult {
         let gap = CGFloat(max(0, spacing))
         let minimumX = visibleFrame.minX + screenEdgeInset
@@ -41,22 +40,13 @@ enum HUDLayout {
         let proposedY: CGFloat
         switch position {
         case .automatic:
-            // Input methods flip the candidate bar above the input line when
-            // there is not enough room below. Keep the HUD on the roomier
-            // side of the screen and retain the current side near the center
-            // so small candidate movement cannot make it jump.
-            let centerY = visibleFrame.midY
-            let desiredPlacesBelow: Bool
-            if let preferredPlacesBelow {
-                desiredPlacesBelow =
-                    preferredPlacesBelow
-                    ? candidateRect.midY
-                        >= centerY - Self.automaticFlipHysteresis
-                    : candidateRect.midY
-                        > centerY + Self.automaticFlipHysteresis
-            } else {
-                desiredPlacesBelow = candidateRect.midY >= centerY
-            }
+            // Move away from the input line. Without reliable input-line
+            // geometry, prefer below because macOS commonly places the
+            // candidate bar under the edited line.
+            let desiredPlacesBelow =
+                inputLineRect.map {
+                    candidateRect.midY <= $0.midY
+                } ?? true
             if desiredPlacesBelow, belowFits {
                 placesBelow = true
             } else if !desiredPlacesBelow, aboveFits {
