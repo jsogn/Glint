@@ -40,9 +40,31 @@ protocol TranslationKeyboardEventPosting: Sendable {
     ) -> Bool
 }
 
+protocol TranslationCGEventTransport: Sendable {
+    func post(_ event: CGEvent, to processIdentifier: pid_t) -> Bool
+}
+
+private struct SystemTranslationCGEventTransport:
+    TranslationCGEventTransport
+{
+    func post(_ event: CGEvent, to processIdentifier: pid_t) -> Bool {
+        event.postToPid(processIdentifier)
+        return true
+    }
+}
+
 struct SystemTranslationKeyboardEventPoster:
     TranslationKeyboardEventPosting
 {
+    private let eventTransport: any TranslationCGEventTransport
+
+    init(
+        eventTransport: any TranslationCGEventTransport =
+            SystemTranslationCGEventTransport()
+    ) {
+        self.eventTransport = eventTransport
+    }
+
     func postKey(
         virtualKey: UInt16,
         isKeyDown: Bool,
@@ -60,8 +82,10 @@ struct SystemTranslationKeyboardEventPoster:
             return false
         }
         event.flags = []
-        event.post(tap: .cghidEventTap)
-        return true
+        return eventTransport.post(
+            event,
+            to: processIdentifier
+        )
     }
 
     func postUnicode(
@@ -94,15 +118,22 @@ struct SystemTranslationKeyboardEventPoster:
             stringLength: characters.count,
             unicodeString: &characters
         )
-        keyDown.post(tap: .cghidEventTap)
-        keyUp.post(tap: .cghidEventTap)
-        return true
+        let didPostKeyDown = eventTransport.post(
+            keyDown,
+            to: processIdentifier
+        )
+        let didPostKeyUp = eventTransport.post(
+            keyUp,
+            to: processIdentifier
+        )
+        return didPostKeyDown && didPostKeyUp
     }
 }
 
 struct SystemTranslationTextInserter: TranslationTextInserting {
     private let focusSnapshot: @Sendable () -> FocusSnapshot?
     private let frontmostProcessIdentifier: @Sendable () -> pid_t?
+    private let secureInputIsEnabled: @Sendable () -> Bool
     private let keyboardEventPoster: any TranslationKeyboardEventPosting
 
     init(
@@ -112,11 +143,15 @@ struct SystemTranslationTextInserter: TranslationTextInserting {
         frontmostProcessIdentifier: @escaping @Sendable () -> pid_t? = {
             NSWorkspace.shared.frontmostApplication?.processIdentifier
         },
+        secureInputIsEnabled: @escaping @Sendable () -> Bool = {
+            FocusMonitor.isSecureInputEnabled()
+        },
         keyboardEventPoster: any TranslationKeyboardEventPosting =
             SystemTranslationKeyboardEventPoster()
     ) {
         self.focusSnapshot = focusSnapshot
         self.frontmostProcessIdentifier = frontmostProcessIdentifier
+        self.secureInputIsEnabled = secureInputIsEnabled
         self.keyboardEventPoster = keyboardEventPoster
     }
 
@@ -134,7 +169,7 @@ struct SystemTranslationTextInserter: TranslationTextInserting {
             )
             return false
         }
-        guard !FocusMonitor.isSecureInputEnabled() else {
+        guard !secureInputIsEnabled() else {
             translationChoiceLogger.notice(
                 "insert writer rejected reason=secure_input host=\(host, privacy: .public)"
             )
@@ -149,6 +184,15 @@ struct SystemTranslationTextInserter: TranslationTextInserting {
         guard firstSnapshot.processIdentifier == processIdentifier else {
             translationChoiceLogger.notice(
                 "insert writer rejected reason=pid_changed host=\(host, privacy: .public)"
+            )
+            return false
+        }
+        guard
+            let focusContextIdentifier =
+                firstSnapshot.focusContextIdentifier
+        else {
+            translationChoiceLogger.notice(
+                "insert writer rejected reason=focus_identity_missing host=\(host, privacy: .public)"
             )
             return false
         }
@@ -215,6 +259,8 @@ struct SystemTranslationTextInserter: TranslationTextInserting {
                     guard
                         let snapshot = focusSnapshot(),
                         snapshot.processIdentifier == processIdentifier,
+                        snapshot.focusContextIdentifier
+                            == focusContextIdentifier,
                         snapshot.isEditableTextInput,
                         !snapshot.hasTextSelection
                     else {
@@ -246,12 +292,26 @@ struct SystemTranslationTextInserter: TranslationTextInserting {
             )
             return false
         }
+        guard
+            let finalSnapshot = focusSnapshot(),
+            finalSnapshot.processIdentifier == processIdentifier,
+            finalSnapshot.focusContextIdentifier == focusContextIdentifier,
+            finalSnapshot.isEditableTextInput,
+            !finalSnapshot.hasTextSelection,
+            !finalSnapshot.usesProcessFallback,
+            !secureInputIsEnabled()
+        else {
+            translationChoiceLogger.notice(
+                "insert writer rejected reason=target_changed host=\(host, privacy: .public)"
+            )
+            return false
+        }
         let posted = keyboardEventPoster.postUnicode(
             text,
             to: processIdentifier
         )
         translationChoiceLogger.notice(
-            "insert writer posted_unicode=\(posted, privacy: .public) transport=global_hid host=\(host, privacy: .public) composition=\(firstSnapshot.compositionState.logValue, privacy: .public)"
+            "insert writer posted_unicode=\(posted, privacy: .public) transport=targeted_hid host=\(host, privacy: .public) composition=\(firstSnapshot.compositionState.logValue, privacy: .public)"
         )
         return posted
     }
@@ -285,12 +345,13 @@ protocol TranslationChoiceHotKeyRegistering: AnyObject {
 
 @MainActor
 public final class TranslationChoiceShortcutCoordinator {
-    public var onChoice: (@MainActor (TranslationChoiceOffer, Int) -> Void)?
+    public var onChoice: (@MainActor (TranslationChoiceOffer, Int) async -> Bool)?
 
     private let hotKeys: any TranslationChoiceHotKeyRegistering
     private var shortcut: TranslationInsertionShortcut
     private var offer: TranslationChoiceOffer?
     private var choiceKeysAreEnabled = false
+    private var isSelectingChoice = false
     private var isEnabled = true
 
     public convenience init() {
@@ -372,7 +433,14 @@ public final class TranslationChoiceShortcutCoordinator {
     }
 
     private func enableChoiceKeys() {
-        guard !choiceKeysAreEnabled, let offer else { return }
+        guard
+            isEnabled,
+            !isSelectingChoice,
+            !choiceKeysAreEnabled,
+            let offer
+        else {
+            return
+        }
         let choiceCount = min(offer.choices.count, 9)
         guard choiceCount > 0 else { return }
         choiceKeysAreEnabled = hotKeys.setChoiceKeysEnabled(
@@ -395,6 +463,7 @@ public final class TranslationChoiceShortcutCoordinator {
 
     private func choose(_ index: Int) {
         guard
+            !isSelectingChoice,
             choiceKeysAreEnabled,
             let offer,
             offer.choices.indices.contains(index)
@@ -402,11 +471,24 @@ public final class TranslationChoiceShortcutCoordinator {
             return
         }
         disableChoiceKeys()
-        self.offer = nil
+        isSelectingChoice = true
         translationChoiceLogger.notice(
             "choice selected index=\(index, privacy: .public)"
         )
-        onChoice?(offer, index)
+        Task { @MainActor [weak self] in
+            let inserted = await self?.onChoice?(offer, index) ?? false
+            guard let self else { return }
+            self.isSelectingChoice = false
+            guard self.offer == offer else {
+                self.enableChoiceKeys()
+                return
+            }
+            if inserted {
+                self.offer = nil
+            } else {
+                self.enableChoiceKeys()
+            }
+        }
     }
 }
 

@@ -18,6 +18,7 @@ public struct FocusSnapshot: Sendable, Equatable {
     public let isEditableTextInput: Bool
     public let processIdentifier: pid_t?
     public let usesProcessFallback: Bool
+    public let focusContextIdentifier: UInt64?
 
     public init(
         caretRect: CGRect?,
@@ -26,7 +27,8 @@ public struct FocusSnapshot: Sendable, Equatable {
         compositionState: TextCompositionState = .unknown,
         isEditableTextInput: Bool = false,
         processIdentifier: pid_t? = nil,
-        usesProcessFallback: Bool = false
+        usesProcessFallback: Bool = false,
+        focusContextIdentifier: UInt64? = nil
     ) {
         self.caretRect = caretRect
         self.elementFrame = elementFrame
@@ -35,6 +37,7 @@ public struct FocusSnapshot: Sendable, Equatable {
         self.isEditableTextInput = isEditableTextInput
         self.processIdentifier = processIdentifier
         self.usesProcessFallback = usesProcessFallback
+        self.focusContextIdentifier = focusContextIdentifier
     }
 }
 
@@ -144,7 +147,8 @@ public struct FocusMonitor: Sendable {
             hasTextSelection: hasTextSelection,
             compositionState: compositionState,
             isEditableTextInput: isEditableTextInput,
-            processIdentifier: processIdentifier > 0 ? processIdentifier : nil
+            processIdentifier: processIdentifier > 0 ? processIdentifier : nil,
+            focusContextIdentifier: UInt64(CFHash(element))
         )
     }
 

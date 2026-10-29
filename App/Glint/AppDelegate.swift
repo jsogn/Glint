@@ -60,14 +60,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         translationChoiceShortcutCoordinator.onChoice = {
             [weak self] offer, choiceIndex in
-            guard let self else { return }
-            Task {
-                _ = await self.environment.monitoringSession
-                    .insertTranslation(
-                        offer,
-                        choiceIndex: choiceIndex
-                    )
-            }
+            guard let self else { return false }
+            return await self.environment.monitoringSession
+                .insertTranslation(
+                    offer,
+                    choiceIndex: choiceIndex
+                )
         }
     }
 
