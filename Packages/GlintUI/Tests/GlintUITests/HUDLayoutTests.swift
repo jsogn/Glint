@@ -92,6 +92,35 @@ final class HUDLayoutTests: XCTestCase {
         )
     }
 
+    func testAutomaticPlacementUsesTopEdgeWithoutExtraInset() {
+        let nearTop = CGRect(
+            x: 300,
+            y: 820,
+            width: 180,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: nearTop,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .automatic,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 300,
+                y: 780,
+                width: 2,
+                height: 24
+            )
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.maxY,
+            895,
+            accuracy: 0.001
+        )
+    }
+
     func testAutomaticPlacementMovesAboveWhenCandidateIsAboveInputCaret() {
         let placement = HUDLayout.placement(
             near: CGRect(x: 300, y: 600, width: 180, height: 32),
@@ -129,7 +158,7 @@ final class HUDLayoutTests: XCTestCase {
 
         XCTAssertEqual(
             placement.frame.maxX,
-            visibleFrame.maxX - HUDLayout.screenEdgeInset,
+            visibleFrame.maxX,
             accuracy: 0.001
         )
     }
@@ -280,7 +309,7 @@ final class HUDLayoutTests: XCTestCase {
                 in: visibleFrame,
                 fixedOriginX: 1_000
             ),
-            432,
+            440,
             accuracy: 0.001
         )
         XCTAssertEqual(
@@ -288,7 +317,7 @@ final class HUDLayoutTests: XCTestCase {
                 in: visibleFrame,
                 fixedOriginX: nil
             ),
-            1_424,
+            1_440,
             accuracy: 0.001
         )
     }

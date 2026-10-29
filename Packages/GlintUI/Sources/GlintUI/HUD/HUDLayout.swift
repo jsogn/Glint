@@ -6,9 +6,6 @@ struct HUDLayoutResult: Equatable {
 }
 
 enum HUDLayout {
-    static let screenEdgeInset: CGFloat = 8
-    static let bottomScreenEdgeInset: CGFloat = 0
-
     static func placement(
         near candidateRect: CGRect,
         panelSize: CGSize,
@@ -19,10 +16,10 @@ enum HUDLayout {
         inputCaretRect: CGRect? = nil
     ) -> HUDLayoutResult {
         let gap = CGFloat(max(0, spacing))
-        let minimumX = visibleFrame.minX + screenEdgeInset
+        let minimumX = visibleFrame.minX
         let maximumX = max(
             minimumX,
-            visibleFrame.maxX - panelSize.width - screenEdgeInset
+            visibleFrame.maxX - panelSize.width
         )
         let preferredX = horizontalOrigin ?? candidateRect.minX
         let x = max(
@@ -31,11 +28,10 @@ enum HUDLayout {
         )
         let below = candidateRect.minY - panelSize.height - gap
         let above = candidateRect.maxY + gap
-        let belowFits =
-            below >= visibleFrame.minY + bottomScreenEdgeInset
+        let belowFits = below >= visibleFrame.minY
         let aboveFits =
             above + panelSize.height
-            <= visibleFrame.maxY - screenEdgeInset
+            <= visibleFrame.maxY
 
         let placesBelow: Bool
         let proposedY: CGFloat
@@ -66,11 +62,10 @@ enum HUDLayout {
             proposedY = placesBelow ? below : above
         }
 
-        let minimumY =
-            visibleFrame.minY + bottomScreenEdgeInset
+        let minimumY = visibleFrame.minY
         let maximumY = max(
             minimumY,
-            visibleFrame.maxY - panelSize.height - screenEdgeInset
+            visibleFrame.maxY - panelSize.height
         )
         let y = max(
             minimumY,

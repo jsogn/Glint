@@ -110,7 +110,6 @@ struct HUDGeometryResolver {
             )
             let availableWidth =
                 targetScreen.visibleFrame.maxX
-                - HUDLayout.screenEdgeInset
                 - hudOriginX
             return availableWidth >= HUDGeometry.minimumPanelWidth
                 ? hudOriginX
@@ -164,13 +163,12 @@ struct HUDGeometryResolver {
         in visibleFrame: CGRect,
         fixedOriginX: CGFloat?
     ) -> CGFloat {
-        let fullWidth =
-            visibleFrame.width - HUDLayout.screenEdgeInset * 2
+        let fullWidth = visibleFrame.width
         guard let fixedOriginX else {
             return max(HUDGeometry.minimumPanelWidth, fullWidth)
         }
         let availableWidth =
-            visibleFrame.maxX - HUDLayout.screenEdgeInset - fixedOriginX
+            visibleFrame.maxX - fixedOriginX
         return max(
             HUDGeometry.minimumPanelWidth,
             min(fullWidth, availableWidth)
