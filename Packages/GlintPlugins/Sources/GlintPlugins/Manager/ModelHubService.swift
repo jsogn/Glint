@@ -195,11 +195,16 @@ public actor ModelHubService {
         session: URLSession? = nil,
         endpoints: [URL]? = nil
     ) {
-        self.session = session ?? Self.defaultSession
+        self.session =
+            session
+            ?? HuggingFaceRemotePolicy.makeSession(
+                requestTimeout: 20,
+                resourceTimeout: 60
+            )
         self.endpoints =
             endpoints?.isEmpty == false
             ? endpoints!
-            : Self.defaultEndpoints()
+            : HuggingFaceRemotePolicy.endpoints()
     }
 
     public func search(
@@ -711,32 +716,6 @@ public actor ModelHubService {
         return Array(Set(values)).sorted()
     }
 
-    private static func defaultEndpoints() -> [URL] {
-        let environment = ProcessInfo.processInfo.environment
-        var values: [String] = []
-        if let configured = environment["GLINT_HF_ENDPOINT"] {
-            values.append(configured)
-        }
-        values.append(environment["GLINT_HF_MIRROR"] ?? "https://hf-mirror.com")
-        values.append("https://huggingface.co")
-        var seen: Set<String> = []
-        return values.compactMap { value in
-            let trimmed = value.trimmingCharacters(
-                in: CharacterSet(charactersIn: "/")
-            )
-            guard seen.insert(trimmed).inserted else { return nil }
-            return URL(string: trimmed)
-        }
-    }
-
-    private static let defaultSession: URLSession = {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 20
-        configuration.timeoutIntervalForResource = 60
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.waitsForConnectivity = false
-        return URLSession(configuration: configuration)
-    }()
 }
 
 private struct ModelSearchRecord: Decodable {

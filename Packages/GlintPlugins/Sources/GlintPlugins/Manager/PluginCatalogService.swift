@@ -62,7 +62,12 @@ public actor PluginCatalogService {
     ) {
         self.manager = manager
         self.fileManager = fileManager
-        self.session = session ?? Self.defaultSession
+        self.session =
+            session
+            ?? HuggingFaceRemotePolicy.makeSession(
+                requestTimeout: 30,
+                resourceTimeout: 60 * 60
+            )
     }
 
     public func fetchCatalog(from url: URL) async throws -> [PluginManifest] {
@@ -921,38 +926,14 @@ public actor PluginCatalogService {
         for manifestURL: URL,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> [URL] {
-        var values: [String] = []
-        if let configured = environment["GLINT_HF_ENDPOINT"] {
-            values.append(configured)
-        }
-        values.append(environment["GLINT_HF_MIRROR"] ?? "https://hf-mirror.com")
-        values.append("https://huggingface.co")
-        if let host = manifestURL.host {
-            let scheme = manifestURL.scheme ?? "https"
-            values.append("\(scheme)://\(host)")
-        }
-
-        var seen: Set<String> = []
-        return values.compactMap { value in
-            let trimmed = value.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            guard seen.insert(trimmed).inserted else { return nil }
-            return URL(string: trimmed)
-        }.filter {
-            isAllowedRemoteURL($0)
-        }
+        HuggingFaceRemotePolicy.endpoints(
+            for: manifestURL,
+            environment: environment
+        )
     }
 
     private static func isAllowedRemoteURL(_ url: URL) -> Bool {
-        guard let scheme = url.scheme?.lowercased() else { return false }
-        if scheme == "https" {
-            return true
-        }
-        guard scheme == "http",
-            let host = url.host?.lowercased()
-        else {
-            return false
-        }
-        return ["localhost", "127.0.0.1", "::1"].contains(host)
+        HuggingFaceRemotePolicy.isAllowedRemoteURL(url)
     }
 
     private static func isAllowedModelScopeURL(_ url: URL) -> Bool {
@@ -1073,14 +1054,6 @@ public actor PluginCatalogService {
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
-    private static let defaultSession: URLSession = {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60 * 60
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.waitsForConnectivity = false
-        return URLSession(configuration: configuration)
-    }()
 }
 
 private struct PluginCatalogPayload: Decodable {
