@@ -78,11 +78,6 @@ Squirrel / librime-lua
 Rime 配置。修改 Lua、relay 或桥接协议时必须增加该资源版本。迁移复用安装事务，
 复杂 YAML 会在写入前停止。
 
-早期研究版本使用 `RimeCandidateLab` 支持目录。正式版会在启动 Socket 前执行一次
-幂等迁移，将目录移动到 `RimeCandidateSupport`，并同步改写 manifest 与未完成事务
-中的绝对路径。迁移使用标记文件支持中断恢复；冲突目录不会被删除或合并。Lua
-运行时路径变化使用新的资源版本触发一次受事务保护的重新安装。
-
 托管位置：
 
 ```text

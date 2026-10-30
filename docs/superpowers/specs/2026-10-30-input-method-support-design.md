@@ -127,9 +127,6 @@ The manifest never contains candidate text.
 - Installer tests use temporary directories and verify files, hashes,
   permissions, backups, repaired installs, reload failure rollback, and
   uninstall restoration.
-- Support-directory migration tests cover manifest and transaction path
-  rewriting, interrupted migration recovery, directory conflicts, repeated
-  runs, and symlink rejection.
 - UI-model tests cover loading, success, error, install, and uninstall actions.
 - App build verification checks that the helper and Lua assets are embedded in
   Release, executable where applicable, and signed with the app.

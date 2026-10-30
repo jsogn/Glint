@@ -3,16 +3,9 @@ import GlintCore
 
 public final class RimeCandidateBridgeReceiver: @unchecked Sendable {
     public static var defaultSocketPath: String {
-        RimeSupportDirectoryMigrator.productionDirectory(
-            applicationSupportDirectory:
-                FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(
-                    "Library/Application Support",
-                    isDirectory: true
-                )
+        RimeSupportPaths.socketPath(
+            in: RimeSupportPaths.defaultSupportDirectory
         )
-        .appendingPathComponent("bridge.sock")
-        .path
     }
 
     public let store: RimeCandidateSnapshotStore

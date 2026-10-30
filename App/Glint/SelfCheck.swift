@@ -14,7 +14,7 @@ enum SelfCheck {
                 let homeDirectory =
                     FileManager.default.homeDirectoryForCurrentUser
                 let supportDirectory =
-                    AppEnvironment.resolvedRimeSupportDirectory()
+                    AppEnvironment.rimeSupportDirectory()
                 let sourceRelay = Bundle.main.bundleURL.appendingPathComponent(
                     "Contents/Helpers/RimeCandidateBridge"
                 )

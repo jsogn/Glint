@@ -77,8 +77,7 @@ Glint/
   actor 仍集中持有会话状态，避免把并发状态分散到多个对象。
 - `CandidateReaderRouter`：Apple、显式 reader 和未知输入法 Profile。
 - Rime 候选 Socket、快照存储和鼠须管 Reader；在所有构建中注册。
-- `RimeSupportDirectoryMigrator`：在 Socket 启动前将旧研究目录迁移到正式支持
-  目录，更新 manifest 和事务路径，并通过锁、标记文件和冲突保护保证可恢复。
+- `RimeSupportPaths`：统一提供正式支持目录和 Socket 路径。
 - `SquirrelIntegrationService`：启用 schema 解析、YAML 预检、事务安装、
   备份、哈希校验、重新部署和回滚；在 App 组合根中构造。
 - `AXReadSession`：消息超时、属性调用上限和总截止时间。
@@ -124,8 +123,8 @@ Glint/
 - 仅在翻译运行时准备完成后启动监控。
 - 所有构建都启动 Rime Socket 接收器并注入事务安装器。已安装候选读取支持使用
   独立的资源版本；App 更新后仅在资源或协议版本变化时自动迁移，未安装用户不会
-  自动写入 Rime 配置。组合根先完成支持目录迁移，再让安装器和 Socket 使用同一
-  正式目录。Release 保留并签名中继 helper 和 Lua 资源。
+  自动写入 Rime 配置。组合根让安装器和 Socket 使用同一正式目录。Release
+  保留并签名中继 helper 和 Lua 资源。
 - Rime 安装器在进程锁和跨进程锁内执行，只写发生变化的目标，并用事务日志、
   字节级原件备份、SHA256 和权限校验支持失败回滚与崩溃后恢复。用户自有的
   filter、注释、空键和受管文件改动不会被自动覆盖或删除。

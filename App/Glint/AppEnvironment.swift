@@ -3,12 +3,6 @@ import GlintCore
 import GlintInference
 import GlintMac
 import GlintPlugins
-import OSLog
-
-private let rimeSupportLogger = Logger(
-    subsystem: "com.local.glint",
-    category: "RimeSupport"
-)
 
 @MainActor
 final class AppEnvironment {
@@ -96,7 +90,7 @@ final class AppEnvironment {
         self.ecdictUpdateService = ecdictUpdateService
         self.translationRuntime = translationRuntime
         let router = SmartRouter(dictionary: dictionary, translation: translationRuntime)
-        let rimeSupportDirectory = Self.resolvedRimeSupportDirectory()
+        let rimeSupportDirectory = Self.rimeSupportDirectory()
         self.squirrelIntegrationService =
             Self.makeSquirrelIntegrationService(
                 supportDirectory: rimeSupportDirectory
@@ -133,7 +127,7 @@ final class AppEnvironment {
             ),
             supportDirectory:
                 supportDirectory
-                ?? resolvedRimeSupportDirectory(),
+                ?? rimeSupportDirectory(),
             squirrelApplication: URL(
                 fileURLWithPath:
                     "/Library/Input Methods/Squirrel.app",
@@ -155,28 +149,8 @@ final class AppEnvironment {
         )
     }
 
-    static func resolvedRimeSupportDirectory() -> URL {
-        let applicationSupportDirectory =
-            FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(
-                "Library/Application Support",
-                isDirectory: true
-            )
-        do {
-            return try RimeSupportDirectoryMigrator()
-                .migrateIfNeeded(
-                    applicationSupportDirectory:
-                        applicationSupportDirectory
-                )
-        } catch {
-            rimeSupportLogger.error(
-                "failed to migrate Rime support directory: \(String(describing: error), privacy: .public)"
-            )
-            return RimeSupportDirectoryMigrator.productionDirectory(
-                applicationSupportDirectory:
-                    applicationSupportDirectory
-            )
-        }
+    static func rimeSupportDirectory() -> URL {
+        RimeSupportPaths.defaultSupportDirectory
     }
 
     func refreshDictionaryRoutes() async {

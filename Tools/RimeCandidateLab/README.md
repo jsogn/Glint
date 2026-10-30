@@ -50,10 +50,6 @@ See [鼠须管输入法支持](../../docs/SQUIRREL-CANDIDATE-BRIDGE.md) for the 
 transaction, managed paths, privacy boundary, and uninstall behavior.
 
 Release builds embed the same page, socket receiver, relay, and Lua resources.
-For existing installations, Glint migrates the legacy
-`RimeCandidateLab` support directory to `RimeCandidateSupport` before starting
-the receiver. The migration also rewrites manifest and transaction paths, so
-backups and interrupted installs remain recoverable.
 
 ## Build and test
 
