@@ -258,25 +258,6 @@ struct RimeSchemaPatchEditor {
         return lines.joined(separator: "\n")
     }
 
-    func removingLegacyManagedFilter(
-        from source: String,
-        removingEmptyFilterKey: Bool = true
-    ) throws -> String {
-        let hasMarkers = source.components(separatedBy: "\n").contains {
-            let line = $0.trimmingCharacters(in: .whitespaces)
-            return line == Self.beginMarker || line == Self.endMarker
-        }
-        guard hasMarkers else { return source }
-        let removed = removeManagedFilter(
-            from: source,
-            removingEmptyFilterKey: removingEmptyFilterKey
-        )
-        guard removed != source else {
-            throw RimeSchemaPatchError.unsupportedFilterList
-        }
-        return removed
-    }
-
     func containsFilter(in source: String) -> Bool {
         let lines = source.components(separatedBy: "\n")
         let patchIndices = Self.patchRootIndices(in: lines)

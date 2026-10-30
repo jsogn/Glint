@@ -80,7 +80,7 @@ public actor SquirrelIntegrationService {
         "json.lua",
     ]
     // Bump whenever the bundled Lua, relay, or bridge protocol contract changes.
-    public static let currentBridgeAssetVersion = 1
+    public static let currentBridgeAssetVersion = 2
     private static let installationProcessLock = NSLock()
 
     private struct Manifest: Codable, Sendable {
@@ -90,11 +90,11 @@ public actor SquirrelIntegrationService {
         let relayPath: String
         let schemaIDs: [String]
         let backupDirectory: String
-        let backups: [String: String]?
-        let createdFiles: [String]?
-        let fileHashes: [String: String]?
-        let backupHashes: [String: String]?
-        let backupPermissions: [String: Int]?
+        let backups: [String: String]
+        let createdFiles: [String]
+        let fileHashes: [String: String]
+        let backupHashes: [String: String]
+        let backupPermissions: [String: Int]
     }
 
     private struct Snapshot: Sendable {
@@ -339,8 +339,7 @@ public actor SquirrelIntegrationService {
         guard
             manifest.assetVersion == Self.currentBridgeAssetVersion,
             manifest.protocolVersion
-                == RimeCandidateEnvelope.currentVersion,
-            manifest.fileHashes != nil
+                == RimeCandidateEnvelope.currentVersion
         else {
             return try installLocked()
         }
@@ -529,13 +528,13 @@ public actor SquirrelIntegrationService {
             let currentHash = current.data.map(Self.sha256)
             if previouslyOwned,
                 current.data != desired.write.data,
-                previousManifest?.fileHashes?[path] == nil
+                previousManifest?.fileHashes[path] == nil
             {
                 throw SquirrelIntegrationError.installConflict
             }
             if previouslyOwned,
                 let expectedHash =
-                    previousManifest?.fileHashes?[path],
+                    previousManifest?.fileHashes[path],
                 currentHash != expectedHash
             {
                 let canRecreateDeletedFile =
@@ -582,7 +581,7 @@ public actor SquirrelIntegrationService {
         for path in previousBackups.keys where !desiredPaths.contains(path) {
             guard
                 let expectedHash =
-                    previousManifest?.fileHashes?[path]
+                    previousManifest?.fileHashes[path]
             else {
                 throw SquirrelIntegrationError.installConflict
             }
@@ -592,7 +591,7 @@ public actor SquirrelIntegrationService {
         for path in previousCreatedFiles where !desiredPaths.contains(path) {
             guard
                 let expectedHash =
-                    previousManifest?.fileHashes?[path]
+                    previousManifest?.fileHashes[path]
             else {
                 throw SquirrelIntegrationError.installConflict
             }
@@ -606,9 +605,6 @@ public actor SquirrelIntegrationService {
             && previousManifest?.protocolVersion
                 == RimeCandidateEnvelope.currentVersion
             && previousManifest?.schemaIDs == managedSchemaIDs
-            && previousManifest?.fileHashes != nil
-            && (previousManifest?.backups?.isEmpty != false
-                || previousManifest?.backupHashes != nil)
         if plannedWrites.isEmpty, manifestIsCurrent {
             return status()
         }
@@ -657,20 +653,15 @@ public actor SquirrelIntegrationService {
                     fileURLWithPath: previousBackupPath
                 )
                 originalData = try Data(contentsOf: previousBackup)
-                if let expectedHash =
-                    previousManifest?.backupHashes?[path]
-                {
-                    guard Self.sha256(originalData) == expectedHash else {
-                        throw SquirrelIntegrationError.invalidManifest
-                    }
-                } else {
-                    originalData = try legacyOriginalData(
-                        for: URL(fileURLWithPath: path),
-                        data: originalData
-                    )
+                guard
+                    let expectedHash =
+                        previousManifest?.backupHashes[path],
+                    Self.sha256(originalData) == expectedHash
+                else {
+                    throw SquirrelIntegrationError.invalidManifest
                 }
                 originalPermissions =
-                    previousManifest?.backupPermissions?[path]
+                    previousManifest?.backupPermissions[path]
             } else {
                 guard let snapshot = plannedSnapshots[path],
                     let data = snapshot.data
@@ -947,7 +938,7 @@ public actor SquirrelIntegrationService {
             throw SquirrelIntegrationError.invalidManifest
         }
 
-        for (targetPath, backupPath) in manifest.backups ?? [:] {
+        for (targetPath, backupPath) in manifest.backups {
             let target = URL(fileURLWithPath: targetPath)
             if isBridgeAssetURL(target) {
                 continue
@@ -964,19 +955,11 @@ public actor SquirrelIntegrationService {
                 throw SquirrelIntegrationError.invalidManifest
             }
             let backupData = try Data(contentsOf: backup)
-            let data: Data
-            if let expectedHash =
-                manifest.backupHashes?[targetPath]
-            {
-                guard Self.sha256(backupData) == expectedHash else {
-                    throw SquirrelIntegrationError.uninstallConflict
-                }
-                data = backupData
-            } else {
-                data = try legacyOriginalData(
-                    for: target,
-                    data: backupData
-                )
+            guard
+                let expectedHash = manifest.backupHashes[targetPath],
+                Self.sha256(backupData) == expectedHash
+            else {
+                throw SquirrelIntegrationError.uninstallConflict
             }
             try verifyOriginalState(
                 of: target,
@@ -986,13 +969,13 @@ public actor SquirrelIntegrationService {
             try writeData(
                 PlannedWrite(
                     url: target,
-                    data: data,
+                    data: backupData,
                     permissions:
-                        manifest.backupPermissions?[targetPath]
+                        manifest.backupPermissions[targetPath]
                 )
             )
         }
-        for path in manifest.createdFiles ?? [] {
+        for path in manifest.createdFiles {
             let url = URL(fileURLWithPath: path)
             guard isManagedURL(url) else {
                 throw SquirrelIntegrationError.invalidManifest
@@ -1018,15 +1001,15 @@ public actor SquirrelIntegrationService {
             throw SquirrelIntegrationError.invalidManifest
         }
         let managedPaths =
-            (manifest.backups ?? [:]).keys
-            + (manifest.createdFiles ?? [])
-        let createdPaths = Set(manifest.createdFiles ?? [])
+            Array(manifest.backups.keys)
+            + manifest.createdFiles
+        let createdPaths = Set(manifest.createdFiles)
         for path in managedPaths {
             let url = URL(fileURLWithPath: path)
             guard isManagedURL(url) else {
                 throw SquirrelIntegrationError.invalidManifest
             }
-            guard let expectedHash = manifest.fileHashes?[path] else {
+            guard let expectedHash = manifest.fileHashes[path] else {
                 throw SquirrelIntegrationError.invalidManifest
             }
             let currentData: Data?
@@ -1045,9 +1028,9 @@ public actor SquirrelIntegrationService {
                 throw SquirrelIntegrationError.uninstallConflict
             }
         }
-        for (path, backupPath) in manifest.backups ?? [:] {
-            guard let expectedHash = manifest.backupHashes?[path] else {
-                continue
+        for (path, backupPath) in manifest.backups {
+            guard let expectedHash = manifest.backupHashes[path] else {
+                throw SquirrelIntegrationError.invalidManifest
             }
             let backupData = try Data(
                 contentsOf: URL(fileURLWithPath: backupPath)
@@ -1065,7 +1048,7 @@ public actor SquirrelIntegrationService {
             let url = schemaCustomURL(schemaID: schemaID)
             let current = try snapshot(of: url)
             guard let currentData = current.data else { continue }
-            let removed = try legacyOriginalData(
+            let removed = try originalDataWithoutManagedFilter(
                 for: url,
                 data: currentData,
                 removingEmptyFilterKey: false
@@ -1152,10 +1135,10 @@ public actor SquirrelIntegrationService {
             paths.insert(luaDestination(named: name).path)
         }
         if let manifest {
-            for path in manifest.backups?.keys ?? [:].keys {
+            for path in manifest.backups.keys {
                 paths.insert(path)
             }
-            for path in manifest.createdFiles ?? [] {
+            for path in manifest.createdFiles {
                 paths.insert(path)
             }
         } else {
@@ -1201,7 +1184,7 @@ public actor SquirrelIntegrationService {
         }
 
         if let manifest {
-            for (targetPath, backupPath) in manifest.backups ?? [:] {
+            for (targetPath, backupPath) in manifest.backups {
                 if isBridgeAssetURL(
                     URL(fileURLWithPath: targetPath)
                 ) {
@@ -1210,21 +1193,19 @@ public actor SquirrelIntegrationService {
                 let backupData = try Data(
                     contentsOf: URL(fileURLWithPath: backupPath)
                 )
-                let restored: Data
-                if manifest.backupHashes != nil {
-                    restored = backupData
-                } else {
-                    restored = try legacyOriginalData(
-                        for: URL(fileURLWithPath: targetPath),
-                        data: backupData
-                    )
+                guard
+                    let expectedHash =
+                        manifest.backupHashes[targetPath],
+                    Self.sha256(backupData) == expectedHash
+                else {
+                    throw SquirrelIntegrationError.invalidManifest
                 }
                 states[targetPath] = ExpectedTransactionState(
-                    hash: Self.sha256(restored),
+                    hash: expectedHash,
                     absent: false
                 )
             }
-            for path in manifest.createdFiles ?? [] {
+            for path in manifest.createdFiles {
                 states[path] = ExpectedTransactionState(
                     hash: nil,
                     absent: true
@@ -1242,7 +1223,7 @@ public actor SquirrelIntegrationService {
                 }
                 let expected: Data?
                 if let data = snapshot.data {
-                    expected = try legacyOriginalData(
+                    expected = try originalDataWithoutManagedFilter(
                         for: url,
                         data: data,
                         removingEmptyFilterKey: false
@@ -1372,15 +1353,12 @@ public actor SquirrelIntegrationService {
     private func bridgeAssetsMatchManifest(
         _ manifest: Manifest
     ) -> Bool {
-        guard let hashes = manifest.fileHashes else {
-            return bridgeAssetsMatchDisk()
-        }
         let assetURLs =
             [relayDestination]
             + Self.luaFileNames.map(luaDestination(named:))
         for url in assetURLs {
             guard
-                let expectedHash = hashes[url.path],
+                let expectedHash = manifest.fileHashes[url.path],
                 let data = try? Data(contentsOf: url),
                 Self.sha256(data) == expectedHash
             else {
@@ -1908,7 +1886,7 @@ public actor SquirrelIntegrationService {
         }
     }
 
-    private func legacyOriginalData(
+    private func originalDataWithoutManagedFilter(
         for url: URL,
         data: Data,
         removingEmptyFilterKey: Bool = true
@@ -1924,15 +1902,16 @@ public actor SquirrelIntegrationService {
         else {
             throw SquirrelIntegrationError.invalidManifest
         }
-        let removed: String
-        do {
-            removed =
-                try patchEditor
-                .removingLegacyManagedFilter(
-                    from: source,
-                    removingEmptyFilterKey: removingEmptyFilterKey
-                )
-        } catch {
+        let hasMarkers = source.components(separatedBy: "\n").contains {
+            let line = $0.trimmingCharacters(in: .whitespaces)
+            return line == RimeSchemaPatchEditor.beginMarker
+                || line == RimeSchemaPatchEditor.endMarker
+        }
+        let removed = patchEditor.removeManagedFilter(
+            from: source,
+            removingEmptyFilterKey: removingEmptyFilterKey
+        )
+        guard !hasMarkers || removed != source else {
             throw SquirrelIntegrationError.invalidManifest
         }
         var result = Data(removed.utf8)
@@ -1974,8 +1953,8 @@ public actor SquirrelIntegrationService {
                 $0.standardizedFileURL.path
             }
         )
-        let backups = manifest.backups ?? [:]
-        let createdFiles = manifest.createdFiles ?? []
+        let backups = manifest.backups
+        let createdFiles = manifest.createdFiles
         guard
             Set(backups.keys).isSubset(of: allowedPaths),
             Set(createdFiles).isSubset(of: allowedPaths),
@@ -2015,30 +1994,31 @@ public actor SquirrelIntegrationService {
                 return false
             }
         }
-        if let hashes = manifest.fileHashes {
-            let allowedHashPaths = Set(
-                managedTargetURLs(schemaIDs: schemaIDs).map {
-                    $0.standardizedFileURL.path
-                }
-            )
-            guard Set(hashes.keys).isSubset(of: allowedHashPaths) else {
-                return false
+        let allowedHashPaths = Set(
+            managedTargetURLs(schemaIDs: schemaIDs).map {
+                $0.standardizedFileURL.path
             }
+        )
+        guard
+            Set(manifest.fileHashes.keys)
+                .isSubset(of: allowedHashPaths)
+        else {
+            return false
         }
-        if let hashes = manifest.backupHashes {
-            guard Set(hashes.keys).isSubset(of: Set(backups.keys)) else {
-                return false
-            }
+        guard
+            Set(manifest.backupHashes.keys)
+                .isSubset(of: Set(backups.keys))
+        else {
+            return false
         }
-        if let permissions = manifest.backupPermissions {
-            guard
-                Set(permissions.keys).isSubset(of: Set(backups.keys)),
-                permissions.values.allSatisfy({
-                    (0...0o777).contains($0)
-                })
-            else {
-                return false
-            }
+        guard
+            Set(manifest.backupPermissions.keys)
+                .isSubset(of: Set(backups.keys)),
+            manifest.backupPermissions.values.allSatisfy({
+                (0...0o777).contains($0)
+            })
+        else {
+            return false
         }
         return true
     }

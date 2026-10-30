@@ -170,7 +170,7 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         )
     }
 
-    func testSynchronizeUpgradesLegacyManifestWithoutFileHashes()
+    func testSynchronizeRejectsManifestWithoutFileHashes()
         async throws
     {
         let fixture = try SquirrelFixture()
@@ -178,13 +178,17 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         _ = try await fixture.service.install()
         try fixture.removeManifestFileHashes()
 
-        let status =
+        do {
             try await fixture.service
-            .synchronizeInstalledSupportIfNeeded()
-
-        XCTAssertEqual(status.state, .installed)
+                .synchronizeInstalledSupportIfNeeded()
+            XCTFail("Expected invalid-manifest rejection")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .invalidManifest
+            )
+        }
         XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
-        XCTAssertTrue(try fixture.manifestHasFileHashes())
     }
 
     func testSynchronizeDoesNotRepairModifiedAssetWithoutVersionBump()
@@ -546,38 +550,23 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         )
     }
 
-    func testLegacyManagedBackupIsNormalizedBeforeUninstall()
+    func testInstallRejectsManifestWithoutBackupMetadata()
         async throws
     {
         let fixture = try SquirrelFixture()
         defer { fixture.cleanup() }
-        let original = Data(
-            """
-            # Preserve this original configuration.
-            patch:
-              menu:
-                page_size: 5
-            """.utf8
-        )
-        try original.write(to: fixture.schemaCustom)
         _ = try await fixture.service.install()
-        let managed = try Data(contentsOf: fixture.schemaCustom)
-        let backupURL = try XCTUnwrap(
-            fixture.manifestBackupPath(for: fixture.schemaCustom.path)
-        )
-        try managed.write(to: backupURL, options: .atomic)
         try fixture.removeManifestBackupMetadata()
 
-        _ = try await fixture.service.install()
-
-        let migratedBackup = try XCTUnwrap(
-            fixture.manifestBackupPath(for: fixture.schemaCustom.path)
-        )
-        XCTAssertEqual(try Data(contentsOf: migratedBackup), original)
-
-        _ = try await fixture.service.uninstall()
-
-        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), original)
+        do {
+            _ = try await fixture.service.install()
+            XCTFail("Expected invalid-manifest rejection")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .invalidManifest
+            )
+        }
     }
 
     func testUTF8ByteOrderMarkIsPreservedAcrossInstallAndUninstall()
@@ -983,39 +972,6 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
             modified
         )
         XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
-    }
-
-    func testLegacyManifestWithoutAssetHashesDoesNotOverwriteContent()
-        async throws
-    {
-        let fixture = try SquirrelFixture()
-        defer { fixture.cleanup() }
-        _ = try await fixture.service.install()
-        try fixture.removeManifestFileHashes()
-        let modified = Data("modified or unknown relay".utf8)
-        try modified.write(
-            to: fixture.relayDestination,
-            options: .atomic
-        )
-        try Data("new relay bundle".utf8).write(
-            to: fixture.relaySource,
-            options: .atomic
-        )
-
-        do {
-            _ = try await fixture.service.install()
-            XCTFail("Expected legacy managed-file conflict")
-        } catch {
-            XCTAssertEqual(
-                error as? SquirrelIntegrationError,
-                .installConflict
-            )
-        }
-
-        XCTAssertEqual(
-            try Data(contentsOf: fixture.relayDestination),
-            modified
-        )
     }
 
     func testMissingFileCreatedByInstallerCanBeRepaired()
@@ -1904,7 +1860,7 @@ private final class SquirrelFixture: @unchecked Sendable {
     ) throws {
         let manifest = try JSONSerialization.data(
             withJSONObject: [
-                "assetVersion": 3,
+                "assetVersion": 1,
                 "installedAt": "2026-10-30T00:00:00Z",
                 "protocolVersion": 3,
                 "relayPath": relayDestination.path,
@@ -1912,6 +1868,9 @@ private final class SquirrelFixture: @unchecked Sendable {
                 "backupDirectory": backupDirectory.path,
                 "backups": backups,
                 "createdFiles": createdFiles,
+                "fileHashes": [String: String](),
+                "backupHashes": [String: String](),
+                "backupPermissions": [String: Int](),
             ]
         )
         try FileManager.default.createDirectory(
@@ -2022,18 +1981,6 @@ private final class SquirrelFixture: @unchecked Sendable {
         ]
         try JSONSerialization.data(withJSONObject: journal)
             .write(to: pendingTransactionURL, options: .atomic)
-    }
-
-    func manifestHasFileHashes() throws -> Bool {
-        let data = try Data(contentsOf: manifestURL)
-        guard
-            let manifest = try JSONSerialization.jsonObject(
-                with: data
-            ) as? [String: Any]
-        else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-        return manifest["fileHashes"] != nil
     }
 
     func manifestBackupPath(for targetPath: String) throws -> URL? {
