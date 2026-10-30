@@ -49,7 +49,8 @@ See [鼠须管输入法支持](../../docs/SQUIRREL-CANDIDATE-BRIDGE.md) for the 
 transaction, managed paths, privacy boundary, and uninstall behavior.
 
 Release builds do not expose this page, start the socket receiver, or perform
-an install.
+an install. Their post-build phase also removes the Debug-only relay and Lua
+resources from the app bundle.
 
 ## Build and test
 

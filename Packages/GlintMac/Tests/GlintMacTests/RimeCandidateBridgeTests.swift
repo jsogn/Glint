@@ -5,6 +5,30 @@ import XCTest
 @testable import GlintMac
 
 final class RimeCandidateBridgeTests: XCTestCase {
+    func testLuaJSONEncoderUsesCurrentProtocolVersion() throws {
+        let luaFile = try XCTUnwrap(
+            repositoryRoot?
+                .appendingPathComponent(
+                    "Tools/RimeCandidateLab/rime/lua/glint/json.lua"
+                )
+        )
+        let source = try String(
+            contentsOf: luaFile,
+            encoding: .utf8
+        )
+        let marker = "{\"version\":"
+        let markerRange = try XCTUnwrap(
+            source.range(of: marker)
+        )
+        let versionText = source[markerRange.upperBound...]
+            .prefix(while: { $0.isNumber })
+
+        XCTAssertEqual(
+            Int(versionText),
+            RimeCandidateEnvelope.currentVersion
+        )
+    }
+
     func testStoreReturnsFreshActiveEnvelope() {
         let clock = OSAllocatedUnfairLock<UInt64>(initialState: 100)
         let store = RimeCandidateSnapshotStore(
@@ -672,6 +696,21 @@ final class RimeCandidateBridgeTests: XCTestCase {
             try? await Task.sleep(for: .milliseconds(10))
         }
         return condition()
+    }
+
+    private var repositoryRoot: URL? {
+        var directory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+        while directory.path != "/" {
+            if FileManager.default.fileExists(
+                atPath:
+                    directory.appendingPathComponent("project.yml").path
+            ) {
+                return directory
+            }
+            directory.deleteLastPathComponent()
+        }
+        return nil
     }
 }
 

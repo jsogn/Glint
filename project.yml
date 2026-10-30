@@ -99,6 +99,10 @@ targets:
         copy:
           destination: wrapper
           subpath: Contents/Helpers
+    postBuildScripts:
+      - path: scripts/prune_debug_rime_assets.sh
+        name: Prune Debug-only Rime assets
+        basedOnDependencyAnalysis: false
 
   RimeCandidateBridge:
     type: tool
