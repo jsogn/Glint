@@ -289,6 +289,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowModel.stopMonitoringAction = { [weak self] in
             self?.stopMonitoring()
         }
+        #if DEBUG
+            windowModel.refreshInputMethodSupportAction = {
+                [weak self] in
+                guard
+                    let service =
+                        self?.environment.squirrelIntegrationService
+                else {
+                    return Self.inputMethodSupportStatuses(nil)
+                }
+                return Self.inputMethodSupportStatuses(
+                    await service.status()
+                )
+            }
+            windowModel.installSquirrelSupportAction = {
+                [weak self] in
+                guard
+                    let service =
+                        self?.environment.squirrelIntegrationService
+                else {
+                    throw SquirrelIntegrationError.squirrelUnavailable
+                }
+                return Self.inputMethodSupportStatuses(
+                    try await service.install()
+                )
+            }
+            windowModel.uninstallSquirrelSupportAction = {
+                [weak self] in
+                guard
+                    let service =
+                        self?.environment.squirrelIntegrationService
+                else {
+                    throw SquirrelIntegrationError.squirrelUnavailable
+                }
+                return Self.inputMethodSupportStatuses(
+                    try await service.uninstall()
+                )
+            }
+        #endif
         windowModel.refreshPermissionsAction = { [weak self] in
             self?.refreshPermissionState()
         }
@@ -403,6 +441,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         refreshLaunchAtLoginState()
     }
+
+    #if DEBUG
+        private static func inputMethodSupportStatuses(
+            _ status: SquirrelIntegrationStatus?
+        ) -> [InputMethodSupportStatus] {
+            guard let status else {
+                return [
+                    .applePinyin,
+                    InputMethodSupportStatus(
+                        id: "squirrel",
+                        name: "Rime",
+                        detail: "未检测到可用的输入法。",
+                        state: .unavailable,
+                        schemaIDs: [],
+                        protocolVersion: nil,
+                        isExperimental: true
+                    ),
+                ]
+            }
+            let uiState: InputMethodSupportState
+            switch status.state {
+            case .unavailable:
+                uiState = .unavailable
+            case .available:
+                uiState = .available
+            case .installed:
+                uiState = .installed
+            case .repairRequired:
+                uiState = .repairRequired
+            case .manualSetupRequired:
+                uiState = .manualSetupRequired
+            }
+            return [
+                .applePinyin,
+                InputMethodSupportStatus(
+                    id: "squirrel",
+                    name: "Rime",
+                    detail: status.detail ?? defaultDetail(for: uiState),
+                    state: uiState,
+                    schemaIDs: status.schemaIDs,
+                    protocolVersion: status.protocolVersion,
+                    isExperimental: true
+                ),
+            ]
+        }
+
+        private static func defaultDetail(
+            for state: InputMethodSupportState
+        ) -> String {
+            switch state {
+            case .native:
+                "原生读取当前候选。"
+            case .available:
+                "候选读取支持未安装。"
+            case .installed:
+                "候选读取支持已安装。"
+            case .repairRequired:
+                "候选读取支持需要重新安装。"
+            case .manualSetupRequired:
+                "当前配置无法自动合并，请按手动说明操作。"
+            case .unavailable:
+                "未检测到可用的输入法。"
+            }
+        }
+    #endif
 
     private func item(_ title: String, action: Selector) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: "")

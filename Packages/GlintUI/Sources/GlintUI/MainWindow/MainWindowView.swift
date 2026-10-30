@@ -11,7 +11,7 @@ public struct MainWindowView: View {
 
     public var body: some View {
         NavigationSplitView {
-            List(SidebarItem.allCases, selection: $selection) { item in
+            List(SidebarItem.visibleItems, selection: $selection) { item in
                 Label(item.title, systemImage: item.symbol)
                     .tag(item)
             }
@@ -44,6 +44,8 @@ public struct MainWindowView: View {
             OverviewPage(model: model, selection: $selection)
         case .general:
             GeneralPage(model: model)
+        case .inputMethods:
+            InputMethodsPage(model: model)
         case .display:
             DisplayPage(model: model)
         case .plugins:
@@ -71,6 +73,7 @@ private struct PageTitle: View {
 enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     case overview
     case general
+    case inputMethods
     case display
     case plugins
     case permissions
@@ -78,10 +81,19 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
+    static var visibleItems: [SidebarItem] {
+        #if DEBUG
+            allCases
+        #else
+            allCases.filter { $0 != .inputMethods }
+        #endif
+    }
+
     var title: String {
         switch self {
         case .overview: return "概览"
         case .general: return "通用配置"
+        case .inputMethods: return "输入法支持"
         case .display: return "显示与触发"
         case .plugins: return "插件与模型"
         case .permissions: return "权限与隐私"
@@ -93,6 +105,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .overview: return "sparkles"
         case .general: return "gearshape"
+        case .inputMethods: return "keyboard"
         case .display: return "rectangle.on.rectangle"
         case .plugins: return "shippingbox"
         case .permissions: return "lock.shield"

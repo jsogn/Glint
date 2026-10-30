@@ -9,9 +9,13 @@ struct OverviewPage: View {
 
     var body: some View {
         PageContainer {
-            OverviewStatusCard(model: model) {
-                selection = .general
-            }
+            OverviewStatusCard(
+                model: model,
+                openGeneralSettings: {
+                    selection = .general
+                },
+                openInputMethodSettings: inputMethodSettingsAction
+            )
 
             LazyVGrid(
                 columns: [
@@ -81,11 +85,22 @@ struct OverviewPage: View {
             .padding(.horizontal, 4)
         }
     }
+
+    private var inputMethodSettingsAction: (() -> Void)? {
+        #if DEBUG
+            {
+                selection = .inputMethods
+            }
+        #else
+            nil
+        #endif
+    }
 }
 
 private struct OverviewStatusCard: View {
     let model: MainWindowModel
     let openGeneralSettings: () -> Void
+    let openInputMethodSettings: (() -> Void)?
 
     private var state: OverviewRuntimeState {
         let missingPermissions = missingPermissionText
@@ -165,9 +180,11 @@ private struct OverviewStatusCard: View {
 
             Divider()
 
-            OverviewPipeline(model: model) {
-                openGeneralSettings()
-            }
+            OverviewPipeline(
+                model: model,
+                openGeneralSettings: openGeneralSettings,
+                openInputMethodSettings: openInputMethodSettings
+            )
 
             Text(model.translationMode.explanation)
                 .font(.caption)
@@ -228,13 +245,16 @@ private struct OverviewStatusCard: View {
 private struct OverviewPipeline: View {
     let model: MainWindowModel
     let openGeneralSettings: () -> Void
+    let openInputMethodSettings: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 8) {
             stage(
                 symbol: "keyboard",
                 label: "输入",
-                value: model.activeInputMethodName
+                value: model.activeInputMethodName,
+                action: openInputMethodSettings,
+                actionHint: "打开输入法支持"
             )
             arrow
             stage(
@@ -247,7 +267,8 @@ private struct OverviewPipeline: View {
                 symbol: "arrow.triangle.branch",
                 label: "策略",
                 value: model.translationMode.title,
-                action: openGeneralSettings
+                action: openGeneralSettings,
+                actionHint: "打开通用配置"
             )
             arrow
             stage(
@@ -267,7 +288,8 @@ private struct OverviewPipeline: View {
         symbol: String,
         label: String,
         value: String,
-        action: (() -> Void)? = nil
+        action: (() -> Void)? = nil,
+        actionHint: String = "打开设置"
     ) -> some View {
         Group {
             if let action {
@@ -276,8 +298,8 @@ private struct OverviewPipeline: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(label)，\(value)")
-                .accessibilityHint("打开通用配置")
-                .help("\(label)：\(value)。打开通用配置")
+                .accessibilityHint(actionHint)
+                .help("\(label)：\(value)。\(actionHint)")
             } else {
                 stageContent(symbol: symbol, label: label, value: value)
                     .accessibilityElement(children: .combine)

@@ -54,6 +54,16 @@ targets:
       - path: Resources/Plugins/mt-opus-zh-en
         buildPhase: resources
         type: folder
+      - path: Tools/RimeCandidateLab/rime/lua/glint/candidate_bridge.lua
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: RimeCandidateBridge
+      - path: Tools/RimeCandidateLab/rime/lua/glint/json.lua
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: RimeCandidateBridge
     info:
       path: App/Glint/Info.plist
       properties:
@@ -84,6 +94,25 @@ targets:
         product: GlintPlugins
       - package: GlintUI
         product: GlintUI
+      - target: RimeCandidateBridge
+        embed: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
+
+  RimeCandidateBridge:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Tools/RimeCandidateLab/Sources/RimeCandidateBridge
+    dependencies:
+      - package: GlintCore
+        product: GlintCore
+      - package: GlintMac
+        product: GlintMac
+    settings:
+      base:
+        PRODUCT_NAME: RimeCandidateBridge
 
   GlintTests:
     type: bundle.unit-test

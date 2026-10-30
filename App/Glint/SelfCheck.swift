@@ -6,6 +6,119 @@ import GlintMac
 import GlintPlugins
 
 enum SelfCheck {
+    #if DEBUG
+        static func runInputMethodStatus() -> Never {
+            Task { @MainActor in
+                let service = AppEnvironment.makeSquirrelIntegrationService()
+                let status = await service.status()
+                let homeDirectory =
+                    FileManager.default.homeDirectoryForCurrentUser
+                let sourceRelay = Bundle.main.bundleURL.appendingPathComponent(
+                    "Contents/Helpers/RimeCandidateBridge"
+                )
+                let installedRelay = homeDirectory.appendingPathComponent(
+                    "Library/Application Support/Glint/RimeCandidateLab/RimeCandidateBridge"
+                )
+                let luaSource = Bundle.main.resourceURL?
+                    .appendingPathComponent(
+                        "RimeCandidateBridge",
+                        isDirectory: true
+                    )
+                let rimeDirectory = homeDirectory.appendingPathComponent(
+                    "Library/Rime",
+                    isDirectory: true
+                )
+                let supportDirectory = homeDirectory.appendingPathComponent(
+                    "Library/Application Support/Glint/RimeCandidateLab",
+                    isDirectory: true
+                )
+                let sourceRelayData = try? Data(contentsOf: sourceRelay)
+                let installedRelayData = try? Data(contentsOf: installedRelay)
+                let relayPermissions =
+                    (try? FileManager.default.attributesOfItem(
+                        atPath: installedRelay.path
+                    )[.posixPermissions] as? NSNumber)?.intValue
+                print("state=\(status.state)")
+                print("schemas=\(status.schemaIDs.joined(separator: ","))")
+                print("protocol=\(status.protocolVersion)")
+                print("detail=\(status.detail ?? "-")")
+                print(
+                    "sourceRelay.exists="
+                        + String(
+                            FileManager.default.fileExists(
+                                atPath: sourceRelay.path
+                            )
+                        )
+                )
+                print(
+                    "installedRelay.exists="
+                        + String(
+                            FileManager.default.fileExists(
+                                atPath: installedRelay.path
+                            )
+                        )
+                )
+                print(
+                    "luaSource.exists="
+                        + String(
+                            luaSource.map {
+                                FileManager.default.fileExists(atPath: $0.path)
+                            } ?? false)
+                )
+                print(
+                    "relay.matches="
+                        + String(
+                            sourceRelayData != nil
+                                && sourceRelayData == installedRelayData
+                        )
+                )
+                print(
+                    "relay.permissions="
+                        + (relayPermissions.map {
+                            String($0, radix: 8)
+                        } ?? "-")
+                )
+                for schemaID in status.schemaIDs {
+                    let custom = rimeDirectory.appendingPathComponent(
+                        "\(schemaID).custom.yaml"
+                    )
+                    let source = try? String(
+                        contentsOf: custom,
+                        encoding: .utf8
+                    )
+                    print(
+                        "schema.\(schemaID).custom.exists="
+                            + String(source != nil)
+                    )
+                    print(
+                        "schema.\(schemaID).filter="
+                            + String(
+                                source?.contains(
+                                    "lua_filter@*glint.candidate_bridge"
+                                ) == true
+                            )
+                    )
+                }
+                print(
+                    "manifest.exists="
+                        + String(
+                            FileManager.default.fileExists(
+                                atPath:
+                                    supportDirectory
+                                    .appendingPathComponent(
+                                        "install-manifest.json"
+                                    )
+                                    .path
+                            )
+                        )
+                )
+                exit(EXIT_SUCCESS)
+            }
+            RunLoop.main.run()
+            exit(EXIT_FAILURE)
+        }
+    #endif
+
     static func run() -> Never {
         Task {
             print("accessibility=\(FocusMonitor.isAccessibilityTrusted())")

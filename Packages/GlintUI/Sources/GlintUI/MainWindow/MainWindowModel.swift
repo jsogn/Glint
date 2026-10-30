@@ -125,6 +125,10 @@ public final class MainWindowModel {
     public private(set) var launchAtLoginError: String?
     public var statusText = ""
     public private(set) var activeInputMethodName = "检测中"
+    public private(set) var inputMethodSupportStatuses: [InputMethodSupportStatus] = [.applePinyin]
+    public private(set) var isLoadingInputMethodSupport = false
+    public private(set) var isUpdatingInputMethodSupport = false
+    public private(set) var inputMethodSupportError: String?
     public private(set) var installedPlugins: [PluginManifest] = []
     public private(set) var isLoadingPlugins = false
     public private(set) var availablePlugins: [PluginManifest] = []
@@ -196,6 +200,18 @@ public final class MainWindowModel {
     public var setLaunchAtLoginAction: @MainActor (Bool) -> Void = { _ in }
     @ObservationIgnored
     public var openLoginItemsSettingsAction: @MainActor () -> Void = {}
+    @ObservationIgnored
+    public var refreshInputMethodSupportAction: @MainActor () async -> [InputMethodSupportStatus] = {
+        [.applePinyin]
+    }
+    @ObservationIgnored
+    public var installSquirrelSupportAction: @MainActor () async throws -> [InputMethodSupportStatus] = {
+        [.applePinyin]
+    }
+    @ObservationIgnored
+    public var uninstallSquirrelSupportAction: @MainActor () async throws -> [InputMethodSupportStatus] = {
+        [.applePinyin]
+    }
     @ObservationIgnored
     public var activateTranslationModelAction: @MainActor (String) async -> String? = { _ in nil }
     @ObservationIgnored
@@ -320,6 +336,49 @@ public final class MainWindowModel {
         let name = identity?.displayName ?? "输入法"
         guard activeInputMethodName != name else { return }
         activeInputMethodName = name
+    }
+
+    public var squirrelSupportStatus: InputMethodSupportStatus? {
+        inputMethodSupportStatuses.first { $0.id == "squirrel" }
+    }
+
+    public var inputMethodSupportPageStatuses: [InputMethodSupportStatus] {
+        inputMethodSupportStatuses.filter { $0.id == "squirrel" }
+    }
+
+    public func refreshInputMethodSupport() async {
+        guard !isLoadingInputMethodSupport else { return }
+        isLoadingInputMethodSupport = true
+        inputMethodSupportError = nil
+        inputMethodSupportStatuses =
+            await refreshInputMethodSupportAction()
+        isLoadingInputMethodSupport = false
+    }
+
+    public func installSquirrelSupport() async {
+        guard !isUpdatingInputMethodSupport else { return }
+        isUpdatingInputMethodSupport = true
+        inputMethodSupportError = nil
+        defer { isUpdatingInputMethodSupport = false }
+        do {
+            inputMethodSupportStatuses =
+                try await installSquirrelSupportAction()
+        } catch {
+            inputMethodSupportError = error.localizedDescription
+        }
+    }
+
+    public func uninstallSquirrelSupport() async {
+        guard !isUpdatingInputMethodSupport else { return }
+        isUpdatingInputMethodSupport = true
+        inputMethodSupportError = nil
+        defer { isUpdatingInputMethodSupport = false }
+        do {
+            inputMethodSupportStatuses =
+                try await uninstallSquirrelSupportAction()
+        } catch {
+            inputMethodSupportError = error.localizedDescription
+        }
     }
 
     public func startMonitoring() {

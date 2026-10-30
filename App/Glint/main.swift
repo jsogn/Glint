@@ -15,6 +15,8 @@ func runApplication() {
         AXCandidateProbe.run()
     } else if CommandLine.arguments.contains("--selfcheck") {
         SelfCheck.run()
+    } else if CommandLine.arguments.contains("--input-method-status") {
+        SelfCheck.runInputMethodStatus()
     } else if CommandLine.arguments.contains("--diagnose") {
         Diagnostics.run()
     } else {

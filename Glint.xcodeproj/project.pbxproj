@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1915D16F7563B87CA5A13550 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F8A82E516DAFF4A024E794 /* main.swift */; };
+		1BF6A90222551DFB52BD8D2A /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = E67C16616B80BC8D3EFFE6F2 /* GlintCore */; };
 		1DFD7FC772F747CA4584F247 /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = F9D4B122443AB994DF2359AC /* catalog.json */; };
 		21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */; };
 		22E07096AE8DF1D73689097B /* GlintMac in Frameworks */ = {isa = PBXBuildFile; productRef = C82639D2D34337D5A9CD7D0C /* GlintMac */; };
@@ -15,10 +17,12 @@
 		4062AB589E4FFA4D5BB17A0E /* AppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */; };
 		4D3F18EF382E77CCB4F70956 /* dict-cedict in Resources */ = {isa = PBXBuildFile; fileRef = F082FC2C41A35AF169B0DE24 /* dict-cedict */; };
 		509EF10E6771101ED85B0DAC /* HUDEventCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */; };
+		51F80755FC384093575E05BC /* RimeCandidateBridge in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = CA325A737255A243BF330A82 /* RimeCandidateBridge */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		56858DDBBD011680EEE7F0BA /* dict-ecdict in Resources */ = {isa = PBXBuildFile; fileRef = 7A59F9A29CA693ACF1A2526C /* dict-ecdict */; };
 		5DC357A49028867449604E46 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 53183767502EEFE5D0989DD0 /* Assets.xcassets */; };
 		6CA3DD4CAAD9F5753C879E8A /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 45F16D7CFBA31BE54411E4A8 /* GlintCore */; };
 		7762DC1E435AC1E010FEFDAF /* AXCandidateProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */; };
+		786D79144096761C64D02595 /* json.lua in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0A02C5BFBCCD53299807D039 /* json.lua */; };
 		7BF97DC43287CFA143A70ED2 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32E9F8EB23E80E0A931F444E /* Diagnostics.swift */; };
 		81B6DB94DF1A7331BDA81806 /* GlintPlugins in Frameworks */ = {isa = PBXBuildFile; productRef = 7BA38E357A8135112494378C /* GlintPlugins */; };
 		845A3744D7848AB1E1439B04 /* GlintInference in Frameworks */ = {isa = PBXBuildFile; productRef = 5882BDDE1BB41C62823F7D26 /* GlintInference */; };
@@ -30,12 +34,50 @@
 		C848E897C79EDE1BC7204972 /* BundledPluginResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */; };
 		D418B3179EEE536BCCF50C9D /* GlintUI in Frameworks */ = {isa = PBXBuildFile; productRef = FBD93326229A8A62F071CD36 /* GlintUI */; };
 		D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */; };
+		F2B51655232A3968EF790E71 /* candidate_bridge.lua in CopyFiles */ = {isa = PBXBuildFile; fileRef = 98A1399AD8AAD221DB8BE251 /* candidate_bridge.lua */; };
+		F2DF9DF3366D4BC543FBAC25 /* GlintMac in Frameworks */ = {isa = PBXBuildFile; productRef = 6FA372D848E0735725259193 /* GlintMac */; };
 		F66206E2AF6A12351EC83B1C /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */; };
 		FA3C47D17A7C09E8852FB155 /* GlintDictionary in Frameworks */ = {isa = PBXBuildFile; productRef = 0B46DF0B3D2714D2CEC06F6E /* GlintDictionary */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		5211A35388CCBE221258BEDF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BE6DB378EC4FB00E8DB46BA7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FCAB916A061D0EA56D1F4020;
+			remoteInfo = RimeCandidateBridge;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		925CBF51C25DB742010DF495 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = RimeCandidateBridge;
+			dstSubfolderSpec = 7;
+			files = (
+				F2B51655232A3968EF790E71 /* candidate_bridge.lua in CopyFiles */,
+				786D79144096761C64D02595 /* json.lua in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B20D4C692664E17A806E871A /* Embed Dependencies */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Helpers;
+			dstSubfolderSpec = 1;
+			files = (
+				51F80755FC384093575E05BC /* RimeCandidateBridge in Embed Dependencies */,
+			);
+			name = "Embed Dependencies";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		09BDD68C6DB642A313D624CC /* GlintUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintUI; path = Packages/GlintUI; sourceTree = SOURCE_ROOT; };
+		0A02C5BFBCCD53299807D039 /* json.lua */ = {isa = PBXFileReference; path = json.lua; sourceTree = "<group>"; };
 		0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXCandidateProbe.swift; sourceTree = "<group>"; };
 		1593095FA119035BCB1CDA9F /* GlintDictionary */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintDictionary; path = Packages/GlintDictionary; sourceTree = SOURCE_ROOT; };
 		26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDEventCoordinator.swift; sourceTree = "<group>"; };
@@ -50,9 +92,11 @@
 		7A59F9A29CA693ACF1A2526C /* dict-ecdict */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-ecdict"; path = "Resources/Plugins/dict-ecdict"; sourceTree = SOURCE_ROOT; };
 		7B3EDCB227F6EBFF409729DC /* mt-opus-zh-en */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "mt-opus-zh-en"; path = "Resources/Plugins/mt-opus-zh-en"; sourceTree = SOURCE_ROOT; };
 		88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		98A1399AD8AAD221DB8BE251 /* candidate_bridge.lua */ = {isa = PBXFileReference; path = candidate_bridge.lua; sourceTree = "<group>"; };
 		A6CE2C298747A802E1589A8C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B25DB3A29CF7D59E6192BE4D /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
 		B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-wiktionary-zh-en"; path = "Resources/Plugins/dict-wiktionary-zh-en"; sourceTree = SOURCE_ROOT; };
+		CA325A737255A243BF330A82 /* RimeCandidateBridge */ = {isa = PBXFileReference; includeInIndex = 0; path = RimeCandidateBridge; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryPluginLoader.swift; sourceTree = "<group>"; };
 		D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledPluginResources.swift; sourceTree = "<group>"; };
 		D58946C3A8621B011A33D664 /* GlintMac */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintMac; path = Packages/GlintMac; sourceTree = SOURCE_ROOT; };
@@ -60,6 +104,7 @@
 		E94AB23640CA1E6007F8B2B4 /* GlintTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GlintTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSmokeTests.swift; sourceTree = "<group>"; };
 		F082FC2C41A35AF169B0DE24 /* dict-cedict */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-cedict"; path = "Resources/Plugins/dict-cedict"; sourceTree = SOURCE_ROOT; };
+		F6F8A82E516DAFF4A024E794 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		F9D4B122443AB994DF2359AC /* catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = catalog.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -69,6 +114,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				6CA3DD4CAAD9F5753C879E8A /* GlintCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47107472DDF4DE0DA45F3C43 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BF6A90222551DFB52BD8D2A /* GlintCore in Frameworks */,
+				F2DF9DF3366D4BC543FBAC25 /* GlintMac in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,6 +142,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		18F0B613A7C372EF1053CC19 /* RimeCandidateBridge */ = {
+			isa = PBXGroup;
+			children = (
+				F6F8A82E516DAFF4A024E794 /* main.swift */,
+			);
+			path = RimeCandidateBridge;
+			sourceTree = "<group>";
+		};
+		1FF0B686BA135A28E396AD3A /* RimeCandidateLab */ = {
+			isa = PBXGroup;
+			children = (
+				F617F0AE2850D0784C25528C /* rime */,
+				E2F0348A5BF99488BADDE7AE /* Sources */,
+			);
+			path = RimeCandidateLab;
+			sourceTree = "<group>";
+		};
 		39CF8315483D6FA477B822E1 /* GlintTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -105,6 +176,23 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		9E8B2C8BA0E2133C963D01DD /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				1FF0B686BA135A28E396AD3A /* RimeCandidateLab */,
+			);
+			path = Tools;
+			sourceTree = "<group>";
+		};
+		A9D144BD6804252F94A4205F /* glint */ = {
+			isa = PBXGroup;
+			children = (
+				98A1399AD8AAD221DB8BE251 /* candidate_bridge.lua */,
+				0A02C5BFBCCD53299807D039 /* json.lua */,
+			);
+			path = glint;
+			sourceTree = "<group>";
+		};
 		BE94CBFFEC9EC5F38A0B73F1 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -116,6 +204,14 @@
 				09BDD68C6DB642A313D624CC /* GlintUI */,
 			);
 			path = Packages;
+			sourceTree = "<group>";
+		};
+		CFEE084FAEF1BF5E2A6068C2 /* lua */ = {
+			isa = PBXGroup;
+			children = (
+				A9D144BD6804252F94A4205F /* glint */,
+			);
+			path = lua;
 			sourceTree = "<group>";
 		};
 		DF969B0BB89AF0E8847D2C83 /* Glint */ = {
@@ -137,12 +233,21 @@
 			path = Glint;
 			sourceTree = "<group>";
 		};
+		E2F0348A5BF99488BADDE7AE /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				18F0B613A7C372EF1053CC19 /* RimeCandidateBridge */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
 		EA6921C9B6CB486D18C07534 = {
 			isa = PBXGroup;
 			children = (
 				8DAB389B9A53278B341CE590 /* App */,
 				BE94CBFFEC9EC5F38A0B73F1 /* Packages */,
 				FD569EF777D164901CEB4F30 /* Resources */,
+				9E8B2C8BA0E2133C963D01DD /* Tools */,
 				F0DEBFD467843DF4F582D172 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -163,8 +268,17 @@
 			children = (
 				3E2E78BBA22734DD486C760B /* Glint.app */,
 				E94AB23640CA1E6007F8B2B4 /* GlintTests.xctest */,
+				CA325A737255A243BF330A82 /* RimeCandidateBridge */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F617F0AE2850D0784C25528C /* rime */ = {
+			isa = PBXGroup;
+			children = (
+				CFEE084FAEF1BF5E2A6068C2 /* lua */,
+			);
+			path = rime;
 			sourceTree = "<group>";
 		};
 		FD569EF777D164901CEB4F30 /* Resources */ = {
@@ -185,11 +299,14 @@
 			buildPhases = (
 				86AD9E59837D6EEC7E56E0F0 /* Sources */,
 				15DB57E4B5291059A1FB8D4A /* Resources */,
+				925CBF51C25DB742010DF495 /* CopyFiles */,
 				98BEE1CADB909FBA0A70E63B /* Frameworks */,
+				B20D4C692664E17A806E871A /* Embed Dependencies */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5803A76DC804A86E18E2B4AD /* PBXTargetDependency */,
 			);
 			name = Glint;
 			packageProductDependencies = (
@@ -223,6 +340,26 @@
 			productReference = E94AB23640CA1E6007F8B2B4 /* GlintTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		FCAB916A061D0EA56D1F4020 /* RimeCandidateBridge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4093CBF4F2A7B6BA928B4A06 /* Build configuration list for PBXNativeTarget "RimeCandidateBridge" */;
+			buildPhases = (
+				692F7FF1472802BCEA99F79F /* Sources */,
+				47107472DDF4DE0DA45F3C43 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RimeCandidateBridge;
+			packageProductDependencies = (
+				E67C16616B80BC8D3EFFE6F2 /* GlintCore */,
+				6FA372D848E0735725259193 /* GlintMac */,
+			);
+			productName = RimeCandidateBridge;
+			productReference = CA325A737255A243BF330A82 /* RimeCandidateBridge */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -236,6 +373,9 @@
 						ProvisioningStyle = Automatic;
 					};
 					900A6C235CB23B81714F0821 = {
+						ProvisioningStyle = Automatic;
+					};
+					FCAB916A061D0EA56D1F4020 = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -263,6 +403,7 @@
 			projectRoot = "";
 			targets = (
 				370743E3F9FFC81627C407C4 /* Glint */,
+				FCAB916A061D0EA56D1F4020 /* RimeCandidateBridge */,
 				900A6C235CB23B81714F0821 /* GlintTests */,
 			);
 		};
@@ -294,6 +435,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		692F7FF1472802BCEA99F79F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1915D16F7563B87CA5A13550 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		86AD9E59837D6EEC7E56E0F0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -313,6 +462,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		5803A76DC804A86E18E2B4AD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FCAB916A061D0EA56D1F4020 /* RimeCandidateBridge */;
+			targetProxy = 5211A35388CCBE221258BEDF /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
 		130074BCE1A72D62A77E00B9 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -329,6 +486,20 @@
 				SDKROOT = macosx;
 			};
 			name = Debug;
+		};
+		2909F68073D72D3606CFB679 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.RimeCandidateBridge;
+				PRODUCT_NAME = RimeCandidateBridge;
+				SDKROOT = macosx;
+			};
+			name = Release;
 		};
 		2FF28DB47A88D5C96B620971 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -432,6 +603,20 @@
 			};
 			name = Release;
 		};
+		AB9F9922CA806F9CD9E3F80D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.RimeCandidateBridge;
+				PRODUCT_NAME = RimeCandidateBridge;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
 		D716E255757C327EE86E1B65 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -532,6 +717,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		4093CBF4F2A7B6BA928B4A06 /* Build configuration list for PBXNativeTarget "RimeCandidateBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB9F9922CA806F9CD9E3F80D /* Debug */,
+				2909F68073D72D3606CFB679 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		4AC9F6345A7677531E105A3D /* Build configuration list for PBXNativeTarget "Glint" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -587,6 +781,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = GlintInference;
 		};
+		6FA372D848E0735725259193 /* GlintMac */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GlintMac;
+		};
 		7BA38E357A8135112494378C /* GlintPlugins */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GlintPlugins;
@@ -594,6 +792,10 @@
 		C82639D2D34337D5A9CD7D0C /* GlintMac */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GlintMac;
+		};
+		E67C16616B80BC8D3EFFE6F2 /* GlintCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GlintCore;
 		};
 		FBD93326229A8A62F071CD36 /* GlintUI */ = {
 			isa = XCSwiftPackageProductDependency;

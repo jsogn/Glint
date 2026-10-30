@@ -35,6 +35,7 @@ done
 
 mach_o_files=(
   "$app_bundle/Contents/MacOS/"*(N)
+  "$app_bundle/Contents/Helpers/"*(N)
   "$app_bundle/Contents/Frameworks/"**/*.dylib(N)
   "$app_bundle/Contents/Resources/"**/*.dylib(N)
 )

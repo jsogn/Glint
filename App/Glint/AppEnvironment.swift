@@ -1,3 +1,4 @@
+import Foundation
 import GlintCore
 import GlintInference
 import GlintMac
@@ -12,7 +13,9 @@ final class AppEnvironment {
     let translationRuntime: TranslationRuntime
     let monitoring: MonitoringController
     let monitoringSession: MonitoringSession
+    let squirrelIntegrationService: SquirrelIntegrationService?
     private let dictionary: PluginDictionaryRouter
+    private let rimeCandidateBridgeReceiver: RimeCandidateBridgeReceiver?
 
     init() {
         let pluginManager = PluginManager()
@@ -87,10 +90,64 @@ final class AppEnvironment {
         self.ecdictUpdateService = ecdictUpdateService
         self.translationRuntime = translationRuntime
         let router = SmartRouter(dictionary: dictionary, translation: translationRuntime)
-        let monitoring = MonitoringController(router: router)
+        #if DEBUG
+            self.squirrelIntegrationService =
+                Self.makeSquirrelIntegrationService()
+            let rimeBridge = RimeCandidateBridgeReceiver()
+            let rimeBridgeStarted = rimeBridge.start()
+            self.rimeCandidateBridgeReceiver =
+                rimeBridgeStarted ? rimeBridge : nil
+            let monitoring = MonitoringController(
+                router: router,
+                rimeCandidateStore:
+                    rimeBridgeStarted ? rimeBridge.store : nil
+            )
+        #else
+            self.squirrelIntegrationService = nil
+            self.rimeCandidateBridgeReceiver = nil
+            let monitoring = MonitoringController(router: router)
+        #endif
         self.monitoring = monitoring
         self.monitoringSession = MonitoringSession(controller: monitoring)
     }
+
+    #if DEBUG
+        static func makeSquirrelIntegrationService(
+            bundle: Bundle = .main
+        ) -> SquirrelIntegrationService {
+            let homeDirectory =
+                FileManager.default.homeDirectoryForCurrentUser
+            let appBundle = bundle.bundleURL
+            return SquirrelIntegrationService(
+                rimeDirectory: homeDirectory.appendingPathComponent(
+                    "Library/Rime",
+                    isDirectory: true
+                ),
+                supportDirectory: homeDirectory.appendingPathComponent(
+                    "Library/Application Support/Glint/RimeCandidateLab",
+                    isDirectory: true
+                ),
+                squirrelApplication: URL(
+                    fileURLWithPath:
+                        "/Library/Input Methods/Squirrel.app",
+                    isDirectory: true
+                ),
+                luaSourceDirectory:
+                    bundle.resourceURL?
+                    .appendingPathComponent(
+                        "RimeCandidateBridge",
+                        isDirectory: true
+                    )
+                    ?? appBundle.appendingPathComponent(
+                        "Contents/Resources/RimeCandidateBridge",
+                        isDirectory: true
+                    ),
+                relaySource: appBundle.appendingPathComponent(
+                    "Contents/Helpers/RimeCandidateBridge"
+                )
+            )
+        }
+    #endif
 
     func refreshDictionaryRoutes() async {
         await dictionary.reload()
