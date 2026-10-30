@@ -1,0 +1,2 @@
+patch:
+  engine/filters/@before 0: lua_filter@*glint.candidate_bridge

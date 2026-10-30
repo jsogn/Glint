@@ -66,6 +66,19 @@ struct CandidateReaderRegistration {
     let bundleIdentifiers: Set<String>
     let inputSourceIdentifiers: Set<String>
     let reader: any AXCandidateReading
+    let isAvailable: @Sendable () -> Bool
+
+    init(
+        bundleIdentifiers: Set<String>,
+        inputSourceIdentifiers: Set<String>,
+        reader: any AXCandidateReading,
+        isAvailable: @escaping @Sendable () -> Bool = { true }
+    ) {
+        self.bundleIdentifiers = bundleIdentifiers
+        self.inputSourceIdentifiers = inputSourceIdentifiers
+        self.reader = reader
+        self.isAvailable = isAvailable
+    }
 
     func matches(_ identity: InputMethodIdentity) -> Bool {
         if let bundleIdentifier = identity.bundleIdentifier,
@@ -103,7 +116,7 @@ struct CandidateReaderRouter: CandidateReaderRouting {
         allowProfileDiscovery: Bool
     ) -> any AXCandidateReading {
         if let reader = registrations.first(where: {
-            $0.matches(source.identity)
+            $0.matches(source.identity) && $0.isAvailable()
         })?.reader {
             return reader
         }
@@ -148,38 +161,62 @@ struct CandidateReaderRouter: CandidateReaderRouting {
 }
 
 enum CandidateReaderConfiguration {
-    static func standard() -> CandidateReaderRouter {
-        CandidateReaderRouter(
+    static func standard(
+        rimeCandidateStore: RimeCandidateSnapshotStore? = nil
+    ) -> CandidateReaderRouter {
+        var registrations = [
+            CandidateReaderRegistration(
+                bundleIdentifiers: [],
+                inputSourceIdentifiers: [
+                    InputMethodIdentifier.applePinyinInputMode
+                ],
+                reader: ApplePinyinCandidateReader(
+                    upstream: AXCandidateReader()
+                )
+            ),
+            CandidateReaderRegistration(
+                bundleIdentifiers: [
+                    InputMethodIdentifier.weTypeBundle
+                ],
+                inputSourceIdentifiers: [
+                    InputMethodIdentifier.weTypePinyinMode
+                ],
+                reader: WeTypeCandidateReader()
+            ),
+            CandidateReaderRegistration(
+                bundleIdentifiers: [
+                    InputMethodIdentifier.sogouBundle
+                ],
+                inputSourceIdentifiers: [
+                    InputMethodIdentifier.sogouPinyinMode
+                ],
+                reader: SogouCandidateReader()
+            ),
+        ]
+        if let rimeCandidateStore {
+            registrations.append(
+                CandidateReaderRegistration(
+                    bundleIdentifiers: [
+                        InputMethodIdentifier.squirrelBundle
+                    ],
+                    inputSourceIdentifiers: [
+                        InputMethodIdentifier.squirrelHansMode,
+                        InputMethodIdentifier.squirrelHantMode,
+                    ],
+                    reader: SquirrelCandidateReader(
+                        store: rimeCandidateStore
+                    ),
+                    isAvailable: {
+                        SquirrelCandidateReader.hasFreshSnapshot(
+                            in: rimeCandidateStore
+                        )
+                    }
+                )
+            )
+        }
+        return CandidateReaderRouter(
             fallback: AXCandidateReader(),
-            registrations: [
-                CandidateReaderRegistration(
-                    bundleIdentifiers: [],
-                    inputSourceIdentifiers: [
-                        InputMethodIdentifier.applePinyinInputMode
-                    ],
-                    reader: ApplePinyinCandidateReader(
-                        upstream: AXCandidateReader()
-                    )
-                ),
-                CandidateReaderRegistration(
-                    bundleIdentifiers: [
-                        InputMethodIdentifier.weTypeBundle
-                    ],
-                    inputSourceIdentifiers: [
-                        InputMethodIdentifier.weTypePinyinMode
-                    ],
-                    reader: WeTypeCandidateReader()
-                ),
-                CandidateReaderRegistration(
-                    bundleIdentifiers: [
-                        InputMethodIdentifier.sogouBundle
-                    ],
-                    inputSourceIdentifiers: [
-                        InputMethodIdentifier.sogouPinyinMode
-                    ],
-                    reader: SogouCandidateReader()
-                ),
-            ],
+            registrations: registrations,
             adaptiveProfiles: CandidateProfileCache(
                 persistence: .shared
             )

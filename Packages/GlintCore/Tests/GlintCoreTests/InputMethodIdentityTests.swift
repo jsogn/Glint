@@ -52,4 +52,30 @@ final class InputMethodIdentityTests: XCTestCase {
 
         XCTAssertEqual(identity.displayName, "输入法")
     }
+
+    func testSquirrelUsesStableDisplayFallback() {
+        let identity = InputMethodIdentity(
+            bundleIdentifier:
+                InputMethodIdentifier.squirrelBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.squirrelHansMode,
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: " "
+        )
+
+        XCTAssertEqual(identity.displayName, "Rime")
+    }
+
+    func testSquirrelUsesOfficialRimeNameInsteadOfLocalizedName() {
+        let identity = InputMethodIdentity(
+            bundleIdentifier:
+                InputMethodIdentifier.squirrelBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.squirrelHansMode,
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: "鼠须管"
+        )
+
+        XCTAssertEqual(identity.displayName, "Rime")
+    }
 }

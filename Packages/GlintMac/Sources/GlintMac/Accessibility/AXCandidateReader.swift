@@ -25,6 +25,7 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
     public let geometry: AXCandidateGeometry?
     public let selectedIndex: Int?
     public let selectionIsExact: Bool
+    public let usesInputCaretFrameFallback: Bool
 
     public init(
         text: String,
@@ -35,7 +36,8 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
         candidateListFrame: CGRect?,
         geometry: AXCandidateGeometry? = nil,
         selectedIndex: Int? = nil,
-        selectionIsExact: Bool = true
+        selectionIsExact: Bool = true,
+        usesInputCaretFrameFallback: Bool = false
     ) {
         self.text = text
         self.visibleTexts = visibleTexts
@@ -46,6 +48,8 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
         self.geometry = geometry
         self.selectedIndex = selectedIndex
         self.selectionIsExact = selectionIsExact
+        self.usesInputCaretFrameFallback =
+            usesInputCaretFrameFallback
     }
 }
 

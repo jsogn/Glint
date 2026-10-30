@@ -313,12 +313,21 @@ public actor MonitoringController {
     }
 
     public init(router: SmartRouter) {
+        self.init(router: router, rimeCandidateStore: nil)
+    }
+
+    public init(
+        router: SmartRouter,
+        rimeCandidateStore: RimeCandidateSnapshotStore?
+    ) {
         self.init(
             router: router,
             inputSource: InputSourceMonitor(),
             focus: FocusMonitor(),
             candidateReaders:
-                CandidateReaderConfiguration.standard(),
+                CandidateReaderConfiguration.standard(
+                    rimeCandidateStore: rimeCandidateStore
+                ),
             hostAccessibilityActivator:
                 AXHostAccessibilityActivator(),
             accessibilityIsTrusted: {
@@ -945,7 +954,10 @@ public actor MonitoringController {
         guard
             let selectedFrame = candidate.frame
                 ?? candidate.candidateWindowFrame
-                ?? candidate.candidateListFrame,
+                ?? candidate.candidateListFrame
+                ?? (candidate.usesInputCaretFrameFallback
+                    ? focus.caretRect
+                    : nil),
             let displayFrame = Self.candidateDisplayFrame(
                 scope: translationScope,
                 selectedFrame: selectedFrame,
