@@ -7,6 +7,8 @@
   Profile、自动探测、缓存和 AX 资源边界。
 - [发布计划](RELEASE-PLAN.md)：签名、公证、分发和发布门禁。
 - [AX 候选验证](AX-CANDIDATE-VALIDATION.md)：候选读取结构、性能证据和已知边界。
+- [Rime 输入法支持](SQUIRREL-CANDIDATE-BRIDGE.md)：实验性 Rime Lua 适配器、
+  安装流程和隔离边界。
 - [词典来源](DICTIONARY-SOURCES.md)：内置词典的来源、版本和许可证。
 - [模型评测](MODEL-EVALUATION.md)：翻译路由、真实模型对照和质量结论。
 - [文档资产](assets/README.md)：README 与推广图片的用途和替换规则。

@@ -1,7 +1,7 @@
 # Glint Architecture
 
 - 状态：现行
-- 最近校准：2026-10-26
+- 最近校准：2026-10-30
 - 平台：macOS 26+，Apple Silicon
 - 语言：Swift 6
 
@@ -66,6 +66,7 @@ Glint/
 - `DictionaryEngine`、`TranslationEngine` 和 `SmartRouter`。
 - `TranslationMemo`：精确结果 LRU、并发请求合并和容量限制。
 - `TypingActivityTracker`：候选停留、revision 和快速输入抑制。
+- Rime 候选桥接协议和经过校验的候选快照模型。
 - 不依赖 AppKit、SQLite 或任何推理运行时。
 
 ### GlintMac
@@ -75,6 +76,9 @@ Glint/
 - 候选轮询按权限/输入源、焦点目标、候选读取、活动判定和翻译触发分阶段执行；
   actor 仍集中持有会话状态，避免把并发状态分散到多个对象。
 - `CandidateReaderRouter`：Apple、显式 reader 和未知输入法 Profile。
+- Rime 候选 Socket、快照存储和鼠须管 Reader；仅 Debug 注册。
+- `SquirrelIntegrationService`：启用 schema 解析、YAML 预检、事务安装、
+  备份、哈希校验、重新部署和回滚；仅在 Debug 组合根中构造。
 - `AXReadSession`：消息超时、属性调用上限和总截止时间。
 - 不包含 UI、插件下载、词典数据或推理实现。
 
@@ -106,6 +110,7 @@ Glint/
 ### GlintUI
 
 - 主窗口侧栏、设置页、插件页、权限页和关于页。
+- Debug 构建另有“输入法支持”页，展示 Rime 实验支持状态。
 - 单一 HUD panel，不创建键盘监听、Toast 或运行时错误卡片。
 - `MainWindowModel` 作为 `@MainActor` 展示状态和动作边界。
 - 不直接实现 Accessibility 读取或模型推理。
@@ -115,6 +120,8 @@ Glint/
 - 创建 `AppEnvironment` 并注入具体实现。
 - 管理菜单栏、主窗口、HUD、监控 session 和退出。
 - 仅在翻译运行时准备完成后启动监控。
+- Debug 构建启动 Rime Socket 接收器并注入事务安装器；Release 不注册鼠须管
+  Reader、不启动 Socket，也不提供安装动作。
 - 保持单实例并提供 readiness 与诊断命令。
 
 ## 5. 依赖方向
@@ -188,6 +195,7 @@ InputSourceMonitor (TIS)
   → CandidateReaderRouter
       ├─ AXCandidateReader
       ├─ 微信 / 搜狗显式 reader
+      ├─ 鼠须管 Lua 候选桥（仅 Debug）
       └─ AdaptiveUnknownCandidateReader
   → MonitoringController
   → SmartRouter
@@ -225,6 +233,14 @@ MainWindowModel → MainWindowView
 未知输入法的 Profile、资源上限和失败恢复见
 [未知输入法通用适配](GENERIC-INPUT-METHOD-ADAPTATION.md)。AX 结构、性能和验收
 边界见 [AX Candidate Validation](AX-CANDIDATE-VALIDATION.md)。
+
+鼠须管的 AX 候选窗没有候选级语义。Debug 研究构建可通过用户侧
+`librime-lua`、本地中继和 Unix Domain Socket 接收候选与选中索引；Release
+构建不启动接收器，其他输入法也不经过该路径。“输入法支持”页的安全安装器先解析
+Rime `schema_list`，只修改已启用且已编译的方案；遇到复杂 YAML 会在写入前
+停止。安装、修复和卸载均带备份、哈希与失败回滚。Squirrel 不暴露候选面板
+frame 时，仅该 Reader 回退到宿主输入光标作 HUD 锚点。详见
+[鼠须管候选桥接研究](SQUIRREL-CANDIDATE-BRIDGE.md)。
 
 ## 8. 候选读取与监控
 
