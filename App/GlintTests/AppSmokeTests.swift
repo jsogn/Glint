@@ -62,4 +62,30 @@ final class AppSmokeTests: XCTestCase {
             )
         }
     }
+
+    func testAppBundlesOnlyCoreDictionaries() {
+        let resources = appBundleURL.appendingPathComponent(
+            "Contents/Resources",
+            isDirectory: true
+        )
+
+        for dictionaryID in ["dict-cedict", "dict-ecdict"] {
+            let dictionaryURL = resources.appendingPathComponent(
+                dictionaryID
+            )
+            XCTAssertTrue(
+                FileManager.default.fileExists(
+                    atPath: dictionaryURL.path
+                )
+            )
+        }
+        let wiktionaryURL = resources.appendingPathComponent(
+            "dict-wiktionary-zh-en"
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: wiktionaryURL.path
+            )
+        )
+    }
 }

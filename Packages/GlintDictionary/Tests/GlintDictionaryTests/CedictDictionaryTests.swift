@@ -34,7 +34,7 @@ final class CedictDictionaryTests: XCTestCase {
             "Resources/Plugins/dict-ecdict/ecdict_rank.sqlite3"
         )
         let ranker = ECDICTRanker(databaseURL: ecdictURL)
-        var routes = [
+        let routes = [
             DictionaryRoute(
                 id: "dict-cedict",
                 priority: 0,
@@ -53,22 +53,6 @@ final class CedictDictionaryTests: XCTestCase {
                 engine: ECDICTDictionary(ranker: ranker)
             ),
         ]
-        if let wiktionary = GenericSQLiteDictionary(
-            databaseURL: rootURL.appendingPathComponent(
-                "Resources/Plugins/dict-wiktionary-zh-en/dictionary.sqlite3"
-            ),
-            sourceLanguage: "zh-Hans",
-            targetLanguage: "en"
-        ) {
-            routes.append(
-                DictionaryRoute(
-                    id: "dict-wiktionary-zh-en",
-                    priority: 2,
-                    role: .fallback,
-                    engine: wiktionary
-                )
-            )
-        }
         return DictionaryRouter(routes: routes)
     }
 
@@ -283,7 +267,7 @@ final class CedictDictionaryTests: XCTestCase {
         XCTAssertEqual(need?.text, "need")
     }
 
-    func testSchemaV2PreservesReadingsAndSenses() async throws {
+    func testSchemaV3PreservesSenses() async throws {
         let dictionary = makeDictionary()
 
         let kan = try await dictionary.lookup(

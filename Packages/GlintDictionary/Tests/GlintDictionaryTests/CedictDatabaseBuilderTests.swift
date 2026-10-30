@@ -1,5 +1,6 @@
 import Foundation
 import GlintCore
+import SQLite3
 import XCTest
 import zlib
 
@@ -51,6 +52,20 @@ final class CedictDatabaseBuilderTests: XCTestCase {
         XCTAssertTrue(
             CedictDatabaseBuilder.isCompatible(databaseURL: database)
         )
+        let schema = try databaseSchema(at: database)
+        XCTAssertEqual(schema.userVersion, 3)
+        XCTAssertTrue(
+            schema.tables.isSuperset(
+                of: ["metadata", "senses", "terms"]
+            )
+        )
+        XCTAssertFalse(schema.tables.contains("entries"))
+        XCTAssertTrue(schema.sensesDefinition.contains("WITHOUT ROWID"))
+        XCTAssertTrue(schema.termsDefinition.contains("WITHOUT ROWID"))
+        XCTAssertFalse(schema.sensesDefinition.contains("pinyin"))
+        XCTAssertFalse(schema.termsDefinition.contains("pinyin"))
+        XCTAssertEqual(schema.termCount, 4)
+        XCTAssertEqual(schema.senseCount, 4)
 
         let dictionary = CedictDictionary(
             databaseURL: database,
@@ -60,6 +75,14 @@ final class CedictDatabaseBuilderTests: XCTestCase {
             Candidate(text: "发布", kind: .word)
         )
         XCTAssertEqual(result?.options.first?.text, "release")
+
+        let traditionalResult = try await dictionary.lookup(
+            Candidate(text: "發布", kind: .word)
+        )
+        XCTAssertEqual(
+            traditionalResult?.options.first?.text,
+            "release"
+        )
     }
 
     func testRejectsInvalidSourceAndRemovesPartialDatabase() throws {
@@ -127,6 +150,101 @@ final class CedictDatabaseBuilderTests: XCTestCase {
             withIntermediateDirectories: true
         )
         return directory
+    }
+
+    private func databaseSchema(
+        at url: URL
+    ) throws -> (
+        userVersion: Int,
+        tables: Set<String>,
+        termsDefinition: String,
+        sensesDefinition: String,
+        termCount: Int,
+        senseCount: Int
+    ) {
+        var database: OpaquePointer?
+        guard
+            sqlite3_open_v2(
+                url.path,
+                &database,
+                SQLITE_OPEN_READONLY,
+                nil
+            ) == SQLITE_OK,
+            let database
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        defer { sqlite3_close(database) }
+
+        func string(_ sql: String) throws -> String {
+            var statement: OpaquePointer?
+            guard
+                sqlite3_prepare_v2(
+                    database,
+                    sql,
+                    -1,
+                    &statement,
+                    nil
+                ) == SQLITE_OK,
+                let statement
+            else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            defer { sqlite3_finalize(statement) }
+            guard sqlite3_step(statement) == SQLITE_ROW else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return String(
+                cString: UnsafeRawPointer(
+                    sqlite3_column_text(statement, 0)
+                ).assumingMemoryBound(to: CChar.self)
+            )
+        }
+
+        let userVersion = Int(try string("PRAGMA user_version;")) ?? -1
+        var tables: Set<String> = []
+        var statement: OpaquePointer?
+        guard
+            sqlite3_prepare_v2(
+                database,
+                "SELECT name FROM sqlite_master WHERE type = 'table';",
+                -1,
+                &statement,
+                nil
+            ) == SQLITE_OK,
+            let statement
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        defer { sqlite3_finalize(statement) }
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let name = sqlite3_column_text(statement, 0) else {
+                continue
+            }
+            tables.insert(
+                String(
+                    cString: UnsafeRawPointer(name)
+                        .assumingMemoryBound(to: CChar.self)
+                )
+            )
+        }
+
+        return (
+            userVersion: userVersion,
+            tables: tables,
+            termsDefinition: try string(
+                "SELECT sql FROM sqlite_master WHERE name = 'terms';"
+            ),
+            sensesDefinition: try string(
+                "SELECT sql FROM sqlite_master WHERE name = 'senses';"
+            ),
+            termCount: Int(
+                try string("SELECT COUNT(*) FROM terms;")
+            ) ?? -1,
+            senseCount: Int(
+                try string("SELECT COUNT(*) FROM senses;")
+            ) ?? -1
+        )
     }
 
     private func writeGzip(

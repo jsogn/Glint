@@ -16,6 +16,11 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "15.0"
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
+  configs:
+    Release:
+      DEAD_CODE_STRIPPING: YES
+      DEPLOYMENT_POSTPROCESSING: YES
+      SWIFT_OPTIMIZATION_LEVEL: -Osize
 
 packages:
   GlintCore:
@@ -50,9 +55,6 @@ targets:
       - path: Resources/Plugins/dict-ecdict
         buildPhase: resources
         type: folder
-      - path: Resources/Plugins/dict-wiktionary-zh-en
-        buildPhase: resources
-        type: folder
       - path: Resources/CTranslate2Runtime
         buildPhase: resources
         type: folder
@@ -77,8 +79,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.local.glint
         PRODUCT_NAME: Glint
-        MARKETING_VERSION: "0.6.0"
-        CURRENT_PROJECT_VERSION: "16"
+        MARKETING_VERSION: "0.7.0"
+        CURRENT_PROJECT_VERSION: "17"
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_ENTITLEMENTS: App/Glint/Glint.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

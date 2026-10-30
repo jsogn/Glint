@@ -51,11 +51,10 @@ public enum CedictDatabaseBuilder {
     private struct ParsedEntry {
         let traditional: String
         let simplified: String
-        let pinyin: String
         let senses: [String]
     }
 
-    private static let schema = "cc-cedict-senses-v2"
+    private static let schema = "cc-cedict-senses-v3"
     private static let sqliteTransient = unsafeBitCast(
         -1,
         to: sqlite3_destructor_type.self
@@ -111,36 +110,33 @@ public enum CedictDatabaseBuilder {
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
                 );
-                CREATE TABLE entries (
-                    sense_id INTEGER PRIMARY KEY,
-                    simplified TEXT NOT NULL,
-                    traditional TEXT NOT NULL,
-                    pinyin TEXT NOT NULL,
+                CREATE TABLE terms (
+                    term TEXT NOT NULL,
+                    entry_id INTEGER NOT NULL,
+                    PRIMARY KEY (term, entry_id)
+                ) WITHOUT ROWID;
+                CREATE TABLE senses (
+                    entry_id INTEGER NOT NULL,
+                    sense_order INTEGER NOT NULL,
                     gloss TEXT NOT NULL,
-                    line_order INTEGER NOT NULL,
-                    sense_order INTEGER NOT NULL
-                );
-                CREATE INDEX idx_entries_simplified
-                    ON entries(simplified, line_order, sense_order);
-                CREATE INDEX idx_entries_traditional
-                    ON entries(traditional, line_order, sense_order);
+                    PRIMARY KEY (entry_id, sense_order)
+                ) WITHOUT ROWID;
                 """
             )
 
-            let insertEntry = try prepare(
+            let insertTerm = try prepare(
+                database,
+                "INSERT OR IGNORE INTO terms(term, entry_id) VALUES (?, ?)"
+            )
+            defer { sqlite3_finalize(insertTerm) }
+            let insertSense = try prepare(
                 database,
                 """
-                INSERT INTO entries(
-                    simplified,
-                    traditional,
-                    pinyin,
-                    gloss,
-                    line_order,
-                    sense_order
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO senses(entry_id, sense_order, gloss)
+                VALUES (?, ?, ?)
                 """
             )
-            defer { sqlite3_finalize(insertEntry) }
+            defer { sqlite3_finalize(insertSense) }
 
             var sourceDate: String?
             var entryCount = 0
@@ -162,32 +158,36 @@ public enum CedictDatabaseBuilder {
                         throw CedictDatabaseBuilderError.invalidEntry(line)
                     }
                     entryCount += 1
-                    for (senseOrder, gloss) in entry.senses.enumerated() {
-                        sqlite3_reset(insertEntry)
-                        sqlite3_clear_bindings(insertEntry)
-                        bind(
-                            entry.simplified,
-                            to: 1,
-                            in: insertEntry
-                        )
-                        bind(
-                            entry.traditional,
-                            to: 2,
-                            in: insertEntry
-                        )
-                        bind(entry.pinyin, to: 3, in: insertEntry)
-                        bind(gloss, to: 4, in: insertEntry)
+                    for term in [entry.simplified, entry.traditional] {
+                        sqlite3_reset(insertTerm)
+                        sqlite3_clear_bindings(insertTerm)
+                        bind(term, to: 1, in: insertTerm)
                         sqlite3_bind_int64(
-                            insertEntry,
-                            5,
+                            insertTerm,
+                            2,
+                            Int64(entryCount)
+                        )
+                        guard sqlite3_step(insertTerm) == SQLITE_DONE else {
+                            throw CedictDatabaseBuilderError.sqlite(
+                                String(cString: sqlite3_errmsg(database))
+                            )
+                        }
+                    }
+                    for (senseOrder, gloss) in entry.senses.enumerated() {
+                        sqlite3_reset(insertSense)
+                        sqlite3_clear_bindings(insertSense)
+                        sqlite3_bind_int64(
+                            insertSense,
+                            1,
                             Int64(entryCount)
                         )
                         sqlite3_bind_int(
-                            insertEntry,
-                            6,
+                            insertSense,
+                            2,
                             Int32(senseOrder)
                         )
-                        guard sqlite3_step(insertEntry) == SQLITE_DONE else {
+                        bind(gloss, to: 3, in: insertSense)
+                        guard sqlite3_step(insertSense) == SQLITE_DONE else {
                             throw CedictDatabaseBuilderError.sqlite(
                                 String(cString: sqlite3_errmsg(database))
                             )
@@ -228,7 +228,7 @@ public enum CedictDatabaseBuilder {
                     )
                 }
             }
-            try execute(database, "PRAGMA user_version = 2;")
+            try execute(database, "PRAGMA user_version = 3;")
             let summary = CedictDatabaseSummary(
                 sourceDate: sourceDate,
                 entryCount: entryCount,
@@ -280,6 +280,9 @@ public enum CedictDatabaseBuilder {
         else {
             throw CedictDatabaseBuilderError.invalidSchema
         }
+        guard hasLookupSchema(database) else {
+            throw CedictDatabaseBuilderError.invalidSchema
+        }
         let integritySQL =
             fullIntegrityCheck
             ? "PRAGMA integrity_check;"
@@ -298,11 +301,7 @@ public enum CedictDatabaseBuilder {
             )
             ?? intValue(
                 database,
-                sql: """
-                    SELECT COUNT(DISTINCT
-                        simplified || char(0) || traditional || char(0) || pinyin
-                    ) FROM entries
-                    """
+                sql: "SELECT COUNT(DISTINCT entry_id) FROM senses"
             )
             ?? 0
         let senseCount =
@@ -312,7 +311,7 @@ public enum CedictDatabaseBuilder {
             )
             ?? intValue(
                 database,
-                sql: "SELECT COUNT(*) FROM entries"
+                sql: "SELECT COUNT(*) FROM senses"
             )
             ?? 0
         return CedictDatabaseSummary(
@@ -382,11 +381,6 @@ public enum CedictDatabaseBuilder {
                 line.index(after: firstSpace)..<secondSpace
             ]
         )
-        let pinyin = String(
-            line[
-                line.index(after: openBracket)..<closeBracket
-            ]
-        )
         let glossStart = line.index(after: closeBracket)
         let rawGloss = line[glossStart...]
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -403,9 +397,51 @@ public enum CedictDatabaseBuilder {
         return ParsedEntry(
             traditional: traditional,
             simplified: simplified,
-            pinyin: pinyin,
             senses: senses
         )
+    }
+
+    private static func hasLookupSchema(
+        _ database: OpaquePointer
+    ) -> Bool {
+        tableColumns("terms", in: database).isSuperset(
+            of: ["term", "entry_id"]
+        )
+            && tableColumns("senses", in: database).isSuperset(
+                of: ["entry_id", "sense_order", "gloss"]
+            )
+    }
+
+    private static func tableColumns(
+        _ table: String,
+        in database: OpaquePointer
+    ) -> Set<String> {
+        var statement: OpaquePointer?
+        guard
+            sqlite3_prepare_v2(
+                database,
+                "PRAGMA table_info(\(table));",
+                -1,
+                &statement,
+                nil
+            ) == SQLITE_OK
+        else {
+            return []
+        }
+        defer { sqlite3_finalize(statement) }
+        var columns: Set<String> = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let name = sqlite3_column_text(statement, 1) else {
+                continue
+            }
+            columns.insert(
+                String(
+                    cString: UnsafeRawPointer(name)
+                        .assumingMemoryBound(to: CChar.self)
+                )
+            )
+        }
+        return columns
     }
 
     private static func bind(

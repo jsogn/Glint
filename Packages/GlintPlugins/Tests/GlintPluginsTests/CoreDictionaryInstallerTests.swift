@@ -4,6 +4,73 @@ import XCTest
 @testable import GlintPlugins
 
 final class CoreDictionaryInstallerTests: XCTestCase {
+    func testRepairReplacesInvalidInstalledDictionaryWithBundledArtifact()
+        async throws
+    {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let bundled = root.appendingPathComponent(
+            "bundled",
+            isDirectory: true
+        )
+        let existing = root.appendingPathComponent(
+            "existing",
+            isDirectory: true
+        )
+        for directory in [bundled, existing] {
+            try FileManager.default.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+        }
+        try writePlugin(
+            version: "2.0.0",
+            content: Data("bundled".utf8),
+            directory: bundled
+        )
+        try writePlugin(
+            version: "1.0.0",
+            content: Data("legacy".utf8),
+            directory: existing
+        )
+        let manager = PluginManager(baseDirectory: root)
+        _ = try await manager.installPreparedPlugin(at: existing)
+        let installer = CoreDictionaryInstaller(pluginManager: manager)
+        let expected = Data("bundled".utf8)
+
+        let repaired = try await installer.repairInvalidInstallation(
+            dictionaryID: "dict-test",
+            bundledDirectory: bundled,
+            artifactFileName: "artifact.sqlite3",
+            validate: { url in
+                (try? Data(contentsOf: url)) == expected
+            }
+        )
+
+        XCTAssertTrue(repaired)
+        let installedDirectory = await manager.pluginDirectory(
+            for: "dict-test"
+        )
+        XCTAssertEqual(
+            try Data(
+                contentsOf: installedDirectory.appendingPathComponent(
+                    "artifact.sqlite3"
+                )
+            ),
+            expected
+        )
+        let installed = await manager.installedPlugin(id: "dict-test")
+        XCTAssertEqual(installed?.version, "2.0.0")
+        XCTAssertEqual(
+            try Data(
+                contentsOf: bundled.appendingPathComponent(
+                    "artifact.sqlite3"
+                )
+            ),
+            expected
+        )
+    }
+
     func testValidationFailureRestoresExistingDictionary() async throws {
         let root = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -92,7 +159,8 @@ final class CoreDictionaryInstallerTests: XCTestCase {
             url: URL(string: "https://example.invalid/dict-test")!,
             license: "MIT",
             minRAMBytes: 0,
-            source: .bundled
+            source: .bundled,
+            coreUpdateKind: .cedict
         )
         try JSONEncoder().encode(manifest).write(
             to: directory.appendingPathComponent(

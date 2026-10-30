@@ -62,7 +62,7 @@ struct BenchmarkMain {
             "Resources/Plugins/dict-ecdict/ecdict_rank.sqlite3"
         )
         let ecdictRanker = ECDICTRanker(databaseURL: ecdictURL)
-        var routes: [DictionaryRoute] = [
+        let routes: [DictionaryRoute] = [
             DictionaryRoute(
                 id: "dict-cedict",
                 priority: 0,
@@ -81,22 +81,6 @@ struct BenchmarkMain {
                 engine: ECDICTDictionary(ranker: ecdictRanker)
             ),
         ]
-        if let wiktionary = GenericSQLiteDictionary(
-            databaseURL: rootURL.appendingPathComponent(
-                "Resources/Plugins/dict-wiktionary-zh-en/dictionary.sqlite3"
-            ),
-            sourceLanguage: "zh-Hans",
-            targetLanguage: "en"
-        ) {
-            routes.append(
-                DictionaryRoute(
-                    id: "dict-wiktionary-zh-en",
-                    priority: 2,
-                    role: .fallback,
-                    engine: wiktionary
-                )
-            )
-        }
         let router = DictionaryRouter(routes: routes)
 
         var results: [CaseResult] = []

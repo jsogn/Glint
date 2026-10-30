@@ -31,7 +31,8 @@ fi
 for expected in \
   'Glint-$version-macOS-arm64.dmg' \
   'Glint-$version-macOS-arm64.pkg' \
-  '--min-os-version "$minimum_system"'; do
+  '--min-os-version "$minimum_system"' \
+  '-format ULMO'; do
   if ! grep -Fq -- "$expected" scripts/package_test_lib.zsh; then
     echo "Package naming or minimum system guard is missing: $expected" >&2
     exit 1

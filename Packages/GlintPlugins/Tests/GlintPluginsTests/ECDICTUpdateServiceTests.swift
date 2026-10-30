@@ -3,6 +3,7 @@ import Foundation
 import GlintCore
 import GlintDictionary
 import os
+import SQLite3
 import XCTest
 import zlib
 
@@ -79,6 +80,65 @@ private final class ECDICTStubURLProtocol: URLProtocol {
 }
 
 final class ECDICTUpdateServiceTests: XCTestCase {
+    func testRepairReplacesInstalledLegacySchemaWithBundledRankIndex()
+        async throws
+    {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let bundled = root.appendingPathComponent(
+            "bundled",
+            isDirectory: true
+        )
+        let installed = root.appendingPathComponent(
+            "installed",
+            isDirectory: true
+        )
+        for directory in [bundled, installed] {
+            try FileManager.default.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+        }
+        try writeDictionary(
+            sourceDate: "2026-10-20T02:25:07Z",
+            sourceRevision: newECDICTRevision,
+            translation: "新词, 新释义",
+            english: "new word",
+            directory: bundled
+        )
+        try writeLegacyDictionary(
+            sourceDate: "2026-10-19T00:00:00Z",
+            sourceRevision: oldECDICTRevision,
+            translation: "旧词",
+            english: "old word",
+            directory: installed
+        )
+        let manager = PluginManager(baseDirectory: root)
+        _ = try await manager.installPreparedPlugin(at: installed)
+        let service = makeService(
+            manager: manager,
+            bundledDirectory: bundled
+        )
+
+        let repaired = try await service.repairInstalledCopyIfNeeded()
+
+        XCTAssertTrue(repaired)
+        let installedDirectory = await manager.pluginDirectory(
+            for: "dict-ecdict"
+        )
+        let database = installedDirectory.appendingPathComponent(
+            "ecdict_rank.sqlite3"
+        )
+        XCTAssertTrue(
+            ECDICTRankBuilder.isCompatible(databaseURL: database)
+        )
+        let ranker = ECDICTRanker(databaseURL: database)
+        XCTAssertEqual(
+            ranker.fallbackCandidates(term: "新词", limit: 3),
+            ["new word"]
+        )
+    }
+
     func testInstallsNewerArchiveAndSkipsSecondCheck() async throws {
         let root = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -273,7 +333,8 @@ final class ECDICTUpdateServiceTests: XCTestCase {
             sourceDate: sourceDate,
             sourceChecksum: SHA256.hash(data: csv).map {
                 String(format: "%02x", $0)
-            }.joined()
+            }.joined(),
+            coreUpdateKind: .ecdict
         )
         try JSONEncoder().encode(manifest).write(
             to: directory.appendingPathComponent(
@@ -291,6 +352,95 @@ final class ECDICTUpdateServiceTests: XCTestCase {
             word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
             \(english),,,"\(translation)",,,1,,,100,,
             """.utf8
+        )
+    }
+
+    private func writeLegacyDictionary(
+        sourceDate: String,
+        sourceRevision: String,
+        translation: String,
+        english: String,
+        directory: URL
+    ) throws {
+        let databaseURL = directory.appendingPathComponent(
+            "ecdict_rank.sqlite3"
+        )
+        var database: OpaquePointer?
+        guard
+            sqlite3_open_v2(
+                databaseURL.path,
+                &database,
+                SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE,
+                nil
+            ) == SQLITE_OK,
+            let database
+        else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        defer { sqlite3_close(database) }
+        let sql = """
+            CREATE TABLE metadata (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+            CREATE TABLE ranks (
+                term TEXT NOT NULL,
+                english TEXT NOT NULL,
+                frequency INTEGER NOT NULL,
+                collins INTEGER NOT NULL,
+                oxford INTEGER NOT NULL,
+                exam_tag INTEGER NOT NULL,
+                PRIMARY KEY (term, english)
+            );
+            CREATE INDEX idx_ranks_term ON ranks(term, frequency);
+            INSERT INTO metadata(key, value) VALUES
+                ('schema', 'ecdict-rank-v2'),
+                ('source_date', '\(sourceDate)'),
+                ('source_revision', '\(sourceRevision)');
+            INSERT INTO ranks(
+                term,
+                english,
+                frequency,
+                collins,
+                oxford,
+                exam_tag
+            ) VALUES (
+                '\(translation)',
+                '\(english)',
+                100,
+                0,
+                0,
+                0
+            );
+            PRAGMA user_version = 2;
+            """
+        guard sqlite3_exec(database, sql, nil, nil, nil) == SQLITE_OK else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        let manifest = PluginManifest(
+            id: "dict-ecdict",
+            type: .dictionary,
+            name: "ECDICT Rank Index",
+            version: String(sourceDate.prefix(10)).replacingOccurrences(
+                of: "-",
+                with: "."
+            ),
+            runtime: "ecdict-rank",
+            sizeBytes: 1,
+            sha256: "legacy",
+            url: URL(string: "https://ecdict.test/source.csv")!,
+            license: "MIT",
+            minRAMBytes: 0,
+            summary: nil,
+            revision: sourceRevision,
+            source: .bundled,
+            sourceDate: sourceDate,
+            coreUpdateKind: .ecdict
+        )
+        try JSONEncoder().encode(manifest).write(
+            to: directory.appendingPathComponent(
+                PluginManifest.fileName
+            )
         )
     }
 

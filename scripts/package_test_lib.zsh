@@ -29,6 +29,9 @@ prepare_release_app() {
     ARCHS=arm64 \
     ONLY_ACTIVE_ARCH=YES \
     CODE_SIGNING_ALLOWED=NO \
+    DEAD_CODE_STRIPPING=YES \
+    DEPLOYMENT_POSTPROCESSING=YES \
+    SWIFT_OPTIMIZATION_LEVEL=-Osize \
     "${source_packages_args[@]}" \
     -quiet \
     build
@@ -40,6 +43,12 @@ prepare_release_app() {
   executable="$(plutil -extract CFBundleExecutable raw \
     "$app_bundle/Contents/Info.plist")"
   local main_executable="$app_bundle/Contents/MacOS/$executable"
+  local main_executable_size
+  main_executable_size="$(stat -f %z "$main_executable")"
+  if (( main_executable_size > 24_000_000 )); then
+    echo "Release executable exceeds the 24 MB size budget: $main_executable_size" >&2
+    exit 1
+  fi
 
   # Ad-hoc signing has no Team ID, so Hardened Runtime is intentionally
   # omitted. Sign every nested Mach-O before sealing the app bundle.
@@ -106,7 +115,7 @@ package_dmg() {
     -volname "Glint $version" \
     -srcfolder "$stage_dir" \
     -ov \
-    -format UDZO \
+    -format ULMO \
     "$dmg_path"
   hdiutil verify -quiet "$dmg_path"
   write_checksum "$dmg_path"

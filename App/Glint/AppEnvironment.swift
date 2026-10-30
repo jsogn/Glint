@@ -173,6 +173,11 @@ final class AppEnvironment {
         await dictionary.reload()
     }
 
+    func repairInvalidCoreDictionaryInstallations() async {
+        _ = try? await coreDictionaryUpdateService.repairInstalledCopyIfNeeded()
+        _ = try? await ecdictUpdateService.repairInstalledCopyIfNeeded()
+    }
+
     func checkCoreDictionaryUpdate(
         kind: CoreDictionaryUpdateKind
     ) async throws -> String {

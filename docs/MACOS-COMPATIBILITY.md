@@ -28,7 +28,8 @@
 ```
 
 脚本会校验源码 revision、架构、最低系统版本、RPATH、导出符号和代码签名，
-并更新 `runtime-lock.json` 中的二进制哈希。`scripts/test.sh` 会运行
+在签名前剥离本地符号，并更新 `runtime-lock.json` 中的二进制哈希。
+`scripts/test.sh` 会运行
 `scripts/test_macos15_compatibility.sh`，在构建前阻止版本或二进制漂移。
 
 ## 发布文件名

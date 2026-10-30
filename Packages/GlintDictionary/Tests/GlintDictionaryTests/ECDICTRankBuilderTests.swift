@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import XCTest
 
 @testable import GlintDictionary
@@ -73,6 +74,11 @@ final class ECDICTRankBuilderTests: XCTestCase {
         )
         XCTAssertEqual(ranker.rankings(for: "设计").first?.english, "design")
         XCTAssertTrue(ranker.rankings(for: "一个").isEmpty)
+
+        let schema = try databaseSchema(at: database)
+        XCTAssertEqual(schema.userVersion, 3)
+        XCTAssertTrue(schema.ranksDefinition.contains("WITHOUT ROWID"))
+        XCTAssertFalse(schema.indexes.contains("idx_ranks_term"))
     }
 
     func testSkipsParentheticalMetadataAndTitleFragments() throws {
@@ -151,5 +157,89 @@ final class ECDICTRankBuilderTests: XCTestCase {
             withIntermediateDirectories: true
         )
         return directory
+    }
+
+    private func databaseSchema(
+        at url: URL
+    ) throws -> (
+        userVersion: Int,
+        ranksDefinition: String,
+        indexes: Set<String>
+    ) {
+        var database: OpaquePointer?
+        guard
+            sqlite3_open_v2(
+                url.path,
+                &database,
+                SQLITE_OPEN_READONLY,
+                nil
+            ) == SQLITE_OK,
+            let database
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        defer { sqlite3_close(database) }
+
+        func text(_ sql: String) throws -> String {
+            var statement: OpaquePointer?
+            guard
+                sqlite3_prepare_v2(
+                    database,
+                    sql,
+                    -1,
+                    &statement,
+                    nil
+                ) == SQLITE_OK,
+                let statement
+            else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            defer { sqlite3_finalize(statement) }
+            guard sqlite3_step(statement) == SQLITE_ROW else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return String(
+                cString: UnsafeRawPointer(
+                    sqlite3_column_text(statement, 0)
+                ).assumingMemoryBound(to: CChar.self)
+            )
+        }
+
+        var indexes: Set<String> = []
+        var statement: OpaquePointer?
+        guard
+            sqlite3_prepare_v2(
+                database,
+                "PRAGMA index_list(ranks);",
+                -1,
+                &statement,
+                nil
+            ) == SQLITE_OK,
+            let statement
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        defer { sqlite3_finalize(statement) }
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let name = sqlite3_column_text(statement, 1) else {
+                continue
+            }
+            indexes.insert(
+                String(
+                    cString: UnsafeRawPointer(name)
+                        .assumingMemoryBound(to: CChar.self)
+                )
+            )
+        }
+
+        return (
+            userVersion: Int(
+                try text("PRAGMA user_version;")
+            ) ?? -1,
+            ranksDefinition: try text(
+                "SELECT sql FROM sqlite_master WHERE name = 'ranks';"
+            ),
+            indexes: indexes
+        )
     }
 }

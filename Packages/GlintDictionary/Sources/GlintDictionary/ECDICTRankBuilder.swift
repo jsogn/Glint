@@ -164,7 +164,7 @@ public enum ECDICTRankBuilder {
         }
     }
 
-    private static let schema = "ecdict-rank-v2"
+    private static let schema = "ecdict-rank-v3"
     private static let sqliteTransient = unsafeBitCast(
         -1,
         to: sqlite3_destructor_type.self
@@ -230,7 +230,7 @@ public enum ECDICTRankBuilder {
                     oxford INTEGER NOT NULL,
                     exam_tag INTEGER NOT NULL,
                     PRIMARY KEY (term, english)
-                );
+                ) WITHOUT ROWID;
                 CREATE TABLE metadata (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
@@ -364,10 +364,6 @@ public enum ECDICTRankBuilder {
                         }
                     }
                 }
-                try execute(
-                    database,
-                    "CREATE INDEX idx_ranks_term ON ranks(term, frequency);"
-                )
                 try insertMetadata(
                     [
                         ("schema", schema),
@@ -379,7 +375,7 @@ public enum ECDICTRankBuilder {
                     ],
                     into: database
                 )
-                try execute(database, "PRAGMA user_version = 2;")
+                try execute(database, "PRAGMA user_version = 3;")
                 try execute(database, "COMMIT;")
             } catch {
                 try? execute(database, "ROLLBACK;")

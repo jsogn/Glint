@@ -82,6 +82,80 @@ public actor CoreDictionaryInstaller {
         self.pluginManager = pluginManager
     }
 
+    public func repairInvalidInstallation(
+        dictionaryID: String,
+        bundledDirectory: URL,
+        artifactFileName: String,
+        validate: @escaping @Sendable (URL) -> Bool
+    ) async throws -> Bool {
+        guard
+            await pluginManager.installedPlugin(id: dictionaryID) != nil
+        else {
+            return false
+        }
+        let installedDirectory = await pluginManager.pluginDirectory(
+            for: dictionaryID
+        )
+        let installedArtifact = installedDirectory.appendingPathComponent(
+            artifactFileName
+        )
+        if fileManager.fileExists(atPath: installedArtifact.path),
+            validate(installedArtifact)
+        {
+            return false
+        }
+        guard
+            let manifest = try? PluginManifest.load(
+                from: bundledDirectory
+            ),
+            let coreUpdateKind = manifest.coreUpdateKind
+        else {
+            return false
+        }
+        let bundledArtifact = bundledDirectory.appendingPathComponent(
+            artifactFileName
+        )
+        guard validate(bundledArtifact) else {
+            throw CoreDictionaryInstallError.validationFailed
+        }
+
+        let workDirectory = fileManager.temporaryDirectory
+            .appendingPathComponent(
+                "GlintCoreDictionaryRepair-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        try fileManager.createDirectory(
+            at: workDirectory,
+            withIntermediateDirectories: true
+        )
+        defer { try? fileManager.removeItem(at: workDirectory) }
+
+        _ = try await install(
+            PreparedCoreDictionaryInstallation(
+                dictionaryID: dictionaryID,
+                bundledDirectory: bundledDirectory,
+                builtArtifactURL: bundledArtifact,
+                artifactFileName: artifactFileName,
+                manifestFields: CoreDictionaryManifestFields(
+                    name: manifest.name,
+                    version: manifest.version,
+                    runtime: manifest.runtime,
+                    url: manifest.url,
+                    license: manifest.license,
+                    minRAMBytes: manifest.minRAMBytes,
+                    summary: manifest.summary,
+                    revision: manifest.revision,
+                    sourceDate: manifest.sourceDate,
+                    sourceChecksum: manifest.sourceChecksum,
+                    coreUpdateKind: coreUpdateKind
+                ),
+                validate: validate
+            ),
+            workDirectory: workDirectory
+        )
+        return true
+    }
+
     public func install(
         _ request: PreparedCoreDictionaryInstallation,
         workDirectory: URL

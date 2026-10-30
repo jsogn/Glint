@@ -633,10 +633,6 @@ private struct OverviewPagePreview: View {
                     id: "dict-ecdict",
                     name: "ECDICT Rank Index"
                 ),
-                OverviewPreviewManifests.dictionary(
-                    id: "dict-wiktionary",
-                    name: "Wiktionary Chinese-English"
-                ),
             ],
             catalogURL: nil,
             defaults: defaults

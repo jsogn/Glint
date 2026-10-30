@@ -5,7 +5,6 @@ enum BundledPluginResources {
     static let pluginIDs = [
         "dict-cedict",
         "dict-ecdict",
-        "dict-wiktionary-zh-en",
     ]
 
     static var directories: [URL] {

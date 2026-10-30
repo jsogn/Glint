@@ -40,10 +40,11 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 let prepareResult = sqlite3_prepare_v2(
                     database,
                     """
-                    SELECT gloss, line_order, sense_order
-                    FROM entries
-                    WHERE simplified = ? OR traditional = ?
-                    ORDER BY line_order, sense_order
+                    SELECT senses.gloss, terms.entry_id, senses.sense_order
+                    FROM terms
+                    JOIN senses ON senses.entry_id = terms.entry_id
+                    WHERE terms.term = ?
+                    ORDER BY terms.entry_id, senses.sense_order
                     LIMIT 64
                     """,
                     -1,
@@ -96,7 +97,6 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
         sqlite3_reset(statement)
         sqlite3_clear_bindings(statement)
         sqlite3_bind_text(statement, 1, text, -1, sqliteTransient)
-        sqlite3_bind_text(statement, 2, text, -1, sqliteTransient)
 
         var result: [DictionarySense] = []
         while sqlite3_step(statement) == SQLITE_ROW {

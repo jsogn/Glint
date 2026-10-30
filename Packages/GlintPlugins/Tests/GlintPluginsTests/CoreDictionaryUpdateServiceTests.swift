@@ -2,6 +2,7 @@ import Foundation
 import GlintCore
 import GlintDictionary
 import os
+import SQLite3
 import XCTest
 import zlib
 
@@ -100,6 +101,66 @@ private final class CedictStubURLProtocol: URLProtocol {
 }
 
 final class CoreDictionaryUpdateServiceTests: XCTestCase {
+    func testRepairReplacesInstalledLegacySchemaWithBundledDictionary()
+        async throws
+    {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let bundled = root.appendingPathComponent(
+            "bundled",
+            isDirectory: true
+        )
+        let installed = root.appendingPathComponent(
+            "installed",
+            isDirectory: true
+        )
+        for directory in [bundled, installed] {
+            try FileManager.default.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+        }
+        try writeDictionary(
+            sourceDate: "2026-10-28T00:15:09Z",
+            word: "新词",
+            gloss: "new word",
+            directory: bundled
+        )
+        try writeLegacyDictionary(
+            sourceDate: "2026-10-20T00:00:00Z",
+            word: "旧词",
+            gloss: "old",
+            directory: installed
+        )
+        let manager = PluginManager(baseDirectory: root)
+        _ = try await manager.installPreparedPlugin(at: installed)
+        let service = CoreDictionaryUpdateService(
+            pluginManager: manager,
+            bundledDirectory: bundled
+        )
+
+        let repaired = try await service.repairInstalledCopyIfNeeded()
+
+        XCTAssertTrue(repaired)
+        let installedDirectory = await manager.pluginDirectory(
+            for: "dict-cedict"
+        )
+        let database = installedDirectory.appendingPathComponent(
+            "cedict.sqlite3"
+        )
+        XCTAssertTrue(
+            CedictDatabaseBuilder.isCompatible(databaseURL: database)
+        )
+        let dictionary = CedictDictionary(
+            databaseURL: database,
+            ranker: nil
+        )
+        let result = try await dictionary.lookup(
+            Candidate(text: "新词", kind: .word)
+        )
+        XCTAssertEqual(result?.options.first?.text, "new word")
+    }
+
     func testInstallsNewerDictionaryAndSkipsSecondCheck() async throws {
         let root = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -476,7 +537,87 @@ final class CoreDictionaryUpdateServiceTests: XCTestCase {
             license: "CC-BY-SA-4.0",
             minRAMBytes: 0,
             source: .bundled,
-            sourceDate: sourceDate
+            sourceDate: sourceDate,
+            coreUpdateKind: .cedict
+        )
+        try JSONEncoder().encode(manifest).write(
+            to: directory.appendingPathComponent(
+                PluginManifest.fileName
+            )
+        )
+    }
+
+    private func writeLegacyDictionary(
+        sourceDate: String,
+        word: String,
+        gloss: String,
+        directory: URL
+    ) throws {
+        let databaseURL = directory.appendingPathComponent(
+            "cedict.sqlite3"
+        )
+        var database: OpaquePointer?
+        guard
+            sqlite3_open_v2(
+                databaseURL.path,
+                &database,
+                SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE,
+                nil
+            ) == SQLITE_OK,
+            let database
+        else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        defer { sqlite3_close(database) }
+        let sql = """
+            CREATE TABLE metadata (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+            CREATE TABLE entries (
+                sense_id INTEGER PRIMARY KEY,
+                simplified TEXT NOT NULL,
+                traditional TEXT NOT NULL,
+                pinyin TEXT NOT NULL,
+                gloss TEXT NOT NULL,
+                line_order INTEGER NOT NULL,
+                sense_order INTEGER NOT NULL
+            );
+            INSERT INTO metadata(key, value) VALUES
+                ('schema', 'cc-cedict-senses-v2'),
+                ('source_date', '\(sourceDate)'),
+                ('entry_count', '1'),
+                ('sense_count', '1');
+            INSERT INTO entries(
+                simplified,
+                traditional,
+                pinyin,
+                gloss,
+                line_order,
+                sense_order
+            ) VALUES ('\(word)', '\(word)', 'test', '\(gloss)', 1, 0);
+            PRAGMA user_version = 2;
+            """
+        guard sqlite3_exec(database, sql, nil, nil, nil) == SQLITE_OK else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        let manifest = PluginManifest(
+            id: "dict-cedict",
+            type: .dictionary,
+            name: "CC-CEDICT",
+            version: sourceDate.prefix(10).replacingOccurrences(
+                of: "-",
+                with: "."
+            ),
+            runtime: "cedict-sqlite",
+            sizeBytes: 1,
+            sha256: "legacy",
+            url: URL(string: "https://cedict.test/source.gz")!,
+            license: "CC-BY-SA-4.0",
+            minRAMBytes: 0,
+            source: .bundled,
+            sourceDate: sourceDate,
+            coreUpdateKind: .cedict
         )
         try JSONEncoder().encode(manifest).write(
             to: directory.appendingPathComponent(

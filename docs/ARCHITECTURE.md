@@ -11,7 +11,7 @@ Glint 是菜单栏工具、主窗口和单行 HUD 组成的 macOS App：
 
 1. 使用原生 Accessibility、TIS 和 AppKit 集成；不截图、不执行 OCR。
 2. 全局默认生效，但只读取当前输入法候选，不读取输入框正文。
-3. CC-CEDICT、ECDICT 与 Wiktionary 是只读内置词典能力；Apple Translation
+3. CC-CEDICT 与 ECDICT 是只读内置词典能力；Apple Translation
    是默认翻译模型，OPUS-MT 是可安装、可卸载的在线模型数据。
 4. 翻译运行时可以替换，但插件只能携带受支持的模型或词典数据。
 5. 默认不保存候选文本、翻译结果或输入历史。
@@ -26,7 +26,7 @@ Glint 是菜单栏工具、主窗口和单行 HUD 组成的 macOS App：
 | HUD | 单一 AppKit `NSPanel` + 持久 SwiftUI `NSHostingView` |
 | 候选读取 | Accessibility 标准候选、显式 reader、结构 Profile |
 | 输入状态 | Carbon TIS + Accessibility |
-| 词典 | SQLite3、CC-CEDICT、ECDICT、Wiktionary |
+| 词典 | SQLite3、CC-CEDICT、ECDICT |
 | 默认翻译 | Apple Translation |
 | 轻量可选翻译 | 在线 OPUS-MT 数据 + App 内置 CTranslate2 int8 运行库 |
 | 可选翻译 | MLX Swift，下载或本地导入 |
@@ -103,10 +103,13 @@ Glint/
 
 ### GlintDictionary
 
-- 查询 CC-CEDICT、ECDICT 和 Wiktionary SQLite 资源。
+- 查询 CC-CEDICT 和 ECDICT SQLite 资源。
+- 生产数据库使用紧凑 schema-v3：CC-CEDICT 将查询词项与义项归一化为
+  `terms`/`senses`，ECDICT 使用 `(term, english)` 的 `WITHOUT ROWID`
+  主键表；不保留运行时未使用的拼音或重复排序索引。
 - CC-CEDICT 精确命中时作为权威来源返回，并继续使用 ECDICT 词频信号提升
   CC-CEDICT 支持的英文头词；只有当权威结果少于三项时，才允许带考试标签的
-  ECDICT 词作为低优先级补充。ECDICT、Wiktionary 和用户词典默认按优先级依次
+  ECDICT 词作为低优先级补充。ECDICT 和用户词典默认按优先级依次
   作为回退，独立回退结果不追加到权威结果中。
 - 词典候选进入 HUD 前统一过滤长句和解释性 gloss；权威来源只有释义时不算命中，
   继续回退到简明词典或本地模型。
@@ -126,6 +129,8 @@ Glint/
 - 解析 manifest，校验版本、文件类型和 SHA256。
 - 下载、镜像回退、断点进度、解压和原子安装。
 - 管理可选词典与翻译模型；内置核心能力不参与安装或卸载。
+- App 启动时检查已安装核心词典；旧 schema 或不兼容缓存使用 bundled 数据原子
+  修复，失败时保留旧目录并继续回退 bundled 基线。
 - 插件是数据包，不允许携带 dylib、脚本或其他可执行代码。
 
 ### GlintUI
@@ -317,7 +322,7 @@ frame 时，仅该 Reader 回退到宿主输入光标作 HUD 锚点。详见
   - `cedict-sqlite`、`ecdict-rank`、`sqlite-v1`；
   - `ctranslate2-data` 仅用于在线 OPUS-MT；
   - `mlx` 用于可选翻译模型。
-- CC-CEDICT、ECDICT、Wiktionary 随 App 提供，不允许卸载。CC-CEDICT 与 ECDICT
+- CC-CEDICT、ECDICT 随 App 提供，不允许卸载。CC-CEDICT 与 ECDICT
   可把经过校验的更新安装到 Application Support 的同 ID 数据目录，加载失败时
   回退 bundled 基线。
 - OPUS-MT 不在 App 内。用户下载后安装到 Application Support，并可切换到

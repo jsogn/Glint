@@ -127,6 +127,19 @@ xcrun --sdk macosx clang++ \
   -Wl,-install_name,@rpath/libglintct2.dylib \
   -o "$runtime_directory/libglintct2.dylib"
 
+for library in \
+  "$runtime_directory/libctranslate2.dylib" \
+  "$runtime_directory/libglintct2.dylib" \
+  "$runtime_directory/libsentencepiece.0.0.0.dylib"; do
+  xcrun strip -x -S "$library"
+done
+
+codesign \
+  --force \
+  --sign - \
+  --timestamp=none \
+  --identifier libctranslate2 \
+  "$runtime_directory/libctranslate2.dylib"
 codesign \
   --force \
   --sign - \

@@ -90,6 +90,20 @@ public actor CoreDictionaryUpdateService {
         self.sourceURL = sourceURL ?? Self.sourceURL
     }
 
+    public func repairInstalledCopyIfNeeded() async throws -> Bool {
+        guard let bundledDirectory else { return false }
+        return try await installer.repairInvalidInstallation(
+            dictionaryID: Self.dictionaryID,
+            bundledDirectory: bundledDirectory,
+            artifactFileName: "cedict.sqlite3",
+            validate: { databaseURL in
+                (try? CedictDatabaseBuilder.inspect(
+                    databaseURL: databaseURL
+                )) != nil
+            }
+        )
+    }
+
     public func checkForUpdate() async throws -> CoreDictionaryUpdateResult {
         guard let bundledDirectory else {
             throw CoreDictionaryUpdateError.unavailable

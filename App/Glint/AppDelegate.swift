@@ -98,6 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshPermissionState()
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
+            await environment.repairInvalidCoreDictionaryInstallations()
             await environment.refreshDictionaryRoutes()
             await synchronizeInstalledInputMethodSupport()
             await environment.systemTranslationCoordinator

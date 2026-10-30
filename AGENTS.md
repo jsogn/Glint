@@ -37,7 +37,7 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换输入法�
 - HUD：AppKit `NSPanel` + SwiftUI。
 - UI：系统 SwiftUI/AppKit 控件，不引入第三方 UI 组件库。
 - 候选读取：Accessibility `InputMethodCandidateList`。
-- 词典：SQLite 插件，当前包括 CC-CEDICT、ECDICT、Wiktionary。
+- 词典：SQLite 插件，当前包括 CC-CEDICT、ECDICT。
 - 翻译：Apple Translation、CTranslate2 / MLX 本地模型。
 - 日志：OSLog，默认脱敏。
 
@@ -122,6 +122,8 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 原生 App 不支持二进制热更新，代码重建后必须重启一次才能加载新代码。
 - 同一时间只允许一个 Glint 进程。
 - 监控只能在翻译运行时准备完成后启动，不能在异步初始化进行中提前启动。
+- Release 必须启用 Dead Code Stripping、部署后处理剥离和 `-Osize`；DMG 使用
+  `ULMO`，不得退回包含完整符号表的默认 Release 配置。
 
 ## 测试要求
 
@@ -146,7 +148,7 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 每个候选 revision 只允许当前结果进入 HUD；候选变化时取消旧任务并让旧译文进入淡化占位，不得关闭组合会话中的 HUD。
 - 只有候选栏结束、提交、失焦、切换输入法或安全输入时才关闭 HUD。
 - 权限状态检查必须节流，不得在每次候选轮询中重复访问 TCC。
-- CC-CEDICT、ECDICT 与 Wiktionary 是随 App 提供的只读核心词典能力。
+- CC-CEDICT 与 ECDICT 是随 App 提供的只读核心词典能力。
   OPUS-MT 是 Glint 托管的可选在线模型数据，由 `PluginManager` 安装和卸载。
 - Apple Translation 是默认翻译模型；旧版选中的内置 OPUS-MT 在升级后一次性
   迁移为 Apple Translation，用户之后仍可主动下载并重新选择 OPUS-MT。

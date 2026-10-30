@@ -476,14 +476,7 @@ struct PluginsPage: View {
         let installedVersion = model.installedVersion(for: plugin.id)
         let update = model.update(for: plugin)
         let progress = model.installProgress[plugin.id]
-        let actionTitle =
-            if installedVersion == nil {
-                plugin.runtime == "ctranslate2-data"
-                    ? "下载"
-                    : "安装"
-            } else {
-                "更新"
-            }
+        let actionTitle = installedVersion == nil ? "安装" : "更新"
 
         return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {

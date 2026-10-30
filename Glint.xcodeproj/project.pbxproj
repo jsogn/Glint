@@ -13,7 +13,6 @@
 		21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */; };
 		22E07096AE8DF1D73689097B /* GlintMac in Frameworks */ = {isa = PBXBuildFile; productRef = C82639D2D34337D5A9CD7D0C /* GlintMac */; };
 		30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CE2C298747A802E1589A8C /* main.swift */; };
-		3385AFA47466DF9188B0D14C /* dict-wiktionary-zh-en in Resources */ = {isa = PBXBuildFile; fileRef = B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */; };
 		4062AB589E4FFA4D5BB17A0E /* AppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */; };
 		4D3F18EF382E77CCB4F70956 /* dict-cedict in Resources */ = {isa = PBXBuildFile; fileRef = F082FC2C41A35AF169B0DE24 /* dict-cedict */; };
 		4F1E7AEF9756395C39FDB33F /* CTranslate2Runtime in Resources */ = {isa = PBXBuildFile; fileRef = 66498778FE3B99735C52AF5A /* CTranslate2Runtime */; };
@@ -95,7 +94,6 @@
 		98A1399AD8AAD221DB8BE251 /* candidate_bridge.lua */ = {isa = PBXFileReference; path = candidate_bridge.lua; sourceTree = "<group>"; };
 		A6CE2C298747A802E1589A8C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B25DB3A29CF7D59E6192BE4D /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
-		B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-wiktionary-zh-en"; path = "Resources/Plugins/dict-wiktionary-zh-en"; sourceTree = SOURCE_ROOT; };
 		CA325A737255A243BF330A82 /* RimeCandidateBridge */ = {isa = PBXFileReference; includeInIndex = 0; path = RimeCandidateBridge; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryPluginLoader.swift; sourceTree = "<group>"; };
 		D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledPluginResources.swift; sourceTree = "<group>"; };
@@ -257,7 +255,6 @@
 			children = (
 				F082FC2C41A35AF169B0DE24 /* dict-cedict */,
 				7A59F9A29CA693ACF1A2526C /* dict-ecdict */,
-				B5B0F7E21B65E38D6A4D1A91 /* dict-wiktionary-zh-en */,
 			);
 			path = Plugins;
 			sourceTree = "<group>";
@@ -420,7 +417,6 @@
 				1DFD7FC772F747CA4584F247 /* catalog.json in Resources */,
 				4D3F18EF382E77CCB4F70956 /* dict-cedict in Resources */,
 				56858DDBBD011680EEE7F0BA /* dict-ecdict in Resources */,
-				3385AFA47466DF9188B0D14C /* dict-wiktionary-zh-en in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -508,14 +504,14 @@
 				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Glint/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.6.0;
+				MARKETING_VERSION = 0.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.glint;
 				PRODUCT_NAME = Glint;
 				SDKROOT = macosx;
@@ -624,14 +620,14 @@
 				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Glint/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.6.0;
+				MARKETING_VERSION = 0.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.local.glint;
 				PRODUCT_NAME = Glint;
 				SDKROOT = macosx;
@@ -673,7 +669,9 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEPLOYMENT_POSTPROCESSING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -691,7 +689,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
 				SWIFT_VERSION = 6.0;
 			};
 			name = Release;

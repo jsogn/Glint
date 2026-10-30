@@ -39,6 +39,10 @@
 三个入口都会从头构建 Release App、重签嵌套 Mach-O、稳定重签主 App，并校验
 arm64、最低系统、必需资源、签名完整性和 SHA256。
 
+Release 构建启用 `-Osize`、Dead Code Stripping 和部署后处理剥离，并保留 dSYM
+用于崩溃符号化。打包脚本还会拒绝超过 24 MB 的主程序，防止完整符号表重新进入
+发布包。DMG 使用 `ULMO` 压缩，生成后必须通过 `hdiutil verify`。
+
 ad-hoc 包不能通过 Gatekeeper，也不能启用可用的 Hardened Runtime。面向普通测试
 用户时优先使用 PKG；首次安装仍可能需要在“隐私与安全性”中允许一次。
 

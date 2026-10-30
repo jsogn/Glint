@@ -215,6 +215,20 @@ public actor ECDICTUpdateService {
         self.minimumRankCount = minimumRankCount
     }
 
+    public func repairInstalledCopyIfNeeded() async throws -> Bool {
+        guard let bundledDirectory else { return false }
+        return try await installer.repairInvalidInstallation(
+            dictionaryID: Self.dictionaryID,
+            bundledDirectory: bundledDirectory,
+            artifactFileName: "ecdict_rank.sqlite3",
+            validate: { databaseURL in
+                (try? ECDICTRankBuilder.inspect(
+                    databaseURL: databaseURL
+                )) != nil
+            }
+        )
+    }
+
     public func checkForUpdate() async throws -> ECDICTUpdateResult {
         guard let bundledDirectory else {
             throw ECDICTUpdateError.unavailable
