@@ -18,4 +18,7 @@ public enum TranslationModelSelection {
         defaults.set(modelID, forKey: defaultsKey)
     }
 
+    public static func isSystemTranslation(_ modelID: String) -> Bool {
+        modelID == SystemTranslationModel.appleTranslationID
+    }
 }

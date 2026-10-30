@@ -7,6 +7,252 @@ import XCTest
 
 final class MainWindowModelTests: XCTestCase {
     @MainActor
+    func testSystemTranslationPreparationDoesNotChangeSelection()
+        async throws
+    {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        context.model.refreshSystemTranslationAction = {
+            .available
+        }
+        context.model.prepareSystemTranslationAction = {
+            .installed
+        }
+
+        await context.model.refreshSystemTranslationSupport()
+        XCTAssertEqual(
+            context.model.systemTranslationAvailability,
+            .available
+        )
+        XCTAssertEqual(
+            context.model.activeModelID,
+            TranslationModelSelection.defaultModelID
+        )
+
+        await context.model.prepareSystemTranslationSupport()
+
+        XCTAssertEqual(
+            context.model.systemTranslationAvailability,
+            .installed
+        )
+        XCTAssertEqual(
+            context.model.activeModelID,
+            TranslationModelSelection.defaultModelID
+        )
+    }
+
+    @MainActor
+    func testCancelledSystemTranslationPreparationStaysAvailable()
+        async throws
+    {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        context.model.refreshSystemTranslationAction = {
+            .available
+        }
+        context.model.prepareSystemTranslationAction = {
+            throw CancellationError()
+        }
+        await context.model.refreshSystemTranslationSupport()
+
+        await context.model.prepareSystemTranslationSupport()
+
+        XCTAssertEqual(
+            context.model.systemTranslationAvailability,
+            .available
+        )
+        XCTAssertNil(context.model.systemTranslationError)
+        XCTAssertFalse(context.model.isPreparingSystemTranslation)
+    }
+
+    @MainActor
+    func testSystemTranslationSetupStateOnlyAppearsForActiveSystemModel()
+        async throws
+    {
+        let localContext = try makeContext()
+        defer { localContext.cleanup() }
+        localContext.model.updateSystemTranslationAvailability(.available)
+        XCTAssertNil(localContext.model.systemTranslationSetupState)
+
+        let systemContext = try makeContext(
+            selectedModelID:
+                SystemTranslationModel.appleTranslationID
+        )
+        defer { systemContext.cleanup() }
+        systemContext.model.updateSystemTranslationAvailability(.available)
+        XCTAssertEqual(
+            systemContext.model.systemTranslationSetupState,
+            .installationRequired
+        )
+
+        systemContext.model.updateSystemTranslationAvailability(.installed)
+        XCTAssertNil(systemContext.model.systemTranslationSetupState)
+    }
+
+    @MainActor
+    func testSystemTranslationInstallationRequestsOverviewPresentation()
+        async throws
+    {
+        let context = try makeContext(
+            selectedModelID:
+                SystemTranslationModel.appleTranslationID
+        )
+        defer { context.cleanup() }
+        context.model.updateSystemTranslationAvailability(.available)
+        context.model.prepareSystemTranslationAction = {
+            .installed
+        }
+        var presentationCount = 0
+        context.model.systemTranslationPresentationAction = {
+            presentationCount += 1
+        }
+
+        await context.model.prepareSystemTranslationSupport()
+
+        XCTAssertEqual(
+            context.model.systemTranslationAvailability,
+            .installed
+        )
+        XCTAssertEqual(presentationCount, 1)
+        XCTAssertEqual(
+            context.model.systemTranslationPresentationEvent,
+            1
+        )
+    }
+
+    @MainActor
+    func testCancelledSystemTranslationInstallationShowsInlineGuidance()
+        async throws
+    {
+        let context = try makeContext(
+            selectedModelID:
+                SystemTranslationModel.appleTranslationID
+        )
+        defer { context.cleanup() }
+        context.model.updateSystemTranslationAvailability(.available)
+        context.model.prepareSystemTranslationAction = {
+            throw CancellationError()
+        }
+        var presentationCount = 0
+        context.model.systemTranslationPresentationAction = {
+            presentationCount += 1
+        }
+
+        await context.model.prepareSystemTranslationSupport()
+
+        XCTAssertEqual(
+            context.model.systemTranslationSetupState,
+            .installationCancelled
+        )
+        XCTAssertEqual(presentationCount, 0)
+    }
+
+    @MainActor
+    func testInstalledSystemTranslationCanBeActivatedExplicitly()
+        async throws
+    {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        context.model.refreshSystemTranslationAction = {
+            .installed
+        }
+        context.model.activateSystemTranslationAction = {
+            nil
+        }
+        await context.model.refreshSystemTranslationSupport()
+
+        await context.model.activateSystemTranslationModel()
+
+        XCTAssertEqual(
+            context.model.activeModelID,
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertEqual(
+            TranslationModelSelection.selected(in: context.defaults),
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertEqual(context.model.translationSummary, "Apple 翻译")
+    }
+
+    @MainActor
+    func testUnavailableSystemTranslationCannotBeActivated()
+        async throws
+    {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        context.model.refreshSystemTranslationAction = {
+            .available
+        }
+        await context.model.refreshSystemTranslationSupport()
+
+        await context.model.activateSystemTranslationModel()
+
+        XCTAssertEqual(
+            context.model.activeModelID,
+            TranslationModelSelection.defaultModelID
+        )
+        XCTAssertEqual(
+            TranslationModelSelection.selected(in: context.defaults),
+            TranslationModelSelection.defaultModelID
+        )
+    }
+
+    @MainActor
+    func testSystemActivationFailureRestoresPreviousModel()
+        async throws
+    {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        context.model.refreshSystemTranslationAction = {
+            .installed
+        }
+        context.model.activateSystemTranslationAction = {
+            "系统翻译会话不可用"
+        }
+        await context.model.refreshSystemTranslationSupport()
+
+        await context.model.activateSystemTranslationModel()
+
+        XCTAssertEqual(
+            context.model.activeModelID,
+            TranslationModelSelection.defaultModelID
+        )
+        XCTAssertEqual(
+            TranslationModelSelection.selected(in: context.defaults),
+            TranslationModelSelection.defaultModelID
+        )
+        XCTAssertEqual(
+            context.model.systemTranslationError,
+            "系统翻译会话不可用"
+        )
+    }
+
+    @MainActor
+    func testActiveSystemTranslationRequiresInstalledResourcesForReadyState()
+        async throws
+    {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        context.model.refreshSystemTranslationAction = {
+            .installed
+        }
+        context.model.activateSystemTranslationAction = {
+            nil
+        }
+        await context.model.refreshSystemTranslationSupport()
+        await context.model.activateSystemTranslationModel()
+
+        XCTAssertTrue(context.model.isActiveSystemTranslationReady)
+
+        context.model.refreshSystemTranslationAction = {
+            .available
+        }
+        await context.model.refreshSystemTranslationSupport()
+
+        XCTAssertFalse(context.model.isActiveSystemTranslationReady)
+    }
+
+    @MainActor
     func testBuiltInDictionaryIsVisibleAndCannotBeUninstalled() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -91,6 +337,90 @@ final class MainWindowModelTests: XCTestCase {
         await model.uninstallPlugin(manifest)
         let managedPlugins = await manager.installedPlugins()
         XCTAssertTrue(managedPlugins.isEmpty)
+    }
+
+    @MainActor
+    func testMissingSelectedTranslationDoesNotActivateBundledModel()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMissingTranslationTests-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let suiteName =
+            "GlintMissingTranslationTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let selectedModelID = "missing-selected-model"
+        TranslationModelSelection.select(selectedModelID, in: defaults)
+        let bundled = translationManifest(
+            id: TranslationModelSelection.defaultModelID,
+            source: .bundled
+        )
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            builtInPlugins: [bundled],
+            catalogURL: nil,
+            defaults: defaults
+        )
+
+        await model.refreshInstalledPlugins()
+
+        XCTAssertEqual(model.activeModelID, selectedModelID)
+        XCTAssertEqual(
+            TranslationModelSelection.selected(in: defaults),
+            selectedModelID
+        )
+        XCTAssertFalse(model.isActiveTranslationModel(bundled))
+    }
+
+    @MainActor
+    func testTranslationModelsSeparateLocalAndRecommendedCards() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintTranslationGroupingTests-\(UUID().uuidString)"
+            )
+        let suiteName =
+            "GlintTranslationGroupingTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+            try? FileManager.default.removeItem(at: root)
+        }
+        let local = translationManifest(
+            id: "local-model",
+            source: .local
+        )
+        let catalog = translationManifest(
+            id: "catalog-model",
+            source: .catalog
+        )
+        let bundled = translationManifest(
+            id: TranslationModelSelection.defaultModelID,
+            source: .bundled
+        )
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            builtInPlugins: [local, catalog, bundled],
+            catalogURL: nil,
+            defaults: defaults
+        )
+
+        XCTAssertEqual(
+            model.localTranslationPlugins.map(\.id),
+            [local.id]
+        )
+        XCTAssertEqual(
+            Set(model.recommendedTranslationPlugins.map(\.id)),
+            Set([catalog.id, bundled.id])
+        )
     }
 
     @MainActor
@@ -1701,4 +2031,43 @@ final class MainWindowModelTests: XCTestCase {
         process.waitUntilExit()
         XCTAssertEqual(process.terminationStatus, 0)
     }
+}
+
+@MainActor
+private struct SystemTranslationModelTestContext {
+    let model: MainWindowModel
+    let suiteName: String
+    let defaults: UserDefaults
+    let root: URL
+
+    func cleanup() {
+        defaults.removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: root)
+    }
+}
+
+@MainActor
+private func makeContext(
+    selectedModelID: String =
+        TranslationModelSelection.defaultModelID
+) throws -> SystemTranslationModelTestContext {
+    let suiteName =
+        "SystemTranslationModelTests.\(UUID().uuidString)"
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+    TranslationModelSelection.select(selectedModelID, in: defaults)
+    let root = FileManager.default.temporaryDirectory
+        .appendingPathComponent(
+            "SystemTranslationModelTests-\(UUID().uuidString)",
+            isDirectory: true
+        )
+    return SystemTranslationModelTestContext(
+        model: MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil,
+            defaults: defaults
+        ),
+        suiteName: suiteName,
+        defaults: defaults,
+        root: root
+    )
 }

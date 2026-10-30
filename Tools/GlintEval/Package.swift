@@ -4,6 +4,16 @@ import PackageDescription
 let package = Package(
     name: "GlintEval",
     platforms: [.macOS("15.0")],
+    products: [
+        .library(
+            name: "GlintEvalSupport",
+            targets: ["GlintEvalSupport"]
+        ),
+        .executable(
+            name: "AppleTranslationCompare",
+            targets: ["AppleTranslationCompare"]
+        ),
+    ],
     dependencies: [
         .package(path: "../../Packages/GlintCore"),
         .package(path: "../../Packages/GlintDictionary"),
@@ -11,6 +21,9 @@ let package = Package(
         .package(path: "../../Packages/GlintMac"),
     ],
     targets: [
+        .target(
+            name: "GlintEvalSupport"
+        ),
         .executableTarget(
             name: "GlintEval",
             dependencies: [
@@ -67,6 +80,18 @@ let package = Package(
             dependencies: [
                 .product(name: "GlintMac", package: "GlintMac")
             ]
+        ),
+        .executableTarget(
+            name: "AppleTranslationCompare",
+            dependencies: [
+                "GlintEvalSupport",
+                .product(name: "GlintCore", package: "GlintCore"),
+                .product(name: "GlintInference", package: "GlintInference"),
+            ]
+        ),
+        .testTarget(
+            name: "GlintEvalSupportTests",
+            dependencies: ["GlintEvalSupport"]
         ),
     ],
     swiftLanguageModes: [.v6]

@@ -5,7 +5,10 @@ import SwiftUI
 public final class MainWindowController: NSWindowController, NSWindowDelegate {
     static let minimumWindowSize = NSSize(width: 1_040, height: 640)
 
-    public init(model: MainWindowModel) {
+    public init(
+        model: MainWindowModel,
+        auxiliaryContent: AnyView? = nil
+    ) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1_040, height: 720),
             styleMask: [
@@ -24,7 +27,12 @@ public final class MainWindowController: NSWindowController, NSWindowDelegate {
         window.toolbarStyle = .unified
         window.isReleasedWhenClosed = false
         window.center()
-        window.contentViewController = NSHostingController(rootView: MainWindowView(model: model))
+        window.contentViewController = NSHostingController(
+            rootView: MainWindowView(
+                model: model,
+                auxiliaryContent: auxiliaryContent
+            )
+        )
         window.minSize = Self.minimumWindowSize
         super.init(window: window)
         window.delegate = self

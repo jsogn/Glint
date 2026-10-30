@@ -4,32 +4,46 @@ public struct MainWindowView: View {
     @State private var selection: SidebarItem? = .overview
     @State private var pluginTab: PluginTab = .dictionary
     private let model: MainWindowModel
+    private let auxiliaryContent: AnyView?
 
-    public init(model: MainWindowModel) {
+    public init(
+        model: MainWindowModel,
+        auxiliaryContent: AnyView? = nil
+    ) {
         self.model = model
+        self.auxiliaryContent = auxiliaryContent
     }
 
     public var body: some View {
-        NavigationSplitView {
-            List(SidebarItem.visibleItems, selection: $selection) { item in
-                Label(item.title, systemImage: item.symbol)
-                    .tag(item)
+        ZStack(alignment: .topLeading) {
+            NavigationSplitView {
+                List(SidebarItem.visibleItems, selection: $selection) { item in
+                    Label(item.title, systemImage: item.symbol)
+                        .tag(item)
+                }
+                .listStyle(.sidebar)
+                .navigationSplitViewColumnWidth(min: 210, ideal: 230, max: 260)
+            } detail: {
+                detailView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 210, ideal: 230, max: 260)
-        } detail: {
-            detailView
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                PageTitle(title: pageTitle)
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    PageTitle(title: pageTitle)
+                }
+            }
+
+            if let auxiliaryContent {
+                auxiliaryContent
             }
         }
         .task {
             await model.refreshInstalledPlugins()
             await model.checkForCatalogUpdatesAfterLaunch()
             model.checkActiveTranslationModelUpdateAfterLaunch()
+        }
+        .onChange(of: model.systemTranslationPresentationEvent) {
+            selection = .overview
         }
     }
 
@@ -41,7 +55,14 @@ public struct MainWindowView: View {
     private var detailView: some View {
         switch selection ?? .overview {
         case .overview:
-            OverviewPage(model: model, selection: $selection)
+            OverviewPage(
+                model: model,
+                selection: $selection,
+                openTranslationModels: {
+                    pluginTab = .translation
+                    selection = .plugins
+                }
+            )
         case .general:
             GeneralPage(model: model)
         case .inputMethods:

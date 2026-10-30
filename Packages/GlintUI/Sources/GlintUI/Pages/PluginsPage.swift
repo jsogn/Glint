@@ -45,6 +45,10 @@ struct PluginsPage: View {
             }
             await model.searchModelMarket(query: marketQuery)
         }
+        .task(id: selectedTab) {
+            guard selectedTab == .translation else { return }
+            await model.refreshSystemTranslationSupport()
+        }
         .confirmationDialog(
             "卸载插件？",
             isPresented: Binding(
@@ -132,14 +136,18 @@ struct PluginsPage: View {
                 pluginRows(installed: installed, available: available)
             }
         case .translation:
+            let localInstalled = model.localTranslationPlugins
+            let recommendedInstalled =
+                model.recommendedTranslationPlugins
             VStack(spacing: 16) {
+                systemTranslationCard
                 if installed.isEmpty {
                     translationSetupGuide(available: available)
                 }
                 SettingsCard("本地模型") {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(spacing: 10) {
-                            Text("管理已安装模型，或导入标准 MLX 模型目录。")
+                            Text("从本地目录导入标准 MLX 模型。")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -172,9 +180,116 @@ struct PluginsPage: View {
                                 .foregroundStyle(.red)
                                 .padding(.top, 6)
                         }
-                        Divider()
-                            .padding(.vertical, 12)
-                        pluginRows(installed: installed, available: available)
+                        if !localInstalled.isEmpty {
+                            Divider()
+                                .padding(.vertical, 12)
+                            pluginRows(
+                                installed: localInstalled,
+                                available: []
+                            )
+                        }
+                    }
+                }
+                SettingsCard("推荐模型") {
+                    pluginRows(
+                        installed: recommendedInstalled,
+                        available: available
+                    )
+                }
+            }
+        }
+    }
+
+    private var systemTranslationCard: some View {
+        SettingsCard("Apple 翻译", systemImage: "translate") {
+            HStack(alignment: .center, spacing: 20) {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(
+                        "系统内置翻译模型，首次使用可能需要下载语言包。"
+                    )
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    if model.systemTranslationSetupState
+                        == .installationCancelled
+                    {
+                        Text("已取消安装。短句翻译暂不可用。")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                    if let error = model.systemTranslationError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                systemTranslationStatusOrAction
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var systemTranslationStatusOrAction: some View {
+        if model.isPreparingSystemTranslation {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("正在准备…")
+                    .foregroundStyle(.secondary)
+            }
+        } else if model.isActiveSystemTranslationReady {
+            Label("使用中", systemImage: "checkmark.circle.fill")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.green)
+        } else if model.isRefreshingSystemTranslation {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("检查中…")
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            switch model.systemTranslationAvailability {
+            case .installed:
+                Button("使用") {
+                    Task {
+                        await model.activateSystemTranslationModel()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+            case .available:
+                Button("安装语言包") {
+                    Task {
+                        await model.prepareSystemTranslationSupport()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(model.isPreparingSystemTranslation)
+            case .failed:
+                Button("重试") {
+                    Task {
+                        await model.prepareSystemTranslationSupport()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(model.isPreparingSystemTranslation)
+            case .installing:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("正在准备…")
+                        .foregroundStyle(.secondary)
+                }
+            case .unsupported:
+                Text("当前 Mac 不支持简体中文到英文翻译")
+                    .foregroundStyle(.secondary)
+            case nil:
+                Button("检查支持") {
+                    Task {
+                        await model.refreshSystemTranslationSupport()
                     }
                 }
             }

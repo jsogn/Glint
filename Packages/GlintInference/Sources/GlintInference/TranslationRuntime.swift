@@ -8,16 +8,20 @@ public actor TranslationRuntime: TranslationEngine {
 
     private let defaults: UserDefaults
     private let modelResolver: ModelResolver
+    private let systemEngine: (any TranslationEngine)?
     private var activeModel: ResolvedTranslationModel?
+    private var activeSystemModelID: String?
     private var activeEngine: (any TranslationEngine)?
     private var failedSelectedModelID: String?
     private(set) var lastError: String?
 
     public init(
         defaults: UserDefaults = .standard,
+        systemEngine: (any TranslationEngine)? = nil,
         modelResolver: @escaping ModelResolver
     ) {
         self.defaults = defaults
+        self.systemEngine = systemEngine
         self.modelResolver = modelResolver
     }
 
@@ -32,32 +36,31 @@ public actor TranslationRuntime: TranslationEngine {
     @discardableResult
     public func prepare(modelID: String) async -> String? {
         let error = await load(modelID: modelID)
-        if error != nil,
-            modelID != TranslationModelSelection.defaultModelID
-        {
+        if error != nil {
             failedSelectedModelID = modelID
-            let originalError = error
-            let fallbackError = await load(
-                modelID: TranslationModelSelection.defaultModelID
-            )
-            if fallbackError == nil {
-                lastError =
-                    "\(originalError ?? "所选模型不可用")（已回退到内置模型）"
-                return lastError
-            }
-            lastError =
-                ("\(originalError ?? "所选模型不可用")"
-                    + "（内置模型回退失败：\(fallbackError ?? "unknown")）")
-            return lastError
-        } else if error == nil {
+        } else {
             failedSelectedModelID = nil
         }
         return error
     }
 
     private func load(modelID: String) async -> String? {
+        if TranslationModelSelection.isSystemTranslation(modelID) {
+            activeModel = nil
+            activeSystemModelID = nil
+            activeEngine = nil
+            guard let systemEngine else {
+                lastError = "系统翻译不可用"
+                return lastError
+            }
+            activeSystemModelID = modelID
+            activeEngine = systemEngine
+            lastError = nil
+            return nil
+        }
         guard let descriptor = await modelResolver(modelID) else {
             activeModel = nil
+            activeSystemModelID = nil
             activeEngine = nil
             lastError = "未找到所选翻译模型"
             return lastError
@@ -66,6 +69,7 @@ public actor TranslationRuntime: TranslationEngine {
         // Release the previous multi-gigabyte container before loading a new one.
         activeEngine = nil
         activeModel = nil
+        activeSystemModelID = nil
         do {
             let engine = try makeEngine(for: descriptor)
             if let mlx = engine as? MLXTranslationEngine {
@@ -84,6 +88,12 @@ public actor TranslationRuntime: TranslationEngine {
     }
 
     public func releaseResources(for modelID: String) {
+        if activeSystemModelID == modelID {
+            activeEngine = nil
+            activeSystemModelID = nil
+            lastError = nil
+            return
+        }
         guard activeModel?.modelID == modelID else { return }
         activeEngine = nil
         activeModel = nil
@@ -92,7 +102,9 @@ public actor TranslationRuntime: TranslationEngine {
 
     public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
         try Task.checkCancellation()
-        if activeModel?.modelID != selectedModelID,
+        let activeModelID =
+            activeSystemModelID ?? activeModel?.modelID
+        if activeModelID != selectedModelID,
             failedSelectedModelID != selectedModelID
         {
             await prepareSelectedModel()

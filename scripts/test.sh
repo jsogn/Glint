@@ -26,3 +26,5 @@ xcodebuild \
 for package in GlintCore GlintRimeRelayCore GlintMac GlintDictionary GlintInference GlintPlugins GlintUI; do
   swift test --package-path "Packages/$package"
 done
+
+swift test --package-path Tools/GlintEval

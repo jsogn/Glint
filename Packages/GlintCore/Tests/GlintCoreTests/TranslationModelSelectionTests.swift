@@ -20,4 +20,33 @@ final class TranslationModelSelectionTests: XCTestCase {
         )
     }
 
+    func testSystemTranslationSelectionUsesReservedModelIdentity() {
+        let suite = "GlintTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        XCTAssertNotEqual(
+            SystemTranslationModel.appleTranslationID,
+            TranslationModelSelection.defaultModelID
+        )
+
+        TranslationModelSelection.select(
+            SystemTranslationModel.appleTranslationID,
+            in: defaults
+        )
+
+        let selected = TranslationModelSelection.selected(in: defaults)
+        XCTAssertEqual(
+            selected,
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertTrue(
+            TranslationModelSelection.isSystemTranslation(selected)
+        )
+        XCTAssertFalse(
+            TranslationModelSelection.isSystemTranslation(
+                TranslationModelSelection.defaultModelID
+            )
+        )
+    }
 }

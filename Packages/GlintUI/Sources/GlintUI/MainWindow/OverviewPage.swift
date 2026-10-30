@@ -6,6 +6,7 @@ import SwiftUI
 struct OverviewPage: View {
     let model: MainWindowModel
     @Binding var selection: SidebarItem?
+    let openTranslationModels: () -> Void
 
     var body: some View {
         PageContainer {
@@ -14,7 +15,13 @@ struct OverviewPage: View {
                 openGeneralSettings: {
                     selection = .general
                 },
-                openInputMethodSettings: inputMethodSettingsAction
+                openInputMethodSettings: inputMethodSettingsAction,
+                openTranslationModels: openTranslationModels
+            )
+
+            SystemTranslationSetupCard(
+                model: model,
+                openModelSettings: openTranslationModels
             )
 
             LazyVGrid(
@@ -48,6 +55,10 @@ struct OverviewPage: View {
                                     .candidateSpacing
                             )
                         ),
+                        OverviewInfoRow(
+                            label: "范围",
+                            value: model.displayPreferences.translationScope.title
+                        ),
                     ]
                 ) {
                     selection = .display
@@ -55,7 +66,7 @@ struct OverviewPage: View {
 
                 OverviewInfoCard(
                     symbol: "shippingbox",
-                    title: "本地能力",
+                    title: "翻译能力",
                     actionTitle: "管理",
                     rows: [
                         OverviewInfoRow(
@@ -72,7 +83,7 @@ struct OverviewPage: View {
                         ),
                     ]
                 ) {
-                    selection = .plugins
+                    openTranslationModels()
                 }
             }
 
@@ -93,10 +104,135 @@ struct OverviewPage: View {
     }
 }
 
+private struct SystemTranslationSetupCard: View {
+    let model: MainWindowModel
+    let openModelSettings: () -> Void
+
+    @ViewBuilder
+    var body: some View {
+        if let state = model.systemTranslationSetupState {
+            fullContent(for: state)
+        }
+    }
+
+    private func fullContent(
+        for state: SystemTranslationSetupState
+    ) -> some View {
+        HStack(alignment: .center, spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.orange.opacity(0.14))
+                Image(systemName: state.symbol)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.orange)
+            }
+            .frame(width: 40, height: 40)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(state.title)
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                Text(state.detail)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 16)
+
+            actions(for: state)
+        }
+        .padding(16)
+        .cardSurface()
+    }
+
+    @ViewBuilder
+    private func actions(
+        for state: SystemTranslationSetupState
+    ) -> some View {
+        switch state {
+        case .installing:
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("正在准备…")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        case .unsupported:
+            Button("查看模型") {
+                openModelSettings()
+            }
+        case .failed:
+            installButton(title: "重试")
+        case .installationRequired, .installationCancelled:
+            installButton(title: "安装语言包")
+        }
+    }
+
+    private func installButton(title: String) -> some View {
+        Button(title) {
+            install()
+        }
+        .buttonStyle(.borderedProminent)
+    }
+
+    private func install() {
+        Task {
+            await model.prepareSystemTranslationSupport()
+        }
+    }
+}
+
+private extension SystemTranslationSetupState {
+    var title: String {
+        switch self {
+        case .installationRequired:
+            "请安装 Apple 翻译语言包"
+        case .installationCancelled:
+            "已取消语言包安装"
+        case .installing:
+            "正在准备 Apple 翻译"
+        case .failed:
+            "语言包安装失败"
+        case .unsupported:
+            "当前 Mac 不支持 Apple 翻译"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .installationRequired:
+            "安装中文到英文语言包后，Apple 翻译才能处理短句。"
+        case .installationCancelled:
+            "短句翻译暂时不可用。你可以随时继续安装，不会自动重复弹窗。"
+        case .installing:
+            "完成后会自动打开概览。"
+        case .failed(let message):
+            message
+        case .unsupported:
+            "仍可使用词典或其他本地翻译模型。"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .installing:
+            "hourglass"
+        case .failed, .unsupported:
+            "exclamationmark.triangle"
+        case .installationRequired, .installationCancelled:
+            "translate"
+        }
+    }
+}
+
 private struct OverviewStatusCard: View {
     let model: MainWindowModel
     let openGeneralSettings: () -> Void
     let openInputMethodSettings: (() -> Void)?
+    let openTranslationModels: () -> Void
 
     private var state: OverviewRuntimeState {
         let missingPermissions = missingPermissionText
@@ -179,12 +315,9 @@ private struct OverviewStatusCard: View {
             OverviewPipeline(
                 model: model,
                 openGeneralSettings: openGeneralSettings,
-                openInputMethodSettings: openInputMethodSettings
+                openInputMethodSettings: openInputMethodSettings,
+                openTranslationModels: openTranslationModels
             )
-
-            Text(model.translationMode.explanation)
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
         .padding(16)
         .cardSurface()
@@ -206,13 +339,15 @@ private struct OverviewStatusCard: View {
 
     @ViewBuilder
     private var statusDetail: some View {
-        let detail = Text(state.detail)
-            .font(.callout)
-            .foregroundStyle(.secondary)
-        if let attentionDetail {
-            detail.help(attentionDetail)
-        } else {
-            detail
+        if !state.detail.isEmpty {
+            let detail = Text(state.detail)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            if let attentionDetail {
+                detail.help(attentionDetail)
+            } else {
+                detail
+            }
         }
     }
 
@@ -242,6 +377,7 @@ private struct OverviewPipeline: View {
     let model: MainWindowModel
     let openGeneralSettings: () -> Void
     let openInputMethodSettings: (() -> Void)?
+    let openTranslationModels: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
@@ -270,9 +406,10 @@ private struct OverviewPipeline: View {
             stage(
                 symbol: "text.bubble",
                 label: "翻译",
-                value: translationModelName
+                value: translationModelName,
+                action: openTranslationModels,
+                actionHint: "打开翻译模型"
             )
-            .help(model.translationSummary)
         }
     }
 
@@ -422,11 +559,11 @@ private enum OverviewRuntimeState {
     var detail: String {
         switch self {
         case .running:
-            "在输入法候选栏旁显示对应英文翻译。"
+            ""
         case .preparing:
             "完成后会自动开始读取输入法候选。"
         case .paused:
-            "开启后，输入中文会显示对应英文翻译。"
+            ""
         case .permissions(let message):
             message
         case .attention(let message):
@@ -515,8 +652,12 @@ private struct OverviewPagePreview: View {
     }
 
     var body: some View {
-        OverviewPage(model: model, selection: .constant(.overview))
-            .frame(width: width, height: 640)
+        OverviewPage(
+            model: model,
+            selection: .constant(.overview),
+            openTranslationModels: {}
+        )
+        .frame(width: width, height: 640)
     }
 }
 

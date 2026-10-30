@@ -11,6 +11,7 @@ final class AppEnvironment {
     let coreDictionaryUpdateService: CoreDictionaryUpdateService
     let ecdictUpdateService: ECDICTUpdateService
     let translationRuntime: TranslationRuntime
+    let systemTranslationCoordinator: SystemTranslationCoordinator
     let monitoring: MonitoringController
     let monitoringSession: MonitoringSession
     let squirrelIntegrationService: SquirrelIntegrationService
@@ -32,7 +33,14 @@ final class AppEnvironment {
             )
         )
         let dictionary = PluginDictionaryRouter()
-        let translationRuntime = TranslationRuntime { modelID in
+        let systemTranslationCoordinator =
+            SystemTranslationCoordinator()
+        let systemTranslationEngine = SystemTranslationEngine(
+            coordinator: systemTranslationCoordinator
+        )
+        let translationRuntime = TranslationRuntime(
+            systemEngine: systemTranslationEngine
+        ) { modelID in
             if let manifest = BundledPluginResources.manifest(
                 for: modelID
             ),
@@ -89,6 +97,8 @@ final class AppEnvironment {
         self.coreDictionaryUpdateService = coreDictionaryUpdateService
         self.ecdictUpdateService = ecdictUpdateService
         self.translationRuntime = translationRuntime
+        self.systemTranslationCoordinator =
+            systemTranslationCoordinator
         let router = SmartRouter(dictionary: dictionary, translation: translationRuntime)
         let rimeSupportDirectory = Self.rimeSupportDirectory()
         self.squirrelIntegrationService =

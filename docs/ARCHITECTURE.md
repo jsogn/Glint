@@ -88,6 +88,14 @@ Glint/
 - `RimeSupportPaths`：统一提供正式支持目录和 Socket 路径。
 - `SquirrelIntegrationService`：启用 schema 解析、YAML 预检、事务安装、
   备份、哈希校验、重新部署和回滚；在 App 组合根中构造。
+- Apple Translation 系统会话协调器、系统翻译 Engine 和持久
+  `translationTask` 宿主。系统翻译以保留模型 ID
+  `system-apple-translation` 参与现有 `TranslationEngine` 路由。
+- 语言资源由 macOS 管理；Glint 只在用户主动安装或资源已安装时连接会话，
+  不在候选翻译期间触发下载。选择系统翻译后释放 OPUS-MT/CTranslate2 容器；
+  系统翻译失败时不自动加载其他翻译模型，由现有路由决定是否使用词典路径。
+  等待 SwiftUI 宿主挂载会话有两秒上限，避免登录启动或窗口重建时阻塞整个
+  运行时。
 - `AXReadSession`：消息超时、属性调用上限和总截止时间。
 - 不包含 UI、插件下载、词典数据或推理实现。
 

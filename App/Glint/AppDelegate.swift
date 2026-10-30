@@ -1,8 +1,10 @@
 import AppKit
+import GlintCore
 import GlintMac
 import GlintPlugins
 import GlintUI
 import OSLog
+import SwiftUI
 
 private let appLogger = Logger(
     subsystem: "com.local.glint",
@@ -76,7 +78,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshActiveInputMethodName()
         setupMainMenu()
         setupStatusItem()
-        mainWindowController = MainWindowController(model: windowModel)
+        mainWindowController = MainWindowController(
+            model: windowModel,
+            auxiliaryContent: AnyView(
+                SystemTranslationHostView(
+                    coordinator:
+                        environment.systemTranslationCoordinator
+                )
+            )
+        )
         if !wasLaunchedAtLogin {
             mainWindowController.show()
         }
@@ -89,6 +99,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             await environment.refreshDictionaryRoutes()
             await synchronizeInstalledInputMethodSupport()
+            await environment.systemTranslationCoordinator
+                .refreshAvailability()
+            if let availability =
+                environment.systemTranslationCoordinator.availability
+            {
+                windowModel.updateSystemTranslationAvailability(
+                    availability
+                )
+            }
+            if TranslationModelSelection.isSystemTranslation(
+                TranslationModelSelection.selected()
+            ) {
+                await environment.systemTranslationCoordinator
+                    .prepareInstalledSessionIfAvailable()
+            }
             await environment.translationRuntime.prepareSelectedModel()
             startupPreparationTask = nil
             windowModel.isPreparingMonitoring = false
@@ -154,6 +179,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        environment.systemTranslationCoordinator.shutdown()
         if let selectedInputSourceObserver {
             DistributedNotificationCenter.default()
                 .removeObserver(selectedInputSourceObserver)
@@ -328,6 +354,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return await self.environment.translationRuntime.prepare(
                 modelID: modelID
             )
+        }
+        windowModel.refreshSystemTranslationAction = { [weak self] in
+            guard let self else { return .unsupported }
+            await self.environment.systemTranslationCoordinator
+                .refreshAvailability()
+            return self.environment.systemTranslationCoordinator
+                .availability ?? .unsupported
+        }
+        windowModel.prepareSystemTranslationAction = { [weak self] in
+            guard let self else {
+                throw SystemTranslationError.sessionUnavailable
+            }
+            try await self.environment.systemTranslationCoordinator
+                .prepareLanguagePack()
+            return self.environment.systemTranslationCoordinator
+                .availability ?? .failed("系统翻译状态未知")
+        }
+        windowModel.activateSystemTranslationAction = { [weak self] in
+            guard let self else {
+                return "系统翻译会话不可用"
+            }
+            guard
+                await self.environment.systemTranslationCoordinator
+                    .prepareInstalledSessionIfAvailable()
+            else {
+                if case .failed(let message) =
+                    self.environment.systemTranslationCoordinator
+                    .availability
+                {
+                    return message
+                }
+                return "系统翻译会话不可用，请稍后重试"
+            }
+            return await self.environment.translationRuntime.prepare(
+                modelID: SystemTranslationModel.appleTranslationID
+            )
+        }
+        windowModel.systemTranslationPresentationAction = {
+            [weak self] in
+            self?.showMainWindow()
         }
         windowModel.releaseTranslationModelAction = { [weak self] modelID in
             guard let self else { return }
