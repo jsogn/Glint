@@ -31,6 +31,14 @@ final class AppSmokeTests: XCTestCase {
         XCTAssertNotEqual(enabled.tiffRepresentation, disabled.tiffRepresentation)
     }
 
+    func testAppTargetsMacOS15() throws {
+        let resources = try XCTUnwrap(Bundle(url: appBundleURL))
+        XCTAssertEqual(
+            resources.object(forInfoDictionaryKey: "LSMinimumSystemVersion") as? String,
+            "15.0"
+        )
+    }
+
     #if DEBUG
         func testDebugAppBundlesSquirrelBridgeAssets() throws {
             let helper = appBundleURL.appendingPathComponent(

@@ -10,27 +10,33 @@ The bridge exposes a small C ABI consumed by `GlintInference` through
 - `glint_ct2_free_string(value)`
 - `glint_ct2_destroy(handle)`
 
-The current implementation links the CTranslate2 dylib from the Python wheel
-and a locally built SentencePiece shared library. It was validated with:
+The implementation links the CTranslate2 dylib from the Python wheel and a
+locally built SentencePiece shared library. It was validated with:
 
 ```text
 今天天气不错 -> It's a nice day.
 ```
 
-Build inputs:
+## Reproducible build
 
-- `Vendor/CTranslate2` (headers)
-- `Vendor/sentencepiece-shared-install`
-- `Vendor/ct2/libctranslate2.dylib`
-- `Vendor/ct2/libsentencepiece.0.dylib`
+Run:
+
+```bash
+./scripts/build_ctranslate2_runtime.sh
+```
+
+The script pins CTranslate2 4.8.3 and SentencePiece 0.2.2 by commit, builds
+SentencePiece and the bridge for arm64 with a macOS 15 deployment target, signs
+the generated libraries, verifies their architectures and minimum system
+versions, and updates the binary hashes in `model-lock.json`.
+
+Source checkouts are cached under `Tools/ModelLab/.cache/ctranslate2-runtime`
+and are not committed. Override that location with `GLINT_CT2_BUILD_CACHE`.
 
 The bridge and CTranslate2/SentencePiece dylibs are bundled at
 `Resources/Plugins/mt-opus-zh-en/bin`. The converted OPUS-MT model is prepared
 by `scripts/prepare_opus_model.sh` and bundled at
 `Resources/Plugins/mt-opus-zh-en/model`.
-
-`Vendor/` is only needed when rebuilding the native bridge and its library
-dependencies. It is not part of the App bundle.
 
 Rules:
 

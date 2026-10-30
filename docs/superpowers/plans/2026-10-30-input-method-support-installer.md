@@ -16,7 +16,7 @@ and Lua resources and maps service state into UI state.
 
 ## Global Constraints
 
-- Minimum macOS: 26.0.
+- Minimum macOS: 15.0.
 - Arm64-only app build.
 - No third-party UI components.
 - Squirrel bridge remains Debug-only.

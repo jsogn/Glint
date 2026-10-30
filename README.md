@@ -6,7 +6,7 @@
   <a href="https://github.com/jsogn/Glint/releases/latest">
     <img alt="下载 Glint 最新发布" src="https://img.shields.io/github/v/release/jsogn/Glint?label=Download&amp;style=flat-square&amp;color=2F7DFF">
   </a>
-  <img alt="macOS 26+" src="https://img.shields.io/badge/macOS-26%2B-24292F?logo=apple&logoColor=white&style=flat-square">
+  <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-24292F?logo=apple&logoColor=white&style=flat-square">
   <img alt="Apple Silicon" src="https://img.shields.io/badge/Apple_Silicon-arm64-57606A?style=flat-square">
   <img alt="本地离线" src="https://img.shields.io/badge/privacy-local_%26_offline-30363D?style=flat-square">
 </p>
@@ -50,9 +50,9 @@ Glint 支持单词、短语和短句。单词会尽量给出简洁、常用的�
 
 ## 安装说明
 
-需要 **macOS 26 或更高版本**，仅支持 **Apple Silicon Mac**。
+需要 **macOS 15 或更高版本**，仅支持 **Apple Silicon Mac**。
 
-推荐下载 `Glint-*-Installer-macOS26-arm64.pkg`，双击后按安装器提示完成安装。
+推荐下载 `Glint-*-macOS-arm64.pkg`，双击后按安装器提示完成安装。
 如果 macOS 首次阻止打开，请在 **系统设置 → 隐私与安全性** 中允许一次，再重新
 打开安装包。
 
@@ -77,7 +77,8 @@ cd Glint
 ```
 
 首次构建会准备并校验内置的轻量翻译模型。修改代码前，建议先阅读
-[架构设计](docs/ARCHITECTURE.md)。
+[架构设计](docs/ARCHITECTURE.md)和
+[macOS 兼容性](docs/MACOS-COMPATIBILITY.md)。
 
 ## 许可证
 

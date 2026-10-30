@@ -17,7 +17,7 @@ echo "app=$app_bundle"
 echo "bundle_id=$bundle_id"
 echo "minimum_system=$minimum_system"
 
-if [[ "$minimum_system" != "26.0" ]]; then
+if [[ "$minimum_system" != "15.0" ]]; then
   echo "Unexpected minimum system version." >&2
   exit 1
 fi

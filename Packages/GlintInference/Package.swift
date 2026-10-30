@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "GlintInference",
-    platforms: [.macOS("26.0")],
+    platforms: [.macOS("15.0")],
     products: [
         .library(name: "GlintInference", targets: ["GlintInference"]),
         .executable(name: "glint-mlx-probe", targets: ["GlintMLXProbe"]),

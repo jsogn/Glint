@@ -2,7 +2,7 @@
 
 - 状态：现行
 - 最近校准：2026-10-30
-- 平台：macOS 26+，Apple Silicon
+- 平台：macOS 15+，Apple Silicon
 - 语言：Swift 6
 
 ## 1. 架构目标

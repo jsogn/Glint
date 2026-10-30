@@ -4,7 +4,7 @@ Glint 开发发布版
 GitHub Latest 标记不代表已经面向普通用户或通过 Gatekeeper 验证。
 
 系统要求
-- macOS 26 或更高版本
+- macOS 15 或更高版本
 - Apple Silicon Mac
 
 安装

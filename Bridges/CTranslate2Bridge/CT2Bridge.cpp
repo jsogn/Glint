@@ -1,5 +1,6 @@
 #include "CT2Bridge.h"
 
+#include <absl/types/span.h>
 #include <ctranslate2/translator.h>
 #include <sentencepiece_processor.h>
 
@@ -7,6 +8,7 @@
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -81,7 +83,10 @@ char* glint_ct2_translate(void* raw_handle, const char* text) {
     }
 
     std::string translated;
-    const auto decode_status = handle->target.Decode(results[0].output(), &translated);
+    const auto decode_status = handle->target.Decode(
+        absl::MakeConstSpan(results[0].output()),
+        &translated
+    );
     if (!decode_status.ok()) {
       return nullptr;
     }

@@ -29,7 +29,7 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换输入法�
 
 ## 平台与技术栈
 
-- 最低系统：macOS 26。
+- 最低系统：macOS 15。
 - 第一版仅支持 Apple Silicon。
 - 语言：Swift 6。
 - 应用生命周期：AppKit `NSApplicationDelegate`。

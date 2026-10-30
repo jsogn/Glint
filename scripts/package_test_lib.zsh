@@ -101,7 +101,7 @@ package_dmg() {
   cp LICENSE "$stage_dir/LICENSE.txt"
   chmod +x "$stage_dir/诊断.command"
 
-  local dmg_path="$package_root/Glint-$version-macOS26-arm64.dmg"
+  local dmg_path="$package_root/Glint-$version-macOS-arm64.dmg"
   hdiutil create \
     -quiet \
     -volname "Glint $version" \
@@ -131,6 +131,9 @@ package_pkg() {
   local version
   version="$(plutil -extract CFBundleShortVersionString raw \
     "$app_bundle/Contents/Info.plist")"
+  local minimum_system
+  minimum_system="$(plutil -extract LSMinimumSystemVersion raw \
+    "$app_bundle/Contents/Info.plist")"
 
   mkdir -p "$payload_root/Applications"
   ditto "$app_bundle" "$payload_root/Applications/Glint.app"
@@ -147,6 +150,7 @@ package_pkg() {
     "$component_plist"
 
   pkgbuild \
+    --min-os-version "$minimum_system" \
     --root "$payload_root" \
     --scripts "$scripts_dir" \
     --component-plist "$component_plist" \
@@ -156,7 +160,7 @@ package_pkg() {
     --ownership recommended \
     "$component_pkg"
 
-  local pkg_path="$package_root/Glint-$version-Installer-macOS26-arm64.pkg"
+  local pkg_path="$package_root/Glint-$version-macOS-arm64.pkg"
   cp "$component_pkg" "$pkg_path"
   pkgutil --payload-files "$pkg_path" >/dev/null
   write_checksum "$pkg_path"

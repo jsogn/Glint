@@ -52,8 +52,8 @@ jobs:
       - name: Validate tag and package versions
         run: |
           tag_version="${GITHUB_REF_NAME#v}"
-          dmg_path="$(find build-release -maxdepth 1 -name 'Glint-*-macOS26-arm64.dmg' -print -quit)"
-          pkg_path="$(find build-release -maxdepth 1 -name 'Glint-*-Installer-macOS26-arm64.pkg' -print -quit)"
+          dmg_path="$(find build-release -maxdepth 1 -name 'Glint-*-macOS-arm64.dmg' -print -quit)"
+          pkg_path="$(find build-release -maxdepth 1 -name 'Glint-*-macOS-arm64.pkg' -print -quit)"
           if [[ -z "$dmg_path" ]]; then
             echo "DMG was not produced." >&2
             exit 1
@@ -62,8 +62,8 @@ jobs:
             echo "PKG was not produced." >&2
             exit 1
           fi
-          dmg_version="$(basename "$dmg_path" | sed -E 's/^Glint-(.*)-macOS26-arm64\.dmg$/\1/')"
-          pkg_version="$(basename "$pkg_path" | sed -E 's/^Glint-(.*)-Installer-macOS26-arm64\.pkg$/\1/')"
+          dmg_version="$(basename "$dmg_path" | sed -E 's/^Glint-(.*)-macOS-arm64\.dmg$/\1/')"
+          pkg_version="$(basename "$pkg_path" | sed -E 's/^Glint-(.*)-macOS-arm64\.pkg$/\1/')"
           if [[ "$dmg_version" != "$tag_version" || "$pkg_version" != "$tag_version" ]]; then
             echo "Tag version $tag_version does not match package versions: DMG=$dmg_version PKG=$pkg_version." >&2
             exit 1
@@ -77,8 +77,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          dmg_path="$(find build-release -maxdepth 1 -name 'Glint-*-macOS26-arm64.dmg' -print -quit)"
-          pkg_path="$(find build-release -maxdepth 1 -name 'Glint-*-Installer-macOS26-arm64.pkg' -print -quit)"
+          dmg_path="$(find build-release -maxdepth 1 -name 'Glint-*-macOS-arm64.dmg' -print -quit)"
+          pkg_path="$(find build-release -maxdepth 1 -name 'Glint-*-macOS-arm64.pkg' -print -quit)"
           gh release create "$GITHUB_REF_NAME" \
             "$dmg_path" \
             "$dmg_path.sha256" \

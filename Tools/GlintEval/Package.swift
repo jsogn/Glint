@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "GlintEval",
-    platforms: [.macOS("26.0")],
+    platforms: [.macOS("15.0")],
     dependencies: [
         .package(path: "../../Packages/GlintCore"),
         .package(path: "../../Packages/GlintDictionary"),
