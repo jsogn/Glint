@@ -66,7 +66,7 @@ final class DisplayPreferencesTests: XCTestCase {
         preferences.candidateDwellDuration = 0.08
         XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
         preferences.candidateDwellDuration = .nan
-        XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.10)
 
         preferences.candidateSpacing = 30
         XCTAssertEqual(preferences.candidateSpacing, 24)
@@ -127,7 +127,7 @@ final class DisplayPreferencesTests: XCTestCase {
         let preferences = DisplayPreferences(defaults: defaults)
         XCTAssertEqual(
             preferences.candidateDwellDuration,
-            0.08,
+            0.10,
             accuracy: 0.001
         )
 

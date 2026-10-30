@@ -7,7 +7,7 @@ import Observation
 public final class DisplayPreferences {
     public static let maximumTranslationCountRange = 1...9
     public static let candidateDwellDurationRange = 0.05...0.3
-    public static let defaultCandidateDwellDuration = 0.08
+    public static let defaultCandidateDwellDuration = 0.10
 
     private enum Key {
         static let candidateDwellDuration = "display.candidateDwellDuration"

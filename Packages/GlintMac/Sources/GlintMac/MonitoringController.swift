@@ -276,7 +276,7 @@ public actor MonitoringController {
     private var mode: TranslationMode = .dictionaryFirst
     private var translationScope: CandidateTranslationScope = .selected
     private var maximumTranslationCount = 4
-    private var candidateDwellNanoseconds: UInt64 = 80_000_000
+    private var candidateDwellNanoseconds: UInt64 = 100_000_000
     private var translationConfigurationToken =
         TranslationModelSelection.selected()
     private var typingTracker = TypingActivityTracker()
