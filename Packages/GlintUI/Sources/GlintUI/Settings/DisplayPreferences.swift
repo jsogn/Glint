@@ -8,6 +8,7 @@ public final class DisplayPreferences {
     public static let maximumTranslationCountRange = 1...9
     public static let candidateDwellDurationRange = 0.05...0.3
     public static let defaultCandidateDwellDuration = 0.10
+    public static let defaultCandidateSpacing = 6.0
 
     private enum Key {
         static let candidateDwellDuration = "display.candidateDwellDuration"
@@ -221,7 +222,9 @@ public final class DisplayPreferences {
         self.candidateDwellDuration = dwellDuration
 
         let storedSpacing = defaults.object(forKey: Key.candidateSpacing) as? Double
-        self.candidateSpacing = Self.clampedSpacing(storedSpacing ?? 8)
+        self.candidateSpacing = Self.clampedSpacing(
+            storedSpacing ?? Self.defaultCandidateSpacing
+        )
 
         let storedBackgroundStyle = defaults.string(
             forKey: Key.hudBackgroundStyle
@@ -308,7 +311,7 @@ public final class DisplayPreferences {
         hudFontSize = 14
         hudDensity = .standard
         hudSelectedTranslationSpacing = 14
-        candidateSpacing = 8
+        candidateSpacing = Self.defaultCandidateSpacing
     }
 
     private func persist(_ color: HUDColor, forKey key: String) {
@@ -341,7 +344,7 @@ public final class DisplayPreferences {
     }
 
     private static func clampedSpacing(_ value: Double) -> Double {
-        guard value.isFinite else { return 8 }
+        guard value.isFinite else { return defaultCandidateSpacing }
         return min(max(value, 0), 24)
     }
 

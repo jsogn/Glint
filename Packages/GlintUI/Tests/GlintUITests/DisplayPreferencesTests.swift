@@ -73,7 +73,7 @@ final class DisplayPreferencesTests: XCTestCase {
         preferences.candidateSpacing = -1
         XCTAssertEqual(preferences.candidateSpacing, 0)
         preferences.candidateSpacing = .nan
-        XCTAssertEqual(preferences.candidateSpacing, 8)
+        XCTAssertEqual(preferences.candidateSpacing, 6)
 
         preferences.hudOpacity = 2
         XCTAssertEqual(preferences.hudOpacity, 1)
@@ -180,6 +180,17 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
+    func testCandidateSpacingDefaultsToSixPoints() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = DisplayPreferences(defaults: defaults)
+
+        XCTAssertEqual(preferences.candidateSpacing, 6, accuracy: 0.001)
+    }
+
+    @MainActor
     func testResetHUDAppearanceRestoresDefaults() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
@@ -203,13 +214,13 @@ final class DisplayPreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.hudAppearance, .default)
         XCTAssertEqual(
             preferences.candidateSpacing,
-            8,
+            6,
             accuracy: 0.001
         )
         let reloaded = DisplayPreferences(defaults: defaults)
         XCTAssertEqual(
             reloaded.candidateSpacing,
-            8,
+            6,
             accuracy: 0.001
         )
     }
