@@ -82,6 +82,17 @@ cd Glint
 [架构设计](docs/ARCHITECTURE.md)和
 [macOS 兼容性](docs/MACOS-COMPATIBILITY.md)。
 
+## Star 趋势
+
+<p align="center">
+  <a href="https://www.star-history.com/#jsogn/Glint&amp;Date">
+    <img
+      src="https://api.star-history.com/svg?repos=jsogn/Glint&amp;type=Date"
+      alt="Glint Star 趋势"
+    >
+  </a>
+</p>
+
 ## 许可证
 
 Glint 源代码采用 [MIT License](LICENSE)。内置词典、翻译模型和第三方运行库
