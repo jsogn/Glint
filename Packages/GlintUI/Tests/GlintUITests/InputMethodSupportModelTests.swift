@@ -26,7 +26,7 @@ final class InputMethodSupportModelTests: XCTestCase {
         defer { context.cleanup() }
         let squirrel = InputMethodSupportStatus(
             id: "squirrel",
-            name: "Rime",
+            name: "Rime 输入法",
             detail: "Rime 候选读取尚未连接",
             state: .available,
             schemaIDs: ["luna_pinyin"],
@@ -52,7 +52,7 @@ final class InputMethodSupportModelTests: XCTestCase {
         defer { context.cleanup() }
         let rime = InputMethodSupportStatus(
             id: "squirrel",
-            name: "Rime",
+            name: "Rime 输入法",
             detail: "Rime 候选读取尚未连接",
             state: .available,
             schemaIDs: ["luna_pinyin"],
@@ -90,7 +90,7 @@ final class InputMethodSupportModelTests: XCTestCase {
         defer { context.cleanup() }
         let installed = InputMethodSupportStatus(
             id: "squirrel",
-            name: "Rime",
+            name: "Rime 输入法",
             detail: "已启用",
             state: .installed,
             schemaIDs: ["luna_pinyin"],
@@ -118,7 +118,7 @@ final class InputMethodSupportModelTests: XCTestCase {
         }
         let repairRequired = InputMethodSupportStatus(
             id: "squirrel",
-            name: "Rime",
+            name: "Rime 输入法",
             detail: "适配器安装不完整",
             state: .repairRequired,
             schemaIDs: [],
@@ -147,7 +147,7 @@ final class InputMethodSupportModelTests: XCTestCase {
         defer { context.cleanup() }
         let available = InputMethodSupportStatus(
             id: "squirrel",
-            name: "Rime",
+            name: "Rime 输入法",
             detail: "Rime 候选读取尚未连接",
             state: .available,
             schemaIDs: ["luna_pinyin"],

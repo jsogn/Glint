@@ -6,6 +6,19 @@ struct InputMethodsPage: View {
 
     var body: some View {
         PageContainer {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                Text(
+                    "这里只列出需要额外安装支持才能适配的输入法。"
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+
             if model.isLoadingInputMethodSupport {
                 HStack(spacing: 8) {
                     ProgressView()

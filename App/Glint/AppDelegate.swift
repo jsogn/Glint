@@ -442,7 +442,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .applePinyin,
                 InputMethodSupportStatus(
                     id: "squirrel",
-                    name: "Rime",
+                    name: "Rime 输入法",
                     detail: "未检测到可用的输入法。",
                     state: .unavailable,
                     schemaIDs: [],
@@ -467,7 +467,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .applePinyin,
             InputMethodSupportStatus(
                 id: "squirrel",
-                name: "Rime",
+                name: "Rime 输入法",
                 detail: status.detail ?? defaultDetail(for: uiState),
                 state: uiState,
                 schemaIDs: status.schemaIDs,

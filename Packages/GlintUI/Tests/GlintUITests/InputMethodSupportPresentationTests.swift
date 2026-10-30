@@ -128,7 +128,7 @@ final class InputMethodSupportPresentationTests: XCTestCase {
     ) -> InputMethodSupportStatus {
         InputMethodSupportStatus(
             id: "squirrel",
-            name: "Rime",
+            name: "Rime 输入法",
             detail: detail,
             state: state,
             schemaIDs: schemaIDs,
