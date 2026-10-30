@@ -226,24 +226,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusItem(isMonitoring: Bool) {
         guard let button = statusItem.button else { return }
-        button.image = brandMarkImage()
-        button.imagePosition = .imageLeading
+        button.image = brandMarkImage(isMonitoring: isMonitoring)
+        button.imagePosition = .imageOnly
         button.imageScaling = .scaleProportionallyDown
         button.title = ""
-        if isMonitoring {
-            let title = NSMutableAttributedString(
-                string: "  ●",
-                attributes: [
-                    .font: NSFont.systemFont(ofSize: 5.5, weight: .bold),
-                    .foregroundColor: NSColor.systemBlue,
-                    .baselineOffset: 1.2,
-                ]
-            )
-            button.title = ""
-            button.attributedTitle = title
-        } else {
-            button.attributedTitle = NSAttributedString(string: "")
-        }
+        button.attributedTitle = NSAttributedString(string: "")
         button.toolTip =
             windowModel.isPreparingMonitoring
             ? "Glint · 正在准备翻译模型"
@@ -253,8 +240,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    private func brandMarkImage() -> NSImage? {
-        guard let image = NSImage(named: "BrandMark")?.copy() as? NSImage else {
+    private func brandMarkImage(isMonitoring: Bool) -> NSImage? {
+        let resourceName = isMonitoring ? "BrandMark" : "BrandMarkOff"
+        guard let image = NSImage(named: resourceName)?.copy() as? NSImage else {
             return nil
         }
         image.size = NSSize(width: 16, height: 16)
