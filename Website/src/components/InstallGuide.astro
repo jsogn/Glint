@@ -1,6 +1,6 @@
 ---
 import DownloadDock from "./DownloadDock.astro";
-import { downloadURL, fallbackRelease } from "../data/release";
+import { githubLatestReleaseURL } from "../data/release";
 ---
 
 <section id="install" class="install-section" aria-labelledby="install-title">
@@ -51,18 +51,12 @@ import { downloadURL, fallbackRelease } from "../data/release";
     <details class="install-details">
       <summary>其他下载方式</summary>
       <div class="install-details__body">
-        <a href={downloadURL(fallbackRelease.dmg.stableURL)}>
-          DMG 磁盘映像
-          <svg viewBox="0 0 14 14" aria-hidden="true">
-            <path d="M3 11 11 3M4.5 3H11v6.5" />
-          </svg>
-        </a>
         <a
-          href="https://github.com/jsogn/Glint/releases/latest"
+          href={githubLatestReleaseURL}
           target="_blank"
           rel="noreferrer"
         >
-          GitHub Releases
+          GitHub Releases（PKG / DMG）
           <svg viewBox="0 0 14 14" aria-hidden="true">
             <path d="M3 11 11 3M4.5 3H11v6.5" />
           </svg>

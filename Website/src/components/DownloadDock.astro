@@ -1,18 +1,19 @@
 ---
-import { downloadURL, fallbackRelease } from "../data/release";
+import { githubLatestReleaseURL } from "../data/release";
 
 interface Props {
   compact?: boolean;
 }
 
 const { compact = false } = Astro.props;
-const pkgURL = downloadURL(fallbackRelease.pkg.stableURL);
 ---
 
 <a
   class:list={["download-dock", { "download-dock--compact": compact }]}
-  href={pkgURL}
-  aria-label="下载 Glint 的 macOS 安装包"
+  href={githubLatestReleaseURL}
+  target="_blank"
+  rel="noreferrer"
+  aria-label="在 GitHub Releases 下载 Glint 的 macOS 安装包"
 >
   <img src="/glint-app-icon.png" alt="" width="38" height="38" />
   <span class="download-dock__copy">

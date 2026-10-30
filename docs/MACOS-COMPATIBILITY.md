@@ -61,6 +61,6 @@ PKG 的 `--min-os-version` 元数据、下载页和 Release Notes 表达，避�
 - 权限、登录启动、安装和 Rime 候选读取支持安装
 - OPUS-MT 与 MLX 模型首次加载和翻译
 
-网站当前仍指向已经发布的 macOS 26 安装包。只有在新的 macOS arm64 安装包上传并
-验证后，才能同步修改 `Website/src/data/release.ts` 和下载文案，避免线上链接
-提前指向不存在的产物。
+网站下载入口指向 GitHub Latest Release，不再单独维护安装包镜像。只有在新的
+macOS arm64 安装包上传并验证后，才能同步更新下载页的系统要求文案，避免线上
+说明超前于实际发布产物。
