@@ -111,17 +111,28 @@ final class InputMethodSupportPresentationTests: XCTestCase {
         }
     }
 
+    func testInstalledDiagnosticsDoNotRepeatStatusBadge() {
+        let status = makeStatus(
+            state: .installed,
+            detail: "候选读取支持已安装"
+        )
+
+        XCTAssertFalse(status.showsDiagnosticStatus)
+    }
+
     private func makeStatus(
         state: InputMethodSupportState,
-        detail: String
+        detail: String,
+        schemaIDs: [String] = ["luna_pinyin"],
+        protocolVersion: Int? = 3
     ) -> InputMethodSupportStatus {
         InputMethodSupportStatus(
             id: "squirrel",
             name: "Rime",
             detail: detail,
             state: state,
-            schemaIDs: ["luna_pinyin"],
-            protocolVersion: 3,
+            schemaIDs: schemaIDs,
+            protocolVersion: protocolVersion,
             isExperimental: true
         )
     }

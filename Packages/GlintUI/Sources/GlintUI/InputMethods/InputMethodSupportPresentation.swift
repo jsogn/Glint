@@ -8,6 +8,15 @@ struct InputMethodSupportPresentation: Equatable, Sendable {
 }
 
 extension InputMethodSupportStatus {
+    var showsDiagnosticStatus: Bool {
+        switch state {
+        case .repairRequired, .manualSetupRequired, .unavailable:
+            true
+        case .native, .available, .installed:
+            false
+        }
+    }
+
     var presentation: InputMethodSupportPresentation {
         switch state {
         case .native:

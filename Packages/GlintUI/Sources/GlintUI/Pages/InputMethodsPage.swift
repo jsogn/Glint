@@ -109,8 +109,8 @@ struct InputMethodsPage: View {
                 )
             }
 
-            if hasTechnicalDetails(status, presentation: presentation) {
-                technicalDetails(status, presentation: presentation)
+            if hasDiagnostics(status, presentation: presentation) {
+                diagnostics(status, presentation: presentation)
             }
 
             if let actionTitle = presentation.primaryActionTitle {
@@ -154,7 +154,7 @@ struct InputMethodsPage: View {
         }
     }
 
-    private func hasTechnicalDetails(
+    private func hasDiagnostics(
         _ status: InputMethodSupportStatus,
         presentation: InputMethodSupportPresentation
     ) -> Bool {
@@ -164,33 +164,54 @@ struct InputMethodsPage: View {
     }
 
     @ViewBuilder
-    private func technicalDetails(
+    private func diagnostics(
         _ status: InputMethodSupportStatus,
         presentation: InputMethodSupportPresentation
     ) -> some View {
         DisclosureGroup {
-            VStack(alignment: .leading, spacing: 4) {
-                if status.detail != presentation.description {
-                    Text("状态：\(status.detail)")
+            Grid(
+                alignment: .leading,
+                horizontalSpacing: 12,
+                verticalSpacing: 4
+            ) {
+                if status.showsDiagnosticStatus,
+                    status.detail != presentation.description
+                {
+                    GridRow {
+                        Text("状态")
+                            .foregroundStyle(.secondary)
+                        Text(status.detail)
+                            .textSelection(.enabled)
+                    }
                 }
                 if !status.schemaIDs.isEmpty {
-                    Text(
-                        "输入方案："
-                            + status.schemaIDs.joined(separator: "、")
-                    )
+                    GridRow {
+                        Text("已启用方案")
+                            .foregroundStyle(.secondary)
+                        Text(status.schemaIDs.joined(separator: "、"))
+                            .textSelection(.enabled)
+                            .fixedSize(
+                                horizontal: false,
+                                vertical: true
+                            )
+                    }
                 }
                 if let version = status.protocolVersion,
                     status.state != .native
                 {
-                    Text("协议版本 \(version)")
+                    GridRow {
+                        Text("通信协议")
+                            .foregroundStyle(.secondary)
+                        Text("v\(version)")
+                            .textSelection(.enabled)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .font(.caption)
-            .foregroundStyle(.secondary)
             .padding(.top, 6)
         } label: {
-            Text("技术详情")
+            Text("诊断信息")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .font(.caption)
