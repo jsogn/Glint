@@ -11,8 +11,6 @@ public final class DisplayPreferences {
 
     private enum Key {
         static let candidateDwellDuration = "display.candidateDwellDuration"
-        static let candidateDwellDefaultsVersion =
-            "display.candidateDwellDefaultsVersion"
         static let candidateSpacing = "display.candidateSpacing"
         static let hudBackgroundStyle = "display.hudBackgroundStyle"
         static let hudUsesCustomTextColor = "display.hudUsesCustomTextColor"
@@ -28,8 +26,6 @@ public final class DisplayPreferences {
         static let maximumTranslationCount =
             "display.maximumTranslationCount"
     }
-
-    private static let currentCandidateDwellDefaultsVersion = 1
 
     @ObservationIgnored
     private let defaults: UserDefaults
@@ -215,30 +211,12 @@ public final class DisplayPreferences {
             defaults.object(
                 forKey: Key.candidateDwellDuration
             ) as? Double
-        let storedDefaultsVersion = defaults.integer(
-            forKey: Key.candidateDwellDefaultsVersion
-        )
-        let storedDwellWasLegacyDefault =
-            storedDefaultsVersion < Self.currentCandidateDwellDefaultsVersion
-            && storedDwellDuration.map {
-                abs($0 - 0.12) < 0.000_001
-            } == true
         let dwellDuration = Self.clampedDwellDuration(
-            storedDwellWasLegacyDefault
-                ? Self.defaultCandidateDwellDuration
-                : storedDwellDuration
-                    ?? Self.defaultCandidateDwellDuration
+            storedDwellDuration
+                ?? Self.defaultCandidateDwellDuration
         )
         if storedDwellDuration != dwellDuration {
             defaults.set(dwellDuration, forKey: Key.candidateDwellDuration)
-        }
-        if storedDefaultsVersion
-            < Self.currentCandidateDwellDefaultsVersion
-        {
-            defaults.set(
-                Self.currentCandidateDwellDefaultsVersion,
-                forKey: Key.candidateDwellDefaultsVersion
-            )
         }
         self.candidateDwellDuration = dwellDuration
 

@@ -107,19 +107,15 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
-    func testLegacyDefaultDwellDurationMigratesOnlyOnce() throws {
+    func testStoredLegacyDefaultDwellDurationIsPreserved() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
         defaults.set(0.12, forKey: "display.candidateDwellDuration")
 
-        let migrated = DisplayPreferences(defaults: defaults)
+        let preferences = DisplayPreferences(defaults: defaults)
 
-        XCTAssertEqual(migrated.candidateDwellDuration, 0.08)
-        migrated.candidateDwellDuration = 0.12
-
-        let restored = DisplayPreferences(defaults: defaults)
-        XCTAssertEqual(restored.candidateDwellDuration, 0.12)
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.12)
     }
 
     @MainActor
