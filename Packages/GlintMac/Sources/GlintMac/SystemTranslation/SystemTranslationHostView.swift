@@ -13,7 +13,10 @@ public struct SystemTranslationHostView: View {
             .allowsHitTesting(false)
             .accessibilityHidden(true)
             .translationTask(coordinator.configuration) { session in
-                await coordinator.run(session: session)
+                await coordinator.run(
+                    session: session,
+                    generation: coordinator.currentSessionGeneration
+                )
             }
     }
 }

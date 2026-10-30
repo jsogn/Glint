@@ -93,6 +93,9 @@ Glint/
 - Apple Translation 系统会话协调器、系统翻译 Engine 和持久
   `translationTask` 宿主。系统翻译以保留模型 ID
   `system-apple-translation` 参与现有 `TranslationEngine` 路由。
+- 每次“安装语言包”或“继续安装”都会创建新的翻译会话配置；关闭系统下载
+  窗口不会把仍受支持的语言包标记为安装失败。准备中断后，协调器低频读取
+  `LanguageAvailability`，完成时主动通知界面刷新，不伪造系统下载进度。
 - 语言资源由 macOS 管理；Glint 只在用户主动安装或资源已安装时连接会话，
   不在候选翻译期间触发下载。选择系统翻译后释放 OPUS-MT/CTranslate2 容器；
   系统翻译失败时不自动加载其他翻译模型，由现有路由决定是否使用词典路径。

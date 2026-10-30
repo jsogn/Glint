@@ -109,7 +109,7 @@ public struct TranslationModelUpdateState: Equatable, Sendable {
 
 enum SystemTranslationSetupState: Equatable, Sendable {
     case installationRequired
-    case installationCancelled
+    case installationIncomplete
     case installing
     case failed(String)
     case unsupported
@@ -157,7 +157,7 @@ public final class MainWindowModel {
     public private(set) var isRefreshingSystemTranslation = false
     public private(set) var isPreparingSystemTranslation = false
     public private(set) var systemTranslationError: String?
-    public private(set) var systemTranslationSetupWasCancelled = false
+    public private(set) var systemTranslationPreparationIsIncomplete = false
     public private(set) var systemTranslationPresentationEvent = 0
     public private(set) var coreDictionaryUpdateStates: [String: CoreDictionaryUpdateState] = [:]
     public private(set) var translationModelUpdateStates: [String: TranslationModelUpdateState] = [:]
@@ -389,8 +389,8 @@ public final class MainWindowModel {
         }
         switch systemTranslationAvailability {
         case .available:
-            return systemTranslationSetupWasCancelled
-                ? .installationCancelled
+            return systemTranslationPreparationIsIncomplete
+                ? .installationIncomplete
                 : .installationRequired
         case .installing:
             return .installing
@@ -408,7 +408,7 @@ public final class MainWindowModel {
     ) {
         systemTranslationAvailability = availability
         if availability.canSelect {
-            systemTranslationSetupWasCancelled = false
+            systemTranslationPreparationIsIncomplete = false
         }
     }
 
@@ -428,19 +428,22 @@ public final class MainWindowModel {
             systemTranslationAvailability?.canSelect == true
         isPreparingSystemTranslation = true
         systemTranslationError = nil
-        systemTranslationSetupWasCancelled = false
+        systemTranslationPreparationIsIncomplete = false
         defer { isPreparingSystemTranslation = false }
         do {
             let availability =
                 try await prepareSystemTranslationAction()
             updateSystemTranslationAvailability(availability)
+            if availability == .available {
+                systemTranslationPreparationIsIncomplete = true
+            }
             if availability.canSelect, !wasInstalled {
                 systemTranslationPresentationEvent &+= 1
                 systemTranslationPresentationAction()
             }
         } catch {
             if Self.isCancellation(error) {
-                systemTranslationSetupWasCancelled = true
+                systemTranslationPreparationIsIncomplete = true
                 return
             }
             let message = error.localizedDescription

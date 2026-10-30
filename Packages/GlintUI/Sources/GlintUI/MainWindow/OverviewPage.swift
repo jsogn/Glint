@@ -166,8 +166,10 @@ private struct SystemTranslationSetupCard: View {
             }
         case .failed:
             installButton(title: "重试")
-        case .installationRequired, .installationCancelled:
+        case .installationRequired:
             installButton(title: "安装语言包")
+        case .installationIncomplete:
+            installButton(title: "继续安装")
         }
     }
 
@@ -190,8 +192,8 @@ private extension SystemTranslationSetupState {
         switch self {
         case .installationRequired:
             "请安装 Apple 翻译语言包"
-        case .installationCancelled:
-            "已取消语言包安装"
+        case .installationIncomplete:
+            "语言包安装未完成"
         case .installing:
             "正在准备 Apple 翻译"
         case .failed:
@@ -205,8 +207,8 @@ private extension SystemTranslationSetupState {
         switch self {
         case .installationRequired:
             "安装中文到英文语言包后，Apple 翻译才能处理短句。"
-        case .installationCancelled:
-            "短句翻译暂时不可用。你可以随时继续安装，不会自动重复弹窗。"
+        case .installationIncomplete:
+            "你可以继续安装；如果系统仍在下载，完成后会自动更新。"
         case .installing:
             "完成后会自动打开概览。"
         case .failed(let message):
@@ -222,7 +224,7 @@ private extension SystemTranslationSetupState {
             "hourglass"
         case .failed, .unsupported:
             "exclamationmark.triangle"
-        case .installationRequired, .installationCancelled:
+        case .installationRequired, .installationIncomplete:
             "translate"
         }
     }

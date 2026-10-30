@@ -300,6 +300,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func configureWindowModel() {
+        environment.systemTranslationCoordinator.onAvailabilityChange = {
+            [weak windowModel] availability in
+            windowModel?.updateSystemTranslationAvailability(availability)
+        }
         windowModel.startMonitoringAction = { [weak self] in
             self?.startMonitoring()
         }

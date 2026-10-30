@@ -208,11 +208,13 @@ struct PluginsPage: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     if model.systemTranslationSetupState
-                        == .installationCancelled
+                        == .installationIncomplete
                     {
-                        Text("已取消安装。短句翻译暂不可用。")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
+                        Text(
+                            "安装尚未完成。如果系统仍在下载，完成后会自动更新。"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                     }
                     if let error = model.systemTranslationError {
                         Text(error)
@@ -258,7 +260,12 @@ struct PluginsPage: View {
                 }
                 .buttonStyle(.borderedProminent)
             case .available:
-                Button("安装语言包") {
+                Button(
+                    model.systemTranslationSetupState
+                        == .installationIncomplete
+                        ? "继续安装"
+                        : "安装语言包"
+                ) {
                     Task {
                         await model.prepareSystemTranslationSupport()
                     }

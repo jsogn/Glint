@@ -144,9 +144,32 @@ final class MainWindowModelTests: XCTestCase {
 
         XCTAssertEqual(
             context.model.systemTranslationSetupState,
-            .installationCancelled
+            .installationIncomplete
         )
         XCTAssertEqual(presentationCount, 0)
+    }
+
+    @MainActor
+    func testInterruptedSystemTranslationInstallationShowsIncompleteState()
+        async throws
+    {
+        let context = try makeContext(
+            selectedModelID:
+                SystemTranslationModel.appleTranslationID
+        )
+        defer { context.cleanup() }
+        context.model.updateSystemTranslationAvailability(.available)
+        context.model.prepareSystemTranslationAction = {
+            .available
+        }
+
+        await context.model.prepareSystemTranslationSupport()
+
+        XCTAssertEqual(
+            context.model.systemTranslationSetupState,
+            .installationIncomplete
+        )
+        XCTAssertFalse(context.model.isPreparingSystemTranslation)
     }
 
     @MainActor

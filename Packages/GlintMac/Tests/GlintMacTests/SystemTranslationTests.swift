@@ -82,31 +82,25 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
     }
 
     func testPreparationFailureIsVisibleInAvailability() async {
-        let availability = LockedAvailability(.available)
-        let driver = FakeSystemTranslationDriver()
-        driver.prepareError = TestPreparationError.failed
         let coordinator = SystemTranslationCoordinator(
             availabilityProvider: {
-                availability.value
-            }
+                .available
+            },
+            driverReadyTimeout: .milliseconds(20)
         )
-        let hostTask = Task {
-            await coordinator.run(driver: driver)
-        }
-        await Task.yield()
 
         do {
             try await coordinator.prepareLanguagePack()
             XCTFail("Preparation should fail")
-        } catch {
+        } catch let error as SystemTranslationError {
             XCTAssertEqual(
                 coordinator.availability,
-                .failed("Preparation failed")
+                .failed(error.localizedDescription)
             )
+            XCTAssertEqual(error, .sessionUnavailable)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
         }
-
-        coordinator.shutdown()
-        await hostTask.value
     }
 
     func testCancelledPreparationReturnsToAvailable() async {
@@ -123,14 +117,7 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
         }
         await Task.yield()
 
-        do {
-            try await coordinator.prepareLanguagePack()
-            XCTFail("Preparation should be cancelled")
-        } catch is CancellationError {
-            // Expected.
-        } catch {
-            XCTFail("Unexpected error: \(error)")
-        }
+        try? await coordinator.prepareLanguagePack()
 
         XCTAssertEqual(coordinator.availability, .available)
         coordinator.shutdown()
@@ -152,17 +139,152 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
         }
         await Task.yield()
 
+        try? await coordinator.prepareLanguagePack()
+
+        XCTAssertEqual(coordinator.availability, .available)
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testClosingLanguagePackWindowLeavesInstallableState() async {
+        let availability = LockedAvailability(.available)
+        let driver = FakeSystemTranslationDriver()
+        driver.prepareError = TestPreparationError.windowClosed
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+
         do {
             try await coordinator.prepareLanguagePack()
-            XCTFail("Preparation should be cancelled")
-        } catch is CancellationError {
-            // Expected.
         } catch {
-            XCTFail("Unexpected error: \(error)")
+            XCTFail(
+                "Closing the system download window must remain installable: \(error)"
+            )
         }
 
         XCTAssertEqual(coordinator.availability, .available)
         coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testBackgroundLanguagePackDownloadUpdatesAvailability() async {
+        let availability = LockedAvailability(.available)
+        let driver = FakeSystemTranslationDriver()
+        driver.prepareError = TestPreparationError.windowClosed
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            }
+        )
+        var observedAvailability: [SystemTranslationAvailability] = []
+        coordinator.onAvailabilityChange = {
+            observedAvailability.append($0)
+        }
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+
+        try? await coordinator.prepareLanguagePack()
+        availability.value = .installed
+        await waitUntil(timeout: .seconds(2)) {
+            coordinator.availability == .installed
+        }
+
+        XCTAssertEqual(coordinator.availability, .installed)
+        XCTAssertEqual(observedAvailability.last, .installed)
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testContinuingLanguagePackInstallUsesFreshSession() async {
+        let availability = LockedAvailability(.available)
+        let firstDriver = FakeSystemTranslationDriver()
+        firstDriver.prepareError = TestPreparationError.windowClosed
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            }
+        )
+        let firstHostTask = Task {
+            await coordinator.run(driver: firstDriver)
+        }
+        await Task.yield()
+        try? await coordinator.prepareLanguagePack()
+        let firstSessionGeneration =
+            coordinator.currentSessionGeneration
+
+        let secondDriver = FakeSystemTranslationDriver()
+        secondDriver.onPrepare = {
+            availability.value = .installed
+        }
+        let retryTask = Task {
+            try await coordinator.prepareLanguagePack()
+        }
+        await waitUntil(timeout: .seconds(1)) {
+            coordinator.currentSessionGeneration
+                != firstSessionGeneration
+        }
+        var secondHostTask: Task<Void, Never>?
+        if coordinator.currentSessionGeneration
+            != firstSessionGeneration
+        {
+            secondHostTask = Task {
+                await coordinator.run(driver: secondDriver)
+            }
+        }
+
+        _ = await retryTask.result
+        await waitUntil {
+            coordinator.availability == .installed
+        }
+
+        XCTAssertEqual(secondDriver.prepareCalls, 1)
+        XCTAssertEqual(coordinator.availability, .installed)
+        coordinator.shutdown()
+        await secondHostTask?.value
+        await firstHostTask.value
+    }
+
+    func testCancelledAvailabilityPollCannotOverwriteInstallAttempt() async {
+        let availability = GatedAvailabilityProvider(
+            value: .available,
+            gatedCall: 3
+        )
+        let driver = FakeSystemTranslationDriver()
+        driver.prepareError = TestPreparationError.windowClosed
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                await availability.next()
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+        try? await coordinator.prepareLanguagePack()
+
+        await waitUntil(timeout: .seconds(2)) {
+            availability.callCount == 3
+        }
+        let retryTask = Task {
+            try await coordinator.prepareLanguagePack()
+        }
+        await waitUntil {
+            coordinator.availability == .installing
+        }
+        availability.releaseGatedCall()
+        try? await Task.sleep(for: .milliseconds(20))
+
+        XCTAssertEqual(coordinator.availability, .installing)
+        coordinator.shutdown()
+        _ = await retryTask.result
         await hostTask.value
     }
 
@@ -441,9 +563,15 @@ private final class FakeSystemTranslationDriver:
 
 private enum TestPreparationError: LocalizedError {
     case failed
+    case windowClosed
 
     var errorDescription: String? {
-        "Preparation failed"
+        switch self {
+        case .failed:
+            "Preparation failed"
+        case .windowClosed:
+            "The system download window was closed"
+        }
     }
 }
 
@@ -467,4 +595,51 @@ private final class LockedAvailability: @unchecked Sendable {
             stored = newValue
         }
     }
+}
+
+@MainActor
+private final class GatedAvailabilityProvider {
+    private let value: SystemTranslationAvailability
+    private let gatedCall: Int
+    private var continuation: CheckedContinuation<Void, Never>?
+    private(set) var callCount = 0
+
+    init(
+        value: SystemTranslationAvailability,
+        gatedCall: Int
+    ) {
+        self.value = value
+        self.gatedCall = gatedCall
+    }
+
+    func next() async -> SystemTranslationAvailability {
+        callCount += 1
+        if callCount == gatedCall {
+            await withCheckedContinuation {
+                continuation = $0
+            }
+        }
+        return value
+    }
+
+    func releaseGatedCall() {
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
+@MainActor
+private func waitUntil(
+    timeout: Duration = .seconds(1),
+    condition: @MainActor () -> Bool
+) async {
+    let clock = ContinuousClock()
+    let deadline = clock.now.advanced(by: timeout)
+    while clock.now < deadline {
+        if condition() {
+            return
+        }
+        try? await Task.sleep(for: .milliseconds(10))
+    }
+    XCTAssertTrue(condition(), "Condition was not met before timeout")
 }

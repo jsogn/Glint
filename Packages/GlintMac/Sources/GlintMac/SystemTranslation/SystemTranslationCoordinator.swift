@@ -41,6 +41,8 @@ public final class SystemTranslationCoordinator: ObservableObject {
 
     private static let maximumPendingRequests = 9
     private static let defaultDriverReadyTimeout: Duration = .seconds(2)
+    private static let availabilityMonitorDuration: Duration = .seconds(30 * 60)
+    private static let maximumAvailabilityPollInterval = 15
     private static let sourceLanguage = Locale.Language(
         identifier: "zh-Hans"
     )
@@ -48,18 +50,31 @@ public final class SystemTranslationCoordinator: ObservableObject {
         identifier: "en"
     )
 
-    @Published public private(set) var availability: SystemTranslationAvailability?
+    @Published public private(set) var availability: SystemTranslationAvailability? {
+        didSet {
+            guard availability != oldValue,
+                let availability
+            else {
+                return
+            }
+            onAvailabilityChange?(availability)
+        }
+    }
     @Published public private(set) var configuration: TranslationSession.Configuration?
     @Published public private(set) var isPreparing = false
+    public var onAvailabilityChange: (@MainActor (SystemTranslationAvailability) -> Void)?
+    var currentSessionGeneration: UInt64 { sessionGeneration }
 
     private let availabilityProvider: @MainActor () async -> SystemTranslationAvailability
     private let driverReadyTimeout: Duration
     private var driver: (any SystemTranslationSessionDriving)?
     private var driverWaiters: [UUID: CheckedContinuation<Bool, Never>] = [:]
+    private var sessionGeneration: UInt64 = 0
     private var pendingRequests: [PendingRequest] = []
     private var currentRequest: PendingRequest?
     private var cancelledRequestIDs: Set<UUID> = []
     private var idleContinuation: CheckedContinuation<Void, Never>?
+    private var availabilityMonitorTask: Task<Void, Never>?
     private var shouldStop = false
 
     public convenience init() {
@@ -83,11 +98,17 @@ public final class SystemTranslationCoordinator: ObservableObject {
 
     public func refreshAvailability() async {
         guard !isPreparing else { return }
-        availability = await availabilityProvider()
+        let current = await availabilityProvider()
+        guard !isPreparing else { return }
+        availability = current
+        if current != .available {
+            stopAvailabilityMonitoring()
+        }
     }
 
     public func prepareLanguagePack() async throws {
         guard !isPreparing else { return }
+        stopAvailabilityMonitoring()
         isPreparing = true
         defer { isPreparing = false }
 
@@ -100,17 +121,41 @@ public final class SystemTranslationCoordinator: ObservableObject {
 
         availability = .installing
         do {
-            try await startConfiguration()
-            try await driver?.prepareTranslation()
+            try await startConfiguration(forceNewSession: true)
+            guard let driver else {
+                throw SystemTranslationError.sessionUnavailable
+            }
+            try await driver.prepareTranslation()
             let updated = await availabilityProvider()
             availability = updated
-            guard updated.canSelect else {
+            switch updated {
+            case .installed:
+                break
+            case .available, .installing:
+                startAvailabilityMonitoring()
+            case .unsupported:
+                throw SystemTranslationError.unsupported
+            case .failed:
                 throw SystemTranslationError.languagePackUnavailable
             }
+        } catch SystemTranslationError.sessionUnavailable {
+            availability = .failed(
+                SystemTranslationError.sessionUnavailable.localizedDescription
+            )
+            throw SystemTranslationError.sessionUnavailable
         } catch {
-            if Self.isCancellation(error) {
-                availability = current
-                throw CancellationError()
+            let updated = await availabilityProvider()
+            availability = updated
+            switch updated {
+            case .installed:
+                return
+            case .available, .installing:
+                startAvailabilityMonitoring()
+                return
+            case .unsupported:
+                throw SystemTranslationError.unsupported
+            case .failed:
+                break
             }
             availability = .failed(error.localizedDescription)
             throw error
@@ -172,6 +217,8 @@ public final class SystemTranslationCoordinator: ObservableObject {
 
     public func shutdown() {
         shouldStop = true
+        sessionGeneration &+= 1
+        stopAvailabilityMonitoring()
         configuration = nil
         signalIdleLoop()
         failDriverWaiters()
@@ -180,45 +227,95 @@ public final class SystemTranslationCoordinator: ObservableObject {
         )
     }
 
-    func run(session: TranslationSession) async {
-        await run(driver: TranslationSessionDriver(session: session))
+    func run(
+        session: TranslationSession,
+        generation: UInt64
+    ) async {
+        guard generation == sessionGeneration else { return }
+        await run(
+            driver: TranslationSessionDriver(session: session),
+            generation: generation
+        )
     }
 
     func run(driver: any SystemTranslationSessionDriving) async {
+        await run(
+            driver: driver,
+            generation: sessionGeneration
+        )
+    }
+
+    private func run(
+        driver: any SystemTranslationSessionDriving,
+        generation: UInt64
+    ) async {
+        guard generation == sessionGeneration else { return }
         self.driver = driver
         shouldStop = false
         resumeDriverWaiters()
-        while !shouldStop, !Task.isCancelled {
+        while !shouldStop,
+            !Task.isCancelled,
+            generation == sessionGeneration
+        {
             if let request = takeNextRequest() {
                 await execute(request, using: driver)
             } else {
                 await waitForWork()
             }
         }
-        self.driver = nil
-        failDriverWaiters()
-        failPendingRequests(
-            SystemTranslationError.sessionUnavailable
-        )
+        if generation == sessionGeneration {
+            self.driver = nil
+            failDriverWaiters()
+            failPendingRequests(
+                SystemTranslationError.sessionUnavailable
+            )
+        }
     }
 
-    private func startConfiguration() async throws {
+    private func startConfiguration(
+        forceNewSession: Bool = false
+    ) async throws {
+        if forceNewSession, configuration != nil {
+            try await restartConfiguration()
+            return
+        }
         if driver == nil {
             configuration = nil
             await Task.yield()
-            configuration = TranslationSession.Configuration(
-                source: Self.sourceLanguage,
-                target: Self.targetLanguage
-            )
+            makeConfiguration()
             guard await waitForDriver() else {
                 throw SystemTranslationError.sessionUnavailable
             }
         } else if configuration == nil {
-            configuration = TranslationSession.Configuration(
-                source: Self.sourceLanguage,
-                target: Self.targetLanguage
-            )
+            makeConfiguration()
         }
+    }
+
+    private func restartConfiguration() async throws {
+        sessionGeneration &+= 1
+        driver = nil
+        signalIdleLoop()
+        failDriverWaiters()
+        failPendingRequests(
+            SystemTranslationError.sessionUnavailable
+        )
+        if var nextConfiguration = configuration {
+            nextConfiguration.invalidate()
+            configuration = nextConfiguration
+        } else {
+            makeConfiguration()
+        }
+        await Task.yield()
+        guard await waitForDriver() else {
+            throw SystemTranslationError.sessionUnavailable
+        }
+    }
+
+    private func makeConfiguration() {
+        configuration = TranslationSession.Configuration(
+            source: Self.sourceLanguage,
+            target: Self.targetLanguage
+        )
     }
 
     private func waitForDriver() async -> Bool {
@@ -373,6 +470,54 @@ public final class SystemTranslationCoordinator: ObservableObject {
         }
     }
 
+    private func startAvailabilityMonitoring() {
+        guard availabilityMonitorTask == nil else { return }
+        availabilityMonitorTask = Task { [weak self] in
+            let clock = ContinuousClock()
+            let deadline = clock.now.advanced(
+                by: Self.availabilityMonitorDuration
+            )
+            var pollCount = 0
+            while !Task.isCancelled {
+                guard clock.now < deadline else {
+                    self?.availabilityMonitorTask = nil
+                    return
+                }
+                let seconds = min(
+                    1 << min(pollCount, 4),
+                    Self.maximumAvailabilityPollInterval
+                )
+                pollCount += 1
+                do {
+                    try await Task.sleep(
+                        for: .seconds(Int64(seconds))
+                    )
+                } catch {
+                    return
+                }
+                guard let self else { return }
+                guard !self.isPreparing else { continue }
+                let current = await availabilityProvider()
+                guard !Task.isCancelled, !self.isPreparing else {
+                    return
+                }
+                availability = current
+                switch current {
+                case .available, .installing:
+                    continue
+                case .installed, .unsupported, .failed:
+                    availabilityMonitorTask = nil
+                    return
+                }
+            }
+        }
+    }
+
+    private func stopAvailabilityMonitoring() {
+        availabilityMonitorTask?.cancel()
+        availabilityMonitorTask = nil
+    }
+
     private static func queryAvailability() async
         -> SystemTranslationAvailability
     {
@@ -390,18 +535,6 @@ public final class SystemTranslationCoordinator: ObservableObject {
         @unknown default:
             return .unsupported
         }
-    }
-
-    private static func isCancellation(_ error: any Error) -> Bool {
-        if error is CancellationError || Task.isCancelled {
-            return true
-        }
-        if #available(macOS 26.0, *),
-            TranslationError.alreadyCancelled ~= error
-        {
-            return true
-        }
-        return false
     }
 }
 
