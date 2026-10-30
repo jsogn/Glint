@@ -88,6 +88,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
             await environment.refreshDictionaryRoutes()
+            #if DEBUG
+                await synchronizeInstalledInputMethodSupport()
+            #endif
             await environment.translationRuntime.prepareSelectedModel()
             startupPreparationTask = nil
             windowModel.isPreparingMonitoring = false
@@ -443,6 +446,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     #if DEBUG
+        private func synchronizeInstalledInputMethodSupport() async {
+            guard
+                let service =
+                    environment.squirrelIntegrationService
+            else {
+                return
+            }
+            do {
+                _ =
+                    try await service
+                    .synchronizeInstalledSupportIfNeeded()
+                await windowModel.refreshInputMethodSupport()
+            } catch {
+                appLogger.error(
+                    "failed to synchronize Rime candidate support: \(String(describing: error), privacy: .public)"
+                )
+                await windowModel.refreshInputMethodSupport()
+            }
+        }
+
         private static func inputMethodSupportStatuses(
             _ status: SquirrelIntegrationStatus?
         ) -> [InputMethodSupportStatus] {

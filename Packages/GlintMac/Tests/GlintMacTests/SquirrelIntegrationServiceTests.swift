@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import GlintCore
 import os
@@ -52,6 +53,20 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
             (attributes[.posixPermissions] as? NSNumber)?.intValue,
             0o700
         )
+        let manifestData = try Data(contentsOf: fixture.manifestURL)
+        let manifest = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: manifestData)
+                as? [String: Any]
+        )
+        let backupDirectoryPath = try XCTUnwrap(
+            manifest["backupDirectory"] as? String
+        )
+        XCTAssertEqual(
+            try fixture.permissions(
+                of: URL(fileURLWithPath: backupDirectoryPath)
+            ),
+            0o700
+        )
         let custom = try String(
             contentsOf: fixture.schemaCustom,
             encoding: .utf8
@@ -64,6 +79,169 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
             FileManager.default.fileExists(
                 atPath: fixture.manifestURL.path
             )
+        )
+        XCTAssertEqual(
+            fixture.pendingTransactionObservedDuringReload.withLock {
+                $0
+            },
+            true
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
+    }
+
+    func testStatusStaysInstalledWhenBundledRelayChangesWithoutVersionBump()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+
+        try Data("new UI-only app build relay".utf8).write(
+            to: fixture.relaySource,
+            options: .atomic
+        )
+
+        let status = await fixture.service.status()
+
+        XCTAssertEqual(status.state, .installed)
+    }
+
+    func testSynchronizeDoesNothingWhenSupportWasNeverInstalled()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+
+        let status =
+            try await fixture.service
+            .synchronizeInstalledSupportIfNeeded()
+
+        XCTAssertEqual(status.state, .available)
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 0)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.manifestURL.path
+            )
+        )
+    }
+
+    func testSynchronizeSkipsCurrentInstalledBridgeVersion()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        try Data("new UI-only app build relay".utf8).write(
+            to: fixture.relaySource,
+            options: .atomic
+        )
+
+        let status =
+            try await fixture.service
+            .synchronizeInstalledSupportIfNeeded()
+
+        XCTAssertEqual(status.state, .installed)
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+    }
+
+    func testSynchronizeUpgradesOlderInstalledBridgeVersion()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        try fixture.setManifestAssetVersion(
+            SquirrelIntegrationService.currentBridgeAssetVersion - 1
+        )
+
+        let status =
+            try await fixture.service
+            .synchronizeInstalledSupportIfNeeded()
+
+        XCTAssertEqual(status.state, .installed)
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+        XCTAssertEqual(
+            try fixture.manifestAssetVersion(),
+            SquirrelIntegrationService.currentBridgeAssetVersion
+        )
+    }
+
+    func testSynchronizeUpgradesLegacyManifestWithoutFileHashes()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        try fixture.removeManifestFileHashes()
+
+        let status =
+            try await fixture.service
+            .synchronizeInstalledSupportIfNeeded()
+
+        XCTAssertEqual(status.state, .installed)
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+        XCTAssertTrue(try fixture.manifestHasFileHashes())
+    }
+
+    func testSynchronizeDoesNotRepairModifiedAssetWithoutVersionBump()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        try Data("modified installed relay".utf8).write(
+            to: fixture.relayDestination,
+            options: .atomic
+        )
+
+        let status =
+            try await fixture.service
+            .synchronizeInstalledSupportIfNeeded()
+
+        XCTAssertEqual(status.state, .repairRequired)
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+    }
+
+    func testSynchronizeUpgradeStopsOnUnsupportedSchema() async throws {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        try fixture.setManifestAssetVersion(
+            SquirrelIntegrationService.currentBridgeAssetVersion - 1
+        )
+        try """
+        patch:
+          engine:
+            filters:
+              - lua_filter@*user_filter
+        """.write(
+            to: fixture.schemaCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        do {
+            _ = try await fixture.service
+                .synchronizeInstalledSupportIfNeeded()
+            XCTFail("Expected unsupported schema failure")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .unsupportedSchema(
+                    "luna_pinyin",
+                    .unsupportedEngineStructure
+                )
+            )
+        }
+
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+        XCTAssertEqual(
+            try fixture.manifestAssetVersion(),
+            SquirrelIntegrationService.currentBridgeAssetVersion - 1
         )
     }
 
@@ -178,6 +356,11 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
                 atPath: fixture.manifestURL.path
             )
         )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
         XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 2)
     }
 
@@ -267,6 +450,190 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         )
     }
 
+    func testReinstallKeepsPreviouslyManagedSchemaRestorable()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        try Data().write(
+            to: fixture.rimeDirectory.appendingPathComponent(
+                "build/luna_pinyin_simp.schema.yaml"
+            )
+        )
+        try """
+        patch:
+          schema_list:
+            - schema: luna_pinyin
+            - schema: luna_pinyin_simp
+        """.write(
+            to: fixture.defaultCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+        let otherCustom = fixture.rimeDirectory.appendingPathComponent(
+            "luna_pinyin_simp.custom.yaml"
+        )
+        let otherOriginal = Data(
+            "patch:\n  menu:\n    page_size: 7\n".utf8
+        )
+        try otherOriginal.write(to: otherCustom)
+        _ = try await fixture.service.install()
+        try """
+        patch:
+          schema_list:
+            - schema: luna_pinyin
+        """.write(
+            to: fixture.defaultCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        _ = try await fixture.service.install()
+        _ = try await fixture.service.uninstall()
+
+        XCTAssertEqual(try Data(contentsOf: otherCustom), otherOriginal)
+    }
+
+    func testReinstallDoesNotRewriteUnchangedManagedFiles() async throws {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        let customInode = try fixture.inode(of: fixture.schemaCustom)
+        let relayInode = try fixture.inode(of: fixture.relayDestination)
+        let manifestInode = try fixture.inode(of: fixture.manifestURL)
+
+        _ = try await fixture.service.install()
+
+        XCTAssertEqual(try fixture.inode(of: fixture.schemaCustom), customInode)
+        XCTAssertEqual(try fixture.inode(of: fixture.relayDestination), relayInode)
+        XCTAssertEqual(try fixture.inode(of: fixture.manifestURL), manifestInode)
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+    }
+
+    func testReinstallPreservesTheOriginalByteForByteBackup()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = Data(
+            """
+            # Keep exact bytes, including this comment.
+            patch:
+              menu:
+                page_size: 5
+            """.utf8
+        )
+        try original.write(to: fixture.schemaCustom, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o600],
+            ofItemAtPath: fixture.schemaCustom.path
+        )
+
+        _ = try await fixture.service.install()
+        _ = try await fixture.service.install()
+
+        let backupURL = try XCTUnwrap(
+            fixture.manifestBackupPath(for: fixture.schemaCustom.path)
+        )
+        XCTAssertEqual(try Data(contentsOf: backupURL), original)
+
+        _ = try await fixture.service.uninstall()
+
+        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), original)
+        XCTAssertEqual(
+            try fixture.permissions(of: fixture.schemaCustom),
+            0o600
+        )
+    }
+
+    func testLegacyManagedBackupIsNormalizedBeforeUninstall()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = Data(
+            """
+            # Preserve this original configuration.
+            patch:
+              menu:
+                page_size: 5
+            """.utf8
+        )
+        try original.write(to: fixture.schemaCustom)
+        _ = try await fixture.service.install()
+        let managed = try Data(contentsOf: fixture.schemaCustom)
+        let backupURL = try XCTUnwrap(
+            fixture.manifestBackupPath(for: fixture.schemaCustom.path)
+        )
+        try managed.write(to: backupURL, options: .atomic)
+        try fixture.removeManifestBackupMetadata()
+
+        _ = try await fixture.service.install()
+
+        let migratedBackup = try XCTUnwrap(
+            fixture.manifestBackupPath(for: fixture.schemaCustom.path)
+        )
+        XCTAssertEqual(try Data(contentsOf: migratedBackup), original)
+
+        _ = try await fixture.service.uninstall()
+
+        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), original)
+    }
+
+    func testUTF8ByteOrderMarkIsPreservedAcrossInstallAndUninstall()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = Data(
+            [0xEF, 0xBB, 0xBF]
+                + Array(
+                    """
+                    # Keep this BOM.
+                    patch:
+                      menu:
+                        page_size: 5
+                    """.utf8
+                )
+        )
+        try original.write(to: fixture.schemaCustom)
+
+        _ = try await fixture.service.install()
+        let installed = try Data(contentsOf: fixture.schemaCustom)
+        XCTAssertTrue(installed.starts(with: [0xEF, 0xBB, 0xBF]))
+
+        _ = try await fixture.service.uninstall()
+        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), original)
+    }
+
+    func testCRLFConfigurationIsRejectedWithoutWriting()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = Data(
+            "patch:\r\n  menu:\r\n    page_size: 5\r\n".utf8
+        )
+        try original.write(to: fixture.schemaCustom)
+
+        do {
+            _ = try await fixture.service.install()
+            XCTFail("Expected unsupported CRLF configuration")
+        } catch {
+            guard
+                case .unsupportedSchema(
+                    "luna_pinyin",
+                    RimeSchemaPatchError.unsupportedEngineStructure
+                ) = error as? SquirrelIntegrationError
+            else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+        }
+
+        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), original)
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 0)
+    }
+
     func testCorruptManifestUninstallFallsBackToMatchingBridgeFiles()
         async throws
     {
@@ -286,15 +653,51 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
                 atPath: fixture.relayDestination.path
             )
         )
-        XCTAssertFalse(
-            FileManager.default.fileExists(
-                atPath: fixture.schemaCustom.path
-            )
+        XCTAssertEqual(
+            try String(
+                contentsOf: fixture.schemaCustom,
+                encoding: .utf8
+            ),
+            "patch:\n  engine/filters/+:\n"
         )
         XCTAssertFalse(
             FileManager.default.fileExists(
                 atPath: fixture.manifestURL.path
             )
+        )
+    }
+
+    func testUnmanagedUninstallPreservesUserComments()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let userConfiguration = """
+            # Keep this comment
+            patch:
+              engine/filters/+:
+                # BEGIN GLINT RIME CANDIDATE BRIDGE
+                - lua_filter@*glint.candidate_bridge
+                # END GLINT RIME CANDIDATE BRIDGE
+            """
+        try userConfiguration.write(
+            to: fixture.schemaCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        _ = try await fixture.service.uninstall()
+
+        XCTAssertEqual(
+            try String(
+                contentsOf: fixture.schemaCustom,
+                encoding: .utf8
+            ),
+            """
+            # Keep this comment
+            patch:
+              engine/filters/+:
+            """
         )
     }
 
@@ -395,14 +798,22 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
             createdFiles: []
         )
 
-        _ = try await fixture.service.uninstall()
+        do {
+            _ = try await fixture.service.uninstall()
+            XCTFail("Expected invalid-manifest failure")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .invalidManifest
+            )
+        }
 
         XCTAssertTrue(
             FileManager.default.fileExists(atPath: sentinel.path)
         )
     }
 
-    func testUninstallRemovesPreExistingManualFilter() async throws {
+    func testUninstallPreservesPreExistingManualFilter() async throws {
         let fixture = try SquirrelFixture()
         defer { fixture.cleanup() }
         let manual = """
@@ -420,12 +831,13 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         _ = try await fixture.service.install()
         _ = try await fixture.service.uninstall()
 
-        let restored = try String(
-            contentsOf: fixture.schemaCustom,
-            encoding: .utf8
+        XCTAssertEqual(
+            try String(
+                contentsOf: fixture.schemaCustom,
+                encoding: .utf8
+            ),
+            manual
         )
-        XCTAssertFalse(restored.contains(RimeSchemaPatchEditor.filterValue))
-        XCTAssertTrue(restored.contains("page_size: 5"))
     }
 
     func testUnsupportedSchemaAbortsBeforeWritingAnything() async throws {
@@ -532,6 +944,465 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
                 atPath: fixture.manifestURL.path
             )
         )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 2)
+    }
+
+    func testModifiedManagedAssetIsNotOverwrittenDuringMigration()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        let modified = Data("user modified installed relay".utf8)
+        try modified.write(
+            to: fixture.relayDestination,
+            options: .atomic
+        )
+        try fixture.setManifestAssetVersion(
+            SquirrelIntegrationService.currentBridgeAssetVersion - 1
+        )
+
+        do {
+            _ = try await fixture.service
+                .synchronizeInstalledSupportIfNeeded()
+            XCTFail("Expected managed-file conflict")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .installConflict
+            )
+        }
+
+        XCTAssertEqual(
+            try Data(contentsOf: fixture.relayDestination),
+            modified
+        )
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+    }
+
+    func testLegacyManifestWithoutAssetHashesDoesNotOverwriteContent()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        try fixture.removeManifestFileHashes()
+        let modified = Data("modified or unknown relay".utf8)
+        try modified.write(
+            to: fixture.relayDestination,
+            options: .atomic
+        )
+        try Data("new relay bundle".utf8).write(
+            to: fixture.relaySource,
+            options: .atomic
+        )
+
+        do {
+            _ = try await fixture.service.install()
+            XCTFail("Expected legacy managed-file conflict")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .installConflict
+            )
+        }
+
+        XCTAssertEqual(
+            try Data(contentsOf: fixture.relayDestination),
+            modified
+        )
+    }
+
+    func testMissingFileCreatedByInstallerCanBeRepaired()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        _ = try await fixture.service.install()
+        try FileManager.default.removeItem(at: fixture.relayDestination)
+
+        let status = try await fixture.service.install()
+
+        XCTAssertEqual(status.state, .installed)
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: fixture.relayDestination.path
+            )
+        )
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 2)
+    }
+
+    func testInstallRejectsSymbolicLinkTargetWithoutChangingIt()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let outside = fixture.root.appendingPathComponent(
+            "outside-custom.yaml"
+        )
+        let original = Data("patch:\n  menu:\n    page_size: 7\n".utf8)
+        try original.write(to: outside)
+        try FileManager.default.createSymbolicLink(
+            at: fixture.schemaCustom,
+            withDestinationURL: outside
+        )
+
+        do {
+            _ = try await fixture.service.install()
+            XCTFail("Expected symbolic-link rejection")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .unsafePath
+            )
+        }
+
+        XCTAssertEqual(
+            try FileManager.default.destinationOfSymbolicLink(
+                atPath: fixture.schemaCustom.path
+            ),
+            outside.path
+        )
+        XCTAssertEqual(try Data(contentsOf: outside), original)
+    }
+
+    func testInstallRejectsSymlinkedParentThatEscapesRimeDirectory()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let outside = fixture.root.appendingPathComponent(
+            "outside-lua",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: outside.appendingPathComponent("glint"),
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createSymbolicLink(
+            at: fixture.rimeDirectory.appendingPathComponent("lua"),
+            withDestinationURL: outside
+        )
+
+        do {
+            _ = try await fixture.service.install()
+            XCTFail("Expected symbolic-link rejection")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .unsafePath
+            )
+        }
+
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: outside.appendingPathComponent(
+                    "glint/candidate_bridge.lua"
+                ).path
+            )
+        )
+    }
+
+    func testInstallRejectsSymlinkedBackupRoot()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let outside = fixture.root.appendingPathComponent(
+            "outside-backups",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: outside,
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: fixture.supportDirectory,
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createSymbolicLink(
+            at:
+                fixture.supportDirectory.appendingPathComponent(
+                    "Backups"
+                ),
+            withDestinationURL: outside
+        )
+
+        do {
+            _ = try await fixture.service.install()
+            XCTFail("Expected unsafe backup-root rejection")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .unsafePath
+            )
+        }
+
+        let contents = try FileManager.default.contentsOfDirectory(
+            atPath: outside.path
+        )
+        XCTAssertTrue(contents.isEmpty)
+    }
+
+    func testUninstallRejectsCorruptedBackupBeforeWriting()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = Data(
+            "patch:\n  menu:\n    page_size: 5\n".utf8
+        )
+        try original.write(to: fixture.schemaCustom)
+        _ = try await fixture.service.install()
+        let installed = try Data(contentsOf: fixture.schemaCustom)
+        let backupURL = try XCTUnwrap(
+            fixture.manifestBackupPath(for: fixture.schemaCustom.path)
+        )
+        try Data("corrupted backup".utf8).write(
+            to: backupURL,
+            options: .atomic
+        )
+
+        do {
+            _ = try await fixture.service.uninstall()
+            XCTFail("Expected backup-integrity failure")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .uninstallConflict
+            )
+        }
+
+        XCTAssertEqual(
+            try Data(contentsOf: fixture.schemaCustom),
+            installed
+        )
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: fixture.relayDestination.path
+            )
+        )
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+    }
+
+    func testManifestCannotRestoreArbitraryFileInsideRimeDirectory()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let sentinel = fixture.rimeDirectory.appendingPathComponent(
+            "unrelated.custom.yaml"
+        )
+        let original = Data("patch:\n  menu:\n    page_size: 3\n".utf8)
+        try original.write(to: sentinel)
+        let backupDirectory = fixture.supportDirectory.appendingPathComponent(
+            "Backups/malicious",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: backupDirectory,
+            withIntermediateDirectories: true
+        )
+        let backup = backupDirectory.appendingPathComponent("000.backup")
+        try Data("patch: {}\n".utf8).write(to: backup)
+        try fixture.writeManifest(
+            backupDirectory: backupDirectory,
+            backups: [sentinel.path: backup.path],
+            createdFiles: []
+        )
+
+        do {
+            _ = try await fixture.service.uninstall()
+            XCTFail("Expected invalid-manifest failure")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .invalidManifest
+            )
+        }
+
+        XCTAssertEqual(try Data(contentsOf: sentinel), original)
+    }
+
+    func testPreparedTransactionIsRolledBackOnNextStart()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = Data(
+            "patch:\n  menu:\n    page_size: 5\n".utf8
+        )
+        let partiallyWritten = Data(
+            """
+            patch:
+              menu:
+                page_size: 5
+              engine/filters/+:
+                # BEGIN GLINT RIME CANDIDATE BRIDGE
+                - lua_filter@*glint.candidate_bridge
+                # END GLINT RIME CANDIDATE BRIDGE
+            """.utf8
+        )
+        try partiallyWritten.write(to: fixture.schemaCustom)
+        try fixture.writePendingTransaction(
+            phase: "prepared",
+            target: fixture.schemaCustom,
+            snapshotData: original,
+            expectedData: partiallyWritten,
+            permissions: 0o640
+        )
+
+        try await fixture.service.recoverInterruptedTransactionIfNeeded()
+
+        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), original)
+        XCTAssertEqual(
+            try fixture.permissions(of: fixture.schemaCustom),
+            0o640
+        )
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
+    }
+
+    func testCommittedTransactionIsFinalizedWithoutRollingBack()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let committed = Data(
+            "patch:\n  menu:\n    page_size: 9\n".utf8
+        )
+        try committed.write(to: fixture.schemaCustom)
+        try fixture.writePendingTransaction(
+            phase: "committed",
+            target: fixture.schemaCustom,
+            snapshotData: Data(
+                "patch:\n  menu:\n    page_size: 5\n".utf8
+            ),
+            expectedData: committed,
+            permissions: 0o644
+        )
+
+        try await fixture.service.recoverInterruptedTransactionIfNeeded()
+
+        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), committed)
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 0)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
+    }
+
+    func testPreparedRecoveryDoesNotOverwritePostCrashUserEdit()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = Data(
+            "patch:\n  menu:\n    page_size: 5\n".utf8
+        )
+        let transactionOutput = Data(
+            "patch:\n  menu:\n    page_size: 8\n".utf8
+        )
+        let userEdit = Data(
+            "patch:\n  menu:\n    page_size: 11\n".utf8
+        )
+        try userEdit.write(to: fixture.schemaCustom)
+        try fixture.writePendingTransaction(
+            phase: "prepared",
+            target: fixture.schemaCustom,
+            snapshotData: original,
+            expectedData: transactionOutput,
+            permissions: 0o644
+        )
+
+        do {
+            try await fixture.service
+                .recoverInterruptedTransactionIfNeeded()
+            XCTFail("Expected post-crash edit conflict")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .rollbackFailed
+            )
+        }
+
+        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), userEdit)
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 0)
+    }
+
+    func testCorruptTransactionJournalFailsClosed()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let current = Data("patch:\n  menu:\n    page_size: 5\n".utf8)
+        try current.write(to: fixture.schemaCustom)
+        try FileManager.default.createDirectory(
+            at: fixture.supportDirectory,
+            withIntermediateDirectories: true
+        )
+        try Data("not json".utf8).write(
+            to: fixture.pendingTransactionURL
+        )
+
+        do {
+            try await fixture.service
+                .recoverInterruptedTransactionIfNeeded()
+            XCTFail("Expected invalid journal failure")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .invalidManifest
+            )
+        }
+
+        XCTAssertEqual(try Data(contentsOf: fixture.schemaCustom), current)
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
+    }
+
+    func testConcurrentInstallersSerializeBeforeChangingRimeConfig()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let reloadBarrier = InstallReloadBarrier()
+        let secondService = fixture.makeService {
+            let count = fixture.reloadCount.withLock {
+                $0 += 1
+                return $0
+            }
+            reloadBarrier.rendezvous(call: count)
+        }
+
+        async let first = fixture.service.install()
+        async let second = secondService.install()
+        _ = try await (first, second)
+
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
     }
 
     func testUninstallReloadFailureRestoresInstalledFiles() async throws {
@@ -570,6 +1441,123 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
                 atPath: fixture.manifestURL.path
             )
         )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: fixture.pendingTransactionURL.path
+            )
+        )
+        XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 3)
+    }
+
+    func testUninstallRollbackRestoresPreexistingUnownedAssets()
+        async throws
+    {
+        let fixture = try SquirrelFixture(reloadFailureCall: 2)
+        defer { fixture.cleanup() }
+        let luaDirectory = fixture.rimeDirectory.appendingPathComponent(
+            "lua/glint",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: luaDirectory,
+            withIntermediateDirectories: true
+        )
+        for name in SquirrelIntegrationService.luaFileNames {
+            try Data(
+                contentsOf:
+                    fixture.luaSourceDirectory.appendingPathComponent(name)
+            ).write(to: luaDirectory.appendingPathComponent(name))
+        }
+        try FileManager.default.createDirectory(
+            at: fixture.relayDestination.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data(contentsOf: fixture.relaySource).write(
+            to: fixture.relayDestination
+        )
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o700],
+            ofItemAtPath: fixture.relayDestination.path
+        )
+        _ = try await fixture.service.install()
+
+        do {
+            _ = try await fixture.service.uninstall()
+            XCTFail("Expected uninstall reload failure")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .reloadFailed
+            )
+        }
+
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: fixture.relayDestination.path
+            )
+        )
+        for name in SquirrelIntegrationService.luaFileNames {
+            XCTAssertTrue(
+                FileManager.default.fileExists(
+                    atPath:
+                        luaDirectory.appendingPathComponent(name).path
+                )
+            )
+        }
+    }
+
+    func testUninstallRollbackKeepsInstalledVersionOfBackedUpAssets()
+        async throws
+    {
+        let fixture = try SquirrelFixture(reloadFailureCall: 2)
+        defer { fixture.cleanup() }
+        let luaDirectory = fixture.rimeDirectory.appendingPathComponent(
+            "lua/glint",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: luaDirectory,
+            withIntermediateDirectories: true
+        )
+        for name in SquirrelIntegrationService.luaFileNames {
+            try Data("old \(name)".utf8).write(
+                to: luaDirectory.appendingPathComponent(name)
+            )
+        }
+        try FileManager.default.createDirectory(
+            at: fixture.relayDestination.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data("old relay".utf8).write(to: fixture.relayDestination)
+        _ = try await fixture.service.install()
+
+        do {
+            _ = try await fixture.service.uninstall()
+            XCTFail("Expected uninstall reload failure")
+        } catch {
+            XCTAssertEqual(
+                error as? SquirrelIntegrationError,
+                .reloadFailed
+            )
+        }
+
+        XCTAssertEqual(
+            try Data(contentsOf: fixture.relayDestination),
+            try Data(contentsOf: fixture.relaySource)
+        )
+        for name in SquirrelIntegrationService.luaFileNames {
+            XCTAssertEqual(
+                try Data(
+                    contentsOf:
+                        luaDirectory.appendingPathComponent(name)
+                ),
+                try Data(
+                    contentsOf:
+                        fixture.luaSourceDirectory
+                        .appendingPathComponent(name)
+                )
+            )
+        }
     }
 
     func testUninstallRefusesToOverwriteUserChangesAfterInstall()
@@ -722,6 +1710,26 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
 
         XCTAssertEqual(status.state, .manualSetupRequired)
     }
+
+    func testStatusDoesNotTreatLongerFilterAsInstalled()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        try """
+        patch:
+          engine/filters/+:
+            - lua_filter@*glint.candidate_bridge_custom
+        """.write(
+            to: fixture.schemaCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let status = await fixture.service.status()
+
+        XCTAssertEqual(status.state, .available)
+    }
 }
 
 private final class SquirrelFixture: @unchecked Sendable {
@@ -735,7 +1743,10 @@ private final class SquirrelFixture: @unchecked Sendable {
     let schemaCustom: URL
     let defaultCustom: URL
     let manifestURL: URL
+    let pendingTransactionURL: URL
     let reloadCount = OSAllocatedUnfairLock(initialState: 0)
+    let pendingTransactionObservedDuringReload =
+        OSAllocatedUnfairLock(initialState: false)
     let service: SquirrelIntegrationService
 
     convenience init(failReload: Bool) throws {
@@ -777,6 +1788,9 @@ private final class SquirrelFixture: @unchecked Sendable {
         )
         manifestURL = supportDirectory.appendingPathComponent(
             "install-manifest.json"
+        )
+        pendingTransactionURL = supportDirectory.appendingPathComponent(
+            "pending-install-transaction.json"
         )
 
         try FileManager.default.createDirectory(
@@ -839,6 +1853,9 @@ private final class SquirrelFixture: @unchecked Sendable {
         )
 
         let reloadCount = reloadCount
+        let pendingTransactionObservedDuringReload =
+            pendingTransactionObservedDuringReload
+        let pendingTransactionURL = pendingTransactionURL
         service = SquirrelIntegrationService(
             rimeDirectory: rimeDirectory,
             supportDirectory: supportDirectory,
@@ -846,6 +1863,12 @@ private final class SquirrelFixture: @unchecked Sendable {
             luaSourceDirectory: luaSourceDirectory,
             relaySource: relaySource,
             reload: {
+                pendingTransactionObservedDuringReload.withLock {
+                    $0 =
+                        FileManager.default.fileExists(
+                            atPath: pendingTransactionURL.path
+                        )
+                }
                 let count = reloadCount.withLock {
                     $0 += 1
                     return $0
@@ -859,6 +1882,19 @@ private final class SquirrelFixture: @unchecked Sendable {
 
     func cleanup() {
         try? FileManager.default.removeItem(at: root)
+    }
+
+    func makeService(
+        reload: @escaping @Sendable () throws -> Void
+    ) -> SquirrelIntegrationService {
+        SquirrelIntegrationService(
+            rimeDirectory: rimeDirectory,
+            supportDirectory: supportDirectory,
+            squirrelApplication: squirrelApplication,
+            luaSourceDirectory: luaSourceDirectory,
+            relaySource: relaySource,
+            reload: reload
+        )
     }
 
     func writeManifest(
@@ -883,5 +1919,169 @@ private final class SquirrelFixture: @unchecked Sendable {
             withIntermediateDirectories: true
         )
         try manifest.write(to: manifestURL, options: .atomic)
+    }
+
+    func setManifestAssetVersion(_ version: Int) throws {
+        let data = try Data(contentsOf: manifestURL)
+        guard
+            var manifest = try JSONSerialization.jsonObject(
+                with: data
+            ) as? [String: Any]
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        manifest["assetVersion"] = version
+        try JSONSerialization.data(withJSONObject: manifest)
+            .write(to: manifestURL, options: .atomic)
+    }
+
+    func manifestAssetVersion() throws -> Int {
+        let data = try Data(contentsOf: manifestURL)
+        guard
+            let manifest = try JSONSerialization.jsonObject(
+                with: data
+            ) as? [String: Any],
+            let version = manifest["assetVersion"] as? Int
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        return version
+    }
+
+    func removeManifestFileHashes() throws {
+        let data = try Data(contentsOf: manifestURL)
+        guard
+            var manifest = try JSONSerialization.jsonObject(
+                with: data
+            ) as? [String: Any]
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        manifest.removeValue(forKey: "fileHashes")
+        try JSONSerialization.data(withJSONObject: manifest)
+            .write(to: manifestURL, options: .atomic)
+    }
+
+    func removeManifestBackupMetadata() throws {
+        let data = try Data(contentsOf: manifestURL)
+        guard
+            var manifest = try JSONSerialization.jsonObject(
+                with: data
+            ) as? [String: Any]
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        manifest.removeValue(forKey: "backupHashes")
+        manifest.removeValue(forKey: "backupPermissions")
+        try JSONSerialization.data(withJSONObject: manifest)
+            .write(to: manifestURL, options: .atomic)
+    }
+
+    func writePendingTransaction(
+        phase: String,
+        target: URL,
+        snapshotData: Data,
+        expectedData: Data?,
+        permissions: Int
+    ) throws {
+        let transactionDirectory = supportDirectory.appendingPathComponent(
+            "Transactions/test",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: transactionDirectory,
+            withIntermediateDirectories: true
+        )
+        let snapshot = transactionDirectory.appendingPathComponent(
+            "000.snapshot"
+        )
+        try snapshotData.write(to: snapshot, options: .atomic)
+        let hash = SHA256.hash(data: snapshotData)
+            .map { String(format: "%02x", $0) }
+            .joined()
+        let expectedHash = expectedData.map {
+            SHA256.hash(data: $0)
+                .map { String(format: "%02x", $0) }
+                .joined()
+        }
+        let journal: [String: Any] = [
+            "phase": phase,
+            "schemaIDs": ["luna_pinyin"],
+            "transactionDirectory": transactionDirectory.path,
+            "entries": [
+                [
+                    "targetPath": target.path,
+                    "existed": true,
+                    "snapshotPath": snapshot.path,
+                    "snapshotHash": hash,
+                    "expectedHash": expectedHash ?? "",
+                    "expectedAbsent": expectedData == nil,
+                    "permissions": permissions,
+                ]
+            ],
+        ]
+        try JSONSerialization.data(withJSONObject: journal)
+            .write(to: pendingTransactionURL, options: .atomic)
+    }
+
+    func manifestHasFileHashes() throws -> Bool {
+        let data = try Data(contentsOf: manifestURL)
+        guard
+            let manifest = try JSONSerialization.jsonObject(
+                with: data
+            ) as? [String: Any]
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        return manifest["fileHashes"] != nil
+    }
+
+    func manifestBackupPath(for targetPath: String) throws -> URL? {
+        let data = try Data(contentsOf: manifestURL)
+        guard
+            let manifest = try JSONSerialization.jsonObject(
+                with: data
+            ) as? [String: Any],
+            let backups = manifest["backups"] as? [String: String],
+            let path = backups[targetPath]
+        else {
+            return nil
+        }
+        return URL(fileURLWithPath: path)
+    }
+
+    func inode(of url: URL) throws -> Int {
+        let attributes = try FileManager.default.attributesOfItem(
+            atPath: url.path
+        )
+        guard let inode = attributes[.systemFileNumber] as? NSNumber else {
+            throw CocoaError(.fileReadUnknown)
+        }
+        return inode.intValue
+    }
+
+    func permissions(of url: URL) throws -> Int {
+        let attributes = try FileManager.default.attributesOfItem(
+            atPath: url.path
+        )
+        guard
+            let permissions =
+                attributes[.posixPermissions] as? NSNumber
+        else {
+            throw CocoaError(.fileReadUnknown)
+        }
+        return permissions.intValue
+    }
+}
+
+private final class InstallReloadBarrier: @unchecked Sendable {
+    private let semaphore = DispatchSemaphore(value: 0)
+
+    func rendezvous(call: Int) {
+        if call == 1 {
+            _ = semaphore.wait(timeout: .now() + 0.4)
+        } else {
+            semaphore.signal()
+        }
     }
 }

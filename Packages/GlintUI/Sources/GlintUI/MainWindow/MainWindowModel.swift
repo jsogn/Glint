@@ -364,7 +364,10 @@ public final class MainWindowModel {
             inputMethodSupportStatuses =
                 try await installSquirrelSupportAction()
         } catch {
-            inputMethodSupportError = error.localizedDescription
+            let message = error.localizedDescription
+            inputMethodSupportStatuses =
+                await refreshInputMethodSupportAction()
+            inputMethodSupportError = message
         }
     }
 
@@ -377,7 +380,10 @@ public final class MainWindowModel {
             inputMethodSupportStatuses =
                 try await uninstallSquirrelSupportAction()
         } catch {
-            inputMethodSupportError = error.localizedDescription
+            let message = error.localizedDescription
+            inputMethodSupportStatuses =
+                await refreshInputMethodSupportAction()
+            inputMethodSupportError = message
         }
     }
 

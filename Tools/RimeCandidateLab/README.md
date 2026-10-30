@@ -39,7 +39,8 @@ Debug builds of Glint provide the preferred installation path:
 
 1. Build and launch with `./scripts/dev.sh`.
 2. Open `输入法支持`.
-3. Choose `一键启用`, `修复安装`, or `重新部署`.
+3. Choose `安装支持` or `重新安装`; only an explicitly installed support
+   package is upgraded on later resource-version changes.
 
 The installer resolves enabled Rime schemas from `schema_list`, intersects them
 with compiled schemas, and refuses to modify unsupported YAML. It creates a

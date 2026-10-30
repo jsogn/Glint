@@ -63,6 +63,11 @@ public final class RimeCandidateSocketClient: @unchecked Sendable {
         guard socketDescriptor >= 0 else {
             throw RimeCandidateSocketClientError.socketCreationFailed
         }
+        _ = Darwin.fcntl(
+            socketDescriptor,
+            F_SETFD,
+            FD_CLOEXEC
+        )
         var noSignal: Int32 = 1
         setsockopt(
             socketDescriptor,

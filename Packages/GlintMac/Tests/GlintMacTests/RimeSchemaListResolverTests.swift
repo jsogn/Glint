@@ -124,4 +124,73 @@ final class RimeSchemaListResolverTests: XCTestCase {
             )
         }
     }
+
+    func testMergedSchemaListPatchIsRejectedInsteadOfUsingSharedList() {
+        let shared = """
+            schema_list:
+              - schema: luna_pinyin
+            """
+        let custom = """
+            patch:
+              <<: &override
+                schema_list:
+                  - schema: luna_pinyin_simp
+            """
+
+        XCTAssertThrowsError(
+            try resolver.enabledSchemaIDs(
+                sharedDefault: shared,
+                userDefaultCustom: custom,
+                compiledSchemaIDs: [
+                    "luna_pinyin",
+                    "luna_pinyin_simp",
+                ]
+            )
+        )
+    }
+
+    func testIncludedSchemaListPatchIsRejected() {
+        let shared = """
+            schema_list:
+              - schema: luna_pinyin
+            """
+        let custom = """
+            patch:
+              __include: schema_list_override:/patch
+            """
+
+        XCTAssertThrowsError(
+            try resolver.enabledSchemaIDs(
+                sharedDefault: shared,
+                userDefaultCustom: custom,
+                compiledSchemaIDs: [
+                    "luna_pinyin",
+                    "luna_pinyin_simp",
+                ]
+            )
+        )
+    }
+
+    func testQuotedSchemaListKeyIsRejectedInsteadOfUsingSharedList() {
+        let shared = """
+            schema_list:
+              - schema: luna_pinyin
+            """
+        let custom = """
+            patch:
+              "schema_list":
+                - schema: luna_pinyin_simp
+            """
+
+        XCTAssertThrowsError(
+            try resolver.enabledSchemaIDs(
+                sharedDefault: shared,
+                userDefaultCustom: custom,
+                compiledSchemaIDs: [
+                    "luna_pinyin",
+                    "luna_pinyin_simp",
+                ]
+            )
+        )
+    }
 }

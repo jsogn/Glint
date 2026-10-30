@@ -54,6 +54,11 @@ public final class RimeCandidateSocketServer: @unchecked Sendable {
         }
         let listener = socket(AF_UNIX, SOCK_STREAM, 0)
         guard listener >= 0 else { return false }
+        _ = Darwin.fcntl(
+            listener,
+            F_SETFD,
+            FD_CLOEXEC
+        )
         withUnsafeMutableBytes(of: &address.sun_path) { destination in
             destination.copyBytes(from: pathBytes)
         }
@@ -126,9 +131,16 @@ public final class RimeCandidateSocketServer: @unchecked Sendable {
                 if state.withLock({ $0.stopped }) {
                     return
                 }
+                if errno == EINTR { continue }
+                Thread.sleep(forTimeInterval: 0.05)
                 continue
             }
             DispatchQueue.global(qos: .utility).async {
+                _ = Darwin.fcntl(
+                    client,
+                    F_SETFD,
+                    FD_CLOEXEC
+                )
                 Self.handleClient(client, onLine: onLine)
             }
         }

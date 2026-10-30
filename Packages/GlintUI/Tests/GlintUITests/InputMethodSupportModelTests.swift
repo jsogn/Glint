@@ -109,12 +109,27 @@ final class InputMethodSupportModelTests: XCTestCase {
         context.model.installSquirrelSupportAction = {
             throw InputMethodSupportTestError.unsupportedYAML
         }
+        let repairRequired = InputMethodSupportStatus(
+            id: "squirrel",
+            name: "Rime",
+            detail: "适配器安装不完整",
+            state: .repairRequired,
+            schemaIDs: [],
+            protocolVersion: 3
+        )
+        context.model.refreshInputMethodSupportAction = {
+            [.applePinyin, repairRequired]
+        }
 
         await context.model.installSquirrelSupport()
 
         XCTAssertEqual(
             context.model.inputMethodSupportError,
             "输入方案配置无法安全合并"
+        )
+        XCTAssertEqual(
+            context.model.squirrelSupportStatus?.state,
+            .repairRequired
         )
         XCTAssertFalse(context.model.isUpdatingInputMethodSupport)
     }

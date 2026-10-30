@@ -58,6 +58,7 @@ struct RimeSchemaListResolver {
         _ source: String
     ) throws -> UserOverride? {
         let lines = source.components(separatedBy: "\n")
+        try Self.validateSupportedUserOverride(lines)
         let patchMatches = lines.indices.filter { index in
             let line = Self.contentBeforeComment(lines[index])
             return Self.indentation(of: line) == 0
@@ -102,7 +103,13 @@ struct RimeSchemaListResolver {
                 continue
             }
             let (key, value) = Self.keyAndValue(content)
-            switch key {
+            let normalizedKey = Self.unquoted(key)
+            if normalizedKey.hasPrefix("schema_list"),
+                normalizedKey != key
+            {
+                throw RimeSchemaListError.unsupportedSchemaList
+            }
+            switch normalizedKey {
             case "schema_list":
                 guard replacementIndex == nil, value.isEmpty else {
                     throw RimeSchemaListError.unsupportedSchemaList
@@ -142,6 +149,45 @@ struct RimeSchemaListResolver {
             )
         }
         return nil
+    }
+
+    private static func validateSupportedUserOverride(
+        _ lines: [String]
+    ) throws {
+        for line in lines {
+            let content = contentBeforeComment(line)
+            let indent =
+                content.prefix(while: { $0 == " " }).count
+            if content.dropFirst(indent).first == "\t" {
+                throw RimeSchemaListError.unsupportedSchemaList
+            }
+            let trimmed = content.trimmingCharacters(
+                in: .whitespaces
+            )
+            guard !trimmed.isEmpty else { continue }
+            if trimmed == "---" || trimmed == "..." {
+                throw RimeSchemaListError.unsupportedSchemaList
+            }
+            let (rawKey, _) = keyAndValue(trimmed)
+            let key = unquoted(rawKey)
+            if key.hasPrefix("__") || key == "<<" {
+                throw RimeSchemaListError.unsupportedSchemaList
+            }
+            let tokens = trimmed.split(
+                whereSeparator: { $0.isWhitespace }
+            )
+            if tokens.contains(where: isAnchorOrAliasToken) {
+                throw RimeSchemaListError.unsupportedSchemaList
+            }
+        }
+    }
+
+    private static func isAnchorOrAliasToken(
+        _ token: Substring
+    ) -> Bool {
+        token.first == "&"
+            || token.first == "*"
+            || token.first == "!"
     }
 
     private func parseListItems(

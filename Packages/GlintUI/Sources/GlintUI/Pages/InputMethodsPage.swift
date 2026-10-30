@@ -19,9 +19,11 @@ struct InputMethodsPage: View {
                 SettingsCard("无法完成操作", systemImage: "exclamationmark.triangle") {
                     Text(error)
                         .foregroundStyle(.red)
-                    Text("未完成的配置修改已自动回滚。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        "已开始的配置修改会按事务记录回滚；若恢复被阻止，现场和备份会保留。"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
 
@@ -253,9 +255,9 @@ private enum PendingInputMethodAction {
     var message: String {
         switch self {
         case .install:
-            "将安装候选读取支持，用于读取 Rime 当前高亮的候选内容。修改前会创建备份，失败时自动回滚。"
+            "将安装候选读取支持，用于读取 Rime 当前高亮的候选内容。只写入必要变更，修改前会创建备份。"
         case .reinstall:
-            "将重新安装候选读取支持，并重新部署 Rime。修改前会创建备份，失败时自动回滚。"
+            "将检查并修复候选读取支持。只有内容变化时才重写文件并重新部署 Rime。"
         case .uninstall:
             "将移除候选读取支持，并恢复安装前的配置。"
         }
