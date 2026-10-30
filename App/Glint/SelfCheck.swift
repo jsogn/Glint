@@ -13,11 +13,13 @@ enum SelfCheck {
                 let status = await service.status()
                 let homeDirectory =
                     FileManager.default.homeDirectoryForCurrentUser
+                let supportDirectory =
+                    AppEnvironment.resolvedRimeSupportDirectory()
                 let sourceRelay = Bundle.main.bundleURL.appendingPathComponent(
                     "Contents/Helpers/RimeCandidateBridge"
                 )
-                let installedRelay = homeDirectory.appendingPathComponent(
-                    "Library/Application Support/Glint/RimeCandidateLab/RimeCandidateBridge"
+                let installedRelay = supportDirectory.appendingPathComponent(
+                    "RimeCandidateBridge"
                 )
                 let luaSource = Bundle.main.resourceURL?
                     .appendingPathComponent(
@@ -26,10 +28,6 @@ enum SelfCheck {
                     )
                 let rimeDirectory = homeDirectory.appendingPathComponent(
                     "Library/Rime",
-                    isDirectory: true
-                )
-                let supportDirectory = homeDirectory.appendingPathComponent(
-                    "Library/Application Support/Glint/RimeCandidateLab",
                     isDirectory: true
                 )
                 let sourceRelayData = try? Data(contentsOf: sourceRelay)

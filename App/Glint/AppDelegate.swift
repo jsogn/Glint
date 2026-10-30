@@ -88,9 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
             await environment.refreshDictionaryRoutes()
-            #if DEBUG
-                await synchronizeInstalledInputMethodSupport()
-            #endif
+            await synchronizeInstalledInputMethodSupport()
             await environment.translationRuntime.prepareSelectedModel()
             startupPreparationTask = nil
             windowModel.isPreparingMonitoring = false
@@ -280,44 +278,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowModel.stopMonitoringAction = { [weak self] in
             self?.stopMonitoring()
         }
-        #if DEBUG
-            windowModel.refreshInputMethodSupportAction = {
-                [weak self] in
-                guard
-                    let service =
-                        self?.environment.squirrelIntegrationService
-                else {
-                    return Self.inputMethodSupportStatuses(nil)
-                }
-                return Self.inputMethodSupportStatuses(
-                    await service.status()
-                )
+        windowModel.refreshInputMethodSupportAction = {
+            [weak self] in
+            guard let self else {
+                return Self.inputMethodSupportStatuses(nil)
             }
-            windowModel.installSquirrelSupportAction = {
-                [weak self] in
-                guard
-                    let service =
-                        self?.environment.squirrelIntegrationService
-                else {
-                    throw SquirrelIntegrationError.squirrelUnavailable
-                }
-                return Self.inputMethodSupportStatuses(
-                    try await service.install()
-                )
+            return Self.inputMethodSupportStatuses(
+                await environment.squirrelIntegrationService.status()
+            )
+        }
+        windowModel.installSquirrelSupportAction = {
+            [weak self] in
+            guard let self else {
+                throw SquirrelIntegrationError.squirrelUnavailable
             }
-            windowModel.uninstallSquirrelSupportAction = {
-                [weak self] in
-                guard
-                    let service =
-                        self?.environment.squirrelIntegrationService
-                else {
-                    throw SquirrelIntegrationError.squirrelUnavailable
-                }
-                return Self.inputMethodSupportStatuses(
-                    try await service.uninstall()
-                )
+            return Self.inputMethodSupportStatuses(
+                try await environment.squirrelIntegrationService.install()
+            )
+        }
+        windowModel.uninstallSquirrelSupportAction = {
+            [weak self] in
+            guard let self else {
+                throw SquirrelIntegrationError.squirrelUnavailable
             }
-        #endif
+            return Self.inputMethodSupportStatuses(
+                try await environment.squirrelIntegrationService.uninstall()
+            )
+        }
         windowModel.refreshPermissionsAction = { [weak self] in
             self?.refreshPermissionState()
         }
@@ -433,90 +420,80 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshLaunchAtLoginState()
     }
 
-    #if DEBUG
-        private func synchronizeInstalledInputMethodSupport() async {
-            guard
-                let service =
-                    environment.squirrelIntegrationService
-            else {
-                return
-            }
-            do {
-                _ =
-                    try await service
-                    .synchronizeInstalledSupportIfNeeded()
-                await windowModel.refreshInputMethodSupport()
-            } catch {
-                appLogger.error(
-                    "failed to synchronize Rime candidate support: \(String(describing: error), privacy: .public)"
-                )
-                await windowModel.refreshInputMethodSupport()
-            }
+    private func synchronizeInstalledInputMethodSupport() async {
+        do {
+            _ =
+                try await environment.squirrelIntegrationService
+                .synchronizeInstalledSupportIfNeeded()
+            await windowModel.refreshInputMethodSupport()
+        } catch {
+            appLogger.error(
+                "failed to synchronize Rime candidate support: \(String(describing: error), privacy: .public)"
+            )
+            await windowModel.refreshInputMethodSupport()
         }
+    }
 
-        private static func inputMethodSupportStatuses(
-            _ status: SquirrelIntegrationStatus?
-        ) -> [InputMethodSupportStatus] {
-            guard let status else {
-                return [
-                    .applePinyin,
-                    InputMethodSupportStatus(
-                        id: "squirrel",
-                        name: "Rime",
-                        detail: "未检测到可用的输入法。",
-                        state: .unavailable,
-                        schemaIDs: [],
-                        protocolVersion: nil,
-                        isExperimental: true
-                    ),
-                ]
-            }
-            let uiState: InputMethodSupportState
-            switch status.state {
-            case .unavailable:
-                uiState = .unavailable
-            case .available:
-                uiState = .available
-            case .installed:
-                uiState = .installed
-            case .repairRequired:
-                uiState = .repairRequired
-            case .manualSetupRequired:
-                uiState = .manualSetupRequired
-            }
+    private static func inputMethodSupportStatuses(
+        _ status: SquirrelIntegrationStatus?
+    ) -> [InputMethodSupportStatus] {
+        guard let status else {
             return [
                 .applePinyin,
                 InputMethodSupportStatus(
                     id: "squirrel",
                     name: "Rime",
-                    detail: status.detail ?? defaultDetail(for: uiState),
-                    state: uiState,
-                    schemaIDs: status.schemaIDs,
-                    protocolVersion: status.protocolVersion,
-                    isExperimental: true
+                    detail: "未检测到可用的输入法。",
+                    state: .unavailable,
+                    schemaIDs: [],
+                    protocolVersion: nil
                 ),
             ]
         }
-
-        private static func defaultDetail(
-            for state: InputMethodSupportState
-        ) -> String {
-            switch state {
-            case .native:
-                "原生读取当前候选。"
-            case .available:
-                "候选读取支持未安装。"
-            case .installed:
-                "候选读取支持已安装。"
-            case .repairRequired:
-                "候选读取支持需要重新安装。"
-            case .manualSetupRequired:
-                "当前配置无法自动合并，请按手动说明操作。"
-            case .unavailable:
-                "未检测到可用的输入法。"
-            }
+        let uiState: InputMethodSupportState
+        switch status.state {
+        case .unavailable:
+            uiState = .unavailable
+        case .available:
+            uiState = .available
+        case .installed:
+            uiState = .installed
+        case .repairRequired:
+            uiState = .repairRequired
+        case .manualSetupRequired:
+            uiState = .manualSetupRequired
         }
-    #endif
+        return [
+            .applePinyin,
+            InputMethodSupportStatus(
+                id: "squirrel",
+                name: "Rime",
+                detail: status.detail ?? defaultDetail(for: uiState),
+                state: uiState,
+                schemaIDs: status.schemaIDs,
+                protocolVersion: status.protocolVersion
+            ),
+        ]
+    }
+
+    private static func defaultDetail(
+        for state: InputMethodSupportState
+    ) -> String {
+        switch state {
+        case .native:
+            "原生读取当前候选。"
+        case .available:
+            "候选读取支持未安装。"
+        case .installed:
+            "候选读取支持已安装。"
+        case .repairRequired:
+            "候选读取支持需要重新安装。"
+        case .manualSetupRequired:
+            "当前配置无法自动合并，请按手动说明操作。"
+        case .unavailable:
+            "未检测到可用的输入法。"
+        }
+    }
 
     private func item(_ title: String, action: Selector) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: "")

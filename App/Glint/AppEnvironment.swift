@@ -3,6 +3,12 @@ import GlintCore
 import GlintInference
 import GlintMac
 import GlintPlugins
+import OSLog
+
+private let rimeSupportLogger = Logger(
+    subsystem: "com.local.glint",
+    category: "RimeSupport"
+)
 
 @MainActor
 final class AppEnvironment {
@@ -13,7 +19,7 @@ final class AppEnvironment {
     let translationRuntime: TranslationRuntime
     let monitoring: MonitoringController
     let monitoringSession: MonitoringSession
-    let squirrelIntegrationService: SquirrelIntegrationService?
+    let squirrelIntegrationService: SquirrelIntegrationService
     private let dictionary: PluginDictionaryRouter
     private let rimeCandidateBridgeReceiver: RimeCandidateBridgeReceiver?
 
@@ -90,64 +96,88 @@ final class AppEnvironment {
         self.ecdictUpdateService = ecdictUpdateService
         self.translationRuntime = translationRuntime
         let router = SmartRouter(dictionary: dictionary, translation: translationRuntime)
-        #if DEBUG
-            self.squirrelIntegrationService =
-                Self.makeSquirrelIntegrationService()
-            let rimeBridge = RimeCandidateBridgeReceiver()
-            let rimeBridgeStarted = rimeBridge.start()
-            self.rimeCandidateBridgeReceiver =
-                rimeBridgeStarted ? rimeBridge : nil
-            let monitoring = MonitoringController(
-                router: router,
-                rimeCandidateStore:
-                    rimeBridgeStarted ? rimeBridge.store : nil
+        let rimeSupportDirectory = Self.resolvedRimeSupportDirectory()
+        self.squirrelIntegrationService =
+            Self.makeSquirrelIntegrationService(
+                supportDirectory: rimeSupportDirectory
             )
-        #else
-            self.squirrelIntegrationService = nil
-            self.rimeCandidateBridgeReceiver = nil
-            let monitoring = MonitoringController(router: router)
-        #endif
+        let rimeBridge = RimeCandidateBridgeReceiver(
+            socketPath:
+                rimeSupportDirectory
+                .appendingPathComponent("bridge.sock")
+                .path
+        )
+        let rimeBridgeStarted = rimeBridge.start()
+        self.rimeCandidateBridgeReceiver =
+            rimeBridgeStarted ? rimeBridge : nil
+        let monitoring = MonitoringController(
+            router: router,
+            rimeCandidateStore:
+                rimeBridgeStarted ? rimeBridge.store : nil
+        )
         self.monitoring = monitoring
         self.monitoringSession = MonitoringSession(controller: monitoring)
     }
 
-    #if DEBUG
-        static func makeSquirrelIntegrationService(
-            bundle: Bundle = .main
-        ) -> SquirrelIntegrationService {
-            let homeDirectory =
-                FileManager.default.homeDirectoryForCurrentUser
-            let appBundle = bundle.bundleURL
-            return SquirrelIntegrationService(
-                rimeDirectory: homeDirectory.appendingPathComponent(
-                    "Library/Rime",
+    static func makeSquirrelIntegrationService(
+        bundle: Bundle = .main,
+        supportDirectory: URL? = nil
+    ) -> SquirrelIntegrationService {
+        let homeDirectory =
+            FileManager.default.homeDirectoryForCurrentUser
+        let appBundle = bundle.bundleURL
+        return SquirrelIntegrationService(
+            rimeDirectory: homeDirectory.appendingPathComponent(
+                "Library/Rime",
+                isDirectory: true
+            ),
+            supportDirectory:
+                supportDirectory
+                ?? resolvedRimeSupportDirectory(),
+            squirrelApplication: URL(
+                fileURLWithPath:
+                    "/Library/Input Methods/Squirrel.app",
+                isDirectory: true
+            ),
+            luaSourceDirectory:
+                bundle.resourceURL?
+                .appendingPathComponent(
+                    "RimeCandidateBridge",
                     isDirectory: true
-                ),
-                supportDirectory: homeDirectory.appendingPathComponent(
-                    "Library/Application Support/Glint/RimeCandidateLab",
-                    isDirectory: true
-                ),
-                squirrelApplication: URL(
-                    fileURLWithPath:
-                        "/Library/Input Methods/Squirrel.app",
-                    isDirectory: true
-                ),
-                luaSourceDirectory:
-                    bundle.resourceURL?
-                    .appendingPathComponent(
-                        "RimeCandidateBridge",
-                        isDirectory: true
-                    )
-                    ?? appBundle.appendingPathComponent(
-                        "Contents/Resources/RimeCandidateBridge",
-                        isDirectory: true
-                    ),
-                relaySource: appBundle.appendingPathComponent(
-                    "Contents/Helpers/RimeCandidateBridge"
                 )
+                ?? appBundle.appendingPathComponent(
+                    "Contents/Resources/RimeCandidateBridge",
+                    isDirectory: true
+                ),
+            relaySource: appBundle.appendingPathComponent(
+                "Contents/Helpers/RimeCandidateBridge"
+            )
+        )
+    }
+
+    static func resolvedRimeSupportDirectory() -> URL {
+        let applicationSupportDirectory =
+            FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(
+                "Library/Application Support",
+                isDirectory: true
+            )
+        do {
+            return try RimeSupportDirectoryMigrator()
+                .migrateIfNeeded(
+                    applicationSupportDirectory:
+                        applicationSupportDirectory
+                )
+        } catch {
+            rimeSupportLogger.error(
+                "failed to migrate Rime support directory: \(String(describing: error), privacy: .public)"
+            )
+            return RimeSupportDirectoryMigrator.productionDirectory(
+                applicationSupportDirectory:
+                    applicationSupportDirectory
             )
         }
-    #endif
+    }
 
     func refreshDictionaryRoutes() async {
         await dictionary.reload()

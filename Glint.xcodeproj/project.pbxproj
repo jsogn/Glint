@@ -302,7 +302,6 @@
 				925CBF51C25DB742010DF495 /* CopyFiles */,
 				98BEE1CADB909FBA0A70E63B /* Frameworks */,
 				B20D4C692664E17A806E871A /* Embed Dependencies */,
-				04FDD45F927F6FAF0DCED328 /* Prune Debug-only Rime assets */,
 			);
 			buildRules = (
 			);
@@ -427,28 +426,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		04FDD45F927F6FAF0DCED328 /* Prune Debug-only Rime assets */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Prune Debug-only Rime assets";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "#!/bin/sh\nset -eu\n\ncase \"${CONFIGURATION:-}\" in\n  *Debug*)\n    exit 0\n    ;;\nesac\n\nproduct_dir=\"${TARGET_BUILD_DIR:?}/${WRAPPER_NAME:?}\"\nhelper=\"${product_dir}/Contents/Helpers/RimeCandidateBridge\"\nresources=\"${TARGET_BUILD_DIR:?}/${UNLOCALIZED_RESOURCES_FOLDER_PATH:?}/RimeCandidateBridge\"\n\nif [ -e \"$helper\" ]; then\n  /bin/rm -f \"$helper\"\nfi\nif [ -d \"$product_dir/Contents/Helpers\" ]; then\n  /usr/bin/rmdir \"$product_dir/Contents/Helpers\" 2>/dev/null || true\nfi\nif [ -d \"$resources\" ]; then\n  /bin/rm -rf \"$resources\"\nfi\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		3827C1790EDA945C32F356F3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -531,7 +508,7 @@
 				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 16;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Glint/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -647,7 +624,7 @@
 				ASSETCATALOG_COMPILER_STANDALONE_ICON_BEHAVIOR = all;
 				CODE_SIGN_ENTITLEMENTS = App/Glint/Glint.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 16;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Glint/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

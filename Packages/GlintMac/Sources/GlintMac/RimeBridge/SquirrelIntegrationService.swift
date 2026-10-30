@@ -80,7 +80,7 @@ public actor SquirrelIntegrationService {
         "json.lua",
     ]
     // Bump whenever the bundled Lua, relay, or bridge protocol contract changes.
-    public static let currentBridgeAssetVersion = 3
+    public static let currentBridgeAssetVersion = 5
     private static let installationProcessLock = NSLock()
 
     private struct Manifest: Codable, Sendable {

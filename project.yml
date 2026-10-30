@@ -76,7 +76,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.local.glint
         PRODUCT_NAME: Glint
         MARKETING_VERSION: "0.6.0"
-        CURRENT_PROJECT_VERSION: "14"
+        CURRENT_PROJECT_VERSION: "16"
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_ENTITLEMENTS: App/Glint/Glint.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -99,11 +99,6 @@ targets:
         copy:
           destination: wrapper
           subpath: Contents/Helpers
-    postBuildScripts:
-      - path: scripts/prune_debug_rime_assets.sh
-        name: Prune Debug-only Rime assets
-        basedOnDependencyAnalysis: false
-
   RimeCandidateBridge:
     type: tool
     platform: macOS

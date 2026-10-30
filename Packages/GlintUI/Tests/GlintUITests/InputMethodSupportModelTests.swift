@@ -77,6 +77,13 @@ final class InputMethodSupportModelTests: XCTestCase {
         )
     }
 
+    func testInputMethodsSidebarIsVisibleInEveryBuild() {
+        XCTAssertEqual(
+            SidebarItem.visibleItems,
+            SidebarItem.allCases
+        )
+    }
+
     @MainActor
     func testInstallPublishesInstalledState() async throws {
         let context = try makeContext()

@@ -7,10 +7,10 @@ candidate bridge with one action while preserving their existing configuration.
 
 ## Constraints
 
-- Squirrel support remains a Debug-only research capability until the adapter
-  installation flow and upstream viability are reviewed.
-- Release builds keep the existing input-method routing and do not install or
-  run the Squirrel bridge.
+- Squirrel support is a best-effort production capability. Users must opt in
+  explicitly before Glint writes any Rime configuration.
+- Release builds bundle the bridge assets and provide the same install,
+  migrate, repair, and uninstall flows as Debug builds.
 - Apple Pinyin, WeType, Sogou, and generic AX readers must not change behavior.
 - The installer may only modify Rime user files. It must never modify
   `/Library/Input Methods/Squirrel.app`.
@@ -76,7 +76,7 @@ the bridge is not installed.
 
 ### App
 
-`AppEnvironment` constructs the Debug-only service with:
+`AppEnvironment` constructs the service with:
 
 - the Rime user directory;
 - Glint's Application Support directory;
@@ -127,7 +127,10 @@ The manifest never contains candidate text.
 - Installer tests use temporary directories and verify files, hashes,
   permissions, backups, repaired installs, reload failure rollback, and
   uninstall restoration.
+- Support-directory migration tests cover manifest and transaction path
+  rewriting, interrupted migration recovery, directory conflicts, repeated
+  runs, and symlink rejection.
 - UI-model tests cover loading, success, error, install, and uninstall actions.
-- App build verification checks that the helper is embedded, executable, and
-  signed within the Debug app.
+- App build verification checks that the helper and Lua assets are embedded in
+  Release, executable where applicable, and signed with the app.
 - Real Squirrel validation installs into a temporary Rime user directory first.

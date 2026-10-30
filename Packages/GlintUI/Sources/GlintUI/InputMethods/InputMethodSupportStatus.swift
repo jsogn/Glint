@@ -20,7 +20,6 @@ public struct InputMethodSupportStatus:
     public let state: InputMethodSupportState
     public let schemaIDs: [String]
     public let protocolVersion: Int?
-    public let isExperimental: Bool
 
     public init(
         id: String,
@@ -28,8 +27,7 @@ public struct InputMethodSupportStatus:
         detail: String,
         state: InputMethodSupportState,
         schemaIDs: [String],
-        protocolVersion: Int?,
-        isExperimental: Bool = false
+        protocolVersion: Int?
     ) {
         self.id = id
         self.name = name
@@ -37,7 +35,6 @@ public struct InputMethodSupportStatus:
         self.state = state
         self.schemaIDs = schemaIDs
         self.protocolVersion = protocolVersion
-        self.isExperimental = isExperimental
     }
 
     public static let applePinyin = InputMethodSupportStatus(

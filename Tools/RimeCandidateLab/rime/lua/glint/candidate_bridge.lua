@@ -14,7 +14,7 @@ end
 
 local function defaultDirectory()
   return homeDirectory()
-    .. "/Library/Application Support/Glint/RimeCandidateLab"
+    .. "/Library/Application Support/Glint/RimeCandidateSupport"
 end
 
 local function relayCommand()

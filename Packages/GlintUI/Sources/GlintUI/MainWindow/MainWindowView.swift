@@ -82,11 +82,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     var id: String { rawValue }
 
     static var visibleItems: [SidebarItem] {
-        #if DEBUG
-            allCases
-        #else
-            allCases.filter { $0 != .inputMethods }
-        #endif
+        allCases
     }
 
     var title: String {

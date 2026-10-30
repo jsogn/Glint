@@ -76,9 +76,11 @@ Glint/
 - 候选轮询按权限/输入源、焦点目标、候选读取、活动判定和翻译触发分阶段执行；
   actor 仍集中持有会话状态，避免把并发状态分散到多个对象。
 - `CandidateReaderRouter`：Apple、显式 reader 和未知输入法 Profile。
-- Rime 候选 Socket、快照存储和鼠须管 Reader；仅 Debug 注册。
+- Rime 候选 Socket、快照存储和鼠须管 Reader；在所有构建中注册。
+- `RimeSupportDirectoryMigrator`：在 Socket 启动前将旧研究目录迁移到正式支持
+  目录，更新 manifest 和事务路径，并通过锁、标记文件和冲突保护保证可恢复。
 - `SquirrelIntegrationService`：启用 schema 解析、YAML 预检、事务安装、
-  备份、哈希校验、重新部署和回滚；仅在 Debug 组合根中构造。
+  备份、哈希校验、重新部署和回滚；在 App 组合根中构造。
 - `AXReadSession`：消息超时、属性调用上限和总截止时间。
 - 不包含 UI、插件下载、词典数据或推理实现。
 
@@ -110,7 +112,7 @@ Glint/
 ### GlintUI
 
 - 主窗口侧栏、设置页、插件页、权限页和关于页。
-- Debug 构建另有“输入法支持”页，展示 Rime 实验支持状态。
+- “输入法支持”页展示 Rime 正式支持状态和安装引导。
 - 单一 HUD panel，不创建键盘监听、Toast 或运行时错误卡片。
 - `MainWindowModel` 作为 `@MainActor` 展示状态和动作边界。
 - 不直接实现 Accessibility 读取或模型推理。
@@ -120,11 +122,10 @@ Glint/
 - 创建 `AppEnvironment` 并注入具体实现。
 - 管理菜单栏、主窗口、HUD、监控 session 和退出。
 - 仅在翻译运行时准备完成后启动监控。
-- Debug 构建启动 Rime Socket 接收器并注入事务安装器；Release 不注册鼠须管
-  Reader、不启动 Socket，也不提供安装动作。已安装候选读取支持使用独立的资源
-  版本；Debug App 更新后仅在资源或协议版本变化时自动迁移，未安装用户不会自动
-  写入 Rime 配置。Release 构建阶段会移除只为 Debug 研究提供的中继 helper 和
-  Lua 资源。
+- 所有构建都启动 Rime Socket 接收器并注入事务安装器。已安装候选读取支持使用
+  独立的资源版本；App 更新后仅在资源或协议版本变化时自动迁移，未安装用户不会
+  自动写入 Rime 配置。组合根先完成支持目录迁移，再让安装器和 Socket 使用同一
+  正式目录。Release 保留并签名中继 helper 和 Lua 资源。
 - Rime 安装器在进程锁和跨进程锁内执行，只写发生变化的目标，并用事务日志、
   字节级原件备份、SHA256 和权限校验支持失败回滚与崩溃后恢复。用户自有的
   filter、注释、空键和受管文件改动不会被自动覆盖或删除。
@@ -203,7 +204,7 @@ InputSourceMonitor (TIS)
   → CandidateReaderRouter
       ├─ AXCandidateReader
       ├─ 微信 / 搜狗显式 reader
-      ├─ 鼠须管 Lua 候选桥（仅 Debug）
+      ├─ 鼠须管 Lua 候选桥
       └─ AdaptiveUnknownCandidateReader
   → MonitoringController
   → SmartRouter
@@ -242,13 +243,13 @@ MainWindowModel → MainWindowView
 [未知输入法通用适配](GENERIC-INPUT-METHOD-ADAPTATION.md)。AX 结构、性能和验收
 边界见 [AX Candidate Validation](AX-CANDIDATE-VALIDATION.md)。
 
-鼠须管的 AX 候选窗没有候选级语义。Debug 研究构建可通过用户侧
-`librime-lua`、本地中继和 Unix Domain Socket 接收候选与选中索引；Release
-构建不启动接收器，其他输入法也不经过该路径。“输入法支持”页的安全安装器先解析
+鼠须管的 AX 候选窗没有候选级语义。Glint 可通过用户侧 `librime-lua`、本地中继
+和 Unix Domain Socket 接收候选与选中索引；其他输入法不经过该路径。
+“输入法支持”页的安全安装器先解析
 Rime `schema_list`，只修改已启用且已编译的方案；遇到复杂 YAML 会在写入前
 停止。安装、修复和卸载均带备份、哈希与失败回滚。Squirrel 不暴露候选面板
 frame 时，仅该 Reader 回退到宿主输入光标作 HUD 锚点。详见
-[鼠须管候选桥接研究](SQUIRREL-CANDIDATE-BRIDGE.md)。
+[鼠须管候选桥接说明](SQUIRREL-CANDIDATE-BRIDGE.md)。
 
 ## 8. 候选读取与监控
 

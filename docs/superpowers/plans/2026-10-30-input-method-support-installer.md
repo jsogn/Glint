@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a Debug-only `输入法支持` page with a transactional one-click
+**Goal:** Add a production `输入法支持` page with a transactional one-click
 Rime bridge installer.
 
 **Architecture:** A pure Rime patch editor handles schema source safely. A
@@ -19,7 +19,7 @@ and Lua resources and maps service state into UI state.
 - Minimum macOS: 15.0.
 - Arm64-only app build.
 - No third-party UI components.
-- Squirrel bridge remains Debug-only.
+- Squirrel bridge is available in both Debug and Release builds.
 - Do not modify Squirrel.app.
 - Do not log or persist candidate text.
 - Do not commit or push unless explicitly requested.
@@ -120,7 +120,7 @@ and Lua resources and maps service state into UI state.
   dialogs, and overview navigation action.
 - [x] Re-run GlintUI tests and the targeted page rendering tests.
 
-### Task 5: App wiring and Debug gating
+### Task 5: App wiring and Release support
 
 **Files:**
 - Modify: `App/Glint/AppEnvironment.swift`
@@ -129,14 +129,13 @@ and Lua resources and maps service state into UI state.
 
 **Interfaces:**
 - Consumes the GlintMac service and GlintUI status types.
-- Produces Debug-only model actions; Release leaves Squirrel support hidden.
+- Produces model actions and runtime wiring for both Debug and Release builds.
 
-- [x] Add a failing App smoke test for Debug status registration and Release
-  absence.
-- [x] Wire the service to `MainWindowModel` inside `#if DEBUG`.
+- [x] Add App smoke tests for status registration and bundled bridge assets.
+- [x] Wire the service to `MainWindowModel` in the shared composition root.
 - [x] Map service states to UI status values.
-- [x] Re-run App tests and verify Release still uses
-  `MonitoringController(router:)`.
+- [x] Re-run App tests and verify both configurations use the Rime-aware
+  `MonitoringController`.
 
 ### Task 6: Documentation and end-to-end validation
 
@@ -146,9 +145,10 @@ and Lua resources and maps service state into UI state.
 - Modify: `docs/ARCHITECTURE.md`
 
 - [x] Document the one-click install, managed files, backup location,
-  uninstall, Debug-only boundary, and complex-YAML fallback.
+  uninstall, production boundary, and complex-YAML fallback.
 - [x] Run Lua tests, `swift build --package-path Tools/RimeCandidateLab`,
   targeted GlintMac/UI tests, and `./scripts/test.sh`.
-- [x] Build Release arm64 and verify no helper is installed by the Release app.
+- [x] Build Release arm64 and verify the helper, Lua resources, and signatures
+  are present in the Release app.
 - [x] Run `swift format lint`, `git diff --check`, and verify user Rime files
   are byte-identical after uninstall tests.

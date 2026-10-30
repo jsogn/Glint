@@ -87,17 +87,6 @@ struct InputMethodsPage: View {
                     HStack(spacing: 8) {
                         Text(presentation.headline)
                             .font(.headline)
-                        if status.isExperimental {
-                            Text("实验")
-                                .font(.caption2.weight(.medium))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(
-                                    .quaternary,
-                                    in: Capsule()
-                                )
-                                .foregroundStyle(.secondary)
-                        }
                     }
                     Text(presentation.description)
                         .font(.callout)

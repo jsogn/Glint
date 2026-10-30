@@ -87,13 +87,9 @@ struct OverviewPage: View {
     }
 
     private var inputMethodSettingsAction: (() -> Void)? {
-        #if DEBUG
-            {
-                selection = .inputMethods
-            }
-        #else
-            nil
-        #endif
+        {
+            selection = .inputMethods
+        }
     }
 }
 

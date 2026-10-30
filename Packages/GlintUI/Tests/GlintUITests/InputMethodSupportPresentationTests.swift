@@ -132,8 +132,7 @@ final class InputMethodSupportPresentationTests: XCTestCase {
             detail: detail,
             state: state,
             schemaIDs: schemaIDs,
-            protocolVersion: protocolVersion,
-            isExperimental: true
+            protocolVersion: protocolVersion
         )
     }
 }

@@ -26,12 +26,20 @@ for relative_path in \
   "Contents/Resources/mt-opus-zh-en/manifest.json" \
   "Contents/Resources/mt-opus-zh-en/model-lock.json" \
   "Contents/Resources/mt-opus-zh-en/model/model.bin" \
-  "Contents/Resources/mt-opus-zh-en/bin/libglintct2.dylib"; do
+  "Contents/Resources/mt-opus-zh-en/bin/libglintct2.dylib" \
+  "Contents/Helpers/RimeCandidateBridge" \
+  "Contents/Resources/RimeCandidateBridge/candidate_bridge.lua" \
+  "Contents/Resources/RimeCandidateBridge/json.lua"; do
   if [[ ! -f "$app_bundle/$relative_path" ]]; then
     echo "Missing required app resource: $relative_path" >&2
     exit 1
   fi
 done
+
+if [[ ! -x "$app_bundle/Contents/Helpers/RimeCandidateBridge" ]]; then
+  echo "Rime candidate bridge is not executable." >&2
+  exit 1
+fi
 
 mach_o_files=(
   "$app_bundle/Contents/MacOS/"*(N)

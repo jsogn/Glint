@@ -39,29 +39,27 @@ final class AppSmokeTests: XCTestCase {
         )
     }
 
-    #if DEBUG
-        func testDebugAppBundlesSquirrelBridgeAssets() throws {
-            let helper = appBundleURL.appendingPathComponent(
-                "Contents/Helpers/RimeCandidateBridge"
-            )
-            let luaDirectory = appBundleURL.appendingPathComponent(
-                "Contents/Resources/RimeCandidateBridge",
-                isDirectory: true
-            )
+    func testAppBundlesSquirrelBridgeAssets() throws {
+        let helper = appBundleURL.appendingPathComponent(
+            "Contents/Helpers/RimeCandidateBridge"
+        )
+        let luaDirectory = appBundleURL.appendingPathComponent(
+            "Contents/Resources/RimeCandidateBridge",
+            isDirectory: true
+        )
 
+        XCTAssertTrue(
+            FileManager.default.isExecutableFile(atPath: helper.path)
+        )
+        for fileName in ["candidate_bridge.lua", "json.lua"] {
+            let file = luaDirectory.appendingPathComponent(fileName)
             XCTAssertTrue(
-                FileManager.default.isExecutableFile(atPath: helper.path)
+                FileManager.default.fileExists(atPath: file.path)
             )
-            for fileName in ["candidate_bridge.lua", "json.lua"] {
-                let file = luaDirectory.appendingPathComponent(fileName)
-                XCTAssertTrue(
-                    FileManager.default.fileExists(atPath: file.path)
-                )
-                XCTAssertGreaterThan(
-                    try Data(contentsOf: file).count,
-                    0
-                )
-            }
+            XCTAssertGreaterThan(
+                try Data(contentsOf: file).count,
+                0
+            )
         }
-    #endif
+    }
 }

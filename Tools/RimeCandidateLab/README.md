@@ -1,6 +1,7 @@
-# Rime Candidate Bridge Lab
+# Rime Candidate Bridge Development Lab
 
-Experimental bridge for reading Rime candidates without modifying Squirrel.
+Development workspace for the Rime candidate bridge. The bridge is shipped as
+a production feature in both Debug and Release builds of Glint.
 
 The stock Squirrel candidate panel exposes one `AXTextArea` with no candidate
 children, candidate text, or selected-candidate semantics. Squirrel bundles
@@ -35,7 +36,7 @@ during lazy iteration.
 
 ## Application integration
 
-Debug builds of Glint provide the preferred installation path:
+Both Debug and Release builds of Glint provide the preferred installation path:
 
 1. Build and launch with `./scripts/dev.sh`.
 2. Open `输入法支持`.
@@ -48,9 +49,11 @@ backup and an install manifest before writing, then rolls back on any failure.
 See [鼠须管输入法支持](../../docs/SQUIRREL-CANDIDATE-BRIDGE.md) for the full
 transaction, managed paths, privacy boundary, and uninstall behavior.
 
-Release builds do not expose this page, start the socket receiver, or perform
-an install. Their post-build phase also removes the Debug-only relay and Lua
-resources from the app bundle.
+Release builds embed the same page, socket receiver, relay, and Lua resources.
+For existing installations, Glint migrates the legacy
+`RimeCandidateLab` support directory to `RimeCandidateSupport` before starting
+the receiver. The migration also rewrites manifest and transaction paths, so
+backups and interrupted installs remain recoverable.
 
 ## Build and test
 
@@ -75,7 +78,7 @@ be merged automatically.
 Copy the relay into the path expected by the Lua adapter:
 
 ```bash
-relay_dir="$HOME/Library/Application Support/Glint/RimeCandidateLab"
+relay_dir="$HOME/Library/Application Support/Glint/RimeCandidateSupport"
 mkdir -p "$relay_dir" "$HOME/Library/Rime/lua/glint"
 cp Tools/RimeCandidateLab/.build/debug/RimeCandidateBridge "$relay_dir/"
 cp Tools/RimeCandidateLab/rime/lua/glint/*.lua \

@@ -1765,7 +1765,7 @@ private final class SquirrelFixture: @unchecked Sendable {
             isDirectory: true
         )
         supportDirectory = root.appendingPathComponent(
-            "Support/RimeCandidateLab",
+            "Support/RimeCandidateSupport",
             isDirectory: true
         )
         squirrelApplication = root.appendingPathComponent(

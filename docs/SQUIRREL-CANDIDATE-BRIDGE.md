@@ -1,8 +1,8 @@
 # Rime 输入法支持（Squirrel）
 
-- 状态：实验，协议 v3
-- 验证环境：macOS 26、Squirrel 1.1.2、Apple Silicon
-- 产品边界：仅 Debug 构建提供安装入口和候选接收器
+- 状态：正式支持（best-effort），协议 v3
+- 验证环境：macOS 15 安装运行、macOS 26 自动测试、Squirrel 1.1.2、Apple Silicon
+- 产品边界：所有构建提供安装入口和候选接收器
 
 ## 背景
 
@@ -18,7 +18,7 @@ Accessibility 树只有一个 `AXTextArea`：
 
 Squirrel 随包提供 `librime-lua`。Glint 通过用户侧 Lua filter 从 Rime 引擎取得
 最终候选页和页内选中索引，再用一个只连接本机 Unix Domain Socket 的 helper
-把数据转交给 Debug App。这不修改 Squirrel 官方仓库或
+把数据转交给 Glint。这不修改 Squirrel 官方仓库或
 `/Library/Input Methods/Squirrel.app`。
 
 ## 数据流
@@ -45,7 +45,7 @@ Squirrel / librime-lua
 
 ## 安装与升级
 
-Debug 构建中打开“输入法支持”页。检测到 Rime 和已部署方案后，用户点击
+在“输入法支持”页检测到 Rime 和已部署方案后，用户点击
 “安装支持”并确认；安装不完整时显示“重新安装”。首次安装不会自动发生。
 
 安装器只执行以下操作：
@@ -65,7 +65,7 @@ Debug 构建中打开“输入法支持”页。检测到 Rime 和已部署方�
 
 安装、修复、迁移和卸载由进程内锁和跨进程文件锁串行化。写入目标前还会再次核对
 内容与权限；如果用户在操作期间修改了文件，本次操作停止并回滚。进程在写文件期间
-退出时，下次 Debug 启动会读取事务日志：未提交事务自动恢复，已提交事务只做收尾。
+退出时，下次 App 启动会读取事务日志：未提交事务自动恢复，已提交事务只做收尾。
 如果崩溃后用户又编辑了同一文件，当前内容既不等于事务前状态，也不等于本事务
 允许写入的状态，恢复会停止并保留现场，不会用旧快照覆盖用户的新改动。
 
@@ -73,15 +73,20 @@ Debug 构建中打开“输入法支持”页。检测到 Rime 和已部署方�
 迁移覆盖；界面会要求手动处理。安装器自己创建后又被删除的文件可以安全补建。
 
 候选读取支持使用独立的 `assetVersion`，不与 Glint App 版本绑定。App 更新后，
-Debug 构建只在已存在安装记录且资源版本或协议版本变化时自动迁移；仅修改 UI、
+只在已存在安装记录且资源版本或协议版本变化时自动迁移；仅修改 UI、
 词典或翻译功能不会触发插件重装。从未安装过候选读取支持的用户不会被自动写入
 Rime 配置。修改 Lua、relay 或桥接协议时必须增加该资源版本。迁移复用安装事务，
 复杂 YAML 会在写入前停止。
 
+早期研究版本使用 `RimeCandidateLab` 支持目录。正式版会在启动 Socket 前执行一次
+幂等迁移，将目录移动到 `RimeCandidateSupport`，并同步改写 manifest 与未完成事务
+中的绝对路径。迁移使用标记文件支持中断恢复；冲突目录不会被删除或合并。Lua
+运行时路径变化使用新的资源版本触发一次受事务保护的重新安装。
+
 托管位置：
 
 ```text
-~/Library/Application Support/Glint/RimeCandidateLab/
+~/Library/Application Support/Glint/RimeCandidateSupport/
   ├── RimeCandidateBridge
   ├── install-manifest.json
   ├── pending-install-transaction.json   # 仅事务期间存在
@@ -95,7 +100,7 @@ Rime 配置。修改 Lua、relay 或桥接协议时必须增加该资源版本�
 ```
 
 helper 权限为 `0700`，Socket 权限为 `0600`。安装器不会下载可执行代码；helper
-和 Lua 都来自已签名的 Debug App bundle。
+和 Lua 都来自已签名的 App bundle。
 
 备份目录权限为 `0700`，备份文件、manifest 和事务文件权限为 `0600`。manifest
 记录备份 SHA256 和原文件权限，恢复前会重新校验。路径使用解析符号链接后的真实
@@ -145,8 +150,8 @@ filter 识别按完整 YAML 标量比较，不使用子串。用户原先手动�
 
 ## 隔离与隐私
 
-- 只有 Debug 构建显示“输入法支持”页、启动 Socket 接收器和构造安装器。
-- Release 构建不注册 Squirrel Reader、不启动 Socket、不执行安装。
+- 所有构建都显示“输入法支持”页、启动 Socket 接收器并构造安装器。
+- 安装、修复、迁移和卸载仍必须由用户明确触发或确认。
 - 只有当前 TIS 输入源是 `im.rime.inputmethod.Squirrel` 时才使用该 Reader。
 - Apple 拼音、微信、搜狗和未知输入法的 Reader 路由不变。
 - 候选文字只经过进程管道和用户专属 Socket，不写入 manifest、文件或 OSLog。
@@ -182,7 +187,7 @@ filter 识别按完整 YAML 标量比较，不使用子串。用户原先手动�
 ## 发布前真实验收
 
 真实 Squirrel 行为不能完全由单元测试替代。每次准备发布包含 Rime 支持的构建前，
-必须在干净的 Debug 安装上完成以下验收：
+必须在干净的 Release 安装上完成以下验收：
 
 1. 记录 `~/Library/Rime` 中受管文件的内容哈希和权限；启动
    `./scripts/dev.sh`，确认未安装用户没有自动写入 Rime 配置。
@@ -204,7 +209,8 @@ filter 识别按完整 YAML 标量比较，不使用子串。用户原先手动�
 12. 检查浅色、深色、窗口缩放、多显示器和无候选面板 frame 的 HUD 位置。
 
 Release 产物还必须确认 `Contents/Helpers/RimeCandidateBridge` 和
-`Contents/Resources/RimeCandidateBridge` 均不存在。
+`Contents/Resources/RimeCandidateBridge` 均存在，且 helper 可执行并随 App
+完成签名。
 
 ## 手动备用安装
 
@@ -216,7 +222,7 @@ patch:
   engine/filters/@before 0: lua_filter@*glint.candidate_bridge
 ```
 
-Debug App 内的资源位于：
+App 内的资源位于：
 
 ```text
 Glint.app/Contents/Helpers/RimeCandidateBridge
@@ -224,7 +230,7 @@ Glint.app/Contents/Resources/RimeCandidateBridge/candidate_bridge.lua
 Glint.app/Contents/Resources/RimeCandidateBridge/json.lua
 ```
 
-开发实验也可以从 `Tools/RimeCandidateLab` 构建并手动复制。保存配置后运行：
+开发人员也可以从 `Tools/RimeCandidateLab` 构建并手动复制。保存配置后运行：
 
 ```bash
 "/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel" --reload

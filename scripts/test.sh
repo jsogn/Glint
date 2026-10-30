@@ -3,7 +3,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ./scripts/prepare_opus_model.sh
-./scripts/test_rime_asset_pruning.sh
 ./scripts/test_macos15_compatibility.sh
 
 xcodegen generate
