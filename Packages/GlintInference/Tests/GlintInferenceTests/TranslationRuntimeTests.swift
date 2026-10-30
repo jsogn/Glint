@@ -39,9 +39,17 @@ final class TranslationRuntimeTests: XCTestCase {
     }
 
     func testFailedPreparationReportsDetailedErrorAndIsNotUsable() async throws {
+        let suiteName = "GlintTranslationRuntimeTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer {
+            UserDefaults.standard.removePersistentDomain(
+                forName: suiteName
+            )
+        }
+        TranslationModelSelection.select("broken-ct2", in: defaults)
         let missingDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("missing-ct2-\(UUID().uuidString)")
-        let runtime = TranslationRuntime { modelID in
+        let runtime = TranslationRuntime(defaults: defaults) { modelID in
             .ctranslate2(
                 modelID: modelID,
                 directory: missingDirectory
