@@ -2,6 +2,7 @@ import CryptoKit
 import Darwin
 import Foundation
 import GlintCore
+import GlintRimeRelayCore
 
 public enum SquirrelIntegrationState: Sendable, Equatable {
     case unavailable
@@ -79,7 +80,8 @@ public actor SquirrelIntegrationService {
         "candidate_bridge.lua",
         "json.lua",
     ]
-    // Bump whenever the bundled Lua, relay, or bridge protocol contract changes.
+    // Semantic contract version for installed Lua, relay, and socket protocol.
+    // Never bump for unrelated app code or byte-only rebuild changes.
     public static let currentBridgeAssetVersion = 2
     private static let installationProcessLock = NSLock()
 

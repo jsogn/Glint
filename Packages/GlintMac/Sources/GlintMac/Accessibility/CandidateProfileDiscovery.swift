@@ -89,6 +89,8 @@ final class CandidateProfileCache: @unchecked Sendable {
         var profileNeedsProbe = false
         // Version is validation metadata, never part of the cache identity.
         var validatedApplicationVersion: String?
+        // Repeated hits during one probe must not invalidate that probe.
+        var probeApplicationVersion: String?
         var unavailableFailureCount = 0
         var failedAttempts = 0
         var retryAfter: UInt64 = 0
@@ -233,10 +235,25 @@ final class CandidateProfileCache: @unchecked Sendable {
         let now = clock()
         let generation = lock.withLock {
             state -> UInt64? in
+            var entry = state.entries[sourceKey] ?? Entry()
+            let versionChanged =
+                entry.profile != nil
+                && entry.validatedApplicationVersion
+                    != key.applicationVersion
+            if versionChanged {
+                entry.profileNeedsProbe = true
+                if entry.probeApplicationVersion
+                    != key.applicationVersion
+                {
+                    entry.probeApplicationVersion =
+                        key.applicationVersion
+                    state.generations[sourceKey, default: 0] &+= 1
+                }
+                state.entries[sourceKey] = entry
+            }
             if state.discoveryIsInFlight {
                 return nil
             }
-            let entry = state.entries[sourceKey] ?? Entry()
             // A prior verified structure remains usable until a real read
             // fails, at which point discovery can correct the live profile.
             guard
@@ -248,6 +265,8 @@ final class CandidateProfileCache: @unchecked Sendable {
             else {
                 return nil
             }
+            entry.probeApplicationVersion = key.applicationVersion
+            state.entries[sourceKey] = entry
             state.discoveryIsInFlight = true
             return state.generations[sourceKey, default: 0]
         }
@@ -286,14 +305,23 @@ final class CandidateProfileCache: @unchecked Sendable {
                 != key.applicationVersion
             entry.profileFailureCount = 0
             entry.profileFailureStartedAt = nil
-            entry.profileNeedsProbe = false
-            entry.validatedApplicationVersion = key.applicationVersion
             entry.unavailableFailureCount = 0
-            state.entries[sourceKey] = entry
-            state.generations[sourceKey, default: 0] &+= 1
-            if versionChanged, let profile = entry.profile {
-                persistence?.store(profile, for: key)
+            if versionChanged {
+                entry.profileNeedsProbe = true
+                if entry.probeApplicationVersion
+                    != key.applicationVersion
+                {
+                    entry.probeApplicationVersion =
+                        key.applicationVersion
+                    state.generations[sourceKey, default: 0] &+= 1
+                }
+            } else {
+                entry.profileNeedsProbe = false
+                entry.validatedApplicationVersion =
+                    key.applicationVersion
+                state.generations[sourceKey, default: 0] &+= 1
             }
+            state.entries[sourceKey] = entry
         }
     }
 
@@ -460,12 +488,88 @@ final class CandidateProfileCache: @unchecked Sendable {
     }
 }
 
+struct PreferredCandidateReader: AXCandidateReading {
+    let preferred: any AXCandidateReading
+    let fallback: any AXCandidateReading
+    let onPreferredSuccess: @Sendable () -> Void
+
+    init(
+        preferred: any AXCandidateReading,
+        fallback: any AXCandidateReading,
+        onPreferredSuccess: @escaping @Sendable () -> Void = {}
+    ) {
+        self.preferred = preferred
+        self.fallback = fallback
+        self.onPreferredSuccess = onPreferredSuccess
+    }
+
+    func snapshot(
+        processIdentifier: pid_t?,
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
+    ) -> AXCandidateSnapshot? {
+        if let snapshot = preferred.snapshot(
+            processIdentifier: processIdentifier,
+            includeVisibleCandidates: includeVisibleCandidates,
+            includeVisibleTexts: includeVisibleTexts
+        ) {
+            onPreferredSuccess()
+            return snapshot
+        }
+        // This path runs on every idle poll. A definitive end needs no
+        // secondary AX scan, which would multiply empty reads.
+        if preferred.missReason == .candidateEnded {
+            return nil
+        }
+        return fallback.snapshot(
+            processIdentifier: processIdentifier,
+            includeVisibleCandidates: includeVisibleCandidates,
+            includeVisibleTexts: includeVisibleTexts
+        )
+    }
+
+    var missReason: AXCandidateReadMissReason {
+        let preferredReason = preferred.missReason
+        let fallbackReason = fallback.missReason
+        if preferredReason == .candidateEnded
+            || fallbackReason == .candidateEnded
+        {
+            return .candidateEnded
+        }
+        if preferredReason == .temporaryLayout
+            || fallbackReason == .temporaryLayout
+        {
+            return .temporaryLayout
+        }
+        if preferredReason == .structureMismatch
+            || fallbackReason == .structureMismatch
+        {
+            return .structureMismatch
+        }
+        return .unavailable
+    }
+}
+
 struct AdaptiveUnknownCandidateReader: AXCandidateReading {
     let source: ActiveInputSource
     let fallback: any AXCandidateReading
     let profiles: CandidateProfileCache
     let allowsProfileDiscovery: Bool
     let selectedTextItemReaders: SelectedTextItemReaderPool
+
+    init(
+        source: ActiveInputSource,
+        fallback: any AXCandidateReading,
+        profiles: CandidateProfileCache,
+        allowsProfileDiscovery: Bool,
+        selectedTextItemReaders: SelectedTextItemReaderPool
+    ) {
+        self.source = source
+        self.fallback = fallback
+        self.profiles = profiles
+        self.allowsProfileDiscovery = allowsProfileDiscovery
+        self.selectedTextItemReaders = selectedTextItemReaders
+    }
 
     func snapshot(
         processIdentifier: pid_t?,
@@ -493,6 +597,7 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
                 }
             ) {
                 profiles.recordProfileHit(for: source.identity)
+                profiles.requestDiscovery(for: source.identity)
                 return candidate
             }
             if allowsProfileDiscovery,
@@ -511,9 +616,7 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
             includeVisibleCandidates: includeVisibleCandidates,
             includeVisibleTexts: includeVisibleTexts
         )
-        if fallbackSnapshot == nil,
-            allowsProfileDiscovery
-        {
+        if fallbackSnapshot != nil || allowsProfileDiscovery {
             profiles.requestDiscovery(for: source.identity)
         }
         return fallbackSnapshot

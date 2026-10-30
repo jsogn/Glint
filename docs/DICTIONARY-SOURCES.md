@@ -22,12 +22,12 @@
   SQLite 并校验后原子安装，失败时继续使用内置版本
 
 ```bash
-python3 Tools/DictionaryBuilder/build_sqlite.py \
-  --cedict-gz /tmp/cedict_1_0_ts_utf-8_mdbg.txt.gz \
+swift run --package-path Packages/GlintDictionary glint-dictionary-builder cedict \
+  --input /tmp/cedict_1_0_ts_utf-8_mdbg.txt.gz \
   --output Resources/Plugins/dict-cedict/cedict.sqlite3
 ```
 
-该兼容脚本会调用 `glint-dictionary-builder`；解析和数据库生成只有 Swift 一份实现。
+解析和数据库生成只有 Swift 一份实现。
 
 ### ECDICT
 
@@ -46,15 +46,15 @@ python3 Tools/DictionaryBuilder/build_sqlite.py \
   版本
 
 ```bash
-python3 Tools/DictionaryBuilder/build_ecdict_ranker.py \
-  --csv /tmp/ecdict.csv \
+swift run --package-path Packages/GlintDictionary glint-dictionary-builder ecdict \
+  --input /tmp/ecdict.csv \
   --output /tmp/ecdict_rank.sqlite3 \
   --source-checksum d1ecbdf9ee2b920afb6f430ca6b6bb9f559588cf0dff86e04bd255f9390843cc \
   --source-date 2026-10-20T02:25:07Z \
   --source-revision 9c46923fb81a2eb6c264a3a1689562ea7bc56b6a
 ```
 
-该兼容脚本同样调用 `glint-dictionary-builder`，不会另行实现排序规则。
+排序规则不会在 Python 中另行实现。
 
 ## 排序质量门禁
 

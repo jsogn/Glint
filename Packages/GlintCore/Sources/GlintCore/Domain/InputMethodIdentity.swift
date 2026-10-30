@@ -13,6 +13,10 @@ public enum InputMethodIdentifier {
         "com.sogou.inputmethod.sogou"
     public static let sogouPinyinMode =
         "com.sogou.inputmethod.sogou.pinyin"
+    public static let doubaoBundle =
+        "com.bytedance.inputmethod.doubaoime"
+    public static let doubaoPinyinMode =
+        "com.bytedance.inputmethod.doubaoime.pinyin"
     public static let squirrelBundle =
         "im.rime.inputmethod.Squirrel"
     public static let squirrelHansMode =

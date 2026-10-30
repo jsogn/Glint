@@ -53,6 +53,7 @@ Glint/
 | 模块 | 职责 |
 | --- | --- |
 | `GlintCore` | 纯 Swift 领域模型、词典/翻译协议、路由、停留判定和精确缓存 |
+| `GlintRimeRelayCore` | Rime 候选协议、Socket Client 和本地 Socket Server |
 | `GlintMac` | TIS、Accessibility、候选 reader、焦点、安全输入和监控编排 |
 | `GlintDictionary` | SQLite 查询、词频排序和词典插件加载 |
 | `GlintInference` | CTranslate2、MLX、模型加载、内存预算和推理取消 |
@@ -66,8 +67,15 @@ Glint/
 - `DictionaryEngine`、`TranslationEngine` 和 `SmartRouter`。
 - `TranslationMemo`：精确结果 LRU、并发请求合并和容量限制。
 - `TypingActivityTracker`：候选停留、revision 和快速输入抑制。
-- Rime 候选桥接协议和经过校验的候选快照模型。
 - 不依赖 AppKit、SQLite 或任何推理运行时。
+
+### GlintRimeRelayCore
+
+- Rime 候选协议、经过校验的候选快照模型。
+- Unix Domain Socket Client 和 Server。
+- 只依赖 Foundation/Darwin，不依赖 AppKit、GlintMac 或业务模块。
+- `RimeCandidateBridge` 只依赖该模块；无关 App 源码变化不得要求提升
+  Rime 资产版本。
 
 ### GlintMac
 
@@ -141,6 +149,15 @@ GlintUI
 
 GlintMac / GlintDictionary / GlintInference / GlintPlugins
   → GlintCore
+
+GlintMac
+  → GlintRimeRelayCore
+
+RimeCandidateBridge
+  → GlintRimeRelayCore
+
+GlintRimeRelayCore
+  → 无 AppKit / SQLite / MLX 依赖
 
 GlintCore
   → 无 AppKit / SQLite / MLX 依赖
@@ -298,7 +315,7 @@ frame 时，仅该 Reader 回退到宿主输入光标作 HUD 锚点。详见
   源检测 revision，下载固定 revision 的官方代码归档，流式解压并校验 CSV 结构，
   随后重建排序 SQLite 并执行同样的数量、完整性和可回滚安装校验。
 - CC-CEDICT 与 ECDICT 的发布资源更新和 App 内更新共用 `GlintDictionary` 中的
-  Swift 构建器；`Tools/DictionaryBuilder` 下的 Python 文件只是兼容调用入口。
+  Swift 构建器。
 - 可更新能力由 manifest 的 `coreUpdateKind` 声明，设置页与服务分发不再各自维护
   词典 ID 白名单。核心词典更新在 App 层全局串行，避免多个安装事务竞争。
 - OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；

@@ -1,5 +1,5 @@
 import Foundation
-import GlintCore
+import GlintRimeRelayCore
 import XCTest
 
 final class RimeCandidateEnvelopeTests: XCTestCase {

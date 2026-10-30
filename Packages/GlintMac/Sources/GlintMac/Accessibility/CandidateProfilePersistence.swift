@@ -81,6 +81,8 @@ enum CandidateInputMethodVersion {
 }
 
 final class CandidateProfilePersistence: @unchecked Sendable {
+    static let currentStorageKey = "candidateProfiles.v2"
+
     private struct Record: Codable {
         let bundleIdentifier: String
         let inputSourceIdentifier: String
@@ -100,10 +102,16 @@ final class CandidateProfilePersistence: @unchecked Sendable {
         }
     }
 
-    static let shared = CandidateProfilePersistence(
-        defaults: .standard,
-        storageKey: "candidateProfiles.v1"
-    )
+    static let shared = make(defaults: .standard)
+
+    static func make(
+        defaults: UserDefaults
+    ) -> CandidateProfilePersistence {
+        CandidateProfilePersistence(
+            defaults: defaults,
+            storageKey: currentStorageKey
+        )
+    }
 
     private let defaults: UserDefaults
     private let storageKey: String

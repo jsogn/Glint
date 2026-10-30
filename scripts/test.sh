@@ -23,6 +23,6 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO \
   test
 
-for package in GlintCore GlintMac GlintDictionary GlintInference GlintPlugins GlintUI; do
+for package in GlintCore GlintRimeRelayCore GlintMac GlintDictionary GlintInference GlintPlugins GlintUI; do
   swift test --package-path "Packages/$package"
 done

@@ -11,15 +11,16 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(path: "../../Packages/GlintCore"),
-        .package(path: "../../Packages/GlintMac"),
+        .package(path: "../../Packages/GlintRimeRelayCore")
     ],
     targets: [
         .executableTarget(
             name: "RimeCandidateBridge",
             dependencies: [
-                .product(name: "GlintCore", package: "GlintCore"),
-                .product(name: "GlintMac", package: "GlintMac"),
+                .product(
+                    name: "GlintRimeRelayCore",
+                    package: "GlintRimeRelayCore"
+                )
             ]
         )
     ],

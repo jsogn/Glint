@@ -8,13 +8,18 @@ let package = Package(
         .library(name: "GlintMac", targets: ["GlintMac"])
     ],
     dependencies: [
-        .package(path: "../GlintCore")
+        .package(path: "../GlintCore"),
+        .package(path: "../GlintRimeRelayCore"),
     ],
     targets: [
         .target(
             name: "GlintMac",
             dependencies: [
-                .product(name: "GlintCore", package: "GlintCore")
+                .product(name: "GlintCore", package: "GlintCore"),
+                .product(
+                    name: "GlintRimeRelayCore",
+                    package: "GlintRimeRelayCore"
+                ),
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),
@@ -24,7 +29,13 @@ let package = Package(
         ),
         .testTarget(
             name: "GlintMacTests",
-            dependencies: ["GlintMac"]
+            dependencies: [
+                "GlintMac",
+                .product(
+                    name: "GlintRimeRelayCore",
+                    package: "GlintRimeRelayCore"
+                ),
+            ]
         ),
     ],
     swiftLanguageModes: [.v6]

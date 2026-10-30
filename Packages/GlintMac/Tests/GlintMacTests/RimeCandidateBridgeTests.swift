@@ -1,5 +1,6 @@
 import Foundation
 import GlintCore
+import GlintRimeRelayCore
 import os
 import XCTest
 @testable import GlintMac
@@ -407,15 +408,17 @@ final class RimeCandidateBridgeTests: XCTestCase {
                 )
             ) is SquirrelCandidateReader
         )
+        let weTypeReader = router.reader(
+            for: ActiveInputSource(
+                id: InputMethodIdentifier.weTypePinyinMode,
+                kind: .otherInputMethod,
+                bundleIdentifier:
+                    InputMethodIdentifier.weTypeBundle
+            )
+        )
         XCTAssertTrue(
-            router.reader(
-                for: ActiveInputSource(
-                    id: InputMethodIdentifier.weTypePinyinMode,
-                    kind: .otherInputMethod,
-                    bundleIdentifier:
-                        InputMethodIdentifier.weTypeBundle
-                )
-            ) is WeTypeCandidateReader
+            (weTypeReader as? PreferredCandidateReader)?
+                .preferred is WeTypeCandidateReader
         )
     }
 
@@ -484,14 +487,16 @@ final class RimeCandidateBridgeTests: XCTestCase {
         XCTAssertTrue(
             router.reader(for: source) is AdaptiveUnknownCandidateReader
         )
+        let weTypeReader = router.reader(
+            for: ActiveInputSource(
+                id: InputMethodIdentifier.weTypePinyinMode,
+                kind: .otherInputMethod,
+                bundleIdentifier: InputMethodIdentifier.weTypeBundle
+            )
+        )
         XCTAssertTrue(
-            router.reader(
-                for: ActiveInputSource(
-                    id: InputMethodIdentifier.weTypePinyinMode,
-                    kind: .otherInputMethod,
-                    bundleIdentifier: InputMethodIdentifier.weTypeBundle
-                )
-            ) is WeTypeCandidateReader
+            (weTypeReader as? PreferredCandidateReader)?
+                .preferred is WeTypeCandidateReader
         )
     }
 

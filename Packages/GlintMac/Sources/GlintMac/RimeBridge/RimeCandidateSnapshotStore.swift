@@ -1,5 +1,6 @@
 import Foundation
 import GlintCore
+import GlintRimeRelayCore
 import os
 
 public final class RimeCandidateSnapshotStore: @unchecked Sendable {

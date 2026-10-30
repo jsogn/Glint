@@ -1,8 +1,7 @@
 import CryptoKit
 import Darwin
 import Foundation
-import GlintCore
-import GlintMac
+import GlintRimeRelayCore
 
 signal(SIGPIPE, SIG_IGN)
 

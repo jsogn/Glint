@@ -7,7 +7,6 @@ export PYTHONDONTWRITEBYTECODE=1
 
 for test_dir in \
   Tools/CandidateLab \
-  Tools/DictionaryBuilder \
   Tools/DictionaryLab \
   Tools/ModelLab/eval; do
   test_files=("$test_dir"/test_*.py(N))

@@ -78,4 +78,15 @@ final class InputMethodIdentityTests: XCTestCase {
 
         XCTAssertEqual(identity.displayName, "Rime")
     }
+
+    func testDoubaoIdentifiersUseStableOfficialValues() {
+        XCTAssertEqual(
+            InputMethodIdentifier.doubaoBundle,
+            "com.bytedance.inputmethod.doubaoime"
+        )
+        XCTAssertEqual(
+            InputMethodIdentifier.doubaoPinyinMode,
+            "com.bytedance.inputmethod.doubaoime.pinyin"
+        )
+    }
 }

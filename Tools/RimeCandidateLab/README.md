@@ -55,7 +55,7 @@ Release builds embed the same page, socket receiver, relay, and Lua resources.
 
 ```bash
 swift build --package-path Tools/RimeCandidateLab
-swift test --package-path Packages/GlintCore --filter RimeCandidateEnvelopeTests
+swift test --package-path Packages/GlintRimeRelayCore
 swift test --package-path Packages/GlintMac --filter RimeCandidateBridgeTests
 swift test --package-path Packages/GlintMac --filter SquirrelIntegrationServiceTests
 lua Tools/RimeCandidateLab/rime/tests/glint_json_test.lua

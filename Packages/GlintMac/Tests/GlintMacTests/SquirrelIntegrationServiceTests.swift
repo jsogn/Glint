@@ -1,6 +1,7 @@
 import CryptoKit
 import Foundation
 import GlintCore
+import GlintRimeRelayCore
 import os
 import XCTest
 @testable import GlintMac

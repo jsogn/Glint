@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1915D16F7563B87CA5A13550 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F8A82E516DAFF4A024E794 /* main.swift */; };
-		1BF6A90222551DFB52BD8D2A /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = E67C16616B80BC8D3EFFE6F2 /* GlintCore */; };
+		1BF6A90222551DFB52BD8D2A /* GlintRimeRelayCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8E1C38C91BB0900DEB275D40 /* GlintRimeRelayCore */; };
 		1DFD7FC772F747CA4584F247 /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = F9D4B122443AB994DF2359AC /* catalog.json */; };
 		21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */; };
 		22E07096AE8DF1D73689097B /* GlintMac in Frameworks */ = {isa = PBXBuildFile; productRef = C82639D2D34337D5A9CD7D0C /* GlintMac */; };
@@ -35,7 +35,6 @@
 		D418B3179EEE536BCCF50C9D /* GlintUI in Frameworks */ = {isa = PBXBuildFile; productRef = FBD93326229A8A62F071CD36 /* GlintUI */; };
 		D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */; };
 		F2B51655232A3968EF790E71 /* candidate_bridge.lua in CopyFiles */ = {isa = PBXBuildFile; fileRef = 98A1399AD8AAD221DB8BE251 /* candidate_bridge.lua */; };
-		F2DF9DF3366D4BC543FBAC25 /* GlintMac in Frameworks */ = {isa = PBXBuildFile; productRef = 6FA372D848E0735725259193 /* GlintMac */; };
 		F66206E2AF6A12351EC83B1C /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */; };
 		FA3C47D17A7C09E8852FB155 /* GlintDictionary in Frameworks */ = {isa = PBXBuildFile; productRef = 0B46DF0B3D2714D2CEC06F6E /* GlintDictionary */; };
 /* End PBXBuildFile section */
@@ -84,6 +83,7 @@
 		32E9F8EB23E80E0A931F444E /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
 		3E2E78BBA22734DD486C760B /* Glint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glint.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4D24D192806595FBAE16FA92 /* GlintPlugins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintPlugins; path = Packages/GlintPlugins; sourceTree = SOURCE_ROOT; };
+		514EBDE5CE7F0E74E3618FBB /* GlintRimeRelayCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintRimeRelayCore; path = Packages/GlintRimeRelayCore; sourceTree = SOURCE_ROOT; };
 		53183767502EEFE5D0989DD0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		53834E47CC9C69BE17B9CC55 /* GlintCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintCore; path = Packages/GlintCore; sourceTree = SOURCE_ROOT; };
 		58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfCheck.swift; sourceTree = "<group>"; };
@@ -121,8 +121,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1BF6A90222551DFB52BD8D2A /* GlintCore in Frameworks */,
-				F2DF9DF3366D4BC543FBAC25 /* GlintMac in Frameworks */,
+				1BF6A90222551DFB52BD8D2A /* GlintRimeRelayCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -201,6 +200,7 @@
 				5F675D0EDB2453ADD8136057 /* GlintInference */,
 				D58946C3A8621B011A33D664 /* GlintMac */,
 				4D24D192806595FBAE16FA92 /* GlintPlugins */,
+				514EBDE5CE7F0E74E3618FBB /* GlintRimeRelayCore */,
 				09BDD68C6DB642A313D624CC /* GlintUI */,
 			);
 			path = Packages;
@@ -353,8 +353,7 @@
 			);
 			name = RimeCandidateBridge;
 			packageProductDependencies = (
-				E67C16616B80BC8D3EFFE6F2 /* GlintCore */,
-				6FA372D848E0735725259193 /* GlintMac */,
+				8E1C38C91BB0900DEB275D40 /* GlintRimeRelayCore */,
 			);
 			productName = RimeCandidateBridge;
 			productReference = CA325A737255A243BF330A82 /* RimeCandidateBridge */;
@@ -395,6 +394,7 @@
 				3EF32FFF5BDE7992D2EA804F /* XCLocalSwiftPackageReference "Packages/GlintInference" */,
 				4248E9998124E59ED3E448B4 /* XCLocalSwiftPackageReference "Packages/GlintMac" */,
 				749828658BAFA78E950BC92E /* XCLocalSwiftPackageReference "Packages/GlintPlugins" */,
+				E6EAA1225E401D22BA6D382D /* XCLocalSwiftPackageReference "Packages/GlintRimeRelayCore" */,
 				076F4E7133D80835349ECFED /* XCLocalSwiftPackageReference "Packages/GlintUI" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -762,6 +762,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/GlintPlugins;
 		};
+		E6EAA1225E401D22BA6D382D /* XCLocalSwiftPackageReference "Packages/GlintRimeRelayCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/GlintRimeRelayCore;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -781,21 +785,17 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = GlintInference;
 		};
-		6FA372D848E0735725259193 /* GlintMac */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = GlintMac;
-		};
 		7BA38E357A8135112494378C /* GlintPlugins */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GlintPlugins;
 		};
+		8E1C38C91BB0900DEB275D40 /* GlintRimeRelayCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GlintRimeRelayCore;
+		};
 		C82639D2D34337D5A9CD7D0C /* GlintMac */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GlintMac;
-		};
-		E67C16616B80BC8D3EFFE6F2 /* GlintCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = GlintCore;
 		};
 		FBD93326229A8A62F071CD36 /* GlintUI */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -20,6 +20,8 @@ settings:
 packages:
   GlintCore:
     path: Packages/GlintCore
+  GlintRimeRelayCore:
+    path: Packages/GlintRimeRelayCore
   GlintMac:
     path: Packages/GlintMac
   GlintDictionary:
@@ -105,10 +107,8 @@ targets:
     sources:
       - path: Tools/RimeCandidateLab/Sources/RimeCandidateBridge
     dependencies:
-      - package: GlintCore
-        product: GlintCore
-      - package: GlintMac
-        product: GlintMac
+      - package: GlintRimeRelayCore
+        product: GlintRimeRelayCore
     settings:
       base:
         PRODUCT_NAME: RimeCandidateBridge

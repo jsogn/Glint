@@ -78,6 +78,18 @@ private struct StubCandidates: AXCandidateReading {
     }
 }
 
+private struct StubMissCandidates: AXCandidateReading {
+    let missReason: AXCandidateReadMissReason
+
+    func snapshot(
+        processIdentifier: pid_t?,
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
+    ) -> AXCandidateSnapshot? {
+        nil
+    }
+}
+
 private struct FixedSnapshotCandidates: AXCandidateReading {
     let candidate: AXCandidateSnapshot
 
@@ -2448,6 +2460,175 @@ final class CandidateReaderRouterTests: XCTestCase {
         )
     }
 
+    func testStandardConfigurationRoutesDoubaoThroughRecoverableReader() {
+        let router = CandidateReaderConfiguration.standard()
+        let routerSource = source(
+            bundleIdentifier:
+                InputMethodIdentifier.doubaoBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.doubaoPinyinMode
+        )
+
+        let reader = router.reader(for: routerSource)
+
+        XCTAssertTrue(reader is PreferredCandidateReader)
+        XCTAssertTrue(
+            router.allowsProcessFallback(for: routerSource)
+        )
+    }
+
+    func testRecoverableReaderSuccessSchedulesProfileDiscovery()
+        async
+    {
+        let probeStarted = expectation(
+            description: "profile discovery starts"
+        )
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "1.0" },
+            discover: { _ in
+                probeStarted.fulfill()
+                return .isolatedSelectedTextItems
+            }
+        )
+        let routerSource = source(
+            bundleIdentifier:
+                InputMethodIdentifier.doubaoBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.doubaoPinyinMode
+        )
+        let router = CandidateReaderRouter(
+            fallback: StubCandidates(),
+            registrations: [
+                CandidateReaderRegistration(
+                    bundleIdentifiers: [
+                        InputMethodIdentifier.doubaoBundle
+                    ],
+                    inputSourceIdentifiers: [
+                        InputMethodIdentifier.doubaoPinyinMode
+                    ],
+                    reader: FixedSnapshotCandidates(
+                        candidate: AXCandidateSnapshot(
+                            text: "candidate",
+                            visibleTexts: [],
+                            frame: CGRect(
+                                x: 10,
+                                y: 20,
+                                width: 30,
+                                height: 30
+                            ),
+                            candidateListFrame: nil
+                        )
+                    ),
+                    usesAdaptiveProfileFallback: true
+                )
+            ],
+            adaptiveProfiles: cache
+        )
+
+        XCTAssertNotNil(
+            router.reader(for: routerSource).snapshot(
+                processIdentifier: 42,
+                includeVisibleCandidates: true,
+                includeVisibleTexts: false
+            )
+        )
+        await fulfillment(of: [probeStarted], timeout: 1)
+    }
+
+    func testPreferredReaderSuccessDoesNotCancelSameVersionProbe()
+        async
+    {
+        let discoveryCount = OSAllocatedUnfairLock(initialState: 0)
+        let probeStarted = DispatchSemaphore(value: 0)
+        let releaseProbe = DispatchSemaphore(value: 0)
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "1.0" },
+            discover: { _ in
+                let count = discoveryCount.withLock { value in
+                    value += 1
+                    return value
+                }
+                if count > 1 {
+                    probeStarted.signal()
+                    releaseProbe.wait()
+                    return .isolatedSelectedTextItems
+                }
+                return .isolatedCandidateList
+            }
+        )
+        let identity = InputMethodIdentity(
+            bundleIdentifier: InputMethodIdentifier.doubaoBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.doubaoPinyinMode,
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: nil
+        )
+        let routerSource = ActiveInputSource(
+            identity: identity,
+            kind: .otherInputMethod
+        )
+
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        cache.recordProfileMiss(
+            for: identity,
+            reason: .structureMismatch
+        )
+        let rediscovery = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(rediscovery)
+        XCTAssertEqual(
+            probeStarted.wait(timeout: .now() + 1),
+            .success
+        )
+
+        let router = CandidateReaderRouter(
+            fallback: StubCandidates(),
+            registrations: [
+                CandidateReaderRegistration(
+                    bundleIdentifiers: [
+                        InputMethodIdentifier.doubaoBundle
+                    ],
+                    inputSourceIdentifiers: [
+                        InputMethodIdentifier.doubaoPinyinMode
+                    ],
+                    reader: FixedSnapshotCandidates(
+                        candidate: AXCandidateSnapshot(
+                            text: "candidate",
+                            visibleTexts: [],
+                            frame: CGRect(
+                                x: 10,
+                                y: 20,
+                                width: 30,
+                                height: 30
+                            ),
+                            candidateListFrame: nil
+                        )
+                    ),
+                    usesAdaptiveProfileFallback: true
+                )
+            ],
+            adaptiveProfiles: cache
+        )
+        XCTAssertNotNil(
+            router.reader(for: routerSource).snapshot(
+                processIdentifier: 42,
+                includeVisibleCandidates: true,
+                includeVisibleTexts: false
+            )
+        )
+
+        releaseProbe.signal()
+        await rediscovery?.value
+
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedSelectedTextItems
+        )
+    }
+
     func testUnknownInputMethodUsesStandardFallback() {
         let fallback = RecordingCandidates()
         let weType = RecordingCandidates()
@@ -2499,7 +2680,7 @@ final class CandidateReaderRouterTests: XCTestCase {
         XCTAssertTrue(reader is AdaptiveUnknownCandidateReader)
     }
 
-    func testProfileDiscoveryIsDisabledOutsideComposition() throws {
+    func testAdaptiveReaderPreservesCompositionGateFlag() throws {
         let router = CandidateReaderRouter(
             fallback: RecordingCandidates(),
             registrations: [],
@@ -2535,7 +2716,21 @@ final class CandidateReaderRouterTests: XCTestCase {
             )
         )
 
-        XCTAssertTrue(reader is SogouCandidateReader)
+        XCTAssertTrue(reader is PreferredCandidateReader)
+    }
+
+    func testStandardConfigurationRoutesWeTypeThroughRecoverableReader() {
+        let router = CandidateReaderConfiguration.standard()
+        let reader = router.reader(
+            for: source(
+                bundleIdentifier:
+                    InputMethodIdentifier.weTypeBundle,
+                inputSourceIdentifier:
+                    InputMethodIdentifier.weTypePinyinMode
+            )
+        )
+
+        XCTAssertTrue(reader is PreferredCandidateReader)
     }
 
     private func source(
@@ -2987,7 +3182,7 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         )
     }
 
-    func testVersionChangeKeepsActiveProfileWithoutRediscovery() async {
+    func testVersionChangeKeepsProfileAsProvisionalFallback() async {
         let version = OSAllocatedUnfairLock(initialState: "1.0")
         let cache = CandidateProfileCache(
             clock: { 0 },
@@ -3006,6 +3201,83 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         XCTAssertEqual(
             cache.profile(for: identity),
             .isolatedCandidateList
+        )
+    }
+
+    func testVersionChangeSchedulesDiscoveryAfterProfileHit() async {
+        let version = OSAllocatedUnfairLock(initialState: "1.0")
+        let discoveryCount = OSAllocatedUnfairLock(initialState: 0)
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in
+                version.withLock { $0 }
+            },
+            discover: { _ in
+                discoveryCount.withLock { $0 += 1 }
+                return .isolatedCandidateList
+            }
+        )
+        let identity = identity()
+
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+
+        version.withLock { $0 = "2.0" }
+        cache.recordProfileHit(for: identity)
+
+        let rediscovery = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(rediscovery)
+        await rediscovery?.value
+        XCTAssertEqual(discoveryCount.withLock { $0 }, 2)
+    }
+
+    func testRepeatedVersionChangeHitsKeepRevalidationCommittable()
+        async
+    {
+        let version = OSAllocatedUnfairLock(initialState: "1.0")
+        let discoveryCount = OSAllocatedUnfairLock(initialState: 0)
+        let probeStarted = DispatchSemaphore(value: 0)
+        let releaseProbe = DispatchSemaphore(value: 0)
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in
+                version.withLock { $0 }
+            },
+            discover: { _ in
+                let count = discoveryCount.withLock { value in
+                    value += 1
+                    return value
+                }
+                if count > 1 {
+                    probeStarted.signal()
+                    releaseProbe.wait()
+                    return .isolatedSelectedTextItems
+                }
+                return .isolatedCandidateList
+            }
+        )
+        let identity = identity()
+
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+
+        version.withLock { $0 = "2.0" }
+        cache.recordProfileHit(for: identity)
+        let rediscovery = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(rediscovery)
+        XCTAssertEqual(
+            probeStarted.wait(timeout: .now() + 1),
+            .success
+        )
+
+        cache.recordProfileHit(for: identity)
+        releaseProbe.signal()
+        await rediscovery?.value
+
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedSelectedTextItems
         )
     }
 
@@ -3304,13 +3576,13 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         )
     }
 
-    func testStandardFallbackSuccessDoesNotStartProfileProbe() {
+    func testFallbackSuccessWithCandidateEvidenceRequestsDiscovery() {
         let identity = identity()
-        let probeCalls = OSAllocatedUnfairLock(initialState: 0)
+        let probeStarted = DispatchSemaphore(value: 0)
         let cache = CandidateProfileCache(
             clock: { 0 },
             discover: { _ in
-                probeCalls.withLock { $0 += 1 }
+                probeStarted.signal()
                 return .isolatedCandidateList
             }
         )
@@ -3328,7 +3600,7 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
                 )
             ),
             profiles: cache,
-            allowsProfileDiscovery: true,
+            allowsProfileDiscovery: false,
             selectedTextItemReaders: .init()
         )
 
@@ -3339,7 +3611,84 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
                 includeVisibleTexts: false
             )
         )
-        XCTAssertEqual(probeCalls.withLock { $0 }, 0)
+        XCTAssertEqual(
+            probeStarted.wait(timeout: .now() + 1),
+            .success
+        )
+    }
+
+    func testPreferredReaderSuccessRequestsProfileValidation() {
+        let validationCalls =
+            OSAllocatedUnfairLock(initialState: 0)
+        let reader = PreferredCandidateReader(
+            preferred: FixedSnapshotCandidates(
+                candidate: AXCandidateSnapshot(
+                    text: "candidate",
+                    visibleTexts: [],
+                    frame: CGRect(x: 10, y: 20, width: 30, height: 30),
+                    candidateListFrame: nil
+                )
+            ),
+            fallback: StubCandidates(),
+            onPreferredSuccess: {
+                validationCalls.withLock { $0 += 1 }
+            }
+        )
+
+        XCTAssertNotNil(
+            reader.snapshot(
+                processIdentifier: 42,
+                includeVisibleCandidates: true,
+                includeVisibleTexts: false
+            )
+        )
+        XCTAssertEqual(validationCalls.withLock { $0 }, 1)
+    }
+
+    func testPreferredReaderPreservesActionableMissReason() {
+        let reader = PreferredCandidateReader(
+            preferred: StubMissCandidates(
+                missReason: .candidateEnded
+            ),
+            fallback: StubMissCandidates(
+                missReason: .structureMismatch
+            )
+        )
+
+        XCTAssertNil(reader.snapshot())
+        XCTAssertEqual(reader.missReason, .candidateEnded)
+    }
+
+    func testPreferredReaderSkipsFallbackAfterCandidateEnded() {
+        let fallback = RecordingCandidates()
+        let reader = PreferredCandidateReader(
+            preferred: StubMissCandidates(
+                missReason: .candidateEnded
+            ),
+            fallback: fallback
+        )
+
+        XCTAssertNil(reader.snapshot())
+        XCTAssertTrue(fallback.requestedVisibleCandidates.isEmpty)
+        XCTAssertTrue(fallback.requestedVisibleTexts.isEmpty)
+        XCTAssertEqual(reader.missReason, .candidateEnded)
+    }
+
+    func testPreferredReaderFallsBackAfterStructureMismatch() {
+        let fallback = RecordingCandidates()
+        let reader = PreferredCandidateReader(
+            preferred: StubMissCandidates(
+                missReason: .structureMismatch
+            ),
+            fallback: fallback
+        )
+
+        XCTAssertNil(reader.snapshot())
+        XCTAssertEqual(
+            fallback.requestedVisibleCandidates,
+            [false]
+        )
+        XCTAssertEqual(reader.missReason, .structureMismatch)
     }
 
     func testPersistedProfileSurvivesCacheRecreationAcrossVersionUpgrade()
@@ -3396,6 +3745,64 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
             .isolatedCandidateList
         )
         XCTAssertEqual(probeCalls.withLock { $0 }, 0)
+    }
+
+    func testV2CacheIgnoresV1AndStoresDiscoveredProfile()
+        async throws
+    {
+        let suiteName =
+            "GlintMacTests.ProfileCacheV2.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: suiteName)
+        )
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        let identity = identity()
+        let bundleIdentifier = try XCTUnwrap(
+            identity.bundleIdentifier
+        )
+        let v1Records: [[String: String]] = [
+            [
+                "bundleIdentifier": bundleIdentifier,
+                "inputSourceIdentifier":
+                    identity.inputSourceIdentifier,
+                "applicationVersion": "1.0",
+                "profile": CandidateReadProfile
+                    .isolatedCandidateList.rawValue,
+            ]
+        ]
+        defaults.set(
+            try JSONSerialization.data(withJSONObject: v1Records),
+            forKey: "candidateProfiles.v1"
+        )
+        let persistence = CandidateProfilePersistence.make(
+            defaults: defaults
+        )
+        let key = try XCTUnwrap(
+            CandidateProfileKey(
+                identity: identity,
+                applicationVersion: "2.0"
+            )
+        )
+
+        XCTAssertNil(persistence.profile(for: key))
+
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "2.0" },
+            persistence: persistence,
+            discover: { _ in .isolatedSelectedTextItems }
+        )
+        await cache.requestDiscovery(for: identity)?.value
+
+        XCTAssertNotNil(
+            defaults.data(forKey: "candidateProfiles.v2")
+        )
+        XCTAssertEqual(
+            persistence.profile(for: key),
+            .isolatedSelectedTextItems
+        )
     }
 
     func testPersistenceUsesMostRecentlyValidatedProfileAcrossVersions()

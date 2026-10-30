@@ -67,17 +67,21 @@ struct CandidateReaderRegistration {
     let inputSourceIdentifiers: Set<String>
     let reader: any AXCandidateReading
     let isAvailable: @Sendable () -> Bool
+    let usesAdaptiveProfileFallback: Bool
 
     init(
         bundleIdentifiers: Set<String>,
         inputSourceIdentifiers: Set<String>,
         reader: any AXCandidateReading,
-        isAvailable: @escaping @Sendable () -> Bool = { true }
+        isAvailable: @escaping @Sendable () -> Bool = { true },
+        usesAdaptiveProfileFallback: Bool = false
     ) {
         self.bundleIdentifiers = bundleIdentifiers
         self.inputSourceIdentifiers = inputSourceIdentifiers
         self.reader = reader
         self.isAvailable = isAvailable
+        self.usesAdaptiveProfileFallback =
+            usesAdaptiveProfileFallback
     }
 
     func matches(_ identity: InputMethodIdentity) -> Bool {
@@ -115,18 +119,49 @@ struct CandidateReaderRouter: CandidateReaderRouting {
         for source: ActiveInputSource,
         allowProfileDiscovery: Bool
     ) -> any AXCandidateReading {
-        if let reader = registrations.first(where: {
+        if let registration = registrations.first(where: {
             $0.matches(source.identity) && $0.isAvailable()
-        })?.reader {
-            return reader
+        }) {
+            guard
+                registration.usesAdaptiveProfileFallback,
+                let profileCache = adaptiveProfiles,
+                let adaptive = adaptiveReader(
+                    for: source,
+                    allowProfileDiscovery: allowProfileDiscovery
+                )
+            else {
+                return registration.reader
+            }
+            return PreferredCandidateReader(
+                preferred: registration.reader,
+                fallback: adaptive,
+                onPreferredSuccess: {
+                    profileCache.requestDiscovery(
+                        for: source.identity
+                    )
+                }
+            )
         }
+        if let adaptive = adaptiveReader(
+            for: source,
+            allowProfileDiscovery: allowProfileDiscovery
+        ) {
+            return adaptive
+        }
+        return fallback
+    }
+
+    private func adaptiveReader(
+        for source: ActiveInputSource,
+        allowProfileDiscovery: Bool
+    ) -> AdaptiveUnknownCandidateReader? {
         guard
             let adaptiveProfiles,
             source.kind == .otherInputMethod
                 || source.kind == .unknown,
             source.identity.bundleIdentifier != nil
         else {
-            return fallback
+            return nil
         }
         return AdaptiveUnknownCandidateReader(
             source: source,
@@ -164,6 +199,7 @@ enum CandidateReaderConfiguration {
     static func standard(
         rimeCandidateStore: RimeCandidateSnapshotStore? = nil
     ) -> CandidateReaderRouter {
+        let selectedTextItemReaders = SelectedTextItemReaderPool()
         var registrations = [
             CandidateReaderRegistration(
                 bundleIdentifiers: [],
@@ -181,7 +217,8 @@ enum CandidateReaderConfiguration {
                 inputSourceIdentifiers: [
                     InputMethodIdentifier.weTypePinyinMode
                 ],
-                reader: WeTypeCandidateReader()
+                reader: WeTypeCandidateReader(),
+                usesAdaptiveProfileFallback: true
             ),
             CandidateReaderRegistration(
                 bundleIdentifiers: [
@@ -190,7 +227,23 @@ enum CandidateReaderConfiguration {
                 inputSourceIdentifiers: [
                     InputMethodIdentifier.sogouPinyinMode
                 ],
-                reader: SogouCandidateReader()
+                reader: SogouCandidateReader(),
+                usesAdaptiveProfileFallback: true
+            ),
+            CandidateReaderRegistration(
+                bundleIdentifiers: [
+                    InputMethodIdentifier.doubaoBundle
+                ],
+                inputSourceIdentifiers: [
+                    InputMethodIdentifier.doubaoPinyinMode
+                ],
+                reader: selectedTextItemReaders.reader(
+                    bundleIdentifier:
+                        InputMethodIdentifier.doubaoBundle,
+                    inputSourceIdentifier:
+                        InputMethodIdentifier.doubaoPinyinMode
+                ),
+                usesAdaptiveProfileFallback: true
             ),
         ]
         if let rimeCandidateStore {
@@ -219,7 +272,8 @@ enum CandidateReaderConfiguration {
             registrations: registrations,
             adaptiveProfiles: CandidateProfileCache(
                 persistence: .shared
-            )
+            ),
+            selectedTextItemReaders: selectedTextItemReaders
         )
     }
 }

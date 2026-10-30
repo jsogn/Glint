@@ -1,5 +1,6 @@
 import Foundation
 import GlintCore
+import GlintRimeRelayCore
 
 public final class RimeCandidateBridgeReceiver: @unchecked Sendable {
     public static var defaultSocketPath: String {
