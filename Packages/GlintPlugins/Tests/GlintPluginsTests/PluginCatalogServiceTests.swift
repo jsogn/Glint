@@ -904,6 +904,261 @@ final class PluginCatalogServiceTests: XCTestCase {
         )
     }
 
+    func testOnlyManagedOPUSModelCanUseDownloadedCTranslateData() {
+        let managed = PluginManifest(
+            id: "mt-opus-zh-en",
+            type: .translation,
+            name: "OPUS-MT Chinese-English",
+            version: "0.1.0",
+            runtime: "ctranslate2-data",
+            sizeBytes: 1,
+            sha256: "test",
+            url: URL(string: "https://example.com/opus.zip")!,
+            license: "CC-BY-4.0",
+            minRAMBytes: 0
+        )
+        let unmanaged = PluginManifest(
+            id: "arbitrary-ct2",
+            type: .translation,
+            name: "Arbitrary",
+            version: "1.0",
+            runtime: "ctranslate2-data",
+            sizeBytes: 1,
+            sha256: "test",
+            url: URL(string: "https://example.com/arbitrary.zip")!,
+            license: "MIT",
+            minRAMBytes: 0
+        )
+
+        XCTAssertTrue(
+            PluginRuntimePolicy.supportsDownloadedRuntime(managed)
+        )
+        XCTAssertFalse(
+            PluginRuntimePolicy.supportsDownloadedRuntime(unmanaged)
+        )
+    }
+
+    func testOPUSArchiveRequiresAllModelDataFiles() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintOPUSRuntimeFiles-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(
+            at: directory.appendingPathComponent("model"),
+            withIntermediateDirectories: true
+        )
+        let manifest = PluginManifest(
+            id: "mt-opus-zh-en",
+            type: .translation,
+            name: "OPUS-MT Chinese-English",
+            version: "0.1.0",
+            runtime: "ctranslate2-data",
+            sizeBytes: 1,
+            sha256: "test",
+            url: URL(string: "https://example.com/opus.zip")!,
+            license: "CC-BY-4.0",
+            minRAMBytes: 0
+        )
+
+        XCTAssertFalse(
+            PluginCatalogService.hasRequiredRuntimeFiles(
+                for: manifest,
+                in: directory
+            )
+        )
+        for name in [
+            "model.bin",
+            "config.json",
+            "shared_vocabulary.json",
+            "source.spm",
+            "target.spm",
+        ] {
+            XCTAssertTrue(
+                FileManager.default.createFile(
+                    atPath: directory.appendingPathComponent(
+                        "model/\(name)"
+                    ).path,
+                    contents: Data()
+                )
+            )
+        }
+        XCTAssertTrue(
+            PluginCatalogService.hasRequiredRuntimeFiles(
+                for: manifest,
+                in: directory
+            )
+        )
+    }
+
+    func testManagedOPUSDataPackageInstallsAndUninstalls() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintOPUSPackage-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent(
+            "mt-opus-zh-en",
+            isDirectory: true
+        )
+        let modelDirectory = source.appendingPathComponent(
+            "model",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: modelDirectory,
+            withIntermediateDirectories: true
+        )
+        let embedded = PluginManifest(
+            id: "mt-opus-zh-en",
+            type: .translation,
+            name: "OPUS-MT Chinese-English",
+            version: "0.1.0",
+            runtime: "ctranslate2-data",
+            sizeBytes: 1,
+            sha256: "embedded",
+            url: URL(string: "https://example.com/opus.zip")!,
+            license: "CC-BY-4.0",
+            minRAMBytes: 0
+        )
+        try JSONEncoder().encode(embedded).write(
+            to: source.appendingPathComponent(
+                PluginManifest.fileName
+            )
+        )
+        for name in [
+            "model.bin",
+            "config.json",
+            "shared_vocabulary.json",
+            "source.spm",
+            "target.spm",
+        ] {
+            try Data([0x00]).write(
+                to: modelDirectory.appendingPathComponent(name)
+            )
+        }
+        let archive = root.appendingPathComponent("opus.zip")
+        try createArchive(from: source, at: archive)
+        let archiveData = try Data(contentsOf: archive)
+        let digest = SHA256.hash(data: archiveData)
+            .map { String(format: "%02x", $0) }
+            .joined()
+        let manifest = PluginManifest(
+            id: embedded.id,
+            type: embedded.type,
+            name: embedded.name,
+            version: embedded.version,
+            runtime: embedded.runtime,
+            sizeBytes: Int64(archiveData.count),
+            sha256: digest,
+            url: archive,
+            license: embedded.license,
+            minRAMBytes: embedded.minRAMBytes
+        )
+        let manager = PluginManager(
+            baseDirectory: root.appendingPathComponent(
+                "support",
+                isDirectory: true
+            )
+        )
+        let service = PluginCatalogService(manager: manager)
+
+        let installed = try await service.install(manifest)
+
+        XCTAssertEqual(installed.id, "mt-opus-zh-en")
+        XCTAssertEqual(installed.runtime, "ctranslate2-data")
+        XCTAssertEqual(installed.source, .catalog)
+        let installedDirectory = await manager.pluginDirectory(
+            for: installed.id
+        )
+        let modelFile = installedDirectory.appendingPathComponent(
+            "model/model.bin"
+        )
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: modelFile.path
+            )
+        )
+
+        try await service.uninstall(id: installed.id)
+
+        let remaining = await manager.installedPlugin(id: installed.id)
+        XCTAssertNil(remaining)
+    }
+
+    func testPublishedOPUSArchiveContainsOnlyInstallableModelData() async throws {
+        var repositoryRoot = URL(fileURLWithPath: #filePath)
+        for _ in 0..<5 {
+            repositoryRoot.deleteLastPathComponent()
+        }
+        let archive = repositoryRoot.appendingPathComponent(
+            "build/dist/mt-opus-zh-en-0.1.0.zip"
+        )
+        guard FileManager.default.fileExists(atPath: archive.path) else {
+            throw XCTSkip(
+                "Run scripts/package_opus_model_data.sh before package tests."
+            )
+        }
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintPublishedOPUS-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = PluginManager(baseDirectory: root)
+        let service = PluginCatalogService(manager: manager)
+        let catalog = try await service.fetchCatalog(
+            from: repositoryRoot.appendingPathComponent(
+                "Resources/catalog.json"
+            )
+        )
+        let published = try XCTUnwrap(
+            catalog.first {
+                $0.id == "mt-opus-zh-en"
+            }
+        )
+        let localManifest = PluginManifest(
+            id: published.id,
+            type: published.type,
+            name: published.name,
+            version: published.version,
+            runtime: published.runtime,
+            sizeBytes: published.sizeBytes,
+            sha256: published.sha256,
+            url: archive,
+            license: published.license,
+            minRAMBytes: published.minRAMBytes,
+            summary: published.summary,
+            source: .catalog
+        )
+
+        let installed = try await service.install(localManifest)
+        let installedDirectory = await manager.pluginDirectory(
+            for: installed.id
+        )
+
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: installedDirectory.appendingPathComponent(
+                    "model/model.bin"
+                ).path
+            )
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: installedDirectory.appendingPathComponent(
+                    "bin"
+                ).path
+            )
+        )
+
+        try await service.uninstall(id: installed.id)
+        let remaining = await manager.installedPlugin(id: installed.id)
+        XCTAssertNil(remaining)
+    }
+
     func testRejectsExecutablePluginContent() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("GlintUnsafePlugin-\(UUID().uuidString)")

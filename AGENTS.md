@@ -38,7 +38,7 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换输入法�
 - UI：系统 SwiftUI/AppKit 控件，不引入第三方 UI 组件库。
 - 候选读取：Accessibility `InputMethodCandidateList`。
 - 词典：SQLite 插件，当前包括 CC-CEDICT、ECDICT、Wiktionary。
-- 翻译：仅使用本地 CTranslate2 / MLX 模型。
+- 翻译：Apple Translation、CTranslate2 / MLX 本地模型。
 - 日志：OSLog，默认脱敏。
 
 ## 目录职责
@@ -146,15 +146,17 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - 每个候选 revision 只允许当前结果进入 HUD；候选变化时取消旧任务并让旧译文进入淡化占位，不得关闭组合会话中的 HUD。
 - 只有候选栏结束、提交、失焦、切换输入法或安全输入时才关闭 HUD。
 - 权限状态检查必须节流，不得在每次候选轮询中重复访问 TCC。
-- CC-CEDICT、ECDICT、Wiktionary 与 OPUS-MT 是随 App 提供的只读核心能力，
-  不从插件目录安装，也不允许卸载；其他词典和翻译模型由 `PluginManager`
-  安装、更新和卸载。
+- CC-CEDICT、ECDICT 与 Wiktionary 是随 App 提供的只读核心词典能力。
+  OPUS-MT 是 Glint 托管的可选在线模型数据，由 `PluginManager` 安装和卸载。
+- Apple Translation 是默认翻译模型；旧版选中的内置 OPUS-MT 在升级后一次性
+  迁移为 Apple Translation，用户之后仍可主动下载并重新选择 OPUS-MT。
 - 插件是数据包，不允许执行任意第三方代码。
-- 下载/本地导入插件只允许 MLX 或 SQLite 数据 runtime；CTranslate2 仅允许随
-  App 签名提供的内置资源。
+- 下载/本地导入插件只允许 MLX、SQLite 或经过限制的 `ctranslate2-data`
+  runtime。`ctranslate2-data` 只允许固定 ID `mt-opus-zh-en`，且下载包
+  不得包含动态库、脚本、命令、链接或其他可执行内容。
 - 下载必须校验 SHA256；优先国内镜像，失败后回退官方源。
-- OPUS-MT 权重不进入 Git；构建脚本按固定 revision 转换并打入最终 App。
-  其他翻译模型不进入主 App 安装包，由用户按需下载。
+- OPUS-MT 权重不进入 Git 或主 App 安装包。CTranslate2/SentencePiece
+  运行库随签名 App 提供，模型数据由固定发布资产按需下载。
 - 不支持用户添加的远程翻译接口；翻译结果必须来自 App 内置、经校验下载或
   本地导入的受支持模型。
 - 不要在 UI 文案中写某台机器上的实测速度或开发备注；只描述用途和相对档位。

@@ -15,7 +15,7 @@
 
 ## 原生翻译运行时
 
-内置 OPUS-MT 使用以下固定版本：
+翻译运行库使用以下固定版本：
 
 - CTranslate2 4.8.3
 - SentencePiece 0.2.2
@@ -28,7 +28,7 @@
 ```
 
 脚本会校验源码 revision、架构、最低系统版本、RPATH、导出符号和代码签名，
-并更新 `model-lock.json` 中的二进制哈希。`scripts/test.sh` 会运行
+并更新 `runtime-lock.json` 中的二进制哈希。`scripts/test.sh` 会运行
 `scripts/test_macos15_compatibility.sh`，在构建前阻止版本或二进制漂移。
 
 ## 发布文件名
@@ -50,7 +50,7 @@ PKG 的 `--min-os-version` 元数据、下载页和 Release Notes 表达，避�
 
 - Debug、Release 和 arm64 构建
 - 最终 App、helper 与全部动态库的 Mach-O 最低版本检查
-- OPUS-MT、SentencePiece、Bridge 的实际加载和翻译
+- 在线 OPUS-MT 数据、SentencePiece、Bridge 的实际加载和翻译
 - 全量单元测试与集成测试
 - DMG/PKG 生成、校验和与应用签名验证
 
@@ -59,7 +59,7 @@ PKG 的 `--min-os-version` 元数据、下载页和 Release Notes 表达，避�
 - Apple 拼音及豆包、微信、搜狗、Rime 的候选读取
 - HUD 定位、失焦、多显示器与缩放
 - 权限、登录启动、安装和 Rime 候选读取支持安装
-- OPUS-MT 与 MLX 模型首次加载和翻译
+- 在线 OPUS-MT 与 MLX 模型首次加载和翻译
 
 网站下载入口指向 GitHub Latest Release，不再单独维护安装包镜像。只有在新的
 macOS arm64 安装包上传并验证后，才能同步更新下载页的系统要求文案，避免线上

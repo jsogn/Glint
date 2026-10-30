@@ -51,7 +51,7 @@ plugin_state="$HOME/Library/Application Support/Glint/.dev-plugin-inputs.sha256"
 plugin_inputs_hash="$(
   {
     shasum -a 256 scripts/install_dev_plugins.sh
-    shasum -a 256 scripts/plugin_catalog_manifests.zsh
+    shasum -a 256 Resources/catalog.json
     for manifest in Resources/Plugins/*/manifest.json(N); do
       shasum -a 256 "$manifest"
     done

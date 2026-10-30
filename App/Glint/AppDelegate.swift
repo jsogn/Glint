@@ -36,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var wasLaunchedAtLogin = false
 
     override init() {
+        TranslationModelSelection.migrateBundledModelSelection()
         let environment = AppEnvironment()
         let windowModel = MainWindowModel(
             pluginManager: environment.pluginManager,

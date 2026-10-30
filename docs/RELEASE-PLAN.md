@@ -49,8 +49,9 @@ ad-hoc 包不能通过 Gatekeeper，也不能启用可用的 Hardened Runtime。
 - 继续通过用户 TCC 授权 Accessibility，不申请屏幕录制权限。
 - 主 App、嵌套 dylib 和 framework 使用同一个 Developer ID Team，内层优先签名。
 - 不使用 `disable-library-validation` 绕过动态库校验。
-- 内置 CTranslate2、SentencePiece 和 OPUS-MT 必须与主 App 同源签名。
-- 构建前运行 `scripts/prepare_opus_model.sh`；模型权重和词表不进入 Git。
+- App 内置的 CTranslate2、SentencePiece 动态库必须与主 App 同源签名。
+- OPUS-MT 权重和词表不进入 Git 或 App；使用
+  `scripts/package_opus_model_data.sh` 生成并校验在线数据包。
 - 开发构建完成后运行 `scripts/verify_app.sh`。
 
 取得 Developer ID 后执行：
@@ -81,6 +82,17 @@ xcrun stapler staple Glint.app
 
 标签版本必须与 `project.yml` 的 `MARKETING_VERSION` 一致。例如 `0.4.1` 对应
 `v0.4.1`；每个发布递增 `CFBundleVersion`。CI 当前使用 `macos-26`。
+
+## 托管模型发布
+
+OPUS-MT 模型数据与 App 分开发布：
+
+1. 运行 `scripts/package_opus_model_data.sh`，生成固定 SHA256 的模型包。
+2. 将模型包上传到 `model-opus-v0.1.0` Release。
+3. 确认 `Resources/catalog.json` 的大小与 SHA256 和归档一致。
+4. App 安装包只包含 `CTranslate2Runtime` 动态库，不包含 OPUS-MT 数据。
+
+模型包不得包含动态库、可执行文件、脚本或符号链接。
 
 ## TCC 与本地测试
 

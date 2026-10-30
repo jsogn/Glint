@@ -118,7 +118,7 @@ def main() -> int:
     arguments = parse_args()
     lock = json.loads(arguments.lock.read_text(encoding="utf-8"))
     if model_is_ready(arguments.plugin_directory, lock):
-        print("Bundled OPUS-MT model is ready.")
+        print("Online OPUS-MT model data is ready.")
         return 0
     if arguments.check:
         return 1
@@ -129,8 +129,8 @@ def main() -> int:
         arguments.source_directory,
     )
     if not model_is_ready(arguments.plugin_directory, lock):
-        raise RuntimeError("Bundled OPUS-MT model failed verification.")
-    print("Bundled OPUS-MT model is ready.")
+        raise RuntimeError("Online OPUS-MT model data failed verification.")
+    print("Online OPUS-MT model data is ready.")
     return 0
 
 

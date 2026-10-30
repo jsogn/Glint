@@ -2,8 +2,6 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-./scripts/prepare_opus_model.sh
-
 if [[ "${GLINT_SKIP_XCODEGEN:-0}" != "1" ]]; then
   xcodegen generate
 fi

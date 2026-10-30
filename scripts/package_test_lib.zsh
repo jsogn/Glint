@@ -10,7 +10,6 @@ prepare_release_app() {
   local app_bundle
   app_bundle="$(release_app_bundle "$work_dir")"
 
-  ./scripts/prepare_opus_model.sh
   xcodegen generate
 
   local source_packages_args=()

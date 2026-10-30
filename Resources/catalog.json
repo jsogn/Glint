@@ -1,6 +1,20 @@
 {
   "plugins": [
     {
+      "id": "mt-opus-zh-en",
+      "type": "translation",
+      "name": "OPUS-MT Chinese-English",
+      "version": "0.1.0",
+      "runtime": "ctranslate2-data",
+      "sizeBytes": 70603977,
+      "sha256": "8534668d6b05818ff018f242811a7bcfba86f4a89a19db0ccdcb9c98033f6dc3",
+      "url": "https://github.com/jsogn/Glint/releases/download/model-opus-v0.1.0/mt-opus-zh-en-0.1.0.zip",
+      "license": "CC-BY-4.0",
+      "minRAMBytes": 1073741824,
+      "summary": "速度快、占用低，适合轻量日常翻译。",
+      "source": "catalog"
+    },
+    {
       "id": "llm-qwen3-0.6b",
       "type": "translation",
       "name": "Qwen3 0.6B",

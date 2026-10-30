@@ -85,10 +85,11 @@ python3 Tools/ModelLab/eval/run_context_rerank.py \
 swift build --package-path Tools/GlintEval \
   --product TranslationCompare
 
-Tools/GlintEval/.build/debug/TranslationCompare \
+GLINT_CT2_LIBRARY="$PWD/Resources/CTranslate2Runtime/bin/libglintct2.dylib" \
+  Tools/GlintEval/.build/debug/TranslationCompare \
   --cases Tools/ModelLab/eval/cases.json \
   --mlx "$HOME/Library/Application Support/Glint/plugins/mt-hy-mt2-1.8b/model" \
-  --ct2 "$PWD/Resources/Plugins/mt-opus-zh-en/model" \
+  --ct2 "$PWD/Resources/OnlineModels/mt-opus-zh-en/model" \
   --metallib "$PWD/build/Build/Products/Debug/Glint.app/Contents/Resources/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib" \
   --rounds 3
 ```

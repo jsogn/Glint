@@ -7,7 +7,7 @@
 
 ## 本次结果
 
-测试使用内置 OPUS-MT int8 和本机已安装的 Hy-MT2 1.8B 4-bit。质量字段来自工具
+测试使用同一 OPUS-MT int8 数据和本机已安装的 Hy-MT2 1.8B 4-bit。质量字段来自工具
 对单个参考译文的精确率和 token F1；同义表达不会被完整计入，因此只能用于横向
 比较，不等同于产品准确率。
 
@@ -22,7 +22,7 @@
 ## Apple Translation 对照
 
 苹果系统翻译通过公开 `Translation` 框架和 SwiftUI `translationTask`
-调用。评测在同一进程、同一批 150 条用例上依次执行系统翻译与内置
+调用。评测在同一进程、同一批 150 条用例上依次执行系统翻译与 OPUS-MT
 OPUS-MT，先做一轮不计时的首次调用和全量预热，再执行 3 轮计时。主机为
 macOS 26.6.2 arm64，系统语言包已完成安装。
 
@@ -64,7 +64,7 @@ OPUS-MT 在部分技术词和常见词上更准确，例如“用户”输出 `U
 
 结论：苹果系统翻译值得作为“已安装语言包时的短语/短句优先来源”，失败后
 由现有路由回退词典，不自动切换到 OPUS-MT；普通词和技术术语继续词典优先。
-苹果系统翻译现已作为可选翻译模型接入，默认模型仍为 OPUS-MT。
+苹果系统翻译现为默认翻译模型；OPUS-MT 作为可选在线模型保留，可随时卸载。
 
 重新生成对照报告：
 
@@ -102,7 +102,8 @@ swift build \
   --package-path Tools/GlintEval \
   --product TranslationModeCompare
 
-Tools/GlintEval/.build/debug/TranslationModeCompare \
+GLINT_CT2_LIBRARY="$PWD/Resources/CTranslate2Runtime/bin/libglintct2.dylib" \
+  Tools/GlintEval/.build/debug/TranslationModeCompare \
   --output build/translation-mode-benchmark.json
 ```
 

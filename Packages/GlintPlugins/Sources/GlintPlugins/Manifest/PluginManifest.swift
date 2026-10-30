@@ -19,18 +19,22 @@ public enum CoreDictionaryUpdateKind: String, Codable, Sendable {
 
 enum PluginRuntimePolicy {
     static func supportsDownloadedRuntime(
-        type: PluginKind,
-        runtime: String
+        _ manifest: PluginManifest
     ) -> Bool {
-        switch type {
+        switch manifest.type {
         case .translation:
-            runtime == "mlx"
+            if manifest.runtime == "mlx" {
+                return true
+            }
+            return manifest.runtime == "ctranslate2-data"
+                && manifest.id == TranslationModelSelection.opusMTModelID
+                && manifest.source == .catalog
         case .dictionary:
-            [
+            return [
                 "sqlite-v1",
                 "cedict-sqlite",
                 "ecdict-rank",
-            ].contains(runtime)
+            ].contains(manifest.runtime)
         }
     }
 }

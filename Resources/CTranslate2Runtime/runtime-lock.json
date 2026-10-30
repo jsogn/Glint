@@ -1,0 +1,23 @@
+{
+  "runtime": "ctranslate2",
+  "version": "4.8.3",
+  "sentencepieceVersion": "0.2.2",
+  "files": {
+    "bin/libctranslate2.dylib": {
+      "sizeBytes": 2954336,
+      "sha256": "fcf10d15cd0ee1d74f6909fd6ebdc474f48d46e9992b12350e194a9b3e2c75df"
+    },
+    "bin/libglintct2.dylib": {
+      "sizeBytes": 64656,
+      "sha256": "33c444e12cc3db3fcd450a7c2023443fe1b95159cd74644fd75a3b76f3ec019c"
+    },
+    "bin/libsentencepiece.0.0.0.dylib": {
+      "sizeBytes": 2073504,
+      "sha256": "a8cd600ec0caec78ddcdd6ab2b47d38aefca6a8394536ce813ff6ee272f1afa3"
+    },
+    "bin/libsentencepiece.0.dylib": {
+      "sizeBytes": 2073504,
+      "sha256": "a8cd600ec0caec78ddcdd6ab2b47d38aefca6a8394536ce813ff6ee272f1afa3"
+    }
+  }
+}

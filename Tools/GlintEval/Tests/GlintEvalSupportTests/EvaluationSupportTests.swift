@@ -138,7 +138,7 @@ struct EvaluationSupportTests {
         )
         #expect(
             options.ct2Path
-                == "Resources/Plugins/mt-opus-zh-en/model"
+                == "Resources/OnlineModels/mt-opus-zh-en/model"
         )
         #expect(
             options.outputPath

@@ -11,7 +11,8 @@ Glint 是菜单栏工具、主窗口和单行 HUD 组成的 macOS App：
 
 1. 使用原生 Accessibility、TIS 和 AppKit 集成；不截图、不执行 OCR。
 2. 全局默认生效，但只读取当前输入法候选，不读取输入框正文。
-3. CC-CEDICT、ECDICT、Wiktionary 和 OPUS-MT 是只读内置能力。
+3. CC-CEDICT、ECDICT 与 Wiktionary 是只读内置词典能力；Apple Translation
+   是默认翻译模型，OPUS-MT 是可安装、可卸载的在线模型数据。
 4. 翻译运行时可以替换，但插件只能携带受支持的模型或词典数据。
 5. 默认不保存候选文本、翻译结果或输入历史。
 6. 模型评测与生产运行时分离，只接入经过验证的运行时类型。
@@ -26,8 +27,9 @@ Glint 是菜单栏工具、主窗口和单行 HUD 组成的 macOS App：
 | 候选读取 | Accessibility 标准候选、显式 reader、结构 Profile |
 | 输入状态 | Carbon TIS + Accessibility |
 | 词典 | SQLite3、CC-CEDICT、ECDICT、Wiktionary |
-| 轻量翻译 | 内置 CTranslate2 int8（OPUS-MT） |
-| 可选翻译 | MLX Swift，本地下载或导入 |
+| 默认翻译 | Apple Translation |
+| 轻量可选翻译 | 在线 OPUS-MT 数据 + App 内置 CTranslate2 int8 运行库 |
+| 可选翻译 | MLX Swift，下载或本地导入 |
 | 插件管理 | manifest、SHA256 校验和原子安装 |
 | 日志 | OSLog，默认脱敏 |
 | 分发目标 | Developer ID、hardened runtime、公证；当前测试发布见发布计划 |
@@ -113,8 +115,10 @@ Glint/
 ### GlintInference
 
 - `TranslationEngine` 的 CTranslate2 与 MLX 实现。
-- 内置 OPUS-MT 只从签名 App bundle 加载。
-- 可选模型只接受 MLX 数据插件；不负责下载、UI 或候选读取。
+- CTranslate2 运行库只从签名 App bundle 加载；OPUS-MT 模型数据只从受控的
+  `Application Support/Glint/plugins/mt-opus-zh-en` 目录加载。
+- 可选模型接受 MLX 数据插件，以及固定 ID 的 OPUS-MT
+  `ctranslate2-data` 数据包；不负责 UI 或候选读取。
 - 负责模型生命周期、推理串行化和资源释放。
 
 ### GlintPlugins
@@ -311,11 +315,13 @@ frame 时，仅该 Reader 回退到宿主输入光标作 HUD 锚点。详见
 - manifest 是插件唯一入口，支持 `dictionary` 与 `translation`。
 - 固定 runtime：
   - `cedict-sqlite`、`ecdict-rank`、`sqlite-v1`；
-  - `ctranslate2` 仅用于内置 OPUS-MT；
+  - `ctranslate2-data` 仅用于在线 OPUS-MT；
   - `mlx` 用于可选翻译模型。
-- CC-CEDICT、ECDICT、Wiktionary 和 OPUS-MT 随 App 提供，不允许卸载。
-  Wiktionary 和 OPUS-MT 仅使用 bundled 数据；CC-CEDICT 与 ECDICT 可把经过校验的
-  更新安装到 Application Support 的同 ID 数据目录，加载失败时回退 bundled 基线。
+- CC-CEDICT、ECDICT、Wiktionary 随 App 提供，不允许卸载。CC-CEDICT 与 ECDICT
+  可把经过校验的更新安装到 Application Support 的同 ID 数据目录，加载失败时
+  回退 bundled 基线。
+- OPUS-MT 不在 App 内。用户下载后安装到 Application Support，并可切换到
+  Apple Translation 后卸载。在线包只能携带模型数据，运行时始终来自签名 App。
 - CC-CEDICT 仅允许用户手动从 MDBG 官方地址检查更新。更新器使用 HEAD 条件请求、
   同日 ETag 变化检测、gzip 流式解析、schema/数量/完整性校验和可回滚的原子插件
   安装；取消或失败不会替换当前可用词典。
@@ -326,8 +332,9 @@ frame 时，仅该 Reader 回退到宿主输入光标作 HUD 锚点。详见
   Swift 构建器。
 - 可更新能力由 manifest 的 `coreUpdateKind` 声明，设置页与服务分发不再各自维护
   词典 ID 白名单。核心词典更新在 App 层全局串行，避免多个安装事务竞争。
-- OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验；
-  权重不进入 Git，锁文件记录产物 SHA256。
+- OPUS-MT 由 `scripts/prepare_opus_model.sh` 按固定 revision 转换并校验，
+  由 `scripts/package_opus_model_data.sh` 生成固定 SHA256 的在线数据包。
+  权重不进入 Git 或 App，运行库由 `runtime-lock.json` 固定。
 - 可选 MLX 模型优先国内镜像，失败后回退官方源；下载、校验和安装阶段不重叠。
 - Hugging Face 镜像顺序、URL 会话和远程地址白名单由单一策略统一提供；模型快照
   下载按来源选择、单文件下载、磁盘检查、进度上报和 SHA256 校验拆分。

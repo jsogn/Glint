@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import GlintCore
 
 public enum PluginCatalogError: Error, LocalizedError, Equatable {
     case invalidResponse
@@ -144,8 +145,7 @@ public actor PluginCatalogService {
         try Task.checkCancellation()
         guard
             PluginRuntimePolicy.supportsDownloadedRuntime(
-                type: manifest.type,
-                runtime: manifest.runtime
+                manifest
             )
         else {
             throw PluginCatalogError.unsupportedRuntime
@@ -299,7 +299,8 @@ public actor PluginCatalogService {
         }
         guard embedded.id == manifest.id,
             embedded.type == manifest.type,
-            embedded.version == manifest.version
+            embedded.version == manifest.version,
+            embedded.runtime == manifest.runtime
         else {
             throw PluginCatalogError.manifestMismatch
         }
@@ -1068,21 +1069,36 @@ public actor PluginCatalogService {
         in directory: URL
     ) -> Bool {
         let fileManager = FileManager.default
-        let requiredName: String?
+        let requiredNames: [String]
         switch manifest.runtime {
         case "sqlite-v1":
-            requiredName = "dictionary.sqlite3"
+            requiredNames = ["dictionary.sqlite3"]
         case "cedict-sqlite":
-            requiredName = "cedict.sqlite3"
+            requiredNames = ["cedict.sqlite3"]
         case "ecdict-rank":
-            requiredName = "ecdict_rank.sqlite3"
+            requiredNames = ["ecdict_rank.sqlite3"]
+        case "ctranslate2-data":
+            guard
+                manifest.id == TranslationModelSelection.opusMTModelID
+            else {
+                return false
+            }
+            requiredNames = [
+                "model/model.bin",
+                "model/config.json",
+                "model/shared_vocabulary.json",
+                "model/source.spm",
+                "model/target.spm",
+            ]
         default:
-            requiredName = nil
+            requiredNames = []
         }
-        guard let requiredName else { return false }
-        return fileManager.fileExists(
-            atPath: directory.appendingPathComponent(requiredName).path
-        )
+        guard !requiredNames.isEmpty else { return false }
+        return requiredNames.allSatisfy {
+            fileManager.fileExists(
+                atPath: directory.appendingPathComponent($0).path
+            )
+        }
     }
 
     private static func isCompleteModelSnapshot(

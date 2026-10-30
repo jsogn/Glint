@@ -5,7 +5,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
 
-plugin_directory="$repo_root/Resources/Plugins/mt-opus-zh-en"
+plugin_directory="$repo_root/Resources/OnlineModels/mt-opus-zh-en"
 lock_file="$plugin_directory/model-lock.json"
 source_directory="$repo_root/Tools/ModelLab/.cache/opus-mt-zh-en"
 python_script="$repo_root/Tools/ModelLab/prepare_opus_model.py"

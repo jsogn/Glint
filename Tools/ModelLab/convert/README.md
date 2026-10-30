@@ -9,7 +9,7 @@ Generated model binaries are stored outside the repository and are not committed
 
 ## OPUS-MT build asset
 
-`Resources/Plugins/mt-opus-zh-en/model-lock.json` pins the upstream model
+`Resources/OnlineModels/mt-opus-zh-en/model-lock.json` pins the upstream model
 revision, converter dependencies, quantization, and output hashes.
 
 Prepare or verify the ignored build cache from the repository root:
@@ -20,5 +20,6 @@ Prepare or verify the ignored build cache from the repository root:
 
 The script uses `hf-mirror.com` by default. Override the endpoint with
 `GLINT_HF_ENDPOINT` when needed. The generated CTranslate2 model remains in
-`Resources/Plugins/mt-opus-zh-en/model`, which is ignored by Git, and is copied
-into the final App bundle at build time.
+`Resources/OnlineModels/mt-opus-zh-en/model`, which is ignored by Git. Use
+`scripts/package_opus_model_data.sh` to build the separate online archive;
+model data is never copied into the App bundle.

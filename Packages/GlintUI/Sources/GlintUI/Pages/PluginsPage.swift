@@ -141,9 +141,6 @@ struct PluginsPage: View {
                 model.recommendedTranslationPlugins
             VStack(spacing: 16) {
                 systemTranslationCard
-                if installed.isEmpty {
-                    translationSetupGuide(available: available)
-                }
                 SettingsCard("本地模型") {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(spacing: 10) {
@@ -296,34 +293,6 @@ struct PluginsPage: View {
         }
     }
 
-    private func translationSetupGuide(
-        available: [PluginManifest]
-    ) -> some View {
-        SettingsCard("启用句子翻译") {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("安装离线翻译模型后，可显示句子翻译。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                HStack(spacing: 10) {
-                    if let plugin = available.first(where: {
-                        $0.id == TranslationModelSelection.defaultModelID
-                    }) {
-                        Button("安装 \(plugin.name)") {
-                            model.installPlugin(plugin)
-                        }
-                        .disabled(
-                            model.isInstalling != nil
-                                || model.isImportingLocalModel
-                        )
-                    }
-                    Text("也可以导入本地 MLX 模型。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
     private func pluginRows(
         installed: [PluginManifest],
         available: [PluginManifest]
@@ -447,7 +416,7 @@ struct PluginsPage: View {
                 }
             }
             if plugin.type == .translation {
-                if plugin.source == .catalog {
+                if plugin.source == .catalog, plugin.revision != nil {
                     let updateState =
                         model.translationModelUpdateState(
                             for: plugin.id
@@ -507,7 +476,14 @@ struct PluginsPage: View {
         let installedVersion = model.installedVersion(for: plugin.id)
         let update = model.update(for: plugin)
         let progress = model.installProgress[plugin.id]
-        let actionTitle = installedVersion == nil ? "安装" : "更新"
+        let actionTitle =
+            if installedVersion == nil {
+                plugin.runtime == "ctranslate2-data"
+                    ? "下载"
+                    : "安装"
+            } else {
+                "更新"
+            }
 
         return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {

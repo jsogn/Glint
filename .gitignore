@@ -20,5 +20,5 @@ Tools/ModelLab/results/*
 Tools/DictionaryLab/results/*
 !Tools/DictionaryLab/results/README.md
 Tools/DictionaryBuilder/cedict.json
-Resources/Plugins/mt-opus-zh-en/model/
+Resources/OnlineModels/mt-opus-zh-en/model/
 Vendor/

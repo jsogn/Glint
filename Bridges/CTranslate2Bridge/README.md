@@ -28,15 +28,16 @@ Run:
 The script pins CTranslate2 4.8.3 and SentencePiece 0.2.2 by commit, builds
 SentencePiece and the bridge for arm64 with a macOS 15 deployment target, signs
 the generated libraries, verifies their architectures and minimum system
-versions, and updates the binary hashes in `model-lock.json`.
+versions, and updates the binary hashes in `runtime-lock.json`.
 
 Source checkouts are cached under `Tools/ModelLab/.cache/ctranslate2-runtime`
 and are not committed. Override that location with `GLINT_CT2_BUILD_CACHE`.
 
 The bridge and CTranslate2/SentencePiece dylibs are bundled at
-`Resources/Plugins/mt-opus-zh-en/bin`. The converted OPUS-MT model is prepared
-by `scripts/prepare_opus_model.sh` and bundled at
-`Resources/Plugins/mt-opus-zh-en/model`.
+`Resources/CTranslate2Runtime/bin`. The converted OPUS-MT model is prepared by
+`scripts/prepare_opus_model.sh` under `Resources/OnlineModels/mt-opus-zh-en`
+and published as a separate data archive by
+`scripts/package_opus_model_data.sh`.
 
 Rules:
 

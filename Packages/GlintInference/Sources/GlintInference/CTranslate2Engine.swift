@@ -64,14 +64,10 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
         }
         guard
             let libraryURL = libraryURL
-                ?? Self.locateLibrary(
-                    near: modelDirectory
-                )
+                ?? Self.locateLibrary()
         else {
             throw CTranslate2EngineError.libraryNotFound(
-                modelDirectory.deletingLastPathComponent()
-                    .appendingPathComponent("bin/libglintct2.dylib")
-                    .path
+                "CTranslate2Runtime/bin/libglintct2.dylib"
             )
         }
 
@@ -149,15 +145,24 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
         }
     }
 
-    private static func locateLibrary(near modelDirectory: URL) -> URL? {
+    private static func locateLibrary() -> URL? {
         if let path = ProcessInfo.processInfo.environment["GLINT_CT2_LIBRARY"] {
             let url = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: url.path) { return url }
         }
-        let pluginLibrary = modelDirectory.deletingLastPathComponent()
-            .appendingPathComponent("bin/libglintct2.dylib")
-        return FileManager.default.fileExists(atPath: pluginLibrary.path)
-            ? pluginLibrary
+        guard
+            let runtimeDirectory = Bundle.main.url(
+                forResource: "CTranslate2Runtime",
+                withExtension: nil
+            )
+        else {
+            return nil
+        }
+        let library = runtimeDirectory.appendingPathComponent(
+            "bin/libglintct2.dylib"
+        )
+        return FileManager.default.fileExists(atPath: library.path)
+            ? library
             : nil
     }
 
@@ -165,14 +170,6 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
         if let path = ProcessInfo.processInfo.environment["GLINT_CT2_MODEL"] {
             let url = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: url.path) { return url }
-        }
-        if let bundled = Bundle.main.url(
-            forResource: "mt-opus-zh-en",
-            withExtension: nil
-        )?.appendingPathComponent("model", isDirectory: true),
-            FileManager.default.fileExists(atPath: bundled.path)
-        {
-            return bundled
         }
         return nil
     }

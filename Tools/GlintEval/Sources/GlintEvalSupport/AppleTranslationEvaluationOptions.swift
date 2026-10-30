@@ -40,7 +40,7 @@ public struct AppleTranslationEvaluationOptions:
             }
         ct2Path =
             value(after: "--ct2")
-            ?? "Resources/Plugins/mt-opus-zh-en/model"
+            ?? "Resources/OnlineModels/mt-opus-zh-en/model"
         outputPath =
             value(after: "--output")
             ?? "build/apple-translation-benchmark.json"

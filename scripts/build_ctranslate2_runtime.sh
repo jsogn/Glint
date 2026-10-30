@@ -16,25 +16,25 @@ cache_root="${GLINT_CT2_BUILD_CACHE:-$repo_root/Tools/ModelLab/.cache/ctranslate
 ctranslate2_source="$cache_root/ctranslate2"
 sentencepiece_source="$cache_root/sentencepiece"
 sentencepiece_build="$cache_root/sentencepiece-build"
-runtime_directory="$repo_root/Resources/Plugins/mt-opus-zh-en/bin"
-lock_file="$repo_root/Resources/Plugins/mt-opus-zh-en/model-lock.json"
+runtime_directory="$repo_root/Resources/CTranslate2Runtime/bin"
+lock_file="$repo_root/Resources/CTranslate2Runtime/runtime-lock.json"
 
 locked_ctranslate2_version="$(
   python3 -c \
-    'import json,sys; print(json.load(open(sys.argv[1]))["conversion"]["tools"]["ctranslate2"])' \
+    'import json,sys; print(json.load(open(sys.argv[1]))["version"])' \
     "$lock_file"
 )"
 locked_sentencepiece_version="$(
   python3 -c \
-    'import json,sys; print(json.load(open(sys.argv[1]))["conversion"]["tools"]["sentencepiece"])' \
+    'import json,sys; print(json.load(open(sys.argv[1]))["sentencepieceVersion"])' \
     "$lock_file"
 )"
 if [[ "$locked_ctranslate2_version" != "$ctranslate2_version" ]]; then
-  echo "CTranslate2 version differs from model-lock.json." >&2
+  echo "CTranslate2 version differs from runtime-lock.json." >&2
   exit 1
 fi
 if [[ "$locked_sentencepiece_version" != "$sentencepiece_version" ]]; then
-  echo "SentencePiece version differs from model-lock.json." >&2
+  echo "SentencePiece version differs from runtime-lock.json." >&2
   exit 1
 fi
 
@@ -215,13 +215,6 @@ lock_path.write_text(
     encoding="utf-8",
 )
 PY
-
-python3 \
-  "$repo_root/Tools/ModelLab/prepare_opus_model.py" \
-  --lock "$lock_file" \
-  --plugin-directory "$repo_root/Resources/Plugins/mt-opus-zh-en" \
-  --source-directory "$repo_root/Tools/ModelLab/.cache/opus-mt-zh-en" \
-  --check
 
 echo "ctranslate2_runtime_version=$ctranslate2_version"
 echo "sentencepiece_version=$sentencepiece_version"

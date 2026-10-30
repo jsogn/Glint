@@ -6,7 +6,6 @@ enum BundledPluginResources {
         "dict-cedict",
         "dict-ecdict",
         "dict-wiktionary-zh-en",
-        "mt-opus-zh-en",
     ]
 
     static var directories: [URL] {

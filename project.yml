@@ -53,7 +53,7 @@ targets:
       - path: Resources/Plugins/dict-wiktionary-zh-en
         buildPhase: resources
         type: folder
-      - path: Resources/Plugins/mt-opus-zh-en
+      - path: Resources/CTranslate2Runtime
         buildPhase: resources
         type: folder
       - path: Tools/RimeCandidateLab/rime/lua/glint/candidate_bridge.lua

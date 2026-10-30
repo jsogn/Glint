@@ -69,7 +69,9 @@ final class MainWindowModelTests: XCTestCase {
     func testSystemTranslationSetupStateOnlyAppearsForActiveSystemModel()
         async throws
     {
-        let localContext = try makeContext()
+        let localContext = try makeContext(
+            selectedModelID: "local-translation-model"
+        )
         defer { localContext.cleanup() }
         localContext.model.updateSystemTranslationAvailability(.available)
         XCTAssertNil(localContext.model.systemTranslationSetupState)
@@ -290,10 +292,10 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
-    func testBundledTranslationIsActiveAndExcludedFromCatalog() async throws {
+    func testDownloadedOPUSCanBeActiveThenRemovedAfterSwitchingToSystem() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
-                "GlintBundledTranslationTests-\(UUID().uuidString)"
+                "GlintDownloadedOPUSTests-\(UUID().uuidString)"
             )
         try FileManager.default.createDirectory(
             at: root,
@@ -301,23 +303,38 @@ final class MainWindowModelTests: XCTestCase {
         )
         defer { try? FileManager.default.removeItem(at: root) }
 
-        let suiteName = "GlintBundledTranslationTests.\(UUID().uuidString)"
+        let suiteName = "GlintDownloadedOPUSTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
+        TranslationModelSelection.select(
+            TranslationModelSelection.opusMTModelID,
+            in: defaults
+        )
 
         let manifest = translationManifest(
-            id: TranslationModelSelection.defaultModelID,
-            source: .bundled,
-            summary: "内置测试模型"
+            id: TranslationModelSelection.opusMTModelID,
+            runtime: "ctranslate2-data",
+            source: .catalog,
+            summary: "在线测试模型"
         )
+        let source = root.appendingPathComponent("source")
+        try FileManager.default.createDirectory(
+            at: source,
+            withIntermediateDirectories: true
+        )
+        try JSONEncoder().encode(manifest).write(
+            to: source.appendingPathComponent(PluginManifest.fileName)
+        )
+        let manager = PluginManager(
+            baseDirectory: root.appendingPathComponent("support")
+        )
+        _ = try await manager.installPreparedPlugin(at: source)
         let catalogURL = root.appendingPathComponent("catalog.json")
         try JSONEncoder().encode(
             ["plugins": [manifest]]
         ).write(to: catalogURL)
-        let manager = PluginManager(baseDirectory: root)
         let model = MainWindowModel(
             pluginManager: manager,
-            builtInPlugins: [manifest],
             catalogURL: catalogURL,
             defaults: defaults
         )
@@ -330,10 +347,16 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(model.translationSummary, manifest.name)
         XCTAssertEqual(
             model.translationCharacterSummary,
-            "内置测试模型"
+            "在线测试模型"
         )
-        XCTAssertTrue(model.availablePlugins.isEmpty)
+        XCTAssertNil(model.update(for: manifest))
 
+        model.updateSystemTranslationAvailability(.installed)
+        await model.activateSystemTranslationModel()
+        XCTAssertEqual(
+            model.activeModelID,
+            SystemTranslationModel.appleTranslationID
+        )
         await model.uninstallPlugin(manifest)
         let managedPlugins = await manager.installedPlugins()
         XCTAssertTrue(managedPlugins.isEmpty)

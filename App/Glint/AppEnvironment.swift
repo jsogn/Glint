@@ -60,11 +60,6 @@ final class AppEnvironment {
                         promptProfile: manifest.promptProfile
                             ?? .inferred(from: modelID)
                     )
-                case "ctranslate2":
-                    return .ctranslate2(
-                        modelID: modelID,
-                        directory: directory
-                    )
                 default:
                     return nil
                 }
@@ -86,6 +81,17 @@ final class AppEnvironment {
                     directory: directory,
                     promptProfile: manifest.promptProfile
                         ?? .inferred(from: modelID)
+                )
+            case "ctranslate2-data":
+                guard
+                    manifest.id == TranslationModelSelection.opusMTModelID,
+                    manifest.source == .catalog
+                else {
+                    return nil
+                }
+                return .ctranslate2(
+                    modelID: modelID,
+                    directory: directory
                 )
             default:
                 return nil

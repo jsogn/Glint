@@ -109,29 +109,25 @@ final class TranslationRuntimeTests: XCTestCase {
         XCTAssertEqual(resolverCalls.withLock { $0 }, 0)
     }
 
-    func testBundledOPUSModelLoadsAndTranslates() async throws {
+    func testOnlineOPUSModelDataLoadsWithBundledRuntime() async throws {
         var repositoryRoot = URL(fileURLWithPath: #filePath)
         for _ in 0..<5 {
             repositoryRoot.deleteLastPathComponent()
         }
-        let pluginDirectory = repositoryRoot.appendingPathComponent(
-            "Resources/Plugins/mt-opus-zh-en",
-            isDirectory: true
-        )
-        let modelDirectory = pluginDirectory.appendingPathComponent(
-            "model",
+        let modelDirectory = repositoryRoot.appendingPathComponent(
+            "Resources/OnlineModels/mt-opus-zh-en/model",
             isDirectory: true
         )
         guard FileManager.default.fileExists(atPath: modelDirectory.path) else {
             throw XCTSkip(
-                "Run scripts/prepare_opus_model.sh before package tests."
+                "Run scripts/package_opus_model_data.sh before package tests."
             )
         }
 
         let engine = try CTranslate2Engine(
             modelDirectory: modelDirectory,
-            libraryURL: pluginDirectory.appendingPathComponent(
-                "bin/libglintct2.dylib"
+            libraryURL: repositoryRoot.appendingPathComponent(
+                "Resources/CTranslate2Runtime/bin/libglintct2.dylib"
             )
         )
         let result = try await engine.translate(

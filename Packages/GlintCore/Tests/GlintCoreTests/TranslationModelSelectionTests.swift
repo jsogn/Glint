@@ -25,7 +25,7 @@ final class TranslationModelSelectionTests: XCTestCase {
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
 
-        XCTAssertNotEqual(
+        XCTAssertEqual(
             SystemTranslationModel.appleTranslationID,
             TranslationModelSelection.defaultModelID
         )
@@ -43,10 +43,39 @@ final class TranslationModelSelectionTests: XCTestCase {
         XCTAssertTrue(
             TranslationModelSelection.isSystemTranslation(selected)
         )
-        XCTAssertFalse(
+        XCTAssertTrue(
             TranslationModelSelection.isSystemTranslation(
                 TranslationModelSelection.defaultModelID
             )
+        )
+    }
+
+    func testLegacyBundledOPUSSelectionMigratesToSystemOnlyOnce() {
+        let suite = "GlintTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        defaults.set(
+            TranslationModelSelection.opusMTModelID,
+            forKey: TranslationModelSelection.defaultsKey
+        )
+
+        TranslationModelSelection.migrateBundledModelSelection(in: defaults)
+
+        XCTAssertEqual(
+            TranslationModelSelection.selected(in: defaults),
+            SystemTranslationModel.appleTranslationID
+        )
+
+        TranslationModelSelection.select(
+            TranslationModelSelection.opusMTModelID,
+            in: defaults
+        )
+        TranslationModelSelection.migrateBundledModelSelection(in: defaults)
+
+        XCTAssertEqual(
+            TranslationModelSelection.selected(in: defaults),
+            TranslationModelSelection.opusMTModelID
         )
     }
 }

@@ -39,7 +39,7 @@ jobs:
         with:
           path: |
             Tools/ModelLab/.cache
-          key: opus-py313-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Tools/ModelLab/prepare_opus_model.py', 'Tools/ModelLab/requirements-opus-conversion.txt', 'Resources/Plugins/mt-opus-zh-en/model-lock.json') }}
+          key: opus-py313-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Tools/ModelLab/prepare_opus_model.py', 'Tools/ModelLab/requirements-opus-conversion.txt', 'Resources/OnlineModels/mt-opus-zh-en/model-lock.json') }}
 
       - name: Lint Swift
         run: git ls-files '*.swift' -z | xargs -0 swift format lint --strict --configuration .swift-format

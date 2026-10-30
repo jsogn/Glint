@@ -11,7 +11,7 @@ app_path="$repository_root/build/AppleTranslationCompare.app"
 output_path="${GLINT_APPLE_TRANSLATION_OUTPUT:-$repository_root/build/apple-translation-benchmark.json}"
 rounds="${GLINT_APPLE_TRANSLATION_ROUNDS:-3}"
 cases_path="${GLINT_APPLE_TRANSLATION_CASES:-$repository_root/Resources/Evaluation/translation-mode-benchmark.json,$repository_root/Resources/Evaluation/dictionary-benchmark.json}"
-ct2_path="$repository_root/Resources/Plugins/mt-opus-zh-en/model"
+ct2_path="$repository_root/Resources/OnlineModels/mt-opus-zh-en/model"
 
 swift build \
     --package-path "$package_path" \
@@ -25,6 +25,9 @@ binary_path="$(
 rm -rf "$app_path"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
 cp "$binary_path" "$app_path/Contents/MacOS/AppleTranslationCompare"
+ditto \
+    "$repository_root/Resources/CTranslate2Runtime" \
+    "$app_path/Contents/Resources/CTranslate2Runtime"
 
 plist_path="$app_path/Contents/Info.plist"
 plutil -create xml1 "$plist_path"

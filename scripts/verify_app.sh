@@ -23,10 +23,8 @@ if [[ "$minimum_system" != "15.0" ]]; then
 fi
 
 for relative_path in \
-  "Contents/Resources/mt-opus-zh-en/manifest.json" \
-  "Contents/Resources/mt-opus-zh-en/model-lock.json" \
-  "Contents/Resources/mt-opus-zh-en/model/model.bin" \
-  "Contents/Resources/mt-opus-zh-en/bin/libglintct2.dylib" \
+  "Contents/Resources/CTranslate2Runtime/bin/libglintct2.dylib" \
+  "Contents/Resources/CTranslate2Runtime/runtime-lock.json" \
   "Contents/Helpers/RimeCandidateBridge" \
   "Contents/Resources/RimeCandidateBridge/candidate_bridge.lua" \
   "Contents/Resources/RimeCandidateBridge/json.lua"; do
@@ -35,6 +33,12 @@ for relative_path in \
     exit 1
   fi
 done
+
+if [[ -e "$app_bundle/Contents/Resources/mt-opus-zh-en" \
+  || -e "$app_bundle/Contents/Resources/OnlineModels" ]]; then
+  echo "Bundled OPUS-MT model data must not be present." >&2
+  exit 1
+fi
 
 if [[ ! -x "$app_bundle/Contents/Helpers/RimeCandidateBridge" ]]; then
   echo "Rime candidate bridge is not executable." >&2
