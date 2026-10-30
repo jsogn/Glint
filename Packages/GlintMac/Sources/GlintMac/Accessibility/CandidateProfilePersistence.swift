@@ -94,6 +94,10 @@ final class CandidateProfilePersistence: @unchecked Sendable {
                 applicationVersion: applicationVersion
             )
         }
+
+        var sourceKey: CandidateProfileSourceKey {
+            key.sourceKey
+        }
     }
 
     static let shared = CandidateProfilePersistence(
@@ -105,7 +109,7 @@ final class CandidateProfilePersistence: @unchecked Sendable {
     private let storageKey: String
     private let profiles:
         OSAllocatedUnfairLock<
-            [CandidateProfileKey: CandidateReadProfile]
+            [CandidateProfileSourceKey: Record]
         >
 
     init(
@@ -125,42 +129,34 @@ final class CandidateProfilePersistence: @unchecked Sendable {
     func profile(
         for key: CandidateProfileKey
     ) -> CandidateReadProfile? {
-        profiles.withLock { $0[key] }
+        profiles.withLock { profiles in
+            profiles[key.sourceKey].flatMap {
+                CandidateReadProfile(rawValue: $0.profile)
+            }
+        }
     }
 
     func store(
         _ profile: CandidateReadProfile,
         for key: CandidateProfileKey
     ) {
-        let records = profiles.withLock { profiles -> [Record] in
-            profiles[key] = profile
-            return profiles.map { key, profile in
-                Record(
-                    bundleIdentifier: key.bundleIdentifier,
-                    inputSourceIdentifier:
-                        key.inputSourceIdentifier,
-                    applicationVersion: key.applicationVersion,
-                    profile: profile.rawValue
-                )
-            }
+        profiles.withLock { profiles in
+            profiles[key.sourceKey] = Record(
+                bundleIdentifier: key.bundleIdentifier,
+                inputSourceIdentifier:
+                    key.inputSourceIdentifier,
+                applicationVersion: key.applicationVersion,
+                profile: profile.rawValue
+            )
+            persist(Array(profiles.values))
         }
-        persist(records)
     }
 
     func remove(_ key: CandidateProfileKey) {
-        let records = profiles.withLock { profiles -> [Record] in
-            profiles.removeValue(forKey: key)
-            return profiles.map { key, profile in
-                Record(
-                    bundleIdentifier: key.bundleIdentifier,
-                    inputSourceIdentifier:
-                        key.inputSourceIdentifier,
-                    applicationVersion: key.applicationVersion,
-                    profile: profile.rawValue
-                )
-            }
+        profiles.withLock { profiles in
+            profiles.removeValue(forKey: key.sourceKey)
+            persist(Array(profiles.values))
         }
-        persist(records)
     }
 
     private func persist(_ records: [Record]) {
@@ -174,7 +170,7 @@ final class CandidateProfilePersistence: @unchecked Sendable {
     private static func load(
         from defaults: UserDefaults,
         storageKey: String
-    ) -> [CandidateProfileKey: CandidateReadProfile] {
+    ) -> [CandidateProfileSourceKey: Record] {
         guard
             let data = defaults.data(forKey: storageKey),
             let records = try? JSONDecoder().decode(
@@ -184,16 +180,13 @@ final class CandidateProfilePersistence: @unchecked Sendable {
         else {
             return [:]
         }
-        var profiles: [CandidateProfileKey: CandidateReadProfile] = [:]
+        var profiles: [CandidateProfileSourceKey: Record] = [:]
         for record in records {
-            guard
-                let profile = CandidateReadProfile(
-                    rawValue: record.profile
-                )
+            guard CandidateReadProfile(rawValue: record.profile) != nil
             else {
                 continue
             }
-            profiles[record.key] = profile
+            profiles[record.sourceKey] = record
         }
         return profiles
     }

@@ -2825,7 +2825,7 @@ final class CandidatePollingPolicyTests: XCTestCase {
 }
 
 final class CandidateProfileDiscoveryTests: XCTestCase {
-    func testProfileClassifierSeparatesListAndStyledTextShapes() {
+    func testProfileClassifierPrefersExactStyledTextOverInexactList() {
         XCTAssertEqual(
             CandidateProfileDetector.classify(
                 listSnapshot: snapshot(
@@ -2837,7 +2837,7 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
                     selectionIsExact: true
                 )
             ),
-            .isolatedCandidateList
+            .isolatedStyledText
         )
         XCTAssertEqual(
             CandidateProfileDetector.classify(
@@ -2906,6 +2906,23 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         )
     }
 
+    func testProfileClassifierPrefersExactSelectedItemsOverInexactList() {
+        XCTAssertEqual(
+            CandidateProfileDetector.classify(
+                listSnapshot: snapshot(
+                    candidateCount: 5,
+                    selectionIsExact: false
+                ),
+                textSnapshot: nil,
+                selectedTextItemSnapshot: snapshot(
+                    candidateCount: 4,
+                    selectionIsExact: true
+                )
+            ),
+            .isolatedSelectedTextItems
+        )
+    }
+
     func testDiscoveredProfileActivatesAfterSamplingComposition() async {
         let cache = CandidateProfileCache(
             clock: { 0 },
@@ -2970,6 +2987,198 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         )
     }
 
+    func testVersionChangeKeepsActiveProfileWithoutRediscovery() async {
+        let version = OSAllocatedUnfairLock(initialState: "1.0")
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in
+                version.withLock { $0 }
+            },
+            discover: { _ in .isolatedCandidateList }
+        )
+        let identity = identity()
+
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+
+        version.withLock { $0 = "2.0" }
+
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedCandidateList
+        )
+    }
+
+    func testVersionChangeCanRediscoverIfLegacyProfileFails() async {
+        let version = OSAllocatedUnfairLock(initialState: "1.0")
+        let discoveryCount = OSAllocatedUnfairLock(initialState: 0)
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in
+                version.withLock { $0 }
+            },
+            discover: { _ in
+                let count = discoveryCount.withLock { value in
+                    value += 1
+                    return value
+                }
+                return count == 1
+                    ? .isolatedCandidateList
+                    : .isolatedSelectedTextItems
+            }
+        )
+        let identity = identity()
+
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        version.withLock { $0 = "2.0" }
+
+        let rediscovery = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(rediscovery)
+        await rediscovery?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedSelectedTextItems
+        )
+    }
+
+    func testRepeatedUnavailableReadsAllowRediscoveryAtSameVersion()
+        async
+    {
+        let clock = OSAllocatedUnfairLock<UInt64>(initialState: 0)
+        let discoveryCount = OSAllocatedUnfairLock(initialState: 0)
+        let cache = CandidateProfileCache(
+            clock: { clock.withLock { $0 } },
+            applicationVersion: { _ in "1.0" },
+            discover: { _ in
+                let count = discoveryCount.withLock { value in
+                    value += 1
+                    return value
+                }
+                return count == 1
+                    ? .isolatedCandidateList
+                    : .isolatedSelectedTextItems
+            }
+        )
+        let identity = identity()
+
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        cache.recordProfileMiss(for: identity, reason: .unavailable)
+        clock.withLock { $0 = 100_000_000 }
+        cache.recordProfileMiss(for: identity, reason: .unavailable)
+        clock.withLock { $0 = 200_000_000 }
+        cache.recordProfileMiss(for: identity, reason: .unavailable)
+
+        let rediscovery = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(rediscovery)
+        await rediscovery?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedSelectedTextItems
+        )
+    }
+
+    func testSuccessfulProfileReadResolvesInFlightSameVersionProbe()
+        async
+    {
+        let discoveryCount = OSAllocatedUnfairLock(initialState: 0)
+        let probeStarted = DispatchSemaphore(value: 0)
+        let releaseProbe = DispatchSemaphore(value: 0)
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in "1.0" },
+            discover: { _ in
+                let count = discoveryCount.withLock { value in
+                    value += 1
+                    return value
+                }
+                if count > 1 {
+                    probeStarted.signal()
+                    releaseProbe.wait()
+                    return .isolatedSelectedTextItems
+                }
+                return .isolatedCandidateList
+            }
+        )
+        let identity = identity()
+
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        cache.recordProfileMiss(
+            for: identity,
+            reason: .structureMismatch
+        )
+
+        let rediscovery = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(rediscovery)
+        XCTAssertEqual(
+            probeStarted.wait(timeout: .now() + 1),
+            .success
+        )
+        cache.recordProfileHit(for: identity)
+        releaseProbe.signal()
+        await rediscovery?.value
+
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedCandidateList
+        )
+    }
+
+    func testDiscoveryFromOlderVersionDoesNotReplaceNewerProfile()
+        async
+    {
+        let version = OSAllocatedUnfairLock(initialState: "1.0")
+        let discoveryCount = OSAllocatedUnfairLock(initialState: 0)
+        let probeStarted = DispatchSemaphore(value: 0)
+        let releaseProbe = DispatchSemaphore(value: 0)
+        let cache = CandidateProfileCache(
+            clock: { 0 },
+            applicationVersion: { _ in
+                version.withLock { $0 }
+            },
+            discover: { _ in
+                let count = discoveryCount.withLock { value in
+                    value += 1
+                    return value
+                }
+                if count > 1 {
+                    probeStarted.signal()
+                    releaseProbe.wait()
+                    return .isolatedSelectedTextItems
+                }
+                return .isolatedCandidateList
+            }
+        )
+        let identity = identity()
+
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+        cache.recordProfileMiss(
+            for: identity,
+            reason: .structureMismatch
+        )
+        let rediscovery = cache.requestDiscovery(for: identity)
+        XCTAssertNotNil(rediscovery)
+        XCTAssertEqual(
+            probeStarted.wait(timeout: .now() + 1),
+            .success
+        )
+
+        version.withLock { $0 = "2.0" }
+        cache.recordProfileHit(for: identity)
+        releaseProbe.signal()
+        await rediscovery?.value
+
+        XCTAssertEqual(
+            cache.profile(for: identity),
+            .isolatedCandidateList
+        )
+    }
+
     func testPendingProfileDoesNotReloadFromPersistence() async throws {
         let suiteName =
             "GlintMacTests.PendingProfile.\(UUID().uuidString)"
@@ -3001,7 +3210,7 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         )
     }
 
-    func testFailedDiscoveryRetriesQuicklyThenUsesLongCooldown() async {
+    func testFailedDiscoveryUsesProgressiveBackoff() async {
         let clock = OSAllocatedUnfairLock<UInt64>(initialState: 0)
         let cache = CandidateProfileCache(
             clock: { clock.withLock { $0 } },
@@ -3019,7 +3228,7 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         await second?.value
         XCTAssertNil(cache.requestDiscovery(for: identity))
 
-        clock.withLock { $0 = 600_000_000 + 10 * 60 * 1_000_000_000 }
+        clock.withLock { $0 = 600_000_000 + 2_000_000_000 }
         let third = cache.requestDiscovery(for: identity)
         XCTAssertNotNil(third)
         await third?.value
@@ -3038,6 +3247,61 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         let first = cache.requestDiscovery(for: identity)
         XCTAssertNil(cache.requestDiscovery(for: identity))
         await first?.value
+    }
+
+    func testProfileReadsAreSerializedOnlyWithinTheSameSource() async {
+        let cache = CandidateProfileCache(discover: { _ in nil })
+        let identity = identity()
+        let otherIdentity = InputMethodIdentity(
+            bundleIdentifier: "com.example.inputmethod.other",
+            inputSourceIdentifier:
+                "com.example.inputmethod.other.pinyin",
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: nil
+        )
+        let firstEntered = DispatchSemaphore(value: 0)
+        let releaseFirst = DispatchSemaphore(value: 0)
+        let sameSourceEntered = DispatchSemaphore(value: 0)
+        let otherSourceEntered = DispatchSemaphore(value: 0)
+
+        let first = Task.detached {
+            cache.withProfileRead(for: identity) {
+                firstEntered.signal()
+                releaseFirst.wait()
+            }
+        }
+        XCTAssertEqual(
+            firstEntered.wait(timeout: .now() + 1),
+            .success
+        )
+        let sameSource = Task.detached {
+            cache.withProfileRead(for: identity) {
+                sameSourceEntered.signal()
+            }
+        }
+        let otherSource = Task.detached {
+            cache.withProfileRead(for: otherIdentity) {
+                otherSourceEntered.signal()
+            }
+        }
+
+        XCTAssertEqual(
+            otherSourceEntered.wait(timeout: .now() + 1),
+            .success
+        )
+        XCTAssertEqual(
+            sameSourceEntered.wait(timeout: .now() + 0.1),
+            .timedOut
+        )
+
+        releaseFirst.signal()
+        _ = await first.value
+        _ = await sameSource.value
+        _ = await otherSource.value
+        XCTAssertEqual(
+            sameSourceEntered.wait(timeout: .now() + 1),
+            .success
+        )
     }
 
     func testStandardFallbackSuccessDoesNotStartProfileProbe() {
@@ -3078,7 +3342,7 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         XCTAssertEqual(probeCalls.withLock { $0 }, 0)
     }
 
-    func testPersistedProfileSurvivesCacheRecreationAndVersionBoundsIt()
+    func testPersistedProfileSurvivesCacheRecreationAcrossVersionUpgrade()
         async throws
     {
         let suiteName =
@@ -3122,9 +3386,56 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
             clock: { 0 },
             applicationVersion: { _ in "2.0" },
             persistence: persistence,
-            discover: { _ in nil }
+            discover: { _ in
+                probeCalls.withLock { $0 += 1 }
+                return nil
+            }
         )
-        XCTAssertNil(newVersion.profile(for: identity))
+        XCTAssertEqual(
+            newVersion.profile(for: identity),
+            .isolatedCandidateList
+        )
+        XCTAssertEqual(probeCalls.withLock { $0 }, 0)
+    }
+
+    func testPersistenceUsesMostRecentlyValidatedProfileAcrossVersions()
+        throws
+    {
+        let suiteName =
+            "GlintMacTests.ProfileVersionOrder.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: suiteName)
+        )
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        let identity = identity()
+        let persistence = CandidateProfilePersistence(
+            defaults: defaults,
+            storageKey: "profiles"
+        )
+        let firstKey = CandidateProfileKey(
+            identity: identity,
+            applicationVersion: "1.0"
+        )
+        let secondKey = CandidateProfileKey(
+            identity: identity,
+            applicationVersion: "2.0"
+        )
+
+        persistence.store(
+            .isolatedCandidateList,
+            for: try XCTUnwrap(firstKey)
+        )
+        persistence.store(
+            .isolatedSelectedTextItems,
+            for: try XCTUnwrap(secondKey)
+        )
+
+        XCTAssertEqual(
+            persistence.profile(for: try XCTUnwrap(firstKey)),
+            .isolatedSelectedTextItems
+        )
     }
 
     func testFailedDiscoveryIsNotPersisted() async throws {
@@ -3210,6 +3521,52 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         XCTAssertNil(reloaded.profile(for: identity))
     }
 
+    func testProfileInvalidationRemovesOlderVersionAliases()
+        async throws
+    {
+        let suiteName =
+            "GlintMacTests.ProfileVersionInvalidation.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(
+            UserDefaults(suiteName: suiteName)
+        )
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+        let clock = OSAllocatedUnfairLock<UInt64>(initialState: 0)
+        let version = OSAllocatedUnfairLock(initialState: "1.0")
+        let persistence = CandidateProfilePersistence(
+            defaults: defaults,
+            storageKey: "profiles"
+        )
+        let identity = identity()
+        let cache = CandidateProfileCache(
+            clock: { clock.withLock { $0 } },
+            applicationVersion: { _ in
+                version.withLock { $0 }
+            },
+            persistence: persistence,
+            discover: { _ in .isolatedCandidateList }
+        )
+        await cache.requestDiscovery(for: identity)?.value
+        XCTAssertTrue(cache.activatePendingProfile(for: identity))
+
+        version.withLock { $0 = "2.0" }
+        cache.recordProfileMiss(for: identity)
+        clock.withLock { $0 = 1_000_000_000 }
+        cache.recordProfileMiss(for: identity)
+        clock.withLock { $0 = 2_000_000_000 }
+        cache.recordProfileMiss(for: identity)
+        XCTAssertNil(cache.profile(for: identity))
+
+        let reloaded = CandidateProfileCache(
+            clock: { 3_000_000_000 },
+            applicationVersion: { _ in "2.0" },
+            persistence: persistence,
+            discover: { _ in nil }
+        )
+        XCTAssertNil(reloaded.profile(for: identity))
+    }
+
     func testSuccessfulProfileReadClearsTransientFailures() async {
         let clock = OSAllocatedUnfairLock<UInt64>(initialState: 0)
         let identity = identity()
@@ -3233,18 +3590,18 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
         )
     }
 
-    func testOnlyStructureMismatchInvalidatesProfile() {
+    func testOnlyRecoverableProfileMissesReachRecoveryState() {
         XCTAssertTrue(
             AdaptiveUnknownCandidateReader
                 .shouldRecordProfileMiss(for: .structureMismatch)
         )
-        XCTAssertFalse(
+        XCTAssertTrue(
             AdaptiveUnknownCandidateReader
-                .shouldRecordProfileMiss(for: .temporaryLayout)
+                .shouldRecordProfileMiss(for: .unavailable)
         )
         XCTAssertFalse(
             AdaptiveUnknownCandidateReader
-                .shouldRecordProfileMiss(for: .unavailable)
+                .shouldRecordProfileMiss(for: .temporaryLayout)
         )
         XCTAssertFalse(
             AdaptiveUnknownCandidateReader

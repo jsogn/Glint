@@ -18,6 +18,13 @@ struct CandidateProfileKey: Hashable, Sendable {
     let inputSourceIdentifier: String
     let applicationVersion: String
 
+    var sourceKey: CandidateProfileSourceKey {
+        CandidateProfileSourceKey(
+            bundleIdentifier: bundleIdentifier,
+            inputSourceIdentifier: inputSourceIdentifier
+        )
+    }
+
     init?(
         identity: InputMethodIdentity,
         applicationVersion: String
@@ -46,10 +53,43 @@ struct CandidateProfileKey: Hashable, Sendable {
     }
 }
 
+struct CandidateProfileSourceKey: Hashable, Sendable {
+    let bundleIdentifier: String
+    let inputSourceIdentifier: String
+}
+
+private final class CandidateProfileReadCoordinator: @unchecked Sendable {
+    private let locks =
+        OSAllocatedUnfairLock<
+            [CandidateProfileSourceKey: NSLock]
+        >(initialState: [:])
+
+    func withLock<T>(
+        for sourceKey: CandidateProfileSourceKey,
+        _ operation: () throws -> T
+    ) rethrows -> T {
+        let lock = locks.withLock { locks in
+            if let lock = locks[sourceKey] {
+                return lock
+            }
+            let lock = NSLock()
+            locks[sourceKey] = lock
+            return lock
+        }
+        lock.lock()
+        defer { lock.unlock() }
+        return try operation()
+    }
+}
+
 final class CandidateProfileCache: @unchecked Sendable {
     private struct Entry: Sendable {
         var profile: CandidateReadProfile?
         var profileNeedsActivation = false
+        var profileNeedsProbe = false
+        // Version is validation metadata, never part of the cache identity.
+        var validatedApplicationVersion: String?
+        var unavailableFailureCount = 0
         var failedAttempts = 0
         var retryAfter: UInt64 = 0
         var profileFailureCount = 0
@@ -57,19 +97,27 @@ final class CandidateProfileCache: @unchecked Sendable {
     }
 
     private struct State: Sendable {
-        var entries: [CandidateProfileKey: Entry] = [:]
+        var entries: [CandidateProfileSourceKey: Entry] = [:]
+        var generations: [CandidateProfileSourceKey: UInt64] = [:]
         var discoveryIsInFlight = false
     }
 
-    private static let firstRetryDelay: UInt64 = 500_000_000
-    private static let minimumCooldown: UInt64 = 10 * 60 * 1_000_000_000
-    private static let maximumCooldown: UInt64 = 60 * 60 * 1_000_000_000
-    private static let failuresBeforeCooldown = 2
+    private static let retryDelays: [UInt64] = [
+        500_000_000,
+        2_000_000_000,
+        10_000_000_000,
+        30_000_000_000,
+        60_000_000_000,
+        5 * 60 * 1_000_000_000,
+        10 * 60 * 1_000_000_000,
+    ]
     private static let failuresBeforeProfileInvalidation = 3
+    private static let failuresBeforeUnrecognizedProbe = 3
     private static let minimumProfileFailureDuration: UInt64 =
         2 * 1_000_000_000
 
     private let lock: OSAllocatedUnfairLock<State>
+    private let readCoordinator = CandidateProfileReadCoordinator()
     private let clock: @Sendable () -> UInt64
     private let applicationVersion: @Sendable (String) -> String
     private let persistence: CandidateProfilePersistence?
@@ -106,37 +154,24 @@ final class CandidateProfileCache: @unchecked Sendable {
         guard let key = profileKey(for: identity) else {
             return nil
         }
-        let cached = lock.withLock {
-            state -> (
-                hasEntry: Bool,
-                profile: CandidateReadProfile?
-            ) in
-            guard
-                let entry = state.entries[key],
-                let profile = entry.profile
-            else {
-                return (false, nil)
+        let sourceKey = key.sourceKey
+        return lock.withLock { state -> CandidateReadProfile? in
+            if let entry = state.entries[sourceKey] {
+                guard let profile = entry.profile else {
+                    return nil
+                }
+                return entry.profileNeedsActivation
+                    ? nil
+                    : profile
             }
-            return (
-                true,
-                entry.profileNeedsActivation ? nil : profile
-            )
-        }
-        if let profile = cached.profile {
+            guard let profile = persistence?.profile(for: key) else {
+                return nil
+            }
+            var entry = state.entries[sourceKey] ?? Entry()
+            entry.profile = profile
+            state.entries[sourceKey] = entry
             return profile
         }
-        if cached.hasEntry {
-            return nil
-        }
-        guard let profile = persistence?.profile(for: key) else {
-            return nil
-        }
-        lock.withLock { state in
-            var entry = state.entries[key] ?? Entry()
-            entry.profile = profile
-            state.entries[key] = entry
-        }
-        return profile
     }
 
     func hasProfileOrPending(
@@ -146,8 +181,25 @@ final class CandidateProfileCache: @unchecked Sendable {
             return false
         }
         return lock.withLock {
-            $0.entries[key]?.profile != nil
+            $0.entries[key.sourceKey]?.profile != nil
         }
+    }
+
+    func withProfileRead<T>(
+        for identity: InputMethodIdentity,
+        _ operation: () throws -> T
+    ) rethrows -> T {
+        guard let bundleIdentifier = identity.bundleIdentifier else {
+            return try operation()
+        }
+        let sourceKey = CandidateProfileSourceKey(
+            bundleIdentifier: bundleIdentifier,
+            inputSourceIdentifier: identity.inputSourceIdentifier
+        )
+        return try readCoordinator.withLock(
+            for: sourceKey,
+            operation
+        )
     }
 
     func activatePendingProfile(
@@ -156,15 +208,16 @@ final class CandidateProfileCache: @unchecked Sendable {
         guard let key = profileKey(for: identity) else {
             return false
         }
+        let sourceKey = key.sourceKey
         return lock.withLock { state in
-            guard var entry = state.entries[key],
+            guard var entry = state.entries[sourceKey],
                 entry.profile != nil,
                 entry.profileNeedsActivation
             else {
                 return false
             }
             entry.profileNeedsActivation = false
-            state.entries[key] = entry
+            state.entries[sourceKey] = entry
             return true
         }
     }
@@ -176,26 +229,42 @@ final class CandidateProfileCache: @unchecked Sendable {
         guard let key = profileKey(for: identity) else {
             return nil
         }
+        let sourceKey = key.sourceKey
         let now = clock()
-        let accepted = lock.withLock { state -> Bool in
+        let generation = lock.withLock {
+            state -> UInt64? in
             if state.discoveryIsInFlight {
-                return false
+                return nil
             }
-            let entry = state.entries[key] ?? Entry()
-            guard entry.profile == nil,
+            let entry = state.entries[sourceKey] ?? Entry()
+            // A prior verified structure remains usable until a real read
+            // fails, at which point discovery can correct the live profile.
+            guard
+                entry.profile == nil
+                    || entry.profileNeedsProbe
+                    || entry.validatedApplicationVersion
+                        != key.applicationVersion,
                 now >= entry.retryAfter
             else {
-                return false
+                return nil
             }
             state.discoveryIsInFlight = true
-            return true
+            return state.generations[sourceKey, default: 0]
         }
-        guard accepted else {
+        guard let generation else {
             return nil
         }
         return Task.detached(priority: .utility) { [self] in
-            let profile = discover(key)
-            completeDiscovery(for: key, profile: profile)
+            let profile = readCoordinator.withLock(
+                for: sourceKey
+            ) {
+                discover(key)
+            }
+            completeDiscovery(
+                for: key,
+                generation: generation,
+                profile: profile
+            )
         }
     }
 
@@ -205,31 +274,58 @@ final class CandidateProfileCache: @unchecked Sendable {
         guard let key = profileKey(for: identity) else {
             return
         }
+        let sourceKey = key.sourceKey
         lock.withLock { state in
-            guard var entry = state.entries[key],
+            guard var entry = state.entries[sourceKey],
                 entry.profile != nil
             else {
                 return
             }
+            let versionChanged =
+                entry.validatedApplicationVersion
+                != key.applicationVersion
             entry.profileFailureCount = 0
             entry.profileFailureStartedAt = nil
-            state.entries[key] = entry
+            entry.profileNeedsProbe = false
+            entry.validatedApplicationVersion = key.applicationVersion
+            entry.unavailableFailureCount = 0
+            state.entries[sourceKey] = entry
+            state.generations[sourceKey, default: 0] &+= 1
+            if versionChanged, let profile = entry.profile {
+                persistence?.store(profile, for: key)
+            }
         }
     }
 
     func recordProfileMiss(
-        for identity: InputMethodIdentity
+        for identity: InputMethodIdentity,
+        reason: AXCandidateReadMissReason = .structureMismatch
     ) {
         guard let key = profileKey(for: identity) else {
             return
         }
+        let sourceKey = key.sourceKey
         let now = clock()
         let invalidated = lock.withLock { state -> Bool in
-            guard var entry = state.entries[key],
+            guard var entry = state.entries[sourceKey],
                 entry.profile != nil
             else {
                 return false
             }
+            if reason == .unavailable {
+                entry.unavailableFailureCount += 1
+                if entry.unavailableFailureCount
+                    >= Self.failuresBeforeUnrecognizedProbe
+                {
+                    entry.profileNeedsProbe = true
+                }
+                state.entries[sourceKey] = entry
+                return false
+            }
+            guard reason == .structureMismatch else {
+                return false
+            }
+            entry.profileNeedsProbe = true
             if entry.profileFailureStartedAt == nil {
                 entry.profileFailureStartedAt = now
             }
@@ -245,16 +341,17 @@ final class CandidateProfileCache: @unchecked Sendable {
                     >= Self.failuresBeforeProfileInvalidation,
                 duration >= Self.minimumProfileFailureDuration
             else {
-                state.entries[key] = entry
+                state.entries[sourceKey] = entry
                 return false
             }
-            state.entries[key] = Entry()
+            state.entries[sourceKey] = Entry()
+            state.generations[sourceKey, default: 0] &+= 1
+            persistence?.remove(key)
             return true
         }
         guard invalidated else {
             return
         }
-        persistence?.remove(key)
         candidateProfileLogger.notice(
             "profile invalidated source=\(key.inputSourceIdentifier, privacy: .public)"
         )
@@ -262,19 +359,48 @@ final class CandidateProfileCache: @unchecked Sendable {
 
     private func completeDiscovery(
         for key: CandidateProfileKey,
+        generation: UInt64,
         profile: CandidateReadProfile?
     ) {
         let now = clock()
+        let sourceKey = key.sourceKey
         let result = lock.withLock {
             state -> (
                 profile: CandidateReadProfile?,
-                failedAttempts: Int
+                failedAttempts: Int,
+                applied: Bool
             ) in
             state.discoveryIsInFlight = false
-            var entry = state.entries[key] ?? Entry()
+            guard
+                state.generations[sourceKey, default: 0]
+                    == generation
+            else {
+                return (
+                    profile: nil,
+                    failedAttempts: 0,
+                    applied: false
+                )
+            }
+            var entry = state.entries[sourceKey] ?? Entry()
+            if entry.profile != nil,
+                entry.validatedApplicationVersion
+                    == key.applicationVersion,
+                !entry.profileNeedsActivation,
+                !entry.profileNeedsProbe
+            {
+                return (
+                    profile: nil,
+                    failedAttempts: entry.failedAttempts,
+                    applied: false
+                )
+            }
             if let profile {
                 entry.profile = profile
                 entry.profileNeedsActivation = true
+                entry.profileNeedsProbe = false
+                entry.validatedApplicationVersion =
+                    key.applicationVersion
+                entry.unavailableFailureCount = 0
                 entry.failedAttempts = 0
                 entry.retryAfter = 0
             } else {
@@ -285,20 +411,27 @@ final class CandidateProfileCache: @unchecked Sendable {
                         after: entry.failedAttempts
                     )
             }
-            state.entries[key] = entry
+            state.entries[sourceKey] = entry
+            if let profile {
+                persistence?.store(profile, for: key)
+            }
             return (
                 profile: profile,
-                failedAttempts: entry.failedAttempts
+                failedAttempts: entry.failedAttempts,
+                applied: profile != nil
             )
         }
         if let profile = result.profile {
-            persistence?.store(profile, for: key)
             candidateProfileLogger.notice(
                 "profile discovered source=\(key.inputSourceIdentifier, privacy: .public) kind=\(profile.rawValue, privacy: .public)"
             )
-        } else {
+        } else if result.applied {
             candidateProfileLogger.debug(
                 "profile discovery failed source=\(key.inputSourceIdentifier, privacy: .public) attempts=\(result.failedAttempts, privacy: .public)"
+            )
+        } else {
+            candidateProfileLogger.debug(
+                "profile discovery superseded source=\(key.inputSourceIdentifier, privacy: .public)"
             )
         }
     }
@@ -318,14 +451,12 @@ final class CandidateProfileCache: @unchecked Sendable {
     private static func retryDelay(
         after failedAttempts: Int
     ) -> UInt64 {
-        guard failedAttempts >= failuresBeforeCooldown else {
-            return firstRetryDelay
+        guard failedAttempts > 0 else {
+            return retryDelays[0]
         }
-        let exponent = min(failedAttempts - failuresBeforeCooldown, 3)
-        return min(
-            maximumCooldown,
-            minimumCooldown << exponent
-        )
+        return retryDelays[
+            min(failedAttempts - 1, retryDelays.count - 1)
+        ]
     }
 }
 
@@ -350,10 +481,16 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
         }
         if let profile = profiles.profile(for: source.identity) {
             let reader = candidateReader(for: profile)
-            if let candidate = reader.snapshot(
-                processIdentifier: processIdentifier,
-                includeVisibleCandidates: includeVisibleCandidates,
-                includeVisibleTexts: includeVisibleTexts
+            if let candidate = profiles.withProfileRead(
+                for: source.identity,
+                {
+                    reader.snapshot(
+                        processIdentifier: processIdentifier,
+                        includeVisibleCandidates:
+                            includeVisibleCandidates,
+                        includeVisibleTexts: includeVisibleTexts
+                    )
+                }
             ) {
                 profiles.recordProfileHit(for: source.identity)
                 return candidate
@@ -363,7 +500,10 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
                     for: reader.missReason
                 )
             {
-                profiles.recordProfileMiss(for: source.identity)
+                profiles.recordProfileMiss(
+                    for: source.identity,
+                    reason: reader.missReason
+                )
             }
         }
         let fallbackSnapshot = fallback.snapshot(
@@ -383,6 +523,7 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
         for reason: AXCandidateReadMissReason
     ) -> Bool {
         reason == .structureMismatch
+            || reason == .unavailable
     }
 
     private func candidateReader(
@@ -472,11 +613,12 @@ enum CandidateProfileDetector {
         textSnapshot: AXCandidateSnapshot?,
         selectedTextItemSnapshot: AXCandidateSnapshot? = nil
     ) -> CandidateReadProfile? {
-        if let listSnapshot,
-            listSnapshot.options.count
-                >= CandidateCountPolicy.profileDiscoveryMinimum
+        if let selectedTextItemSnapshot,
+            selectedTextItemSnapshot.options.count
+                >= CandidateCountPolicy.profileDiscoveryMinimum,
+            selectedTextItemSnapshot.selectionIsExact
         {
-            return .isolatedCandidateList
+            return .isolatedSelectedTextItems
         }
         if let textSnapshot,
             textSnapshot.options.count
@@ -485,12 +627,11 @@ enum CandidateProfileDetector {
         {
             return .isolatedStyledText
         }
-        if let selectedTextItemSnapshot,
-            selectedTextItemSnapshot.options.count
-                >= CandidateCountPolicy.profileDiscoveryMinimum,
-            selectedTextItemSnapshot.selectionIsExact
+        if let listSnapshot,
+            listSnapshot.options.count
+                >= CandidateCountPolicy.profileDiscoveryMinimum
         {
-            return .isolatedSelectedTextItems
+            return .isolatedCandidateList
         }
         return nil
     }
