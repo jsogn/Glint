@@ -6,9 +6,13 @@ import Observation
 @Observable
 public final class DisplayPreferences {
     public static let maximumTranslationCountRange = 1...9
+    public static let candidateDwellDurationRange = 0.05...0.3
+    public static let defaultCandidateDwellDuration = 0.08
 
     private enum Key {
         static let candidateDwellDuration = "display.candidateDwellDuration"
+        static let candidateDwellDefaultsVersion =
+            "display.candidateDwellDefaultsVersion"
         static let candidateSpacing = "display.candidateSpacing"
         static let hudBackgroundStyle = "display.hudBackgroundStyle"
         static let hudUsesCustomTextColor = "display.hudUsesCustomTextColor"
@@ -24,6 +28,8 @@ public final class DisplayPreferences {
         static let maximumTranslationCount =
             "display.maximumTranslationCount"
     }
+
+    private static let currentCandidateDwellDefaultsVersion = 1
 
     @ObservationIgnored
     private let defaults: UserDefaults
@@ -209,11 +215,30 @@ public final class DisplayPreferences {
             defaults.object(
                 forKey: Key.candidateDwellDuration
             ) as? Double
+        let storedDefaultsVersion = defaults.integer(
+            forKey: Key.candidateDwellDefaultsVersion
+        )
+        let storedDwellWasLegacyDefault =
+            storedDefaultsVersion < Self.currentCandidateDwellDefaultsVersion
+            && storedDwellDuration.map {
+                abs($0 - 0.12) < 0.000_001
+            } == true
         let dwellDuration = Self.clampedDwellDuration(
-            storedDwellDuration ?? 0.12
+            storedDwellWasLegacyDefault
+                ? Self.defaultCandidateDwellDuration
+                : storedDwellDuration
+                    ?? Self.defaultCandidateDwellDuration
         )
         if storedDwellDuration != dwellDuration {
             defaults.set(dwellDuration, forKey: Key.candidateDwellDuration)
+        }
+        if storedDefaultsVersion
+            < Self.currentCandidateDwellDefaultsVersion
+        {
+            defaults.set(
+                Self.currentCandidateDwellDefaultsVersion,
+                forKey: Key.candidateDwellDefaultsVersion
+            )
         }
         self.candidateDwellDuration = dwellDuration
 
@@ -330,8 +355,11 @@ public final class DisplayPreferences {
     }
 
     private static func clampedDwellDuration(_ value: Double) -> Double {
-        guard value.isFinite else { return 0.12 }
-        return min(max(value, 0.08), 0.3)
+        guard value.isFinite else { return defaultCandidateDwellDuration }
+        return min(
+            max(value, candidateDwellDurationRange.lowerBound),
+            candidateDwellDurationRange.upperBound
+        )
     }
 
     private static func clampedSpacing(_ value: Double) -> Double {

@@ -68,7 +68,9 @@ struct DisplayPage: View {
                             preferences.candidateDwellDuration * 1000
                         ),
                         binding: $preferences.candidateDwellDuration,
-                        range: 0.08...0.3,
+                        range:
+                            DisplayPreferences
+                            .candidateDwellDurationRange,
                         step: 0.01,
                         caption: "连续输入时不翻译，候选停留达到该时长后触发。"
                     )

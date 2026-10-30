@@ -60,11 +60,13 @@ final class DisplayPreferencesTests: XCTestCase {
         preferences.candidateDwellDuration = 2
         XCTAssertEqual(preferences.candidateDwellDuration, 0.3)
         preferences.candidateDwellDuration = 0
-        XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
-        preferences.candidateDwellDuration = 0.05
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.05)
+        preferences.candidateDwellDuration = 0.049
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.05)
+        preferences.candidateDwellDuration = 0.08
         XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
         preferences.candidateDwellDuration = .nan
-        XCTAssertEqual(preferences.candidateDwellDuration, 0.12)
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
 
         preferences.candidateSpacing = 30
         XCTAssertEqual(preferences.candidateSpacing, 24)
@@ -91,17 +93,33 @@ final class DisplayPreferencesTests: XCTestCase {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set(0.05, forKey: "display.candidateDwellDuration")
+        defaults.set(0.01, forKey: "display.candidateDwellDuration")
 
         let preferences = DisplayPreferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.candidateDwellDuration, 0.08)
+        XCTAssertEqual(preferences.candidateDwellDuration, 0.05)
         XCTAssertEqual(
             defaults.object(
                 forKey: "display.candidateDwellDuration"
             ) as? Double,
-            0.08
+            0.05
         )
+    }
+
+    @MainActor
+    func testLegacyDefaultDwellDurationMigratesOnlyOnce() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(0.12, forKey: "display.candidateDwellDuration")
+
+        let migrated = DisplayPreferences(defaults: defaults)
+
+        XCTAssertEqual(migrated.candidateDwellDuration, 0.08)
+        migrated.candidateDwellDuration = 0.12
+
+        let restored = DisplayPreferences(defaults: defaults)
+        XCTAssertEqual(restored.candidateDwellDuration, 0.12)
     }
 
     @MainActor
@@ -113,7 +131,7 @@ final class DisplayPreferencesTests: XCTestCase {
         let preferences = DisplayPreferences(defaults: defaults)
         XCTAssertEqual(
             preferences.candidateDwellDuration,
-            0.12,
+            0.08,
             accuracy: 0.001
         )
 

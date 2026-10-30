@@ -27,6 +27,10 @@ ditto \
   "$source_directory" \
   "$staged_model"
 
+# The published model asset stores its manifest with owner-only permissions.
+# Normalize checked-out mode differences so ZIP hashes remain reproducible.
+chmod 0600 "$staged_model/manifest.json"
+
 mkdir -p "$output_directory"
 rm -f "$archive_path"
 find "$staged_model" -exec touch -t 202610300000 {} +
