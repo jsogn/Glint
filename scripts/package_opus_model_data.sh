@@ -12,6 +12,7 @@ archive_path="$output_directory/$archive_name"
 
 ./scripts/prepare_opus_model.sh
 
+mkdir -p "$repo_root/build"
 stage_root="$(mktemp -d "$repo_root/build/opus-package.XXXXXX")"
 cleanup() {
   rm -rf "$stage_root"
