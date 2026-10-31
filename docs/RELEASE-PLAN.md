@@ -112,7 +112,12 @@ xcrun stapler staple Glint.app
 - `.github/workflows/ci.yml`：在 `main` push 和 Pull Request 中执行 Swift
   格式严格检查、完整测试和 Python 工具测试。
 - `.github/workflows/release.yml`：推送 `v*` 标签后重复质量门禁，生成 ad-hoc
-  PKG、DMG 和校验文件，并创建 GitHub Latest 发布。
+  PKG、DMG 和校验文件，并创建 GitHub Latest 发布。发布说明必须位于
+  `Resources/Distribution/Release-Notes/<tag>.md`；缺少对应文件时发布失败。
+- 发布产物使用 `Glint-<version>-macOS-arm64.dmg` 和
+  `Glint-<version>-macOS-arm64.pkg`；文件名不包含最低 macOS 小版本。
+- 系统要求由 App、PKG 元数据、下载页和 Release Notes 共同表达。网站下载入口
+  指向 GitHub Latest Release，只有新安装包上传并验证后才能更新下载页文案。
 
 标签版本必须与 `project.yml` 的 `MARKETING_VERSION` 一致。例如 `0.4.1` 对应
 `v0.4.1`；每个发布递增 `CFBundleVersion`。CI 当前使用 `macos-26`。

@@ -32,19 +32,6 @@
 `scripts/test.sh` 会运行
 `scripts/test_macos15_compatibility.sh`，在构建前阻止版本或二进制漂移。
 
-## 发布文件名
-
-发布产物使用稳定的平台与架构命名：
-
-```text
-Glint-<version>-macOS-arm64.dmg
-Glint-<version>-macOS-arm64.pkg
-```
-
-文件名不包含最低 macOS 小版本。系统要求由 App 的 `LSMinimumSystemVersion`、
-PKG 的 `--min-os-version` 元数据、下载页和 Release Notes 表达，避免未来提高
-最低版本时改变稳定下载路径。
-
 ## 验证边界
 
 当前自动化验证在 macOS 26 主机上完成，覆盖：
@@ -62,6 +49,4 @@ PKG 的 `--min-os-version` 元数据、下载页和 Release Notes 表达，避�
 - 权限、登录启动、安装和 Rime 候选读取支持安装
 - 在线 OPUS-MT 与 MLX 模型首次加载和翻译
 
-网站下载入口指向 GitHub Latest Release，不再单独维护安装包镜像。只有在新的
-macOS arm64 安装包上传并验证后，才能同步更新下载页的系统要求文案，避免线上
-说明超前于实际发布产物。
+发布文件名、下载页同步和公开版门禁由[发布计划](RELEASE-PLAN.md)维护。

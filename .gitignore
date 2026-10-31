@@ -8,6 +8,7 @@ DerivedData/
 *.xcuserstate
 *.xcuserdatad/
 .firecrawl/
+.brooks-lint-history.json
 Artifacts/
 Glint.xcodeproj/xcuserdata/
 Glint.xcodeproj/project.xcworkspace/xcuserdata/

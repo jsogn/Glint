@@ -276,32 +276,22 @@ MainWindowModel → MainWindowView
 都插入该序号对应的译文，不要求该候选当前处于高亮状态。
 
 未知输入法的 Profile、资源上限和失败恢复见
-[未知输入法通用适配](GENERIC-INPUT-METHOD-ADAPTATION.md)。AX 结构、性能和验收
+[通用输入法与候选运行规则](GENERIC-INPUT-METHOD-ADAPTATION.md)。AX 结构、性能和验收
 边界见 [AX Candidate Validation](AX-CANDIDATE-VALIDATION.md)。
 
-鼠须管的 AX 候选窗没有候选级语义。Glint 可通过用户侧 `librime-lua`、本地中继
-和 Unix Domain Socket 接收候选与选中索引；其他输入法不经过该路径。
-“输入法支持”页的安全安装器先解析
-Rime `schema_list`，只修改已启用且已编译的方案；遇到复杂 YAML 会在写入前
-停止。安装、修复和卸载均带备份、哈希与失败回滚。Squirrel 不暴露候选面板
-frame 时，仅该 Reader 回退到宿主输入光标作 HUD 锚点。详见
+鼠须管不暴露候选级 AX 语义，只能通过随 App 提供的 Rime Lua filter、本地中继
+和用户专属 Unix Domain Socket 获取候选。安装器只处理已启用且已编译的方案，
+并以事务化安装、备份和回滚保护用户配置。详见
 [鼠须管候选桥接说明](SQUIRREL-CANDIDATE-BRIDGE.md)。
 
 ## 8. 候选读取与监控
 
-- `MonitoringController` 是单一 actor 轮询循环；权限检查最多每秒一次。
-- 快速输入期间保持 `40ms`，候选停留并启动翻译后降至 `80ms`。
-- 候选变化恢复快速轮询；不增加翻译完成后的固定等待。
-- 确定性候选结束和多行布局立即关闭 HUD；不确定 AX 失败使用两帧去抖。
-- 标准候选缓存验证窗口和列表归属；分组文本项缓存额外验证父链、子节点数量和
-  候选项身份。
-- 已知 Profile 按 Bundle 与输入源复用，版本号只记录最近验证结果；读取失败时先
-  回退标准 reader；同版本连续无法识别也进入恢复。后台探测全局单任务，使用有
-  上限的渐进退避，并以每输入源 generation 拒绝过期结果。
-- 同一输入源的交互读取和探测读取串行化；不同输入源使用独立读取租约。
-- 进程 fallback 只对 Apple、显式 reader 和已验证 Profile 开放，不猜测文本框。
-- Apple 拼音读取失败时可按宿主 PID 请求一次增强 AX；写入后必须回读确认。
-- 权限状态按秒节流，不在每次候选轮询重复调用 TCC。
+- `MonitoringController` 是单一 actor 轮询循环；TCC 状态检查最多每秒一次。
+- `CandidateReaderRouter` 只使用标准候选、显式 reader 和已验证 Profile，不扫描
+  普通宿主 App 的 AX 列表。
+- 轮询、候选停留、HUD 生命周期、Profile 恢复和 AX 资源上限以
+  [通用输入法与候选运行规则](GENERIC-INPUT-METHOD-ADAPTATION.md)为唯一规范来源；具体
+  AX 结构、性能和验证证据见 [AX Candidate Validation](AX-CANDIDATE-VALIDATION.md)。
 
 ## 9. 并发与状态
 

@@ -19,6 +19,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve release notes
+        id: release-notes
+        run: |
+          notes_path="Resources/Distribution/Release-Notes/${GITHUB_REF_NAME}.md"
+          if [[ ! -f "$notes_path" ]]; then
+            echo "Missing release notes for ${GITHUB_REF_NAME}: ${notes_path}" >&2
+            exit 1
+          fi
+          echo "path=${notes_path}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -87,4 +97,4 @@ jobs:
             --verify-tag \
             --latest \
             --title "Glint ${GITHUB_REF_NAME#v}" \
-            --notes-file Resources/Distribution/GITHUB-RELEASE-NOTES.md
+            --notes-file "${{ steps.release-notes.outputs.path }}"
