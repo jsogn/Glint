@@ -71,7 +71,7 @@ Glint 支持单词、短语和短句。单词会尽量给出简洁、常用的�
 也可以下载 DMG，打开后将 Glint 拖入“应用程序”文件夹。不要直接从 DMG 或
 “下载”目录运行。
 
-### Homebrew（实验性）
+### 通过 Homebrew 安装
 
 ```bash
 brew tap jsogn/glint
