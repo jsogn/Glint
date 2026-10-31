@@ -11,6 +11,7 @@
 | 公证 | 无 | Apple notarization + staple |
 | 更新 | 未接入 | Sparkle 2 或等价方案 |
 | 分发 | 源码或 ad-hoc PKG/DMG | 签名、公证的 PKG/DMG |
+| Homebrew | 实验性 `jsogn/homebrew-glint` | 签名公证后转入正式 Cask 流程 |
 
 当前包面向开发和已知测试者。`spctl` 拒绝 ad-hoc App 是预期行为，不代表本地运行
 失败。
@@ -44,7 +45,36 @@ Release 构建启用 `-Osize`、Dead Code Stripping 和部署后处理剥离，�
 发布包。DMG 使用 `ULMO` 压缩，生成后必须通过 `hdiutil verify`。
 
 ad-hoc 包不能通过 Gatekeeper，也不能启用可用的 Hardened Runtime。面向普通测试
-用户时优先使用 PKG；首次安装仍可能需要在“隐私与安全性”中允许一次。
+用户时优先使用 PKG；通过 PKG 或 DMG 首次安装时，仍可能需要在“隐私与安全性”
+中允许一次。Homebrew 渠道的临时处理见下一节。
+
+## Homebrew 实验性渠道
+
+项目维护的 Tap 位于 `jsogn/homebrew-glint`，仅作为正式签名前的实验安装渠道：
+
+- Cask 当前只支持 arm64 和 macOS 15+。
+- 每次 Tag Release 发布并验证 DMG 后，同步更新 Cask 的 `version` 和 SHA256。
+- Cask 使用 `postflight_steps` 移除 `com.apple.quarantine`，使 ad-hoc 测试包
+  可以直接启动。该操作不是代码签名，也不会提供 Developer ID 身份或 Apple
+  公证。
+- 不自动移除整个 Tap 或其他 App 的属性；命令只作用于 Cask 安装的
+  `Glint.app`。
+- Tap 由项目控制，不开放仓库写权限。外部贡献通过 Pull Request 提交，不设置
+  定时发布或直接推送 `main` 的自动更新工作流。
+
+每次 Cask 更新至少执行：
+
+1. 对照 Release 资产更新 `version`、URL 和 SHA256。
+2. 运行 `brew style --cask`、`brew audit --cask --online` 和
+   `brew livecheck --cask`。
+3. 在干净安装目录执行一次 `brew install`，确认版本、架构、最低系统和
+   quarantine 清除行为；再执行 `brew upgrade` 或 `brew reinstall` 验证升级路径。
+4. 运行 `brew uninstall --cask`，确认只会移除 App，不删除词典、模型和设置。
+
+完成 Developer ID 签名、Hardened Runtime 和 Apple 公证后，必须删除
+`postflight_steps` quarantine 处理及对应 caveat，确认 Gatekeeper 直接通过，再
+重新评估官方 `homebrew/cask`。签名和公证不能通过 `xattr` 或重新进行 ad-hoc
+签名替代。
 
 ## 正式签名与公证
 
@@ -130,4 +160,5 @@ TCC 流程稳定后再接入 Sparkle 2：
 - 干净用户环境的首次授权、安装、更新和卸载通过。
 - 登录项的启用、系统审批撤销、禁用和实际重新登录启动通过。
 - Gatekeeper、公证、staple 和离线启动全部通过。
+- Homebrew Cask 指向签名、公证的资产，且不再包含 quarantine 绕过。
 - 下载、更新或卸载不会破坏用户词典与模型配置。

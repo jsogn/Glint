@@ -71,6 +71,20 @@ Glint 支持单词、短语和短句。单词会尽量给出简洁、常用的�
 也可以下载 DMG，打开后将 Glint 拖入“应用程序”文件夹。不要直接从 DMG 或
 “下载”目录运行。
 
+### Homebrew（实验性）
+
+也可以使用项目维护的实验性 Homebrew Tap：
+
+```bash
+brew tap jsogn/glint
+brew trust --cask jsogn/glint/glint
+brew install --cask jsogn/glint/glint
+```
+
+该渠道当前使用 ad-hoc 测试包。Cask 会在安装和升级后移除下载隔离标记，使
+Glint 可以直接启动，但不会让安装包变成 Apple 签名或公证版本。只应从上面的
+项目 Tap 安装；完成正式签名和公证后，将移除这项过渡处理。
+
 安装完成后：
 
 1. 从“应用程序”打开 Glint。
