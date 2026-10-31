@@ -16,12 +16,35 @@ Glint 是一款为 macOS 打造的英文学习工具。输入中文拼音时，�
 
 [![Glint 45 秒产品演示](docs/assets/glint-video-cover-clean.jpg)](https://www.bilibili.com/video/BV1spnb6kEtW/)
 
-## 使用方式
+## 安装
 
-1. 从 [GitHub Releases](https://github.com/jsogn/Glint/releases/latest) 下载并
-   安装 Glint。
-2. 首次启动时，按提示授予辅助功能权限。
-3. 输入中文拼音，对应英文翻译会出现在候选栏旁。
+需要 **macOS 15 或更高版本**，仅支持 **Apple Silicon Mac**。
+
+### 通过 Homebrew 安装
+
+推荐已安装 Homebrew 的用户使用，后续可以直接通过 Homebrew 更新：
+
+```bash
+brew tap jsogn/glint
+brew trust --cask jsogn/glint/glint
+brew install --cask jsogn/glint/glint
+```
+
+### 直接下载
+
+普通用户推荐下载 `Glint-*-macOS-arm64.pkg`，双击后按安装器提示完成安装。
+如果 macOS 首次阻止打开，请在 **系统设置 → 隐私与安全性** 中允许一次，再重新
+打开安装包。
+
+也可以下载 DMG，打开后将 Glint 拖入“应用程序”文件夹。不要直接从 DMG 或
+“下载”目录运行。
+
+## 首次使用
+
+1. 从“应用程序”打开 Glint。
+2. 在 **系统设置 → 隐私与安全性 → 辅助功能** 中打开 Glint 的开关，然后重新打开
+   Glint。
+3. 切换到中文拼音，输入“你好”；候选栏旁出现英文翻译即表示安装成功。
 
 Glint 支持单词、短语和短句。单词会尽量给出简洁、常用的英文对应词，短句则显示
 自然翻译。
@@ -59,32 +82,6 @@ Glint 支持单词、短语和短句。单词会尽量给出简洁、常用的�
 - 只读取输入法候选，不读取输入框正文或选中文字内容。
 - 不截图，不安装键盘事件监听；插入译文时不写入系统剪贴板。
 - 在密码框、终端安全输入等场景中自动跳过。
-
-## 安装说明
-
-需要 **macOS 15 或更高版本**，仅支持 **Apple Silicon Mac**。
-
-推荐下载 `Glint-*-macOS-arm64.pkg`，双击后按安装器提示完成安装。
-如果 macOS 首次阻止打开，请在 **系统设置 → 隐私与安全性** 中允许一次，再重新
-打开安装包。
-
-也可以下载 DMG，打开后将 Glint 拖入“应用程序”文件夹。不要直接从 DMG 或
-“下载”目录运行。
-
-### 通过 Homebrew 安装
-
-```bash
-brew tap jsogn/glint
-brew trust --cask jsogn/glint/glint
-brew install --cask jsogn/glint/glint
-```
-
-安装完成后：
-
-1. 从“应用程序”打开 Glint。
-2. 在 **系统设置 → 隐私与安全性 → 辅助功能** 中打开 Glint 的开关，然后重新打开
-   Glint。
-3. 切换到中文拼音，输入“你好”；候选栏旁出现英文翻译即表示安装成功。
 
 ## 从源码构建
 
