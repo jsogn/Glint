@@ -111,6 +111,7 @@ public final class HUDController {
         near screenRect: CGRect,
         inputCaretRect: CGRect? = nil,
         layoutStyle: HUDLayoutStyle = .candidateRow,
+        position: HUDPosition = .automatic,
         spacing: Double = 8,
         opacity: Double = 0.8,
         appearance: HUDAppearance = .default,
@@ -123,6 +124,7 @@ public final class HUDController {
             appearance: appearance,
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
+            position: position,
             spacing: spacing,
             opacity: opacity
         )

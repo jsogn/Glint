@@ -51,6 +51,50 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
+    func testDisplayPositionDefaultsToAutomaticAndPersists() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let first = DisplayPreferences(defaults: defaults)
+        XCTAssertEqual(first.position, .automatic)
+
+        first.position = .above
+
+        let reloaded = DisplayPreferences(defaults: defaults)
+        XCTAssertEqual(reloaded.position, .above)
+        XCTAssertEqual(
+            HUDPosition.allCases.map(\.title),
+            ["自动", "候选栏上方"]
+        )
+    }
+
+    @MainActor
+    func testLegacyBelowDisplayPositionFallsBackToAutomatic() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("below", forKey: "display.position")
+
+        let preferences = DisplayPreferences(defaults: defaults)
+
+        XCTAssertEqual(preferences.position, .automatic)
+    }
+
+    @MainActor
+    func testResettingAppearanceDoesNotChangeDisplayPosition() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = DisplayPreferences(defaults: defaults)
+        preferences.position = .above
+
+        preferences.resetHUDAppearance()
+
+        XCTAssertEqual(preferences.position, .above)
+    }
+
+    @MainActor
     func testCandidateDwellDurationIsClamped() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

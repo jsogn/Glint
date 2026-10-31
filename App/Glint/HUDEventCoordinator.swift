@@ -79,6 +79,7 @@ final class HUDEventCoordinator {
                 scope == .row
                 ? .candidateRow
                 : .selectedTranslations,
+            position: model.displayPreferences.position,
             spacing: model.displayPreferences.candidateSpacing,
             opacity: model.displayPreferences.hudOpacity,
             appearance: model.displayPreferences.hudAppearance,

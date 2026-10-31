@@ -15,7 +15,7 @@ struct DisplayPage: View {
 
     var body: some View {
         PageContainer {
-            SettingsCard("释义与触发") {
+            SettingsCard("位置与触发") {
                 VStack(spacing: 0) {
                     segmentedSetting(
                         title: "翻译",
@@ -58,6 +58,20 @@ struct DisplayPage: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 10)
+
+                    Divider()
+
+                    segmentedSetting(
+                        title: "显示位置",
+                        selection: $preferences.position,
+                        caption:
+                            "自动会避开输入文字；候选栏上方会与候选栏左侧对齐，空间不足时自动调整。"
+                    ) {
+                        ForEach(HUDPosition.allCases, id: \.self) {
+                            position in
+                            Text(position.title).tag(position)
+                        }
+                    }
 
                     Divider()
 
@@ -369,10 +383,17 @@ private struct HUDPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if preferences.position == .above {
+                hudPreview
+                    .padding(.bottom, preferences.candidateSpacing)
+            }
+
             candidateBar
 
-            hudPreview
-                .padding(.top, preferences.candidateSpacing)
+            if preferences.position == .automatic {
+                hudPreview
+                    .padding(.top, preferences.candidateSpacing)
+            }
         }
         .padding(12)
         .frame(
@@ -392,6 +413,7 @@ private struct HUDPreview: View {
             previewAnimation,
             value: preferences.translationScope
         )
+        .animation(previewAnimation, value: preferences.position)
         .animation(previewAnimation, value: preferences.candidateSpacing)
         .animation(previewAnimation, value: preferences.hudOpacity)
         .animation(previewAnimation, value: preferences.hudAppearance)

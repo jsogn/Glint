@@ -19,6 +19,7 @@ enum HUDLayout {
         near candidateRect: CGRect,
         panelSize: CGSize,
         visibleFrame: CGRect,
+        position: HUDPosition = .automatic,
         spacing: Double,
         horizontalOrigin: CGFloat? = nil,
         inputCaretRect: CGRect? = nil,
@@ -30,7 +31,10 @@ enum HUDLayout {
             minimumX,
             visibleFrame.maxX - panelSize.width
         )
-        let preferredX = horizontalOrigin ?? candidateRect.minX
+        let preferredX =
+            position == .above
+            ? candidateRect.minX
+            : horizontalOrigin ?? candidateRect.minX
         let baseX = max(
             minimumX,
             min(preferredX, maximumX)
@@ -42,21 +46,22 @@ enum HUDLayout {
             above + panelSize.height
             <= visibleFrame.maxY
 
-        // Without reliable caret geometry, prefer below because macOS
-        // commonly places the candidate bar under the edited line.
-        let rawDesiredPlacesBelow =
-            inputCaretRect.map {
-                candidateRect.midY <= $0.midY
-            } ?? true
         let desiredPlacesBelow: Bool
-        if let stablePlacesBelow,
+        if position == .above {
+            desiredPlacesBelow = false
+        } else if let stablePlacesBelow,
             let inputCaretRect,
             abs(candidateRect.midY - inputCaretRect.midY)
                 < Self.directionHysteresis
         {
             desiredPlacesBelow = stablePlacesBelow
         } else {
-            desiredPlacesBelow = rawDesiredPlacesBelow
+            // Without reliable caret geometry, prefer below because macOS
+            // commonly places the candidate bar under the edited line.
+            desiredPlacesBelow =
+                inputCaretRect.map {
+                    candidateRect.midY <= $0.midY
+                } ?? true
         }
         let placesBelow: Bool
         if desiredPlacesBelow, belowFits {
@@ -87,7 +92,8 @@ enum HUDLayout {
             width: panelSize.width,
             height: panelSize.height
         )
-        if let inputCaretRect,
+        if position == .automatic,
+            let inputCaretRect,
             overlapsInputLine(baseFrame, caret: inputCaretRect),
             baseX < inputCaretRect.maxX + gap
         {

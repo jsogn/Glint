@@ -52,8 +52,31 @@ struct HUDPresentationRequest {
     let appearance: HUDAppearance
     let screenRect: CGRect
     let inputCaretRect: CGRect?
+    let position: HUDPosition
     let spacing: Double
     let opacity: Double
+
+    init(
+        revision: UInt64?,
+        items: [HUDItem],
+        layoutStyle: HUDLayoutStyle,
+        appearance: HUDAppearance,
+        screenRect: CGRect,
+        inputCaretRect: CGRect?,
+        position: HUDPosition = .automatic,
+        spacing: Double,
+        opacity: Double
+    ) {
+        self.revision = revision
+        self.items = items
+        self.layoutStyle = layoutStyle
+        self.appearance = appearance
+        self.screenRect = screenRect
+        self.inputCaretRect = inputCaretRect
+        self.position = position
+        self.spacing = spacing
+        self.opacity = opacity
+    }
 
     func updatingLayout(
         screenRect: CGRect,
@@ -66,6 +89,7 @@ struct HUDPresentationRequest {
             appearance: appearance,
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
+            position: position,
             spacing: spacing,
             opacity: opacity
         )
@@ -119,6 +143,7 @@ struct HUDGeometryResolver {
         let layout = placement(
             context: context,
             panelSize: panelSize,
+            position: request.position,
             spacing: request.spacing,
             candidateOriginX: request.screenRect.minX
         )
@@ -150,6 +175,7 @@ struct HUDGeometryResolver {
         return placement(
             context: context,
             panelSize: panelSize,
+            position: request.position,
             spacing: request.spacing,
             candidateOriginX: request.screenRect.minX
         ).frame
@@ -212,20 +238,23 @@ struct HUDGeometryResolver {
                 )
             } ?? mainScreen
         let candidateOriginX = candidateRect.minX
-        let fixedOriginX = horizontalAnchor.flatMap { anchor -> CGFloat? in
-            guard anchor.screenFrame == targetScreen.frame else {
-                return nil
+        let fixedOriginX =
+            request.position == .automatic
+            ? horizontalAnchor.flatMap { anchor -> CGFloat? in
+                guard anchor.screenFrame == targetScreen.frame else {
+                    return nil
+                }
+                let hudOriginX = anchor.resolvedHUDOriginX(
+                    candidateOriginX: candidateOriginX
+                )
+                let availableWidth =
+                    targetScreen.visibleFrame.maxX
+                    - hudOriginX
+                return availableWidth >= HUDGeometry.minimumPanelWidth
+                    ? hudOriginX
+                    : nil
             }
-            let hudOriginX = anchor.resolvedHUDOriginX(
-                candidateOriginX: candidateOriginX
-            )
-            let availableWidth =
-                targetScreen.visibleFrame.maxX
-                - hudOriginX
-            return availableWidth >= HUDGeometry.minimumPanelWidth
-                ? hudOriginX
-                : nil
-        }
+            : nil
         return ResolvedScreenContext(
             candidateRect: candidateRect,
             inputCaretRect: inputCaretRect,
@@ -237,6 +266,7 @@ struct HUDGeometryResolver {
     private mutating func placement(
         context: ResolvedScreenContext,
         panelSize: NSSize,
+        position: HUDPosition,
         spacing: Double,
         candidateOriginX: CGFloat
     ) -> HUDLayoutResult {
@@ -248,6 +278,7 @@ struct HUDGeometryResolver {
             near: context.candidateRect,
             panelSize: panelSize,
             visibleFrame: context.screen.visibleFrame,
+            position: position,
             spacing: spacing,
             horizontalOrigin: context.fixedOriginX,
             inputCaretRect: context.inputCaretRect,
@@ -262,7 +293,9 @@ struct HUDGeometryResolver {
             placesBelow: layout.placesBelow,
             placementMode: layout.placementMode
         )
-        if alignedLayout.placementMode == .candidate {
+        if position == .above {
+            horizontalAnchor = nil
+        } else if alignedLayout.placementMode == .candidate {
             if let horizontalAnchor,
                 context.fixedOriginX != nil,
                 horizontalAnchor.screenFrame == context.screen.frame
