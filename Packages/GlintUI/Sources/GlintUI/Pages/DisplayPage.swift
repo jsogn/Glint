@@ -64,8 +64,7 @@ struct DisplayPage: View {
                     segmentedSetting(
                         title: "显示位置",
                         selection: $preferences.position,
-                        caption:
-                            "自动会避开输入文字；候选栏上方会与候选栏左侧对齐，空间不足时自动调整。"
+                        caption: preferences.position.explanation
                     ) {
                         ForEach(HUDPosition.allCases, id: \.self) {
                             position in

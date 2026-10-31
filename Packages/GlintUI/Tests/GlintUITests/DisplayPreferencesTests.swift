@@ -67,6 +67,14 @@ final class DisplayPreferencesTests: XCTestCase {
             HUDPosition.allCases.map(\.title),
             ["自动", "候选栏上方"]
         )
+        XCTAssertEqual(
+            HUDPosition.automatic.explanation,
+            "根据候选栏和输入位置选择上下位置，并避开输入文字。"
+        )
+        XCTAssertEqual(
+            HUDPosition.above.explanation,
+            "与候选栏左侧对齐，不避让输入文字；空间不足时自动调整。"
+        )
     }
 
     @MainActor
