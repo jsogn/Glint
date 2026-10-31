@@ -1,8 +1,11 @@
+import Foundation
 import GlintCore
 import SwiftUI
 
 struct GeneralPage: View {
     let model: MainWindowModel
+    @State private var insertionShortcutError: String?
+    @State private var speechShortcutError: String?
 
     var body: some View {
         PageContainer {
@@ -35,21 +38,187 @@ struct GeneralPage: View {
                 }
             }
 
-            SettingsCard("快捷键") {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 20) {
-                        Text("释义插入")
-                        Spacer()
-                        Toggle(
-                            "释义插入",
-                            isOn: Binding(
-                                get: {
+            SettingsCard("释义插入") {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 12) {
+                            Text("插入触发键")
+                            Spacer(minLength: 24)
+                            TranslationShortcutRecorder(
+                                shortcut: model.generalPreferences
+                                    .insertionShortcut,
+                                accessibilityLabel: "插入触发键"
+                            ) { shortcut in
+                                insertionShortcutError =
                                     model.generalPreferences
-                                        .insertionEnabled
+                                    .setInsertionShortcut(shortcut)
+                            }
+                            Button("清除") {
+                                insertionShortcutError =
+                                    model.generalPreferences
+                                    .setInsertionShortcut(nil)
+                            }
+                            .buttonStyle(.link)
+                            .disabled(
+                                model.generalPreferences
+                                    .insertionShortcut == nil
+                            )
+                            .opacity(
+                                model.generalPreferences
+                                    .insertionShortcut == nil ? 0 : 1
+                            )
+                            .accessibilityHidden(
+                                model.generalPreferences
+                                    .insertionShortcut == nil
+                            )
+                        }
+
+                        Text("按触发键加数字插入对应译文。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        if let insertionShortcutError {
+                            Text(insertionShortcutError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                    .padding(.vertical, 10)
+                }
+            }
+
+            SettingsCard("释义朗读") {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 12) {
+                            Text("朗读触发键")
+                            Spacer(minLength: 24)
+                            TranslationShortcutRecorder(
+                                shortcut: model.generalPreferences
+                                    .speechShortcut,
+                                accessibilityLabel: "朗读触发键"
+                            ) { shortcut in
+                                speechShortcutError =
+                                    model.generalPreferences
+                                    .setSpeechShortcut(shortcut)
+                            }
+                            Button("清除") {
+                                speechShortcutError =
+                                    model.generalPreferences
+                                    .setSpeechShortcut(nil)
+                            }
+                            .buttonStyle(.link)
+                            .disabled(
+                                model.generalPreferences.speechShortcut
+                                    == nil
+                            )
+                            .opacity(
+                                model.generalPreferences.speechShortcut
+                                    == nil ? 0 : 1
+                            )
+                            .accessibilityHidden(
+                                model.generalPreferences.speechShortcut
+                                    == nil
+                            )
+                        }
+
+                        Text("按触发键加数字朗读对应译文。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        if let speechShortcutError {
+                            Text(speechShortcutError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                    .padding(.vertical, 10)
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 20) {
+                            Text("英语口音")
+                            Spacer(minLength: 24)
+                            Picker(
+                                "英语口音",
+                                selection: Binding(
+                                    get: {
+                                        model.generalPreferences
+                                            .speechAccent
+                                    },
+                                    set: {
+                                        model.generalPreferences
+                                            .setSpeechAccent($0)
+                                    }
+                                )
+                            ) {
+                                ForEach(
+                                    TranslationSpeechAccent.allCases,
+                                    id: \.self
+                                ) { accent in
+                                    Text(accent.title).tag(accent)
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(
+                                width: 300,
+                                alignment: .trailing
+                            )
+                        }
+
+                        Text("具体音色由系统英文语音决定。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10)
+
+                    Divider()
+
+                    HStack(spacing: 20) {
+                        Text("语速")
+                        Spacer(minLength: 24)
+                        Picker(
+                            "朗读语速",
+                            selection: Binding(
+                                get: {
+                                    model.generalPreferences.speechRate
                                 },
                                 set: {
                                     model.generalPreferences
-                                        .setInsertionEnabled($0)
+                                        .setSpeechRate($0)
+                                }
+                            )
+                        ) {
+                            ForEach(
+                                TranslationSpeechRate.allCases,
+                                id: \.self
+                            ) { rate in
+                                Text(rate.title).tag(rate)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 300, alignment: .trailing)
+                    }
+                    .padding(.vertical, 10)
+
+                    Divider()
+
+                    HStack(spacing: 20) {
+                        Text("自动朗读")
+                        Spacer()
+                        Toggle(
+                            "自动朗读",
+                            isOn: Binding(
+                                get: {
+                                    model.generalPreferences
+                                        .autoSpeechEnabled
+                                },
+                                set: {
+                                    model.generalPreferences
+                                        .setAutoSpeechEnabled($0)
                                 }
                             )
                         )
@@ -57,39 +226,48 @@ struct GeneralPage: View {
                         .toggleStyle(.switch)
                         .controlSize(.small)
                         .accessibilityHint(
-                            "关闭后不注册触发键和数字快捷键"
+                            "停止输入后朗读当前主译文"
                         )
                     }
+                    .padding(.vertical, 10)
 
-                    if model.generalPreferences.insertionEnabled {
-                        HStack(spacing: 20) {
-                            Text("触发键")
-                            Spacer(minLength: 24)
-                            TranslationShortcutRecorder(
-                                shortcut: model.generalPreferences
-                                    .insertionShortcut,
-                                isEnabled: model.generalPreferences
-                                    .insertionEnabled
-                            ) { shortcut in
-                                _ = model.generalPreferences
-                                    .setInsertionShortcut(shortcut)
+                    if model.generalPreferences.autoSpeechEnabled {
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("停顿时间")
+                                Spacer()
+                                Text(
+                                    String(
+                                        format: "%.1f 秒",
+                                        model.generalPreferences
+                                            .autoSpeechDelay
+                                    )
+                                )
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
                             }
+                            Slider(
+                                value: Binding(
+                                    get: {
+                                        model.generalPreferences
+                                            .autoSpeechDelay
+                                    },
+                                    set: {
+                                        model.generalPreferences
+                                            .setAutoSpeechDelay($0)
+                                    }
+                                ),
+                                in: GeneralPreferences
+                                    .autoSpeechDelayRange,
+                                step: 0.1
+                            )
+                            Text("停止输入并停留该时长后，朗读当前主译文。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-
-                        Text("按触发键加数字插入译文。")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Divider()
-
-                    HStack {
-                        Spacer()
-                        Button("恢复默认设置") {
-                            model.generalPreferences
-                                .resetInsertionSettings()
-                        }
-                        .buttonStyle(.link)
+                        .padding(.vertical, 10)
                     }
                 }
             }

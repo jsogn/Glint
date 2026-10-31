@@ -7,7 +7,7 @@ import OSLog
 
 private let translationChoiceLogger = Logger(
     subsystem: "com.local.glint",
-    category: "Insertion"
+    category: "TranslationChoice"
 )
 
 public struct TranslationChoiceOffer: Sendable, Equatable {
@@ -17,6 +17,72 @@ public struct TranslationChoiceOffer: Sendable, Equatable {
     public init(revision: UInt64, choices: [String]) {
         self.revision = revision
         self.choices = choices
+    }
+}
+
+public enum TranslationChoiceHotKeyNamespace: Sendable {
+    case insertion
+    case speech
+
+    var signature: OSType {
+        switch self {
+        case .insertion: return 0x474C_4E54  // GLNT
+        case .speech: return 0x474C_4E53  // GLNS
+        }
+    }
+}
+
+@MainActor
+public enum TranslationChoiceHotKeyProbe {
+    public static func canRegister(
+        modifiers: TranslationInsertionModifiers,
+        count: Int = 9
+    ) -> Bool {
+        let keyCodes = [
+            UInt32(kVK_ANSI_1),
+            UInt32(kVK_ANSI_2),
+            UInt32(kVK_ANSI_3),
+            UInt32(kVK_ANSI_4),
+            UInt32(kVK_ANSI_5),
+            UInt32(kVK_ANSI_6),
+            UInt32(kVK_ANSI_7),
+            UInt32(kVK_ANSI_8),
+            UInt32(kVK_ANSI_9),
+        ]
+        let probeCount = min(max(count, 1), keyCodes.count)
+        var refs: [EventHotKeyRef?] = []
+        for (index, keyCode) in keyCodes.prefix(probeCount).enumerated() {
+            var ref: EventHotKeyRef?
+            var hotKeyID = EventHotKeyID()
+            hotKeyID.signature = 0x474C_5052  // GLPR
+            hotKeyID.id = UInt32(100 + index)
+            let status = RegisterEventHotKey(
+                keyCode,
+                modifiers.carbonModifiers,
+                hotKeyID,
+                GetApplicationEventTarget(),
+                OptionBits(kEventHotKeyExclusive),
+                &ref
+            )
+            guard status == noErr, let ref else {
+                unregister(refs)
+                if let ref {
+                    UnregisterEventHotKey(ref)
+                }
+                return false
+            }
+            refs.append(ref)
+        }
+        unregister(refs)
+        return true
+    }
+
+    private static func unregister(_ refs: [EventHotKeyRef?]) {
+        for ref in refs {
+            if let ref {
+                UnregisterEventHotKey(ref)
+            }
+        }
     }
 }
 
@@ -365,7 +431,19 @@ public final class TranslationChoiceShortcutCoordinator {
     ) {
         self.init(
             shortcut: shortcut,
-            hotKeys: CarbonTranslationChoiceHotKeys()
+            namespace: .insertion
+        )
+    }
+
+    public convenience init(
+        shortcut: TranslationInsertionShortcut,
+        namespace: TranslationChoiceHotKeyNamespace
+    ) {
+        self.init(
+            shortcut: shortcut,
+            hotKeys: CarbonTranslationChoiceHotKeys(
+                signature: namespace.signature
+            )
         )
     }
 
@@ -492,20 +570,20 @@ public final class TranslationChoiceShortcutCoordinator {
     }
 }
 
-private let translationChoiceHotKeySignature: OSType = 0x474C_4E54  // GLNT
-
 @MainActor
 private final class CarbonTranslationChoiceHotKeys:
     TranslationChoiceHotKeyRegistering
 {
     var onChoice: (@MainActor (Int) -> Void)?
 
+    private let signature: OSType
     private var eventHandler: EventHandlerRef?
     private var choiceHotKeyRefs: [EventHotKeyRef?] = []
     private var choiceModifiers =
         TranslationInsertionShortcut.defaultTrigger.modifiers
 
-    init() {
+    init(signature: OSType) {
+        self.signature = signature
         installEventHandler()
     }
 
@@ -582,17 +660,17 @@ private final class CarbonTranslationChoiceHotKeys:
                     nil,
                     &hotKeyID
                 )
+                let hotKeys = Unmanaged<CarbonTranslationChoiceHotKeys>
+                    .fromOpaque(userData)
+                    .takeUnretainedValue()
                 guard
                     parameterStatus == noErr,
                     hotKeyID.signature
-                        == translationChoiceHotKeySignature,
+                        == hotKeys.signature,
                     (2...10).contains(hotKeyID.id)
                 else {
                     return OSStatus(eventNotHandledErr)
                 }
-                let hotKeys = Unmanaged<CarbonTranslationChoiceHotKeys>
-                    .fromOpaque(userData)
-                    .takeUnretainedValue()
                 MainActor.assumeIsolated {
                     hotKeys.onChoice?(Int(hotKeyID.id) - 2)
                 }
@@ -623,7 +701,7 @@ private final class CarbonTranslationChoiceHotKeys:
 
     private func hotKeyID(_ id: UInt32) -> EventHotKeyID {
         var value = EventHotKeyID()
-        value.signature = translationChoiceHotKeySignature
+        value.signature = signature
         value.id = id
         return value
     }

@@ -3,26 +3,28 @@ import GlintCore
 import SwiftUI
 
 struct TranslationShortcutRecorder: View {
-    let shortcut: TranslationInsertionShortcut
-    let isEnabled: Bool
+    let shortcut: TranslationInsertionShortcut?
+    let accessibilityLabel: String
     let onSelect: (TranslationInsertionShortcut) -> Void
 
     var body: some View {
         TranslationShortcutRecorderButton(
             shortcut: shortcut,
-            isEnabled: isEnabled,
+            accessibilityLabel: accessibilityLabel,
             onRecord: onSelect
         )
         .frame(width: 128, height: 26)
-        .accessibilityLabel("释义插入")
-        .accessibilityValue(shortcut.shortcutAccessibilityLabel)
-        .help("点击录制触发键")
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(
+            shortcut?.shortcutAccessibilityLabel ?? "未启用"
+        )
+        .help(shortcut == nil ? "点击设置触发键" : "点击录制触发键")
     }
 }
 
 private struct TranslationShortcutRecorderButton: NSViewRepresentable {
-    let shortcut: TranslationInsertionShortcut
-    let isEnabled: Bool
+    let shortcut: TranslationInsertionShortcut?
+    let accessibilityLabel: String
     let onRecord: (TranslationInsertionShortcut) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -36,11 +38,11 @@ private struct TranslationShortcutRecorderButton: NSViewRepresentable {
         )
         button.bezelStyle = .rounded
         button.controlSize = .regular
-        button.isEnabled = isEnabled
         button.target = context.coordinator
         button.action = #selector(Coordinator.startRecording(_:))
-        button.toolTip = "点击录制触发键"
-        button.setAccessibilityLabel("释义插入")
+        button.toolTip =
+            shortcut == nil ? "点击设置触发键" : "点击录制触发键"
+        button.setAccessibilityLabel(accessibilityLabel)
         button.onShortcutRecorded = {
             context.coordinator.onRecord($0)
         }
@@ -52,11 +54,13 @@ private struct TranslationShortcutRecorderButton: NSViewRepresentable {
         context: Context
     ) {
         context.coordinator.onRecord = onRecord
-        button.setInteractionEnabled(isEnabled)
         button.apply(shortcut: shortcut)
+        button.setAccessibilityLabel(accessibilityLabel)
         button.setAccessibilityValue(
-            shortcut.shortcutAccessibilityLabel
+            shortcut?.shortcutAccessibilityLabel ?? "未启用"
         )
+        button.toolTip =
+            shortcut == nil ? "点击设置触发键" : "点击录制触发键"
     }
 
     @MainActor
@@ -86,7 +90,7 @@ final class ShortcutRecorderNSButton: NSButton {
 
     init(
         frame: NSRect,
-        shortcut: TranslationInsertionShortcut
+        shortcut: TranslationInsertionShortcut?
     ) {
         super.init(frame: frame)
         setButtonType(.momentaryPushIn)
@@ -123,21 +127,18 @@ final class ShortcutRecorderNSButton: NSButton {
         )
     }
 
-    func apply(shortcut: TranslationInsertionShortcut) {
+    func apply(shortcut: TranslationInsertionShortcut?) {
         guard !isRecordingShortcut else {
             return
         }
         storedShortcut = shortcut
-        renderSymbols(for: shortcut)
-        setAccessibilityValue(shortcut.shortcutAccessibilityLabel)
-    }
-
-    func setInteractionEnabled(_ enabled: Bool) {
-        if !enabled, isRecordingShortcut {
-            cancelRecording()
-            releaseRecordingFocus()
+        if let shortcut {
+            renderSymbols(for: shortcut)
+            setAccessibilityValue(shortcut.shortcutAccessibilityLabel)
+        } else {
+            renderEmptyState()
+            setAccessibilityValue("未启用")
         }
-        isEnabled = enabled
     }
 
     func startRecording() {
@@ -256,6 +257,8 @@ final class ShortcutRecorderNSButton: NSButton {
         pendingModifiers = []
         if let shortcut = storedShortcut {
             apply(shortcut: shortcut)
+        } else {
+            renderEmptyState()
         }
     }
 
@@ -326,6 +329,14 @@ final class ShortcutRecorderNSButton: NSButton {
         imagePosition = .imageOnly
         title = ""
         image = shortcutTemplateImage(for: shortcut)
+    }
+
+    private func renderEmptyState() {
+        image = nil
+        imagePosition = .noImage
+        title = "未启用"
+        font = .systemFont(ofSize: 13, weight: .regular)
+        setAccessibilityValue("未启用")
     }
 
     private static func modifiers(

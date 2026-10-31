@@ -132,6 +132,44 @@ private final class BooleanSequence: Sendable {
 
 @MainActor
 final class TranslationChoiceInsertionTests: XCTestCase {
+    func testChoiceHotKeyNamespacesUseDistinctSignatures() {
+        XCTAssertNotEqual(
+            TranslationChoiceHotKeyNamespace.insertion.signature,
+            TranslationChoiceHotKeyNamespace.speech.signature
+        )
+    }
+
+    func testHotKeyProbeDetectsExistingGlobalRegistration() throws {
+        let modifiers: TranslationInsertionModifiers = [
+            .control,
+            .option,
+            .shift,
+            .command,
+        ]
+        var occupyingRef: EventHotKeyRef?
+        var hotKeyID = EventHotKeyID()
+        hotKeyID.signature = 0x5052_4F42  // PROB
+        hotKeyID.id = 1
+        let status = RegisterEventHotKey(
+            UInt32(kVK_ANSI_1),
+            modifiers.carbonModifiers,
+            hotKeyID,
+            GetApplicationEventTarget(),
+            OptionBits(kEventHotKeyExclusive),
+            &occupyingRef
+        )
+        XCTAssertEqual(status, noErr)
+        let registeredRef = try XCTUnwrap(occupyingRef)
+        defer { UnregisterEventHotKey(registeredRef) }
+
+        XCTAssertFalse(
+            TranslationChoiceHotKeyProbe.canRegister(
+                modifiers: modifiers,
+                count: 1
+            )
+        )
+    }
+
     func testCarbonModifierMaskIncludesAllSupportedKeys() {
         let modifiers: TranslationInsertionModifiers = [
             .control,

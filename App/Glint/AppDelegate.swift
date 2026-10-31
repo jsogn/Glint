@@ -22,6 +22,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainWindowController: MainWindowController!
     private let hudEventCoordinator: HUDEventCoordinator
     private let translationChoiceShortcutCoordinator: TranslationChoiceShortcutCoordinator
+    private let translationSpeechController: TranslationSpeechController
+    private let translationAutoSpeechScheduler: TranslationAutoSpeechScheduler
+    private let translationSpeechShortcutCoordinator: TranslationChoiceShortcutCoordinator
     private let environment: AppEnvironment
     private let launchAtLoginController: LaunchAtLoginController
     private let windowModel: MainWindowModel
@@ -51,24 +54,74 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         self.translationChoiceShortcutCoordinator =
             TranslationChoiceShortcutCoordinator(
-                shortcut: windowModel.generalPreferences
-                    .insertionShortcut
+                shortcut:
+                    windowModel.generalPreferences.insertionShortcut
+                    ?? TranslationInsertionShortcut.defaultTrigger
+            )
+        self.translationSpeechController = TranslationSpeechController()
+        self.translationAutoSpeechScheduler =
+            TranslationAutoSpeechScheduler()
+        self.translationSpeechShortcutCoordinator =
+            TranslationChoiceShortcutCoordinator(
+                shortcut:
+                    windowModel.generalPreferences.speechShortcut
+                    ?? GeneralPreferences.defaultSpeechShortcut,
+                namespace: .speech
             )
         self.readinessToken = Self.readinessToken(
             from: CommandLine.arguments
         )
         super.init()
+        translationAutoSpeechScheduler.onSpeak = { [weak self] text in
+            guard
+                let self,
+                self.windowModel.isMonitoring,
+                self.windowModel.generalPreferences.autoSpeechEnabled
+            else {
+                return
+            }
+            self.translationSpeechController.speak(
+                text,
+                accent: self.windowModel.generalPreferences.speechAccent,
+                rate: self.windowModel.generalPreferences.speechRate,
+                source: .automatic
+            )
+        }
         translationChoiceShortcutCoordinator.setEnabled(
-            windowModel.generalPreferences.insertionEnabled
+            windowModel.generalPreferences.insertionShortcut != nil
+        )
+        translationSpeechShortcutCoordinator.setEnabled(
+            windowModel.generalPreferences.speechShortcut != nil
         )
         translationChoiceShortcutCoordinator.onChoice = {
             [weak self] offer, choiceIndex in
             guard let self else { return false }
-            return await self.environment.monitoringSession
+            let inserted = await self.environment.monitoringSession
                 .insertTranslation(
                     offer,
                     choiceIndex: choiceIndex
                 )
+            if inserted {
+                self.translationSpeechShortcutCoordinator.update(nil)
+            }
+            return inserted
+        }
+        translationSpeechShortcutCoordinator.onChoice = {
+            [weak self] offer, choiceIndex in
+            guard
+                let self,
+                offer.choices.indices.contains(choiceIndex)
+            else {
+                return false
+            }
+            self.translationAutoSpeechScheduler.manualSpeechStarted()
+            self.translationSpeechController.speak(
+                offer.choices[choiceIndex],
+                accent: self.windowModel.generalPreferences.speechAccent,
+                rate: self.windowModel.generalPreferences.speechRate,
+                source: .manual
+            )
+            return false
         }
     }
 
@@ -300,6 +353,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func configureWindowModel() {
+        windowModel.generalPreferences.shortcutAvailabilityCheck = {
+            shortcut in
+            TranslationChoiceHotKeyProbe.canRegister(
+                modifiers: shortcut.modifiers
+            )
+        }
         environment.systemTranslationCoordinator.onAvailabilityChange = {
             [weak windowModel] availability in
             windowModel?.updateSystemTranslationAvailability(availability)
@@ -475,13 +534,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         windowModel.generalPreferences.insertionShortcutDidChange = {
             [weak self] shortcut in
-            self?.translationChoiceShortcutCoordinator.updateShortcut(
-                shortcut
-            )
+            guard let self else { return }
+            if let shortcut {
+                self.translationChoiceShortcutCoordinator.updateShortcut(
+                    shortcut
+                )
+                self.translationChoiceShortcutCoordinator.setEnabled(true)
+            } else {
+                self.translationChoiceShortcutCoordinator.setEnabled(false)
+            }
         }
-        windowModel.generalPreferences.insertionEnabledDidChange = {
+        windowModel.generalPreferences.speechShortcutDidChange = {
+            [weak self] shortcut in
+            guard let self else { return }
+            if let shortcut {
+                self.translationSpeechShortcutCoordinator.updateShortcut(
+                    shortcut
+                )
+                self.translationSpeechShortcutCoordinator.setEnabled(true)
+            } else {
+                self.translationSpeechShortcutCoordinator.setEnabled(false)
+                self.translationSpeechController.stopManual()
+            }
+        }
+        windowModel.generalPreferences.speechAccentDidChange = {
+            [weak self] _ in
+            self?.translationSpeechController.stop()
+        }
+        windowModel.generalPreferences.speechRateDidChange = {
+            [weak self] _ in
+            self?.translationSpeechController.stop()
+        }
+        windowModel.generalPreferences.autoSpeechEnabledDidChange = {
             [weak self] enabled in
-            self?.translationChoiceShortcutCoordinator.setEnabled(enabled)
+            guard let self, !enabled else { return }
+            self.translationAutoSpeechScheduler.cancel()
+            self.translationSpeechController.stopAutomatic()
+        }
+        windowModel.generalPreferences.autoSpeechDelayDidChange = {
+            [weak self] delay in
+            self?.translationAutoSpeechScheduler.setDelay(delay)
         }
         windowModel.translationConfigurationChangedAction = { [weak self] in
             self?.syncTranslationConfiguration()
@@ -628,6 +720,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         shouldStartMonitoringAfterPreparation = false
         shouldRequestPermissionAfterPreparation = false
         translationChoiceShortcutCoordinator.update(nil)
+        translationSpeechShortcutCoordinator.update(nil)
+        translationAutoSpeechScheduler.cancel()
+        translationSpeechController.stop()
         hudEventCoordinator.hide(animated: false)
         windowModel.isMonitoring = false
         windowModel.statusText = ""
@@ -673,6 +768,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .idle:
                 windowModel.isMonitoring = false
                 translationChoiceShortcutCoordinator.update(nil)
+                translationSpeechShortcutCoordinator.update(nil)
+                translationAutoSpeechScheduler.cancel()
+                translationSpeechController.stop()
             case .starting, .stopping:
                 break
             }
@@ -687,12 +785,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch event {
         case .status(let status):
             windowModel.statusText = isActionableStatus(status) ? status : ""
+            if status == "安全输入场景已跳过" {
+                translationSpeechShortcutCoordinator.update(nil)
+                translationAutoSpeechScheduler.cancel()
+                translationSpeechController.stop()
+            }
         case .inputSourceChanged(let identity):
             windowModel.updateActiveInputMethod(identity)
-        case .candidateChanged:
+            translationAutoSpeechScheduler.cancel()
+            translationSpeechController.stop()
+        case .candidateChanged(let revision):
             translationChoiceShortcutCoordinator.update(nil)
+            translationSpeechShortcutCoordinator.update(nil)
+            translationSpeechController.stopAutomatic()
+            if windowModel.generalPreferences.autoSpeechEnabled {
+                translationAutoSpeechScheduler.candidateChanged(
+                    revision: revision,
+                    delay: windowModel.generalPreferences
+                        .autoSpeechDelay
+                )
+            } else {
+                translationAutoSpeechScheduler.cancel()
+            }
             hudEventCoordinator.candidateChanged()
         case .selectionChanged(let index, let revision):
+            if windowModel.generalPreferences.autoSpeechEnabled {
+                translationAutoSpeechScheduler.selectionChanged(
+                    index: index,
+                    revision: revision,
+                    delay: windowModel.generalPreferences
+                        .autoSpeechDelay
+                )
+            }
             hudEventCoordinator.updateSelection(
                 index: index,
                 revision: revision
@@ -704,6 +828,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         case .candidateEnded(let immediate):
             translationChoiceShortcutCoordinator.update(nil)
+            translationSpeechShortcutCoordinator.update(nil)
+            translationAutoSpeechScheduler.cancel()
             hudEventCoordinator.candidateEnded(immediate: immediate)
         case .results(
             let translations,
@@ -720,9 +846,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 isProgressive: isProgressive,
                 isMonitoring: windowModel.isMonitoring
             )
+            if windowModel.generalPreferences.autoSpeechEnabled {
+                translationAutoSpeechScheduler.updateTranslations(
+                    primaryTranslations(from: translations),
+                    revision: revision,
+                    selectedIndex: selectedTranslationIndex(
+                        from: translations
+                    )
+                )
+            }
         case .insertionOffer(let offer):
             translationChoiceShortcutCoordinator.update(offer)
+            translationSpeechShortcutCoordinator.update(offer)
         }
+    }
+
+    private func primaryTranslations(
+        from translations: [CandidateTranslationPresentation]
+    ) -> [Int: String] {
+        var values: [Int: String] = [:]
+        for item in translations {
+            guard
+                let text =
+                    item.insertionOptions.first
+                    ?? item.translation
+            else {
+                continue
+            }
+            values[item.index] = text
+        }
+        return values
+    }
+
+    private func selectedTranslationIndex(
+        from translations: [CandidateTranslationPresentation]
+    ) -> Int? {
+        translations.first(where: \.isSelected)?.index
     }
 
     private func isActionableStatus(_ status: String) -> Bool {

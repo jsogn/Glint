@@ -82,6 +82,17 @@ final class TranslationShortcutPresentationTests: XCTestCase {
     }
 
     @MainActor
+    func testRecorderShowsEmptyStateWhenShortcutIsNil() {
+        let button = ShortcutRecorderNSButton(
+            frame: NSRect(x: 0, y: 0, width: 128, height: 26),
+            shortcut: nil
+        )
+
+        XCTAssertEqual(button.title, "未启用")
+        XCTAssertNil(button.image)
+    }
+
+    @MainActor
     func testRecorderReleasesFocusAfterSuccessfulRecording() throws {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 240, height: 80),
