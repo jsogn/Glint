@@ -12,7 +12,7 @@ public enum HUDBackgroundStyle: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .darkGlass: return "玻璃"
+        case .darkGlass: return "系统玻璃"
         case .solid: return "纯色"
         }
     }

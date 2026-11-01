@@ -19,7 +19,7 @@ final class HUDAppearanceTests: XCTestCase {
     func testBackgroundStyleTitlesStaySimple() {
         XCTAssertEqual(
             HUDBackgroundStyle.allCases.map(\.title),
-            ["玻璃", "纯色"]
+            ["系统玻璃", "纯色"]
         )
     }
 

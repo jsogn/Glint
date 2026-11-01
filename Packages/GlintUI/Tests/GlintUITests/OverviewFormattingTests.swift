@@ -8,9 +8,22 @@ final class OverviewFormattingTests: XCTestCase {
         XCTAssertEqual(OverviewFormatting.dwellDuration(0.3), "300 ms")
     }
 
-    func testAppearanceSummarizesOpacitySizeAndSpacing() {
+    func testAppearanceUsesSystemGlassWithoutCustomOpacity() {
         XCTAssertEqual(
             OverviewFormatting.appearance(
+                backgroundStyle: .darkGlass,
+                hudOpacity: 0.8,
+                hudFontSize: 15,
+                candidateSpacing: 5
+            ),
+            "系统玻璃 · 字号 15 pt · 间距 5 pt"
+        )
+    }
+
+    func testAppearanceSummarizesSolidOpacitySizeAndSpacing() {
+        XCTAssertEqual(
+            OverviewFormatting.appearance(
+                backgroundStyle: .solid,
                 hudOpacity: 0.8,
                 hudFontSize: 15,
                 candidateSpacing: 5
@@ -19,6 +32,7 @@ final class OverviewFormattingTests: XCTestCase {
         )
         XCTAssertEqual(
             OverviewFormatting.appearance(
+                backgroundStyle: .solid,
                 hudOpacity: 1,
                 hudFontSize: 13,
                 candidateSpacing: 0

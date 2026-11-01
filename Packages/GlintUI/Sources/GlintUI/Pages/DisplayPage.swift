@@ -128,17 +128,19 @@ struct DisplayPage: View {
                         )
                     )
 
-                    sliderSetting(
-                        title: "背景不透明度",
-                        value: String(
-                            format: "%.0f%%",
-                            preferences.hudOpacity * 100
-                        ),
-                        binding: $preferences.hudOpacity,
-                        range: 0.4...1.0,
-                        step: 0.02,
-                        caption: "只调整显示背景，不改变文字清晰度。"
-                    )
+                    if preferences.hudBackgroundStyle == .solid {
+                        sliderSetting(
+                            title: "背景不透明度",
+                            value: String(
+                                format: "%.0f%%",
+                                preferences.hudOpacity * 100
+                            ),
+                            binding: $preferences.hudOpacity,
+                            range: 0.4...1.0,
+                            step: 0.02,
+                            caption: "只调整纯色背景，不改变文字清晰度。"
+                        )
+                    }
 
                     sliderSetting(
                         title: "文字大小",

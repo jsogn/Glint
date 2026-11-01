@@ -116,6 +116,31 @@ struct HUDItemRow: View {
     let animatesBackground: Bool
     let textOpacity: Double
 
+    private var primaryTextColor: Color {
+        usesSystemGlassTextColors
+            ? .primary
+            : appearance.resolvedTextColor
+    }
+
+    private var secondaryTextColor: Color {
+        usesSystemGlassTextColors
+            ? .secondary
+            : appearance.resolvedSecondaryTextColor
+    }
+
+    private var usesSystemGlassTextColors: Bool {
+        guard
+            !appearance.usesCustomTextColor,
+            appearance.backgroundStyle != .solid
+        else {
+            return false
+        }
+        if #available(macOS 26.0, *) {
+            return true
+        }
+        return false
+    }
+
     var body: some View {
         let plan = HUDLayoutPlan(
             itemCount: items.count,
@@ -174,7 +199,7 @@ struct HUDItemRow: View {
                     .foregroundStyle(
                         item.isSelected && items.count > 1
                             ? Color.white.opacity(0.9)
-                            : appearance.resolvedSecondaryTextColor
+                            : secondaryTextColor
                     )
             }
             let primary = Text(item.text)
@@ -187,7 +212,7 @@ struct HUDItemRow: View {
                 .foregroundColor(
                     item.isSelected && items.count > 1
                         ? Color.white
-                        : appearance.resolvedTextColor
+                        : primaryTextColor
                 )
             let label =
                 item.partsOfSpeechText.isEmpty
@@ -208,7 +233,7 @@ struct HUDItemRow: View {
                         )
                     )
                     .foregroundColor(
-                        appearance.resolvedSecondaryTextColor
+                        secondaryTextColor
                     )
             label.lineLimit(1)
         }
@@ -240,20 +265,7 @@ private struct HUDSurfaceStyle: ViewModifier {
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        if appearance.backgroundStyle != .solid {
-            content
-                .background {
-                    HUDNativeMaterialBackground(
-                        backgroundStyle: appearance.backgroundStyle,
-                        blendingMode: materialBlendingMode
-                    )
-                    .opacity(backgroundOpacity)
-                    .clipShape(Capsule())
-                }
-                .overlay {
-                    Capsule().strokeBorder(.separator, lineWidth: 1)
-                }
-        } else {
+        if appearance.backgroundStyle == .solid {
             content
                 .background {
                     Capsule()
@@ -277,6 +289,18 @@ private struct HUDSurfaceStyle: ViewModifier {
                 .overlay {
                     Capsule().strokeBorder(.separator, lineWidth: 1)
                 }
+        } else if #available(macOS 26.0, *) {
+            content
+                .glassEffect(.regular, in: Capsule())
+        } else {
+            content
+                .background {
+                    HUDNativeMaterialBackground(
+                        backgroundStyle: appearance.backgroundStyle,
+                        blendingMode: materialBlendingMode
+                    )
+                    .clipShape(Capsule())
+                }
         }
     }
 }
@@ -295,7 +319,7 @@ struct HUDNativeMaterialBackground: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
-        view.material = .popover
+        view.material = .hudWindow
         view.blendingMode = blendingMode
         view.state = .active
         view.isEmphasized = false

@@ -47,6 +47,8 @@ struct OverviewPage: View {
                         OverviewInfoRow(
                             label: "外观",
                             value: OverviewFormatting.appearance(
+                                backgroundStyle: model.displayPreferences
+                                    .hudBackgroundStyle,
                                 hudOpacity: model.displayPreferences
                                     .hudOpacity,
                                 hudFontSize: model.displayPreferences
