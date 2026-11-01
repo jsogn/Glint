@@ -183,6 +183,7 @@ public actor ECDICTUpdateService {
     private let archiveURLTemplate: String
     private let minimumTermCount: Int
     private let minimumRankCount: Int
+    private let minimumPOSCount: Int
 
     public init(
         pluginManager: PluginManager,
@@ -192,7 +193,8 @@ public actor ECDICTUpdateService {
         atomURL: URL? = nil,
         archiveURLTemplate: String? = nil,
         minimumTermCount: Int = 80_000,
-        minimumRankCount: Int = 120_000
+        minimumRankCount: Int = 120_000,
+        minimumPOSCount: Int = 150_000
     ) {
         self.pluginManager = pluginManager
         self.installer = CoreDictionaryInstaller(
@@ -213,6 +215,7 @@ public actor ECDICTUpdateService {
             archiveURLTemplate ?? Self.archiveURLTemplate
         self.minimumTermCount = minimumTermCount
         self.minimumRankCount = minimumRankCount
+        self.minimumPOSCount = minimumPOSCount
     }
 
     public func repairInstalledCopyIfNeeded() async throws -> Bool {
@@ -285,7 +288,8 @@ public actor ECDICTUpdateService {
         try Task.checkCancellation()
         guard
             summary.termCount >= minimumTermCount,
-            summary.rankCount >= minimumRankCount
+            summary.rankCount >= minimumRankCount,
+            summary.posCount >= minimumPOSCount
         else {
             throw ECDICTUpdateError.implausibleDatabase
         }

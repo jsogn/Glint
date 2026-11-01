@@ -20,17 +20,17 @@ public final class ECDICTDictionary: DictionaryEngine, @unchecked Sendable {
             return nil
         }
         guard
-            let values = ranker?.fallbackCandidates(
+            let rankings = ranker?.fallbackRankings(
                 term: text,
                 maxFrequency: 100_000,
                 limit: 3
-            ), !values.isEmpty
+            ), !rankings.isEmpty
         else {
             return nil
         }
-        let options = values.enumerated().map { index, value in
+        let options = rankings.enumerated().map { index, ranking in
             TranslationOption(
-                text: value,
+                text: ranking.english,
                 score: 0.70 - Double(index) * 0.05
             )
         }

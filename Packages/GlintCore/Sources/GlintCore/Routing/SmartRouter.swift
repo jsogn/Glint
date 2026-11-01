@@ -3,10 +3,16 @@ import Foundation
 public struct SmartRouter: Sendable {
     private let dictionary: any DictionaryEngine
     private let translation: any TranslationEngine
+    private let partOfSpeechProvider: (any PartOfSpeechProviding)?
 
-    public init(dictionary: any DictionaryEngine, translation: any TranslationEngine) {
+    public init(
+        dictionary: any DictionaryEngine,
+        translation: any TranslationEngine,
+        partOfSpeechProvider: (any PartOfSpeechProviding)? = nil
+    ) {
         self.dictionary = dictionary
         self.translation = translation
+        self.partOfSpeechProvider = partOfSpeechProvider
     }
 
     public func route(
@@ -19,7 +25,21 @@ public struct SmartRouter: Sendable {
         guard !candidate.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
+        let routed = try await routeWithoutPartOfSpeech(
+            candidate,
+            mode: mode,
+            includesAlternatives: includesAlternatives,
+            dictionaryPrefetch: dictionaryPrefetch
+        )
+        return await enrichingPartsOfSpeech(routed)
+    }
 
+    private func routeWithoutPartOfSpeech(
+        _ candidate: Candidate,
+        mode: TranslationMode,
+        includesAlternatives: Bool,
+        dictionaryPrefetch: Task<TranslationResult?, Never>?
+    ) async throws -> TranslationResult? {
         switch mode {
         case .smartFusion:
             if candidate.kind == .sentence {
@@ -99,6 +119,31 @@ public struct SmartRouter: Sendable {
         }
     }
 
+    private func enrichingPartsOfSpeech(
+        _ result: TranslationResult?
+    ) async -> TranslationResult? {
+        guard let result, let partOfSpeechProvider else {
+            return result
+        }
+        var enriched = result.options
+        for index in enriched.indices {
+            let option = enriched[index]
+            guard PartOfSpeech.singleEnglishWordKey(option.text) != nil else {
+                continue
+            }
+            let resolved = await partOfSpeechProvider.partsOfSpeech(
+                forEnglish: option.text
+            )
+            guard !resolved.isEmpty else { continue }
+            enriched[index] = TranslationOption(
+                text: option.text,
+                score: option.score,
+                partsOfSpeech: option.partsOfSpeech + resolved
+            )
+        }
+        return TranslationResult(options: enriched)
+    }
+
     public func prefetchDictionary(
         _ candidate: Candidate
     ) async -> TranslationResult? {
@@ -131,7 +176,8 @@ public struct SmartRouter: Sendable {
             index, option in
             TranslationOption(
                 text: option.text,
-                score: firstDictionaryScore - Double(index) * 0.000001
+                score: firstDictionaryScore - Double(index) * 0.000001,
+                partsOfSpeech: option.partsOfSpeech
             )
         }
         return TranslationResult(
@@ -143,10 +189,15 @@ public struct SmartRouter: Sendable {
         model: TranslationResult,
         dictionary: TranslationResult
     ) -> TranslationResult {
-        var dictionaryRanks: [String: Int] = [:]
+        var dictionaryMetadata: [String: (rank: Int, partsOfSpeech: [PartOfSpeech])] = [:]
         for (index, option) in dictionary.options.enumerated() {
             guard let key = surfaceKey(option.text) else { continue }
-            dictionaryRanks[key] = dictionaryRanks[key] ?? index
+            dictionaryMetadata[key] =
+                dictionaryMetadata[key]
+                ?? (
+                    rank: index,
+                    partsOfSpeech: option.partsOfSpeech
+                )
         }
         let modelKeys = Set(
             model.options.compactMap {
@@ -157,7 +208,10 @@ public struct SmartRouter: Sendable {
 
         for (index, option) in model.options.enumerated() {
             let key = surfaceKey(option.text)
-            let dictionaryRank = key.flatMap { dictionaryRanks[$0] }
+            let dictionaryEntry = key.flatMap {
+                dictionaryMetadata[$0]
+            }
+            let dictionaryRank = dictionaryEntry?.rank
             let modelSignal =
                 FusionWeights.modelRank / Double(index + 1)
             let dictionarySignal =
@@ -174,7 +228,11 @@ public struct SmartRouter: Sendable {
                     score:
                         modelSignal
                         + dictionarySignal
-                        + consensusBonus
+                        + consensusBonus,
+                    partsOfSpeech: PartOfSpeech.normalized(
+                        (dictionaryEntry?.partsOfSpeech ?? [])
+                            + option.partsOfSpeech
+                    )
                 )
             )
         }
@@ -190,7 +248,8 @@ public struct SmartRouter: Sendable {
                     text: option.text,
                     score:
                         FusionWeights.dictionaryRank
-                        / Double(index + 1)
+                        / Double(index + 1),
+                    partsOfSpeech: option.partsOfSpeech
                 )
             )
         }

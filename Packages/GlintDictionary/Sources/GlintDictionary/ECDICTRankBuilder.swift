@@ -1,4 +1,5 @@
 import Foundation
+import GlintCore
 import SQLite3
 
 public struct ECDICTRankSummary: Sendable, Equatable {
@@ -7,19 +8,22 @@ public struct ECDICTRankSummary: Sendable, Equatable {
     public let sourceRevision: String?
     public let termCount: Int
     public let rankCount: Int
+    public let posCount: Int
 
     public init(
         sourceChecksum: String?,
         sourceDate: String?,
         sourceRevision: String?,
         termCount: Int,
-        rankCount: Int
+        rankCount: Int,
+        posCount: Int
     ) {
         self.sourceChecksum = sourceChecksum
         self.sourceDate = sourceDate
         self.sourceRevision = sourceRevision
         self.termCount = termCount
         self.rankCount = rankCount
+        self.posCount = posCount
     }
 }
 
@@ -47,6 +51,8 @@ public enum ECDICTRankBuilderError: Error, LocalizedError, Equatable {
 }
 
 public enum ECDICTRankBuilder {
+    private typealias PartsByEnglish = [String: [PartOfSpeech]]
+
     private struct Ranking: Comparable {
         let frequency: Int
         let collins: Int
@@ -164,7 +170,7 @@ public enum ECDICTRankBuilder {
         }
     }
 
-    private static let schema = "ecdict-rank-v3"
+    private static let schema = "ecdict-rank-v4"
     private static let sqliteTransient = unsafeBitCast(
         -1,
         to: sqlite3_destructor_type.self
@@ -231,6 +237,11 @@ public enum ECDICTRankBuilder {
                     exam_tag INTEGER NOT NULL,
                     PRIMARY KEY (term, english)
                 ) WITHOUT ROWID;
+                CREATE TABLE english_parts_of_speech (
+                    english_key TEXT NOT NULL,
+                    parts_of_speech TEXT NOT NULL,
+                    PRIMARY KEY (english_key)
+                ) WITHOUT ROWID;
                 CREATE TABLE metadata (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
@@ -243,6 +254,7 @@ public enum ECDICTRankBuilder {
             var reader = CSVStreamReader(handle: handle)
             var indexes: [String: Int]?
             var candidates: [String: [String: Ranking]] = [:]
+            var partsByEnglish: PartsByEnglish = [:]
             var parsedRows = 0
             try reader.forEach { fields, rowNumber in
                 if indexes == nil {
@@ -294,7 +306,8 @@ public enum ECDICTRankBuilder {
                     )?.trimmingCharacters(
                         in: .whitespacesAndNewlines
                     ).isEmpty == false,
-                    candidates: &candidates
+                    candidates: &candidates,
+                    partsByEnglish: &partsByEnglish
                 )
             }
             try Task.checkCancellation()
@@ -316,6 +329,16 @@ public enum ECDICTRankBuilder {
                 """
             )
             defer { sqlite3_finalize(insertRank) }
+            let insertEnglishPOS = try prepare(
+                database,
+                """
+                INSERT INTO english_parts_of_speech(
+                    english_key,
+                    parts_of_speech
+                ) VALUES (?, ?)
+                """
+            )
+            defer { sqlite3_finalize(insertEnglishPOS) }
             try execute(database, "BEGIN IMMEDIATE;")
             do {
                 for (term, bucket) in candidates {
@@ -364,6 +387,29 @@ public enum ECDICTRankBuilder {
                         }
                     }
                 }
+                var posCount = 0
+                for english in partsByEnglish.keys.sorted() {
+                    let parts = ECDICTPartOfSpeech.select(
+                        partsByEnglish[english] ?? []
+                    )
+                    guard !parts.isEmpty else { continue }
+                    sqlite3_reset(insertEnglishPOS)
+                    sqlite3_clear_bindings(insertEnglishPOS)
+                    bind(english, to: 1, in: insertEnglishPOS)
+                    bind(
+                        ECDICTPartOfSpeech.encode(parts),
+                        to: 2,
+                        in: insertEnglishPOS
+                    )
+                    guard
+                        sqlite3_step(insertEnglishPOS) == SQLITE_DONE
+                    else {
+                        throw ECDICTRankBuilderError.sqlite(
+                            String(cString: sqlite3_errmsg(database))
+                        )
+                    }
+                    posCount += 1
+                }
                 try insertMetadata(
                     [
                         ("schema", schema),
@@ -372,10 +418,11 @@ public enum ECDICTRankBuilder {
                         ("source_checksum", sourceChecksum ?? ""),
                         ("source_date", sourceDate ?? ""),
                         ("source_revision", sourceRevision ?? ""),
+                        ("pos_count", String(posCount)),
                     ],
                     into: database
                 )
-                try execute(database, "PRAGMA user_version = 3;")
+                try execute(database, "PRAGMA user_version = 4;")
                 try execute(database, "COMMIT;")
             } catch {
                 try? execute(database, "ROLLBACK;")
@@ -430,7 +477,7 @@ public enum ECDICTRankBuilder {
         guard storedSchema == schema else {
             throw ECDICTRankBuilderError.invalidSchema
         }
-        guard hasRankSchema(database) else {
+        guard hasRankSchema(database), hasEnglishPOSSchema(database) else {
             throw ECDICTRankBuilderError.invalidSchema
         }
         let termCount =
@@ -443,6 +490,18 @@ public enum ECDICTRankBuilder {
                 database,
                 sql: "SELECT COUNT(*) FROM ranks"
             ) ?? 0
+        let posCount =
+            intValue(
+                database,
+                sql: "SELECT COUNT(*) FROM english_parts_of_speech"
+            ) ?? 0
+        let storedPOSCount = intValue(
+            database,
+            sql: "SELECT value FROM metadata WHERE key = 'pos_count'"
+        )
+        guard storedPOSCount == posCount else {
+            throw ECDICTRankBuilderError.invalidSchema
+        }
         guard termCount > 0, rankCount > 0 else {
             throw ECDICTRankBuilderError.invalidSchema
         }
@@ -460,7 +519,8 @@ public enum ECDICTRankBuilder {
                 sql: "SELECT value FROM metadata WHERE key = 'source_revision'"
             ),
             termCount: termCount,
-            rankCount: rankCount
+            rankCount: rankCount,
+            posCount: posCount
         )
     }
 
@@ -475,7 +535,8 @@ public enum ECDICTRankBuilder {
         oxford: Bool,
         frequency: Int,
         examTagged: Bool,
-        candidates: inout [String: [String: Ranking]]
+        candidates: inout [String: [String: Ranking]],
+        partsByEnglish: inout PartsByEnglish
     ) throws {
         let word = word.trimmingCharacters(in: .whitespacesAndNewlines)
         let translation = translation.replacingOccurrences(
@@ -485,21 +546,44 @@ public enum ECDICTRankBuilder {
         guard !word.isEmpty,
             !translation.isEmpty,
             word.count <= 32,
-            !word.contains(where: isHan),
-            frequency <= 200_000
+            !word.contains(where: isHan)
         else {
             return
         }
+        let lines = translation.components(separatedBy: "\n")
+        if let englishKey = ECDICTPartOfSpeech.englishKey(for: word) {
+            for line in lines {
+                guard
+                    let part = ECDICTPartOfSpeech.parseLine(line)
+                        .partOfSpeech
+                else {
+                    continue
+                }
+                var parts = partsByEnglish[englishKey] ?? []
+                if !parts.contains(part) {
+                    parts.append(part)
+                    partsByEnglish[englishKey] = parts
+                }
+            }
+        }
+        guard frequency <= 200_000 else { return }
         let ranking = Ranking(
             frequency: frequency,
             collins: collins,
             oxford: oxford ? 1 : 0,
             examTagged: examTagged
         )
-        for term in terms(in: translation) {
-            let previous = candidates[term]?[word]
-            if previous == nil || ranking < previous! {
-                candidates[term, default: [:]][word] = ranking
+        for line in lines {
+            let parsed = ECDICTPartOfSpeech.parseLine(line)
+            let termText =
+                parsed.partOfSpeech == nil
+                ? line
+                : parsed.body
+            for term in terms(in: termText) {
+                let previous = candidates[term]?[word]
+                if previous == nil || ranking < previous! {
+                    candidates[term, default: [:]][word] = ranking
+                }
             }
         }
     }
@@ -653,6 +737,46 @@ public enum ECDICTRankBuilder {
         }
         defer { sqlite3_finalize(statement) }
         var columns: Set<String> = []
+        var primaryKey: [Int32: String] = [:]
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let name = sqlite3_column_text(statement, 1) else {
+                continue
+            }
+            let column = String(
+                cString: UnsafeRawPointer(name)
+                    .assumingMemoryBound(to: CChar.self)
+            )
+            columns.insert(column)
+            let primaryKeyPosition = sqlite3_column_int(statement, 5)
+            if primaryKeyPosition > 0 {
+                primaryKey[primaryKeyPosition] = column
+            }
+        }
+        return required.isSubset(of: columns)
+            && primaryKey[1] == "term"
+            && primaryKey[2] == "english"
+    }
+
+    private static func hasEnglishPOSSchema(
+        _ database: OpaquePointer?
+    ) -> Bool {
+        let required = Set([
+            "english_key", "parts_of_speech",
+        ])
+        var statement: OpaquePointer?
+        guard
+            sqlite3_prepare_v2(
+                database,
+                "PRAGMA table_info(english_parts_of_speech);",
+                -1,
+                &statement,
+                nil
+            ) == SQLITE_OK
+        else {
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        var columns: Set<String> = []
         while sqlite3_step(statement) == SQLITE_ROW {
             guard let name = sqlite3_column_text(statement, 1) else {
                 continue
@@ -664,7 +788,20 @@ public enum ECDICTRankBuilder {
                 )
             )
         }
-        return required.isSubset(of: columns)
+        guard required.isSubset(of: columns) else { return false }
+        let definition =
+            stringValue(
+                database,
+                sql: """
+                    SELECT sql
+                    FROM sqlite_master
+                    WHERE type = 'table'
+                      AND name = 'english_parts_of_speech'
+                    """
+            ) ?? ""
+        let normalizedDefinition =
+            definition.uppercased().filter { !$0.isWhitespace }
+        return normalizedDefinition.contains("WITHOUTROWID")
     }
 
     private static func insertMetadata(

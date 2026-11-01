@@ -105,7 +105,11 @@ final class AppEnvironment {
         self.translationRuntime = translationRuntime
         self.systemTranslationCoordinator =
             systemTranslationCoordinator
-        let router = SmartRouter(dictionary: dictionary, translation: translationRuntime)
+        let router = SmartRouter(
+            dictionary: dictionary,
+            translation: translationRuntime,
+            partOfSpeechProvider: dictionary
+        )
         let rimeSupportDirectory = Self.rimeSupportDirectory()
         self.squirrelIntegrationService =
             Self.makeSquirrelIntegrationService(

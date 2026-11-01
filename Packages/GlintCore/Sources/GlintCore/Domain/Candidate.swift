@@ -20,10 +20,16 @@ public struct Candidate: Sendable, Equatable {
 public struct TranslationOption: Sendable, Equatable {
     public let text: String
     public let score: Double
+    public let partsOfSpeech: [PartOfSpeech]
 
-    public init(text: String, score: Double) {
+    public init(
+        text: String,
+        score: Double,
+        partsOfSpeech: [PartOfSpeech] = []
+    ) {
         self.text = text
         self.score = score.isFinite ? score : 0
+        self.partsOfSpeech = PartOfSpeech.normalized(partsOfSpeech)
     }
 }
 
@@ -35,17 +41,33 @@ public struct TranslationResult: Sendable, Equatable {
     }
 
     public init(options: [TranslationOption]) {
-        var seen: Set<String> = []
-        self.options =
+        let sorted =
             options
             .filter { !$0.text.isEmpty }
-            .sorted { lhs, rhs in
-                if lhs.score == rhs.score {
-                    return lhs.text < rhs.text
+            .sorted {
+                if $0.score == $1.score {
+                    return $0.text < $1.text
                 }
-                return lhs.score > rhs.score
+                return $0.score > $1.score
             }
-            .filter { seen.insert(Self.dedupeKey($0.text)).inserted }
+        var indexes: [String: Int] = [:]
+        var merged: [TranslationOption] = []
+        for option in sorted {
+            let key = Self.dedupeKey(option.text)
+            if let index = indexes[key] {
+                let existing = merged[index]
+                merged[index] = TranslationOption(
+                    text: existing.text,
+                    score: existing.score,
+                    partsOfSpeech:
+                        existing.partsOfSpeech + option.partsOfSpeech
+                )
+            } else {
+                indexes[key] = merged.count
+                merged.append(option)
+            }
+        }
+        self.options = merged
     }
 
     public var text: String {

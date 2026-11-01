@@ -524,6 +524,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await self.environment.monitoring.setTranslationScope(scope)
             }
         }
+        windowModel.displayPreferences.showsPartsOfSpeechDidChange = {
+            [weak self] enabled in
+            guard let self else { return }
+            Task {
+                await self.environment.monitoring.setShowsPartsOfSpeech(
+                    enabled
+                )
+            }
+        }
         windowModel.displayPreferences.maximumTranslationCountDidChange = {
             [weak self] count in
             guard let self else { return }
@@ -742,6 +751,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             translationScope: windowModel.displayPreferences.translationScope,
             maximumTranslationCount: windowModel.displayPreferences
                 .maximumTranslationCount,
+            showsPartsOfSpeech: windowModel.displayPreferences
+                .showsPartsOfSpeech,
             configurationToken: translationConfigurationToken
         )
     }

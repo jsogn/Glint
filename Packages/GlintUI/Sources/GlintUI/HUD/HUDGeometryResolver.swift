@@ -94,6 +94,20 @@ struct HUDPresentationRequest {
             opacity: opacity
         )
     }
+
+    func withItems(_ items: [HUDItem]) -> Self {
+        Self(
+            revision: revision,
+            items: items,
+            layoutStyle: layoutStyle,
+            appearance: appearance,
+            screenRect: screenRect,
+            inputCaretRect: inputCaretRect,
+            position: position,
+            spacing: spacing,
+            opacity: opacity
+        )
+    }
 }
 
 struct HUDPresentationLayout {
@@ -127,28 +141,38 @@ struct HUDGeometryResolver {
             in: context.screen.visibleFrame,
             fixedOriginX: context.fixedOriginX
         )
-        let showsOnlySelectedItem = HUDLayoutPlan.requiresSelectedOnly(
-            for: request.items,
+        let fittedItems = HUDLayoutPlan.itemsFittingPartsOfSpeech(
+            request.items,
             maximumWidth: maximumWidth,
             layoutStyle: request.layoutStyle,
             appearance: request.appearance
         )
+        let resolvedRequest =
+            fittedItems == request.items
+            ? request
+            : request.withItems(fittedItems)
+        let showsOnlySelectedItem = HUDLayoutPlan.requiresSelectedOnly(
+            for: resolvedRequest.items,
+            maximumWidth: maximumWidth,
+            layoutStyle: resolvedRequest.layoutStyle,
+            appearance: resolvedRequest.appearance
+        )
         let panelSize = HUDLayoutPlan.panelSize(
-            for: request.items,
+            for: resolvedRequest.items,
             maximumWidth: maximumWidth,
             selectedOnly: showsOnlySelectedItem,
-            layoutStyle: request.layoutStyle,
-            appearance: request.appearance
+            layoutStyle: resolvedRequest.layoutStyle,
+            appearance: resolvedRequest.appearance
         )
         let layout = placement(
             context: context,
             panelSize: panelSize,
-            position: request.position,
-            spacing: request.spacing,
-            candidateOriginX: request.screenRect.minX
+            position: resolvedRequest.position,
+            spacing: resolvedRequest.spacing,
+            candidateOriginX: resolvedRequest.screenRect.minX
         )
         return HUDPresentationLayout(
-            request: request,
+            request: resolvedRequest,
             showsOnlySelectedItem: showsOnlySelectedItem,
             panelSize: panelSize,
             targetFrame: layout.frame,

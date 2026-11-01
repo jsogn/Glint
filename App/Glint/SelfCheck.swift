@@ -115,6 +115,82 @@ enum SelfCheck {
             RunLoop.main.run()
             exit(EXIT_FAILURE)
         }
+
+        static func runDictionaryPOSReloadCheck(
+            oldPluginDirectory: URL,
+            newPluginDirectory: URL,
+            oldWord: String,
+            newWord: String
+        ) -> Never {
+            Task {
+                do {
+                    let result = try await dictionaryPOSReloadResult(
+                        oldPluginDirectory: oldPluginDirectory,
+                        newPluginDirectory: newPluginDirectory,
+                        oldWord: oldWord,
+                        newWord: newWord
+                    )
+                    print(
+                        "before=\(partOfSpeechSummary(result.before))"
+                    )
+                    print(
+                        "after=\(partOfSpeechSummary(result.after))"
+                    )
+                    exit(EXIT_SUCCESS)
+                } catch {
+                    print("error=\(error.localizedDescription)")
+                    exit(EXIT_FAILURE)
+                }
+            }
+            RunLoop.main.run()
+            exit(EXIT_FAILURE)
+        }
+
+        private static func dictionaryPOSReloadResult(
+            oldPluginDirectory: URL,
+            newPluginDirectory: URL,
+            oldWord: String,
+            newWord: String
+        ) async throws -> (
+            before: [PartOfSpeech],
+            after: [PartOfSpeech]
+        ) {
+            let root = FileManager.default.temporaryDirectory
+                .appendingPathComponent(
+                    "GlintDictionaryReloadSelfCheck-\(UUID().uuidString)",
+                    isDirectory: true
+                )
+            try FileManager.default.createDirectory(
+                at: root,
+                withIntermediateDirectories: true
+            )
+            defer { try? FileManager.default.removeItem(at: root) }
+            let installedPlugin = root.appendingPathComponent(
+                "dict-ecdict",
+                isDirectory: true
+            )
+            try FileManager.default.copyItem(
+                at: oldPluginDirectory,
+                to: installedPlugin
+            )
+            let router = PluginDictionaryRouter(baseDirectory: root)
+            let before = await router.partsOfSpeech(forEnglish: oldWord)
+
+            try FileManager.default.removeItem(at: installedPlugin)
+            try FileManager.default.copyItem(
+                at: newPluginDirectory,
+                to: installedPlugin
+            )
+            await router.reload()
+            let after = await router.partsOfSpeech(forEnglish: newWord)
+            return (before, after)
+        }
+
+        private static func partOfSpeechSummary(
+            _ values: [PartOfSpeech]
+        ) -> String {
+            values.map(\.rawValue).joined(separator: ",")
+        }
     #endif
 
     static func run() -> Never {
@@ -138,7 +214,8 @@ enum SelfCheck {
                 print("ct2 今天天气不错 -> \(result?.text ?? "<not found>")")
                 let smartRouter = SmartRouter(
                     dictionary: dictionary,
-                    translation: engine
+                    translation: engine,
+                    partOfSpeechProvider: dictionary
                 )
                 let routed = try? await smartRouter.route(
                     Candidate(

@@ -285,6 +285,25 @@ private struct MultiOptionTranslation: TranslationEngine {
     }
 }
 
+private struct POSDictionary: DictionaryEngine {
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        TranslationResult(
+            options: [
+                TranslationOption(
+                    text: "design",
+                    score: 1,
+                    partsOfSpeech: [.noun, .verb]
+                ),
+                TranslationOption(
+                    text: "plan",
+                    score: 0.8,
+                    partsOfSpeech: [.noun]
+                ),
+            ]
+        )
+    }
+}
+
 private struct MixedLengthTranslation: TranslationEngine {
     func translate(_ candidate: Candidate) async throws -> TranslationResult? {
         TranslationResult(
@@ -954,6 +973,90 @@ final class GlintMacTests: XCTestCase {
                 "quaternary",
             ]
         )
+    }
+
+    func testSelectedPresentationCarriesPOSButActionsStayPlain() async {
+        let presentations = await CandidateTranslationPipeline.translate(
+            [Candidate(text: "设计")],
+            selectedIndex: 0,
+            mode: .dictionaryFirst,
+            configurationToken: "pos-test",
+            router: SmartRouter(
+                dictionary: POSDictionary(),
+                translation: EmptyTranslation()
+            ),
+            memo: TranslationMemo(),
+            displayOptionLimit: 4,
+            showsPartsOfSpeech: true
+        )
+
+        XCTAssertEqual(
+            presentations.first?.displayOptions,
+            [
+                CandidateTranslationOptionPresentation(
+                    text: "design",
+                    partsOfSpeech: [.noun, .verb]
+                ),
+                CandidateTranslationOptionPresentation(
+                    text: "plan",
+                    partsOfSpeech: [.noun]
+                ),
+            ]
+        )
+        XCTAssertEqual(
+            presentations.first?.insertionOptions,
+            ["design", "plan"]
+        )
+    }
+
+    func testSelectedPresentationCanDisablePOS() async {
+        let presentations = await CandidateTranslationPipeline.translate(
+            [Candidate(text: "设计")],
+            selectedIndex: 0,
+            mode: .dictionaryFirst,
+            configurationToken: "pos-test",
+            router: SmartRouter(
+                dictionary: POSDictionary(),
+                translation: EmptyTranslation()
+            ),
+            memo: TranslationMemo(),
+            displayOptionLimit: 4,
+            showsPartsOfSpeech: false
+        )
+
+        XCTAssertEqual(presentations.first?.displayOptions, [])
+        XCTAssertEqual(
+            presentations.first?.insertionOptions,
+            ["design", "plan"]
+        )
+    }
+
+    func testRowPresentationDoesNotCarryPOS() async {
+        let presentations = await CandidateTranslationPipeline.translate(
+            [Candidate(text: "设计")],
+            selectedIndex: 0,
+            mode: .dictionaryFirst,
+            configurationToken: "pos-test",
+            router: SmartRouter(
+                dictionary: POSDictionary(),
+                translation: EmptyTranslation()
+            ),
+            memo: TranslationMemo(),
+            displayOptionLimit: 1,
+            showsPartsOfSpeech: false
+        )
+
+        XCTAssertEqual(presentations.first?.displayOptions, [])
+        XCTAssertEqual(presentations.first?.translation, "design")
+    }
+
+    func testMultiwordPresentationDropsPOS() {
+        let option = CandidateTranslationOptionPresentation(
+            text: "bullet screen",
+            partsOfSpeech: [.noun]
+        )
+
+        XCTAssertEqual(option.partsOfSpeech, [])
     }
 
     func testShortCandidatePresentationDropsLongExplanations() async {
@@ -4226,6 +4329,7 @@ final class MonitoringSessionTests: XCTestCase {
                 candidateDwellDuration: 0.3,
                 translationScope: .selected,
                 maximumTranslationCount: 7,
+                showsPartsOfSpeech: false,
                 configurationToken: "test"
             )
         )
@@ -4238,8 +4342,11 @@ final class MonitoringSessionTests: XCTestCase {
             .configuredCandidateDwellNanoseconds
         let configuredCount =
             await controller.configuredMaximumTranslationCount
+        let configuredPOS =
+            await controller.configuredShowsPartsOfSpeech
         XCTAssertEqual(configured, 300_000_000)
         XCTAssertEqual(configuredCount, 7)
+        XCTAssertFalse(configuredPOS)
         await session.stop()
     }
 

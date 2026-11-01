@@ -13,6 +13,7 @@ enum CandidateTranslationPipeline {
         router: SmartRouter,
         memo: TranslationMemo,
         displayOptionLimit: Int = 4,
+        showsPartsOfSpeech: Bool = false,
         dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>] = [:],
         cachedPrefetchResults: [Int: TranslationResult] = [:],
         publishProgress: (
@@ -62,7 +63,8 @@ enum CandidateTranslationPipeline {
                             results: results,
                             selectedIndex: selectedIndex,
                             selectionIsExact: selectionIsExact,
-                            displayOptionLimit: displayOptionLimit
+                            displayOptionLimit: displayOptionLimit,
+                            showsPartsOfSpeech: showsPartsOfSpeech
                         )
                     }
                     await publishProgress?(partialPresentations)
@@ -76,7 +78,8 @@ enum CandidateTranslationPipeline {
                 results: results,
                 selectedIndex: selectedIndex,
                 selectionIsExact: selectionIsExact,
-                displayOptionLimit: displayOptionLimit
+                displayOptionLimit: displayOptionLimit,
+                showsPartsOfSpeech: showsPartsOfSpeech
             )
         }
     }
@@ -162,7 +165,8 @@ enum CandidateTranslationPipeline {
         results: [TranslationResult?],
         selectedIndex: Int,
         selectionIsExact: Bool,
-        displayOptionLimit: Int
+        displayOptionLimit: Int,
+        showsPartsOfSpeech: Bool
     ) -> CandidateTranslationPresentation {
         let result = results[index].flatMap {
             presentationResult(
@@ -183,11 +187,23 @@ enum CandidateTranslationPipeline {
             ? Array(result?.options.prefix(displayOptionLimit) ?? [])
                 .map(\.text)
             : []
+        let displayOptions =
+            showsPartsOfSpeech
+            ? Array(
+                result?.options.prefix(displayOptionLimit) ?? []
+            ).map {
+                CandidateTranslationOptionPresentation(
+                    text: $0.text,
+                    partsOfSpeech: $0.partsOfSpeech
+                )
+            }
+            : []
         return CandidateTranslationPresentation(
             index: index,
             candidateText: candidates[index].text,
             translation: translation,
             insertionOptions: insertionOptions,
+            displayOptions: displayOptions,
             isSelected:
                 selectionIsExact
                 && index == selectedIndex

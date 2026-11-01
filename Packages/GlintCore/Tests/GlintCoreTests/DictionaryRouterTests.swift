@@ -26,6 +26,14 @@ private struct OptionsDictionary: DictionaryEngine {
     }
 }
 
+private struct POSOptionsDictionary: DictionaryEngine {
+    let options: [TranslationOption]
+
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        TranslationResult(options: options)
+    }
+}
+
 private struct FailingDictionary: DictionaryEngine {
     func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
         throw GlintError.engineUnavailable
@@ -51,6 +59,68 @@ private actor CountingDictionary: DictionaryEngine {
 }
 
 final class DictionaryRouterTests: XCTestCase {
+    func testPreservesPOSForSingleSurfaceOption() async {
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "pos",
+                priority: 0,
+                role: .authoritative,
+                engine: POSOptionsDictionary(
+                    options: [
+                        TranslationOption(
+                            text: "design",
+                            score: 1,
+                            partsOfSpeech: [.noun, .verb]
+                        )
+                    ]
+                )
+            )
+        ])
+
+        let result = await router.lookup(
+            Candidate(text: "设计", kind: .word)
+        )
+
+        XCTAssertEqual(result?.options.first?.text, "design")
+        XCTAssertEqual(
+            result?.options.first?.partsOfSpeech,
+            [.noun, .verb]
+        )
+    }
+
+    func testDropsPOSWhenOneOptionSplitsIntoMultipleSurfaces() async {
+        let router = DictionaryRouter(routes: [
+            DictionaryRoute(
+                id: "pos-split",
+                priority: 0,
+                role: .authoritative,
+                engine: POSOptionsDictionary(
+                    options: [
+                        TranslationOption(
+                            text: "design; plan",
+                            score: 1,
+                            partsOfSpeech: [.noun, .verb]
+                        )
+                    ]
+                )
+            )
+        ])
+
+        let result = await router.lookup(
+            Candidate(text: "设计", kind: .word)
+        )
+
+        XCTAssertEqual(
+            result?.options.map(\.text),
+            ["design", "plan"]
+        )
+        XCTAssertTrue(
+            result?.options.allSatisfy {
+                $0.partsOfSpeech.isEmpty
+            } == true
+        )
+    }
+
     func testRouteDefaultsToFallbackRole() {
         let route = DictionaryRoute(
             id: "optional",

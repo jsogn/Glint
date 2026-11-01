@@ -211,6 +211,67 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
+    func testShowsPartsOfSpeechDefaultsTruePersistsAndNotifies() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = DisplayPreferences(defaults: defaults)
+        XCTAssertTrue(preferences.showsPartsOfSpeech)
+
+        var observed: [Bool] = []
+        preferences.showsPartsOfSpeechDidChange = {
+            observed.append($0)
+        }
+        preferences.showsPartsOfSpeech = false
+
+        let reloaded = DisplayPreferences(defaults: defaults)
+        XCTAssertFalse(reloaded.showsPartsOfSpeech)
+        XCTAssertEqual(observed, [false])
+        XCTAssertEqual(
+            defaults.object(
+                forKey: "display.showsPartsOfSpeech"
+            ) as? Bool,
+            false
+        )
+    }
+
+    @MainActor
+    func testHUDPreviewTranslationsMatchSelectedCandidate() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = DisplayPreferences(defaults: defaults)
+        let preview = HUDPreview(preferences: preferences)
+
+        XCTAssertEqual(preview.selectedCandidateText, "你好")
+        XCTAssertEqual(
+            preview.previewItems.map(\.text),
+            ["Hello", "hi", "greetings", "how do you do"]
+        )
+        XCTAssertEqual(
+            preview.previewItems.map(\.partsOfSpeech),
+            [
+                [.noun, .interjection],
+                [.interjection],
+                [.noun],
+                [],
+            ]
+        )
+
+        preferences.showsPartsOfSpeech = false
+        XCTAssertEqual(
+            preview.previewItems.map(\.text),
+            ["Hello", "hi", "greetings", "how do you do"]
+        )
+        XCTAssertTrue(
+            preview.previewItems.allSatisfy {
+                $0.partsOfSpeech.isEmpty
+            }
+        )
+    }
+
+    @MainActor
     func testHUDAppearanceDefaultsUseDarkGlass() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

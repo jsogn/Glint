@@ -62,7 +62,7 @@ struct GlintDictionaryBuilder {
             )
             print(
                 "terms=\(summary.termCount) rows=\(summary.rankCount) "
-                    + "db=\(output)"
+                    + "pos=\(summary.posCount) db=\(output)"
             )
         default:
             throw BuilderError.unknownCommand(command)

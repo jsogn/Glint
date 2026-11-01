@@ -1,4 +1,5 @@
 import AppKit
+import GlintCore
 import SwiftUI
 
 private struct HUDMaterialBlendingModeKey: EnvironmentKey {
@@ -16,18 +17,47 @@ public struct HUDItem: Identifiable, Equatable, Sendable {
     public let id: Int
     public let number: Int?
     public let text: String
+    public let partsOfSpeech: [PartOfSpeech]
     public let isSelected: Bool
 
     public init(
         id: Int,
         number: Int? = nil,
         text: String,
+        partsOfSpeech: [PartOfSpeech] = [],
         isSelected: Bool = false
     ) {
         self.id = id
         self.number = number
         self.text = text
+        self.partsOfSpeech = PartOfSpeech.normalized(partsOfSpeech)
         self.isSelected = isSelected
+    }
+
+    var partsOfSpeechText: String {
+        partsOfSpeech.map(\.abbreviation).joined(separator: "/")
+    }
+
+    var accessibilityText: String {
+        var values: [String] = []
+        if let number {
+            values.append(String(number))
+        }
+        values.append(text)
+        values.append(
+            contentsOf: partsOfSpeech.map(\.accessibilityName)
+        )
+        return values.joined(separator: ", ")
+    }
+
+    func removingPartsOfSpeech() -> Self {
+        Self(
+            id: id,
+            number: number,
+            text: text,
+            partsOfSpeech: [],
+            isSelected: isSelected
+        )
     }
 }
 
@@ -147,19 +177,40 @@ struct HUDItemRow: View {
                             : appearance.resolvedSecondaryTextColor
                     )
             }
-            Text(item.text)
+            let primary = Text(item.text)
                 .font(
                     .system(
                         size: plan.metrics.textFontSize,
                         weight: .medium
                     )
                 )
-                .lineLimit(1)
-                .foregroundStyle(
+                .foregroundColor(
                     item.isSelected && items.count > 1
                         ? Color.white
                         : appearance.resolvedTextColor
                 )
+            let label =
+                item.partsOfSpeechText.isEmpty
+                ? primary
+                : primary
+                    + Text(" ")
+                    .font(
+                        .system(
+                            size: plan.metrics.partOfSpeechFontSize,
+                            weight: .medium
+                        )
+                    )
+                    + Text(item.partsOfSpeechText)
+                    .font(
+                        .system(
+                            size: plan.metrics.partOfSpeechFontSize,
+                            weight: .medium
+                        )
+                    )
+                    .foregroundColor(
+                        appearance.resolvedSecondaryTextColor
+                    )
+            label.lineLimit(1)
         }
         .opacity(textOpacity)
         .padding(
@@ -175,6 +226,8 @@ struct HUDItemRow: View {
                 Capsule().fill(Color.accentColor)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(item.accessibilityText)
     }
 }
 
@@ -268,14 +321,52 @@ struct HUDNativeMaterialBackground: NSViewRepresentable {
 #Preview("HUD · 选中") {
     HUDView(
         items: [
-            HUDItem(id: 0, number: 1, text: "Hello"),
-            HUDItem(id: 1, number: 2, text: "hi"),
-            HUDItem(id: 2, number: 3, text: "ciao"),
+            HUDItem(
+                id: 0,
+                number: 1,
+                text: "design",
+                partsOfSpeech: [.noun, .verb]
+            ),
+            HUDItem(
+                id: 1,
+                number: 2,
+                text: "about",
+                partsOfSpeech: [.preposition]
+            ),
+            HUDItem(
+                id: 2,
+                number: 3,
+                text: "devise",
+                partsOfSpeech: [.verb]
+            ),
         ], layoutStyle: .selectedTranslations
     )
     .padding(32)
     .background(Color.black.opacity(0.85))
     .preferredColorScheme(.dark)
+}
+
+#Preview("HUD · 选中 · 浅色") {
+    HUDView(
+        items: [
+            HUDItem(
+                id: 0,
+                number: 1,
+                text: "design",
+                partsOfSpeech: [.noun, .verb]
+            ),
+            HUDItem(
+                id: 1,
+                number: 2,
+                text: "about",
+                partsOfSpeech: [.preposition]
+            ),
+        ],
+        layoutStyle: .selectedTranslations
+    )
+    .padding(32)
+    .background(Color.white.opacity(0.9))
+    .preferredColorScheme(.light)
 }
 
 #Preview("HUD · 一栏") {

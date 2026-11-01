@@ -33,6 +33,26 @@ struct DisplayPage: View {
                     Divider()
 
                     VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 20) {
+                            Text("显示词性")
+                            Spacer()
+                            Toggle(
+                                "显示词性",
+                                isOn: $preferences.showsPartsOfSpeech
+                            )
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                        }
+                        Text("仅对选中模式中的单个英文词显示词性缩写。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10)
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text(
                                 preferences.translationScope == .selected
@@ -327,7 +347,7 @@ private struct DisplayPagePreview: View {
         .preferredColorScheme(.light)
 }
 
-private struct HUDPreview: View {
+struct HUDPreview: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -347,15 +367,57 @@ private struct HUDPreview: View {
         Candidate(id: 6, text: "你"),
     ]
 
-    private var previewItems: [HUDItem] {
+    var selectedCandidateText: String {
+        candidates.first(where: { $0.id == 1 })?.text ?? ""
+    }
+
+    var previewItems: [HUDItem] {
         switch preferences.translationScope {
         case .selected:
+            let showsPartsOfSpeech = preferences.showsPartsOfSpeech
             let items = [
-                HUDItem(id: 0, number: 1, text: "Hello"),
-                HUDItem(id: 1, number: 2, text: "hi"),
-                HUDItem(id: 2, number: 3, text: "ciao"),
-                HUDItem(id: 3, number: 4, text: "hiya"),
-                HUDItem(id: 4, number: 5, text: "Bonjour"),
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "Hello",
+                    partsOfSpeech:
+                        showsPartsOfSpeech
+                        ? [.interjection, .noun]
+                        : []
+                ),
+                HUDItem(
+                    id: 1,
+                    number: 2,
+                    text: "hi",
+                    partsOfSpeech:
+                        showsPartsOfSpeech
+                        ? [.interjection]
+                        : []
+                ),
+                HUDItem(
+                    id: 2,
+                    number: 3,
+                    text: "greetings",
+                    partsOfSpeech:
+                        showsPartsOfSpeech
+                        ? [.noun]
+                        : []
+                ),
+                HUDItem(
+                    id: 3,
+                    number: 4,
+                    text: "how do you do",
+                    partsOfSpeech: []
+                ),
+                HUDItem(
+                    id: 4,
+                    number: 5,
+                    text: "hello",
+                    partsOfSpeech:
+                        showsPartsOfSpeech
+                        ? [.interjection, .noun]
+                        : []
+                ),
             ]
             return Array(
                 items.prefix(preferences.maximumTranslationCount)
@@ -411,6 +473,10 @@ private struct HUDPreview: View {
         .animation(
             previewAnimation,
             value: preferences.translationScope
+        )
+        .animation(
+            previewAnimation,
+            value: preferences.showsPartsOfSpeech
         )
         .animation(previewAnimation, value: preferences.position)
         .animation(previewAnimation, value: preferences.candidateSpacing)

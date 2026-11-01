@@ -131,6 +131,18 @@ final class HUDEventCoordinator {
             else {
                 return []
             }
+            if !selected.displayOptions.isEmpty {
+                return selected.displayOptions.enumerated().map {
+                    index, option in
+                    HUDItem(
+                        id: index,
+                        number: index + 1,
+                        text: option.text,
+                        partsOfSpeech: option.partsOfSpeech,
+                        isSelected: false
+                    )
+                }
+            }
             let texts =
                 selected.insertionOptions.isEmpty
                 ? [selected.translation ?? "…"]

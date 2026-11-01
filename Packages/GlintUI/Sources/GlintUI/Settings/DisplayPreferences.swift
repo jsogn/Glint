@@ -46,6 +46,7 @@ public final class DisplayPreferences {
         static let hudSelectedTranslationSpacing =
             "display.hudSelectedTranslationSpacing"
         static let translationScope = "display.translationScope"
+        static let showsPartsOfSpeech = "display.showsPartsOfSpeech"
         static let maximumTranslationCount =
             "display.maximumTranslationCount"
     }
@@ -57,6 +58,8 @@ public final class DisplayPreferences {
     public var candidateDwellDurationDidChange: (@MainActor (Double) -> Void)?
     @ObservationIgnored
     public var translationScopeDidChange: (@MainActor (CandidateTranslationScope) -> Void)?
+    @ObservationIgnored
+    public var showsPartsOfSpeechDidChange: (@MainActor (Bool) -> Void)?
     @ObservationIgnored
     public var maximumTranslationCountDidChange: (@MainActor (Int) -> Void)?
 
@@ -199,6 +202,16 @@ public final class DisplayPreferences {
         }
     }
 
+    public var showsPartsOfSpeech: Bool {
+        didSet {
+            defaults.set(
+                showsPartsOfSpeech,
+                forKey: Key.showsPartsOfSpeech
+            )
+            showsPartsOfSpeechDidChange?(showsPartsOfSpeech)
+        }
+    }
+
     public var maximumTranslationCount: Int {
         didSet {
             let clamped = Self.clampedMaximumTranslationCount(
@@ -322,6 +335,10 @@ public final class DisplayPreferences {
             CandidateTranslationScope(
                 rawValue: storedTranslationScope ?? ""
             ) ?? .selected
+        self.showsPartsOfSpeech =
+            defaults.object(
+                forKey: Key.showsPartsOfSpeech
+            ) as? Bool ?? true
         let storedMaximumTranslationCount =
             defaults.object(
                 forKey: Key.maximumTranslationCount

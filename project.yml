@@ -123,6 +123,10 @@ targets:
     dependencies:
       - package: GlintCore
         product: GlintCore
+      - package: GlintDictionary
+        product: GlintDictionary
+      - package: GlintPlugins
+        product: GlintPlugins
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.local.glint.tests

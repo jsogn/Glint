@@ -145,6 +145,44 @@ final class TranslationMemoTests: XCTestCase {
         )
     }
 
+    func testCachePreservesAndAccountsForPartsOfSpeech() async throws {
+        let memo = TranslationMemo()
+        let memoWithoutPOS = TranslationMemo()
+        let key = TranslationMemoKey(
+            text: "设计",
+            mode: .dictionaryFirst,
+            configuration: "model-a"
+        )
+
+        _ = try await memoWithoutPOS.resolve(for: key) {
+            TranslationResult(text: "design")
+        }
+        _ = try await memo.resolve(for: key) {
+            TranslationResult(options: [
+                TranslationOption(
+                    text: "design",
+                    score: 1,
+                    partsOfSpeech: [.noun, .verb]
+                )
+            ])
+        }
+        let cached = try await memo.resolve(for: key) {
+            TranslationResult(text: "unexpected")
+        }
+
+        XCTAssertEqual(cached?.text, "design")
+        XCTAssertEqual(
+            cached?.options.first?.partsOfSpeech,
+            [.noun, .verb]
+        )
+        let withPOS = await memo.statistics()
+        let withoutPOS = await memoWithoutPOS.statistics()
+        XCTAssertGreaterThan(
+            withPOS.estimatedBytes,
+            withoutPOS.estimatedBytes
+        )
+    }
+
     func testConfigurationChangesBypassCachedResult() async throws {
         let memo = TranslationMemo()
         let counter = Counter()

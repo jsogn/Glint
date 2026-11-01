@@ -66,7 +66,10 @@ Glint/
 ### GlintCore
 
 - `Candidate`、`CandidateKind`、`TranslationResult` 和翻译模式。
-- `DictionaryEngine`、`TranslationEngine` 和 `SmartRouter`。
+- `DictionaryEngine`、`TranslationEngine`、`PartOfSpeechProviding` 和
+  `SmartRouter`。
+- `DictionaryRouter` 在表面清洗后保留单词语词性；一个选项拆成多个表面时不复制
+  词性。
 - `TranslationMemo`：精确结果 LRU、并发请求合并和容量限制。
 - `TypingActivityTracker`：候选停留、revision 和快速输入抑制。
 - 不依赖 AppKit、SQLite 或任何推理运行时。
@@ -107,15 +110,18 @@ Glint/
 ### GlintDictionary
 
 - 查询 CC-CEDICT 和 ECDICT SQLite 资源。
-- 生产数据库使用紧凑 schema-v3：CC-CEDICT 将查询词项与义项归一化为
+- 生产数据库使用紧凑 schema：CC-CEDICT 将查询词项与义项归一化为
   `terms`/`senses`，ECDICT 使用 `(term, english)` 的 `WITHOUT ROWID`
-  主键表；不保留运行时未使用的拼音或重复排序索引。
+  排名表，并在 schema-v4 增加独立词性表；不保留运行时未使用的拼音或重复排序
+  索引。
 - CC-CEDICT 精确命中时作为权威来源返回，并继续使用 ECDICT 词频信号提升
   CC-CEDICT 支持的英文头词；只有当权威结果少于三项时，才允许带考试标签的
   ECDICT 词作为低优先级补充。ECDICT 和用户词典默认按优先级依次
   作为回退，独立回退结果不追加到权威结果中。
 - 词典候选进入 HUD 前统一过滤长句和解释性 gloss；权威来源只有释义时不算命中，
   继续回退到简明词典或本地模型。
+- ECDICT schema-v4 使用独立的英文词性表保存释义行前缀；最终英文单词从词典或
+  模型返回后统一查询该表。排名表与 `stopTerms` 过滤保持不变。
 - 通过固定 runtime 接口加载词典插件，不执行插件代码。
 
 ### GlintInference
@@ -203,6 +209,11 @@ GlintCore
   本地模型，模型失败时回退词典。
 - HUD 使用 borderless、non-activating `NSPanel`，加入所有 Space 与全屏空间。
 - HUD 不抢焦点、不改变候选选择，也不创建新的内容根视图。
+- 单词译项可携带来自 ECDICT 释义行标签的最多两个标准英文词性缩写。词性使用
+  次要文字样式紧跟英文词，只出现在选中模式；可用宽度不足时先移除词性，
+  不得截断译文、改变字号或增加第二行。
+- “显示与触发”提供持久化的“显示词性”开关，默认开启；关闭后选中模式只显示
+  英文译文，不改变候选读取、插入或朗读。
 - 选中模式中，4 字以内的候选如果已有至少两条简洁释义，会隐藏超过 8 个
   英文词或 48 个字符的解释性候选；显示项与数字快捷键使用同一过滤后数组。
 - 自动定位根据候选栏与光标矩形的相对位置避开输入行：候选栏在输入行上方时，
@@ -249,6 +260,7 @@ InputSourceMonitor (TIS)
   → SmartRouter
       ├─ DictionaryEngine
       └─ TranslationEngine
+  → PartOfSpeechProviding（最终英文单词）
   → HUDController
 ```
 

@@ -134,11 +134,27 @@ struct CandidateTrackingIdentity: Sendable, Equatable {
     }
 }
 
+public struct CandidateTranslationOptionPresentation:
+    Sendable, Equatable
+{
+    public let text: String
+    public let partsOfSpeech: [PartOfSpeech]
+
+    public init(text: String, partsOfSpeech: [PartOfSpeech]) {
+        self.text = text
+        self.partsOfSpeech =
+            PartOfSpeech.singleEnglishWordKey(text) != nil
+            ? PartOfSpeech.normalized(partsOfSpeech)
+            : []
+    }
+}
+
 public struct CandidateTranslationPresentation: Sendable, Equatable {
     public let index: Int
     public let candidateText: String
     public let translation: String?
     public let insertionOptions: [String]
+    public let displayOptions: [CandidateTranslationOptionPresentation]
     public let isSelected: Bool
 
     public init(
@@ -146,12 +162,14 @@ public struct CandidateTranslationPresentation: Sendable, Equatable {
         candidateText: String,
         translation: String?,
         insertionOptions: [String] = [],
+        displayOptions: [CandidateTranslationOptionPresentation] = [],
         isSelected: Bool
     ) {
         self.index = index
         self.candidateText = candidateText
         self.translation = translation
         self.insertionOptions = insertionOptions
+        self.displayOptions = displayOptions
         self.isSelected = isSelected
     }
 }
@@ -275,6 +293,7 @@ public actor MonitoringController {
     private var translationTask: Task<Void, Never>?
     private var mode: TranslationMode = .dictionaryFirst
     private var translationScope: CandidateTranslationScope = .selected
+    private var showsPartsOfSpeech = true
     private var maximumTranslationCount = 4
     private var candidateDwellNanoseconds: UInt64 = 100_000_000
     private var translationConfigurationToken =
@@ -415,6 +434,16 @@ public actor MonitoringController {
 
     var configuredMaximumTranslationCount: Int {
         maximumTranslationCount
+    }
+
+    public func setShowsPartsOfSpeech(_ enabled: Bool) {
+        guard showsPartsOfSpeech != enabled else { return }
+        showsPartsOfSpeech = enabled
+        invalidateCandidate(immediate: true)
+    }
+
+    var configuredShowsPartsOfSpeech: Bool {
+        showsPartsOfSpeech
     }
 
     public func setTranslationConfigurationToken(_ token: String) async {
@@ -1128,6 +1157,8 @@ public actor MonitoringController {
         let pipelineSelectionIsExact =
             selectionIsExact
             && pipelineSelectedIndex == selectedIndex
+        let shouldShowPartsOfSpeech =
+            showsPartsOfSpeech && translationScope == .selected
         translationAttempts &+= 1
         translationStartedAt = .now
         cancelTranslationTask()
@@ -1144,6 +1175,7 @@ public actor MonitoringController {
                 revision,
                 inputCaretRect,
                 mode,
+                shouldShowPartsOfSpeech,
             ] in
             guard !Task.isCancelled else { return }
             let presentations = await CandidateTranslationPipeline.translate(
@@ -1155,6 +1187,7 @@ public actor MonitoringController {
                 router: router,
                 memo: memo,
                 displayOptionLimit: displayOptionLimit,
+                showsPartsOfSpeech: shouldShowPartsOfSpeech,
                 dictionaryPrefetchTasks: dictionaryPrefetchTasks,
                 cachedPrefetchResults: cachedPrefetchResults,
                 publishProgress: { [weak self] presentations in
@@ -1275,6 +1308,7 @@ public actor MonitoringController {
                 candidateText: item.candidateText,
                 translation: item.translation,
                 insertionOptions: item.insertionOptions,
+                displayOptions: item.displayOptions,
                 isSelected:
                     selectedCandidateIndexIsExact
                     && item.index == latestSelectedIndex

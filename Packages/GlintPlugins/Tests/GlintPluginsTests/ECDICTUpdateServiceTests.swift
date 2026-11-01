@@ -80,7 +80,7 @@ private final class ECDICTStubURLProtocol: URLProtocol {
 }
 
 final class ECDICTUpdateServiceTests: XCTestCase {
-    func testRepairReplacesInstalledLegacySchemaWithBundledRankIndex()
+    func testRepairReplacesInstalledSchemaV3WithBundledRankIndex()
         async throws
     {
         let root = try makeTemporaryDirectory()
@@ -103,14 +103,14 @@ final class ECDICTUpdateServiceTests: XCTestCase {
             sourceDate: "2026-10-20T02:25:07Z",
             sourceRevision: newECDICTRevision,
             translation: "新词, 新释义",
-            english: "new word",
+            english: "newword",
             directory: bundled
         )
         try writeLegacyDictionary(
             sourceDate: "2026-10-19T00:00:00Z",
             sourceRevision: oldECDICTRevision,
             translation: "旧词",
-            english: "old word",
+            english: "oldword",
             directory: installed
         )
         let manager = PluginManager(baseDirectory: root)
@@ -132,10 +132,21 @@ final class ECDICTUpdateServiceTests: XCTestCase {
         XCTAssertTrue(
             ECDICTRankBuilder.isCompatible(databaseURL: database)
         )
+        let summary = try ECDICTRankBuilder.inspect(
+            databaseURL: database
+        )
+        XCTAssertGreaterThan(summary.posCount, 0)
         let ranker = ECDICTRanker(databaseURL: database)
         XCTAssertEqual(
             ranker.fallbackCandidates(term: "新词", limit: 3),
-            ["new word"]
+            ["newword"]
+        )
+        let newwordParts = await ranker.partsOfSpeech(
+            forEnglish: "newword"
+        )
+        XCTAssertEqual(
+            newwordParts,
+            [.noun]
         )
     }
 
@@ -154,12 +165,12 @@ final class ECDICTUpdateServiceTests: XCTestCase {
             sourceDate: "2026-10-19T00:00:00Z",
             sourceRevision: oldECDICTRevision,
             translation: "旧词, 旧释义",
-            english: "old word",
+            english: "oldword",
             directory: bundled
         )
         let csv = makeCSV(
             translation: "新词, 新释义",
-            english: "new word"
+            english: "newword"
         )
         ECDICTStubURLProtocol.configure(
             atom: makeAtom(revision: newECDICTRevision),
@@ -192,14 +203,28 @@ final class ECDICTUpdateServiceTests: XCTestCase {
         let installedDirectory = await manager.pluginDirectory(
             for: "dict-ecdict"
         )
+        let database = installedDirectory.appendingPathComponent(
+            "ecdict_rank.sqlite3"
+        )
+        XCTAssertGreaterThan(
+            try ECDICTRankBuilder.inspect(
+                databaseURL: database
+            ).posCount,
+            0
+        )
         let ranker = ECDICTRanker(
-            databaseURL: installedDirectory.appendingPathComponent(
-                "ecdict_rank.sqlite3"
-            )
+            databaseURL: database
         )
         XCTAssertEqual(
             ranker.fallbackCandidates(term: "新词", limit: 3),
-            ["new word"]
+            ["newword"]
+        )
+        let newwordParts = await ranker.partsOfSpeech(
+            forEnglish: "newword"
+        )
+        XCTAssertEqual(
+            newwordParts,
+            [.noun]
         )
 
         let second = try await service.checkForUpdate()
@@ -230,7 +255,7 @@ final class ECDICTUpdateServiceTests: XCTestCase {
             sourceDate: "2026-10-19T00:00:00Z",
             sourceRevision: oldECDICTRevision,
             translation: "旧词, 旧释义",
-            english: "old word",
+            english: "oldword",
             directory: bundled
         )
         ECDICTStubURLProtocol.configure(
@@ -264,7 +289,68 @@ final class ECDICTUpdateServiceTests: XCTestCase {
         )
         XCTAssertEqual(
             ranker.fallbackCandidates(term: "旧词", limit: 3),
-            ["old word"]
+            ["oldword"]
+        )
+    }
+
+    func testImplausiblePOSRebuildKeepsBundledDictionary() async throws {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let bundled = root.appendingPathComponent(
+            "bundled",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: bundled,
+            withIntermediateDirectories: true
+        )
+        try writeDictionary(
+            sourceDate: "2026-10-19T00:00:00Z",
+            sourceRevision: oldECDICTRevision,
+            translation: "旧词, 旧释义",
+            english: "oldword",
+            directory: bundled
+        )
+        let csv = makeCSV(
+            translation: "新词, 新释义",
+            english: "newword",
+            includesPOS: false
+        )
+        ECDICTStubURLProtocol.configure(
+            atom: makeAtom(revision: newECDICTRevision),
+            archive: try makeTarGzip(
+                csv: csv,
+                entryName: "ECDICT-\(newECDICTRevision)/ecdict.csv"
+            )
+        )
+        let manager = PluginManager(baseDirectory: root)
+        let service = makeService(
+            manager: manager,
+            bundledDirectory: bundled
+        )
+
+        do {
+            _ = try await service.checkForUpdate()
+            XCTFail("缺少词性的更新不应安装")
+        } catch {
+            XCTAssertEqual(
+                error as? ECDICTUpdateError,
+                .implausibleDatabase
+            )
+        }
+
+        let installed = await manager.installedPlugin(
+            id: "dict-ecdict"
+        )
+        XCTAssertNil(installed)
+        let bundledDatabase = bundled.appendingPathComponent(
+            "ecdict_rank.sqlite3"
+        )
+        XCTAssertGreaterThan(
+            try ECDICTRankBuilder.inspect(
+                databaseURL: bundledDatabase
+            ).posCount,
+            0
         )
     }
 
@@ -284,7 +370,8 @@ final class ECDICTUpdateServiceTests: XCTestCase {
             archiveURLTemplate:
                 "https://ecdict.test/ECDICT/tar.gz/{revision}",
             minimumTermCount: 1,
-            minimumRankCount: 1
+            minimumRankCount: 1,
+            minimumPOSCount: 1
         )
     }
 
@@ -345,12 +432,15 @@ final class ECDICTUpdateServiceTests: XCTestCase {
 
     private func makeCSV(
         translation: String,
-        english: String
+        english: String,
+        includesPOS: Bool = true
     ) -> Data {
-        Data(
+        let fixtureTranslation =
+            includesPOS ? "n. \(translation)" : translation
+        return Data(
             """
             word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
-            \(english),,,"\(translation)",,,1,,,100,,
+            \(english),,,"\(fixtureTranslation)",,,1,,,100,,
             """.utf8
         )
     }
@@ -391,10 +481,9 @@ final class ECDICTUpdateServiceTests: XCTestCase {
                 oxford INTEGER NOT NULL,
                 exam_tag INTEGER NOT NULL,
                 PRIMARY KEY (term, english)
-            );
-            CREATE INDEX idx_ranks_term ON ranks(term, frequency);
+            ) WITHOUT ROWID;
             INSERT INTO metadata(key, value) VALUES
-                ('schema', 'ecdict-rank-v2'),
+                ('schema', 'ecdict-rank-v3'),
                 ('source_date', '\(sourceDate)'),
                 ('source_revision', '\(sourceRevision)');
             INSERT INTO ranks(
@@ -412,7 +501,7 @@ final class ECDICTUpdateServiceTests: XCTestCase {
                 0,
                 0
             );
-            PRAGMA user_version = 2;
+            PRAGMA user_version = 3;
             """
         guard sqlite3_exec(database, sql, nil, nil, nil) == SQLITE_OK else {
             throw CocoaError(.fileWriteUnknown)

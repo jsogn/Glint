@@ -10,6 +10,7 @@ enum HUDGeometry {
 struct HUDLayoutMetrics: Equatable {
     let textFontSize: CGFloat
     let numberFontSize: CGFloat
+    let partOfSpeechFontSize: CGFloat
     let minimumItemWidth: CGFloat
     let itemSpacing: CGFloat
     let selectedItemSpacing: CGFloat
@@ -33,6 +34,10 @@ struct HUDLayoutMetrics: Equatable {
 
         textFontSize = fontSize
         numberFontSize = max(9, (10 * scale).rounded())
+        partOfSpeechFontSize = max(
+            9,
+            (fontSize * 0.75 * 2).rounded() / 2
+        )
         minimumItemWidth = max(40, (44 * scale).rounded())
         itemSpacing = max(3, (4 * scale).rounded())
         selectedItemSpacing = CGFloat(appearance.selectedTranslationSpacing)
@@ -164,6 +169,10 @@ struct HUDLayoutPlan {
             ofSize: plan.metrics.numberFontSize,
             weight: .medium
         )
+        let partOfSpeechFont = NSFont.systemFont(
+            ofSize: plan.metrics.partOfSpeechFontSize,
+            weight: .medium
+        )
         var width =
             plan.leadingHorizontalPadding + plan.trailingHorizontalPadding
         for item in items {
@@ -180,6 +189,14 @@ struct HUDLayoutPlan {
                         ).width
                     ) + plan.metrics.numberSpacing
             }
+            if !item.partsOfSpeechText.isEmpty {
+                let suffix = " " + item.partsOfSpeechText
+                itemWidth += ceil(
+                    (suffix as NSString).size(
+                        withAttributes: [.font: partOfSpeechFont]
+                    ).width
+                )
+            }
             if items.count > 1 {
                 itemWidth += plan.itemHorizontalPadding * 2
                 itemWidth = max(itemWidth, plan.minimumItemWidth)
@@ -192,6 +209,27 @@ struct HUDLayoutPlan {
                 * plan.interItemSpacing
         }
         return ceil(width + plan.metrics.measurementSafetyPadding)
+    }
+
+    @MainActor
+    static func itemsFittingPartsOfSpeech(
+        _ items: [HUDItem],
+        maximumWidth: CGFloat,
+        layoutStyle: HUDLayoutStyle,
+        appearance: HUDAppearance = .default
+    ) -> [HUDItem] {
+        guard items.contains(where: { !$0.partsOfSpeech.isEmpty }) else {
+            return items
+        }
+        let width = naturalPanelWidth(
+            for: items,
+            layoutStyle: layoutStyle,
+            appearance: appearance
+        )
+        guard width > max(HUDGeometry.minimumPanelWidth, maximumWidth) else {
+            return items
+        }
+        return items.map { $0.removingPartsOfSpeech() }
     }
 
     static func minimumPanelWidth(

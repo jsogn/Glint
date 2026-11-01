@@ -40,10 +40,14 @@ swift run --package-path Packages/GlintDictionary glint-dictionary-builder cedic
   考试标签的 ECDICT 词作为低优先级补充；无标签词和独立回退结果不会覆盖权威项
 - 数据：提交 `9c46923fb81a2eb6c264a3a1689562ea7bc56b6a`，CSV SHA256
   `d1ecbdf9ee2b920afb6f430ca6b6bb9f559588cf0dff86e04bd255f9390843cc`；
-  生成 96,558 个中文词项和 144,791 条排序记录。schema-v3 使用
-  `(term, english)` 主键的 `WITHOUT ROWID` 表，不再维护重复的次级词项索引。
+  生成 96,558 个中文词项和 144,791 条排序记录。排序表沿用
+  `(term, english)` 主键的 `WITHOUT ROWID` 结构，不再维护重复的次级词项索引。
   索引会忽略括号中的语境、人名/地名/影视元数据和标题式片段，避免把说明文字
   误当翻译
+- 固定 ECDICT revision 的 `pos` 比例列为空；Glint 从 `translation` 的释义行
+  前缀提取词性，并按英文词写入 schema-v4 的 `english_parts_of_speech` 表。
+  当前索引包含 173,603 个英文词。最终英文译文无论来自词典还是模型，都统一使用
+  该表。未知或非目标标签不进入 HUD。
 - 更新：用户可在“插件与模型”中手动检查；App 通过提交 Atom 源检测 revision，
   下载固定 revision 的官方归档，校验 CSV 后流式重建 SQLite，失败时继续使用当前
   版本

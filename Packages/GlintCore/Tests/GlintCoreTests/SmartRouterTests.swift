@@ -528,4 +528,132 @@ final class SmartRouterTests: XCTestCase {
         )
         XCTAssertEqual(output, dictionaryResult)
     }
+
+    func testSmartFusionPreservesDictionaryPOSOnModelSurface() async throws {
+        let router = SmartRouter(
+            dictionary: MockDictionary(
+                result: TranslationResult(options: [
+                    TranslationOption(
+                        text: "design",
+                        score: 0.8,
+                        partsOfSpeech: [.noun, .verb]
+                    )
+                ])
+            ),
+            translation: MockTranslator(
+                result: TranslationResult(text: "design")
+            )
+        )
+
+        let output = try await router.route(
+            Candidate(text: "设计"),
+            mode: .smartFusion
+        )
+
+        XCTAssertEqual(
+            output?.options.first?.partsOfSpeech,
+            [.noun, .verb]
+        )
+    }
+
+    func testModelFirstPreservesMatchingDictionaryPOS() async throws {
+        let router = SmartRouter(
+            dictionary: MockDictionary(
+                result: TranslationResult(options: [
+                    TranslationOption(
+                        text: "design",
+                        score: 0.8,
+                        partsOfSpeech: [.noun, .verb]
+                    )
+                ])
+            ),
+            translation: MockTranslator(
+                result: TranslationResult(text: "design")
+            )
+        )
+
+        let output = try await router.route(
+            Candidate(text: "设计"),
+            mode: .modelFirst
+        )
+
+        XCTAssertEqual(
+            output?.options.first?.partsOfSpeech,
+            [.noun, .verb]
+        )
+    }
+
+    func testSmartFusionKeepsModelPOSWhenDictionaryMatchHasNoPOS() async throws {
+        let router = SmartRouter(
+            dictionary: MockDictionary(
+                result: TranslationResult(options: [
+                    TranslationOption(text: "design", score: 0.8)
+                ])
+            ),
+            translation: MockTranslator(
+                result: TranslationResult(options: [
+                    TranslationOption(
+                        text: "design",
+                        score: 0.9,
+                        partsOfSpeech: [.verb]
+                    )
+                ])
+            )
+        )
+
+        let output = try await router.route(
+            Candidate(text: "设计"),
+            mode: .smartFusion
+        )
+
+        XCTAssertEqual(output?.options.first?.partsOfSpeech, [.verb])
+    }
+
+    func testModelOnlyOutputGetsPOSFromEnglishLookup() async throws {
+        let router = SmartRouter(
+            dictionary: MockDictionary(result: nil),
+            translation: MockTranslator(
+                result: TranslationResult(text: "convenient")
+            ),
+            partOfSpeechProvider: FixedPartOfSpeechProvider(
+                values: ["convenient": [.adjective]]
+            )
+        )
+
+        let output = try await router.route(
+            Candidate(text: "方便"),
+            mode: .modelFirst
+        )
+
+        XCTAssertEqual(output?.text, "convenient")
+        XCTAssertEqual(output?.options.first?.partsOfSpeech, [.adjective])
+    }
+
+    func testMultiwordModelOutputDoesNotGetPartOfSpeech() async throws {
+        let router = SmartRouter(
+            dictionary: MockDictionary(result: nil),
+            translation: MockTranslator(
+                result: TranslationResult(text: "turn on")
+            ),
+            partOfSpeechProvider: FixedPartOfSpeechProvider(
+                values: ["turn on": [.verb]]
+            )
+        )
+
+        let output = try await router.route(
+            Candidate(text: "打开"),
+            mode: .modelFirst
+        )
+
+        XCTAssertEqual(output?.text, "turn on")
+        XCTAssertEqual(output?.options.first?.partsOfSpeech, [])
+    }
+}
+
+private struct FixedPartOfSpeechProvider: PartOfSpeechProviding {
+    let values: [String: [PartOfSpeech]]
+
+    func partsOfSpeech(forEnglish word: String) async -> [PartOfSpeech] {
+        values[word.lowercased()] ?? []
+    }
 }

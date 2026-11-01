@@ -56,6 +56,113 @@ final class CedictDictionaryTests: XCTestCase {
         return DictionaryRouter(routes: routes)
     }
 
+    func testCedictOptionsGetPOSFromEnglishLookup() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let ecdict = directory.appendingPathComponent("rank.sqlite3")
+        try makeECDICTFixture(at: ecdict)
+
+        let ranker = ECDICTRanker(databaseURL: ecdict)
+        let dictionary = CedictDictionary(
+            databaseURL: rootURL.appendingPathComponent(
+                "Resources/Plugins/dict-cedict/cedict.sqlite3"
+            ),
+            ranker: ranker
+        )
+        let router = SmartRouter(
+            dictionary: dictionary,
+            translation: NoTranslation(),
+            partOfSpeechProvider: ranker
+        )
+        let result = try await router.route(
+            Candidate(text: "设计"),
+            mode: .dictionaryFirst
+        )
+        let design = result?.options.first {
+            $0.text.lowercased() == "design"
+        }
+
+        XCTAssertEqual(design?.partsOfSpeech, [.noun, .verb])
+    }
+
+    func testCedictFunctionWordUsesPOSWithoutRankRow() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let ecdict = directory.appendingPathComponent("rank.sqlite3")
+        try makeECDICTFixture(at: ecdict)
+
+        let ranker = ECDICTRanker(databaseURL: ecdict)
+        XCTAssertTrue(ranker.rankings(for: "关于").isEmpty)
+
+        let dictionary = CedictDictionary(
+            databaseURL: rootURL.appendingPathComponent(
+                "Resources/Plugins/dict-cedict/cedict.sqlite3"
+            ),
+            ranker: ranker
+        )
+        let router = SmartRouter(
+            dictionary: dictionary,
+            translation: NoTranslation(),
+            partOfSpeechProvider: ranker
+        )
+        let result = try await router.route(
+            Candidate(text: "关于"),
+            mode: .dictionaryFirst
+        )
+        let about = result?.options.first {
+            $0.text.lowercased() == "about"
+        }
+
+        XCTAssertEqual(about?.partsOfSpeech, [.preposition])
+    }
+
+    func testECDICTFallbackCarriesPartsOfSpeech() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let ecdict = directory.appendingPathComponent("rank.sqlite3")
+        try makeECDICTFixture(at: ecdict)
+
+        let dictionary = ECDICTDictionary(
+            ranker: ECDICTRanker(databaseURL: ecdict)
+        )
+        let ranker = ECDICTRanker(databaseURL: ecdict)
+        let router = SmartRouter(
+            dictionary: dictionary,
+            translation: NoTranslation(),
+            partOfSpeechProvider: ranker
+        )
+        let result = try await router.route(
+            Candidate(text: "设计"),
+            mode: .dictionaryFirst
+        )
+        let design = result?.options.first {
+            $0.text.lowercased() == "design"
+        }
+
+        XCTAssertEqual(design?.partsOfSpeech, [.noun, .verb])
+    }
+
+    func testBundledProviderTagsModelOnlySingleWord() async throws {
+        let ranker = ECDICTRanker(
+            databaseURL: rootURL.appendingPathComponent(
+                "Resources/Plugins/dict-ecdict/ecdict_rank.sqlite3"
+            )
+        )
+        let router = SmartRouter(
+            dictionary: NoDictionary(),
+            translation: FixedTranslation(text: "convenient"),
+            partOfSpeechProvider: ranker
+        )
+
+        let result = try await router.route(
+            Candidate(text: "方便"),
+            mode: .modelFirst
+        )
+
+        XCTAssertEqual(result?.text, "convenient")
+        XCTAssertEqual(result?.options.first?.partsOfSpeech, [.adjective])
+    }
+
     func testKnownWord() async throws {
         let dictionary = makeDictionary()
         let result = try await dictionary.lookup(Candidate(text: "你好", kind: .word))
@@ -371,5 +478,55 @@ final class CedictDictionaryTests: XCTestCase {
 
         XCTAssertEqual(result?.text, "demand")
         XCTAssertTrue(result?.displayText.contains("requirement") == true)
+    }
+
+    private func makeTemporaryDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintCedictPOS-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        return directory
+    }
+
+    private func makeECDICTFixture(at database: URL) throws {
+        let source = database.deletingLastPathComponent()
+            .appendingPathComponent("ecdict.csv")
+        try Data(
+            """
+            word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
+            design,,,"n. 设计\\nv. 设计",,5,1,,,100,,
+            plan,,,"n. 计划\\nvt. 计划",,4,1,,,120,,
+            about,,,"prep. 关于",,4,1,,,200,,
+            """.utf8
+        ).write(to: source)
+        try ECDICTRankBuilder.build(
+            fromCSVURL: source,
+            to: database
+        )
+    }
+}
+
+private struct NoTranslation: TranslationEngine {
+    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        nil
+    }
+}
+
+private struct NoDictionary: DictionaryEngine {
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        nil
+    }
+}
+
+private struct FixedTranslation: TranslationEngine {
+    let text: String
+
+    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+        TranslationResult(text: text)
     }
 }

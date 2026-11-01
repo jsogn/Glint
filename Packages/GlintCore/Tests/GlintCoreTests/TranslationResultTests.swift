@@ -34,4 +34,39 @@ final class TranslationResultTests: XCTestCase {
 
         XCTAssertEqual(option.score, 0)
     }
+
+    func testEquivalentSurfacesMergePartsOfSpeech() {
+        let result = TranslationResult(options: [
+            TranslationOption(
+                text: "design",
+                score: 0.9,
+                partsOfSpeech: [.verb]
+            ),
+            TranslationOption(
+                text: "Design",
+                score: 0.5,
+                partsOfSpeech: [.noun, .verb]
+            ),
+        ])
+
+        XCTAssertEqual(result.options.count, 1)
+        XCTAssertEqual(result.text, "design")
+        XCTAssertEqual(result.options[0].partsOfSpeech, [.noun, .verb])
+    }
+
+    func testPrimaryOnlyKeepsPartsOfSpeech() {
+        let result = TranslationResult(options: [
+            TranslationOption(
+                text: "design",
+                score: 0.9,
+                partsOfSpeech: [.noun, .verb]
+            ),
+            TranslationOption(text: "plan", score: 0.8),
+        ])
+
+        XCTAssertEqual(
+            result.primaryOnly.options.first?.partsOfSpeech,
+            [.noun, .verb]
+        )
+    }
 }

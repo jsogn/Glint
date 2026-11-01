@@ -3,34 +3,51 @@ import GlintCore
 import GlintDictionary
 import GlintPlugins
 
-actor PluginDictionaryRouter: DictionaryEngine {
+actor PluginDictionaryRouter: DictionaryEngine, PartOfSpeechProviding {
     private let baseDirectory: URL?
     private var router: DictionaryRouter
+    private var ecdictRanker: ECDICTRanker?
 
     init(baseDirectory: URL? = nil) {
         self.baseDirectory = baseDirectory
-        router = DictionaryRouter(
-            routes: DictionaryPluginLoader.resolvedRoutes(
-                baseDirectory: baseDirectory
-            )
+        let configuration = DictionaryPluginLoader.resolve(
+            baseDirectory: baseDirectory
         )
+        router = DictionaryRouter(routes: configuration.routes)
+        ecdictRanker = configuration.ecdictRanker
     }
 
     func reload() {
-        router = DictionaryRouter(
-            routes: DictionaryPluginLoader.resolvedRoutes(
-                baseDirectory: baseDirectory
-            )
+        let configuration = DictionaryPluginLoader.resolve(
+            baseDirectory: baseDirectory
         )
+        router = DictionaryRouter(routes: configuration.routes)
+        ecdictRanker = configuration.ecdictRanker
     }
 
     func lookup(_ candidate: Candidate) async -> TranslationResult? {
         await router.lookup(candidate)
     }
+
+    func partsOfSpeech(forEnglish word: String) async -> [PartOfSpeech] {
+        guard let ecdictRanker else { return [] }
+        return await ecdictRanker.partsOfSpeech(forEnglish: word)
+    }
 }
 
 enum DictionaryPluginLoader {
+    struct Configuration {
+        let routes: [DictionaryRoute]
+        let ecdictRanker: ECDICTRanker?
+    }
+
     static func resolvedRoutes(baseDirectory: URL? = nil) -> [DictionaryRoute] {
+        resolve(baseDirectory: baseDirectory).routes
+    }
+
+    static func resolve(
+        baseDirectory: URL? = nil
+    ) -> Configuration {
         let fileManager = FileManager.default
         let bundledDirectories = BundledPluginResources.directories
         let installedDirectories = pluginDirectories(
@@ -47,7 +64,10 @@ enum DictionaryPluginLoader {
         )
         let bundledIDs = Set(bundledRoutes.map(\.id))
         guard !installedDirectories.isEmpty else {
-            return bundledRoutes
+            return Configuration(
+                routes: bundledRoutes,
+                ecdictRanker: ranker
+            )
         }
         let installedRoutes = routes(
             in: installedDirectories,
@@ -72,7 +92,10 @@ enum DictionaryPluginLoader {
         let additionalRoutes = installedRoutes.filter {
             !bundledIDs.contains($0.id)
         }
-        return effectiveBundledRoutes + additionalRoutes
+        return Configuration(
+            routes: effectiveBundledRoutes + additionalRoutes,
+            ecdictRanker: ranker
+        )
     }
 
     private static func pluginDirectories(

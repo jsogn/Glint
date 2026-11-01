@@ -7,6 +7,11 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
     public static let runtime = "sqlite-v1"
     public static let databaseName = "dictionary.sqlite3"
 
+    private struct Entry {
+        let text: String
+        let partsOfSpeech: [PartOfSpeech]
+    }
+
     private var database: OpaquePointer?
     private var statement: OpaquePointer?
     private let lock = OSAllocatedUnfairLock()
@@ -31,10 +36,15 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
             database = nil
             return nil
         }
-        let prepareResult = sqlite3_prepare_v2(
-            database,
-            """
-            SELECT target, frequency, source_order
+        let partOfSpeechColumn =
+            Self.hasColumn(
+                "part_of_speech",
+                in: database
+            )
+            ? "part_of_speech"
+            : "NULL"
+        let query = """
+            SELECT target, frequency, source_order, \(partOfSpeechColumn)
             FROM entries
             WHERE source = ? AND source_lang = ? AND target_lang = ?
             ORDER BY
@@ -42,7 +52,10 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
               COALESCE(source_order, 2147483647),
               target
             LIMIT 8
-            """,
+            """
+        let prepareResult = sqlite3_prepare_v2(
+            database,
+            query,
             -1,
             &statement,
             nil
@@ -127,7 +140,7 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
 
         return lock.withLock {
             guard let statement else { return nil }
-            var values: [String] = []
+            var values: [Entry] = []
             for variant in sourceVariants {
                 sqlite3_reset(statement)
                 sqlite3_clear_bindings(statement)
@@ -142,7 +155,25 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
                             .assumingMemoryBound(to: CChar.self)
                     ).trimmingCharacters(in: .whitespacesAndNewlines)
                     if !value.isEmpty {
-                        values.append(value)
+                        let rawParts =
+                            Self.columnText(statement, 3)
+                            ?? ""
+                        let parts = rawParts.split {
+                            [",", "/", ";"].contains($0)
+                        }
+                        .compactMap {
+                            PartOfSpeech(
+                                $0.trimmingCharacters(
+                                    in: .whitespacesAndNewlines
+                                )
+                            )
+                        }
+                        values.append(
+                            Entry(
+                                text: value,
+                                partsOfSpeech: parts
+                            )
+                        )
                     }
                 }
                 if !values.isEmpty {
@@ -153,11 +184,50 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
 
             let options = values.enumerated().map { index, value in
                 TranslationOption(
-                    text: value,
-                    score: 1.0 - Double(index) * 0.05
+                    text: value.text,
+                    score: 1.0 - Double(index) * 0.05,
+                    partsOfSpeech: value.partsOfSpeech
                 )
             }
             return TranslationResult(options: options)
         }
+    }
+
+    private static func hasColumn(
+        _ column: String,
+        in database: OpaquePointer?
+    ) -> Bool {
+        var statement: OpaquePointer?
+        guard
+            sqlite3_prepare_v2(
+                database,
+                "PRAGMA table_info(entries)",
+                -1,
+                &statement,
+                nil
+            ) == SQLITE_OK
+        else {
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if columnText(statement, 1) == column {
+                return true
+            }
+        }
+        return false
+    }
+
+    private static func columnText(
+        _ statement: OpaquePointer?,
+        _ index: Int32
+    ) -> String? {
+        guard let value = sqlite3_column_text(statement, index) else {
+            return nil
+        }
+        return String(
+            cString: UnsafeRawPointer(value)
+                .assumingMemoryBound(to: CChar.self)
+        )
     }
 }

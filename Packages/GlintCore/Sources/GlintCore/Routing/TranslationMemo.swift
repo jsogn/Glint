@@ -341,7 +341,12 @@ public actor TranslationMemo {
             + key.configuration.utf8.count
             + 96
         let optionBytes = result.options.reduce(0) { partial, option in
-            partial + option.text.utf8.count + 32
+            partial
+                + option.text.utf8.count
+                + option.partsOfSpeech.reduce(0) {
+                    $0 + $1.abbreviation.utf8.count
+                }
+                + 32
         }
         return keyBytes + optionBytes
     }

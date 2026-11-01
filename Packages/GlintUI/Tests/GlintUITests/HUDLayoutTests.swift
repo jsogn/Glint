@@ -1,5 +1,6 @@
 import CoreGraphics
 import AppKit
+import GlintCore
 import SwiftUI
 import XCTest
 @testable import GlintUI
@@ -1396,6 +1397,111 @@ final class HUDLayoutTests: XCTestCase {
                 for: items,
                 maximumWidth: 300
             )
+        )
+    }
+
+    @MainActor
+    func testPOSIncreasesMeasuredWidthButNotHeight() {
+        let without = HUDItem(id: 0, text: "design")
+        let with = HUDItem(
+            id: 0,
+            text: "design",
+            partsOfSpeech: [.noun, .verb]
+        )
+
+        XCTAssertGreaterThan(
+            HUDLayoutPlan.naturalPanelWidth(for: [with]),
+            HUDLayoutPlan.naturalPanelWidth(for: [without])
+        )
+        XCTAssertEqual(
+            HUDLayoutPlan.panelSize(
+                for: [with],
+                maximumWidth: 1_400
+            ).height,
+            HUDLayoutPlan.panelSize(
+                for: [without],
+                maximumWidth: 1_400
+            ).height
+        )
+    }
+
+    @MainActor
+    func testPartsOfSpeechAreRemovedBeforeTranslationsWhenNarrow() {
+        let items = [
+            HUDItem(
+                id: 0,
+                number: 1,
+                text: "design",
+                partsOfSpeech: [.noun, .verb]
+            ),
+            HUDItem(
+                id: 1,
+                number: 2,
+                text: "about",
+                partsOfSpeech: [.preposition]
+            ),
+            HUDItem(
+                id: 2,
+                number: 3,
+                text: "devise",
+                partsOfSpeech: [.verb]
+            ),
+        ]
+        let result = HUDLayoutPlan.itemsFittingPartsOfSpeech(
+            items,
+            maximumWidth: HUDLayoutPlan.naturalPanelWidth(
+                for: items,
+                layoutStyle: .selectedTranslations
+            ) - 1,
+            layoutStyle: .selectedTranslations
+        )
+
+        XCTAssertEqual(result.map(\.text), ["design", "about", "devise"])
+        XCTAssertEqual(result.map(\.partsOfSpeech), [[], [], []])
+    }
+
+    @MainActor
+    func testHUDHostingWidthIncludesPOS() {
+        let item = HUDItem(
+            id: 0,
+            number: 1,
+            text: "design",
+            partsOfSpeech: [.noun, .verb]
+        )
+        let hosting = NSHostingView(rootView: HUDView(items: [item]))
+        hosting.layoutSubtreeIfNeeded()
+
+        XCTAssertGreaterThanOrEqual(
+            HUDLayoutPlan.naturalPanelWidth(for: [item]),
+            hosting.fittingSize.width
+        )
+    }
+
+    func testAccessibilityTextIncludesShortcutNumberAndPOS() {
+        XCTAssertEqual(
+            HUDItem(
+                id: 0,
+                number: 1,
+                text: "design",
+                partsOfSpeech: [.noun, .verb]
+            ).accessibilityText,
+            "1, design, noun, verb"
+        )
+        XCTAssertEqual(
+            HUDItem(
+                id: 1,
+                number: 2,
+                text: "design"
+            ).accessibilityText,
+            "2, design"
+        )
+        XCTAssertEqual(
+            HUDItem(
+                id: 2,
+                text: "design",
+                partsOfSpeech: [.noun]
+            ).accessibilityText,
+            "design, noun"
         )
     }
 

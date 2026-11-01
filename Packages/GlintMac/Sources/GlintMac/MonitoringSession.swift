@@ -18,6 +18,7 @@ public struct MonitoringSettings: Sendable, Equatable {
     public let candidateDwellDuration: Double
     public let translationScope: CandidateTranslationScope
     public let maximumTranslationCount: Int
+    public let showsPartsOfSpeech: Bool
     public let configurationToken: String
 
     public init(
@@ -25,12 +26,14 @@ public struct MonitoringSettings: Sendable, Equatable {
         candidateDwellDuration: Double,
         translationScope: CandidateTranslationScope,
         maximumTranslationCount: Int = 4,
+        showsPartsOfSpeech: Bool = true,
         configurationToken: String
     ) {
         self.mode = mode
         self.candidateDwellDuration = candidateDwellDuration
         self.translationScope = translationScope
         self.maximumTranslationCount = maximumTranslationCount
+        self.showsPartsOfSpeech = showsPartsOfSpeech
         self.configurationToken = configurationToken
     }
 }
@@ -124,6 +127,9 @@ public actor MonitoringSession {
         await controller.setTranslationScope(settings.translationScope)
         await controller.setMaximumTranslationCount(
             settings.maximumTranslationCount
+        )
+        await controller.setShowsPartsOfSpeech(
+            settings.showsPartsOfSpeech
         )
         await controller.setTranslationConfigurationToken(
             settings.configurationToken

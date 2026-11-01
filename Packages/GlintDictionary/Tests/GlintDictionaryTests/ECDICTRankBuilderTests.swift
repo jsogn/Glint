@@ -1,4 +1,5 @@
 import Foundation
+import GlintCore
 import SQLite3
 import XCTest
 
@@ -30,6 +31,7 @@ final class ECDICTRankBuilderTests: XCTestCase {
         )
         XCTAssertEqual(summary.termCount, 96_558)
         XCTAssertEqual(summary.rankCount, 144_791)
+        XCTAssertGreaterThan(summary.posCount, 0)
     }
 
     func testBuildsQuotedCSVAndRanksTerms() throws {
@@ -76,9 +78,201 @@ final class ECDICTRankBuilderTests: XCTestCase {
         XCTAssertTrue(ranker.rankings(for: "一个").isEmpty)
 
         let schema = try databaseSchema(at: database)
-        XCTAssertEqual(schema.userVersion, 3)
+        XCTAssertEqual(schema.userVersion, 4)
         XCTAssertTrue(schema.ranksDefinition.contains("WITHOUT ROWID"))
         XCTAssertFalse(schema.indexes.contains("idx_ranks_term"))
+    }
+
+    func testRankingBehaviorRemainsIndependentOfPOSMetadata() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("ecdict.csv")
+        let database = directory.appendingPathComponent("rank.sqlite3")
+        try Data(
+            """
+            word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
+            design,,,"n. 设计\\nv. 设计",,5,1,,,100,,
+            plan,,,"n. 计划\\nvt. 计划",,4,1,,,120,,
+            about,,,"prep. 关于",,4,1,,,200,,
+            """.utf8
+        ).write(to: source)
+
+        let summary = try ECDICTRankBuilder.build(
+            fromCSVURL: source,
+            to: database
+        )
+        XCTAssertEqual(summary.posCount, 3)
+
+        let ranker = ECDICTRanker(databaseURL: database)
+        XCTAssertEqual(
+            ranker.rankings(for: "设计").first?.english,
+            "design"
+        )
+        XCTAssertTrue(ranker.rankings(for: "关于").isEmpty)
+
+        let schema = try databaseSchema(at: database)
+        XCTAssertEqual(schema.userVersion, 4)
+    }
+
+    func testBuildsGlobalEnglishPartsOfSpeech() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("ecdict.csv")
+        let database = directory.appendingPathComponent("rank.sqlite3")
+        try Data(
+            """
+            word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
+            design,,,"n. 设计\\nv. 计划",,5,1,,,100,,
+            convenient,,,"a. 方便",,4,1,,,120,,
+            user,,,"n. 用户",,3,1,,,140,,
+            "turn on",,,"v. 打开",,2,1,,,160,,
+            """.utf8
+        ).write(to: source)
+
+        _ = try ECDICTRankBuilder.build(
+            fromCSVURL: source,
+            to: database
+        )
+        let ranker = ECDICTRanker(databaseURL: database)
+
+        let design = await ranker.partsOfSpeech(forEnglish: "design")
+        let convenient = await ranker.partsOfSpeech(
+            forEnglish: "convenient"
+        )
+        let user = await ranker.partsOfSpeech(forEnglish: "user")
+        let phrase = await ranker.partsOfSpeech(forEnglish: "turn on")
+        XCTAssertEqual(design, [.noun, .verb])
+        XCTAssertEqual(convenient, [.adjective])
+        XCTAssertEqual(user, [.noun])
+        XCTAssertEqual(phrase, [])
+
+        let schema = try databaseSchema(at: database)
+        XCTAssertTrue(
+            schema.englishPOSDefinition.contains(
+                "english_parts_of_speech"
+            )
+        )
+    }
+
+    func testGlobalPartsOfSpeechIgnoreRankingEligibility() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("ecdict.csv")
+        let database = directory.appendingPathComponent("rank.sqlite3")
+        try Data(
+            """
+            word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
+            commonword,,,"n. 常用词",,0,0,,,100,,
+            rareword,,,"n. 罕用词",,0,0,,,300000,,
+            """.utf8
+        ).write(to: source)
+
+        _ = try ECDICTRankBuilder.build(
+            fromCSVURL: source,
+            to: database
+        )
+        let ranker = ECDICTRanker(databaseURL: database)
+
+        XCTAssertTrue(ranker.rankings(for: "罕用词").isEmpty)
+        let parts = await ranker.partsOfSpeech(forEnglish: "rareword")
+        XCTAssertEqual(parts, [.noun])
+    }
+
+    func testInspectRejectsMismatchedPOSCountMetadata() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("ecdict.csv")
+        let database = directory.appendingPathComponent("rank.sqlite3")
+        try Data(
+            """
+            word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
+            design,,,"n. 设计\\nv. 设计",,5,1,,,100,,
+            """.utf8
+        ).write(to: source)
+
+        try ECDICTRankBuilder.build(
+            fromCSVURL: source,
+            to: database
+        )
+
+        var connection: OpaquePointer?
+        XCTAssertEqual(
+            sqlite3_open(database.path, &connection),
+            SQLITE_OK
+        )
+        defer { sqlite3_close(connection) }
+        XCTAssertEqual(
+            sqlite3_exec(
+                connection,
+                "UPDATE metadata SET value = '999' WHERE key = 'pos_count';",
+                nil,
+                nil,
+                nil
+            ),
+            SQLITE_OK
+        )
+
+        XCTAssertThrowsError(
+            try ECDICTRankBuilder.inspect(databaseURL: database)
+        ) { error in
+            XCTAssertEqual(
+                error as? ECDICTRankBuilderError,
+                .invalidSchema
+            )
+        }
+    }
+
+    func testInspectRejectsInvalidEnglishPOSTableShape() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("ecdict.csv")
+        let database = directory.appendingPathComponent("rank.sqlite3")
+        try Data(
+            """
+            word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio
+            design,,,"n. 设计",,5,1,,,100,,
+            """.utf8
+        ).write(to: source)
+
+        try ECDICTRankBuilder.build(
+            fromCSVURL: source,
+            to: database
+        )
+
+        var connection: OpaquePointer?
+        XCTAssertEqual(
+            sqlite3_open(database.path, &connection),
+            SQLITE_OK
+        )
+        defer { sqlite3_close(connection) }
+        XCTAssertEqual(
+            sqlite3_exec(
+                connection,
+                """
+                DROP TABLE english_parts_of_speech;
+                CREATE TABLE english_parts_of_speech (
+                    english_key TEXT NOT NULL,
+                    parts_of_speech TEXT NOT NULL
+                );
+                INSERT INTO english_parts_of_speech VALUES
+                    ('design', 'noun');
+                UPDATE metadata SET value = '1' WHERE key = 'pos_count';
+                """,
+                nil,
+                nil,
+                nil
+            ),
+            SQLITE_OK
+        )
+
+        XCTAssertThrowsError(
+            try ECDICTRankBuilder.inspect(databaseURL: database)
+        ) { error in
+            XCTAssertEqual(
+                error as? ECDICTRankBuilderError,
+                .invalidSchema
+            )
+        }
     }
 
     func testSkipsParentheticalMetadataAndTitleFragments() throws {
@@ -164,6 +358,7 @@ final class ECDICTRankBuilderTests: XCTestCase {
     ) throws -> (
         userVersion: Int,
         ranksDefinition: String,
+        englishPOSDefinition: String,
         indexes: Set<String>
     ) {
         var database: OpaquePointer?
@@ -238,6 +433,12 @@ final class ECDICTRankBuilderTests: XCTestCase {
             ) ?? -1,
             ranksDefinition: try text(
                 "SELECT sql FROM sqlite_master WHERE name = 'ranks';"
+            ),
+            englishPOSDefinition: try text(
+                """
+                SELECT sql FROM sqlite_master
+                WHERE name = 'english_parts_of_speech';
+                """
             ),
             indexes: indexes
         )

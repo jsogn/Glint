@@ -222,7 +222,10 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                     score -= 0.05
                 }
                 options.append(
-                    TranslationOption(text: compact, score: score)
+                    TranslationOption(
+                        text: compact,
+                        score: score
+                    )
                 )
             }
         }
@@ -281,7 +284,10 @@ public final class CedictDictionary: DictionaryEngine, @unchecked Sendable {
                 supplementCount += 1
             }
             options.append(
-                TranslationOption(text: compact, score: score)
+                TranslationOption(
+                    text: compact,
+                    score: score
+                )
             )
         }
         return options

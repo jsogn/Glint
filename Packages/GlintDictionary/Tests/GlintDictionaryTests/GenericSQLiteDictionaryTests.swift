@@ -53,6 +53,63 @@ final class GenericSQLiteDictionaryTests: XCTestCase {
         )
         let result = try await dictionary.lookup(Candidate(text: "设计"))
         XCTAssertEqual(result?.displayText, "design · plan")
+        XCTAssertEqual(
+            result?.options.first {
+                $0.text == "design"
+            }?.partsOfSpeech,
+            [.noun]
+        )
+    }
+
+    func testSchemaWithoutPartOfSpeechColumnStillWorks() async throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintGenericNoPOS-\(UUID().uuidString).sqlite3"
+            )
+        defer { try? FileManager.default.removeItem(at: databaseURL) }
+
+        var database: OpaquePointer?
+        XCTAssertEqual(
+            sqlite3_open(databaseURL.path, &database),
+            SQLITE_OK
+        )
+        defer { sqlite3_close(database) }
+        XCTAssertEqual(
+            sqlite3_exec(
+                database,
+                """
+                CREATE TABLE entries (
+                  source TEXT NOT NULL,
+                  target TEXT NOT NULL,
+                  source_lang TEXT NOT NULL,
+                  target_lang TEXT NOT NULL,
+                  frequency INTEGER,
+                  source_order INTEGER
+                );
+                INSERT INTO entries VALUES
+                  ('设计', 'design', 'zh-Hans', 'en', 10, 1);
+                """,
+                nil,
+                nil,
+                nil
+            ),
+            SQLITE_OK
+        )
+
+        XCTAssertTrue(
+            GenericSQLiteDictionary.isCompatible(databaseURL: databaseURL)
+        )
+        let dictionary = try XCTUnwrap(
+            GenericSQLiteDictionary(
+                databaseURL: databaseURL,
+                sourceLanguage: "zh-Hans",
+                targetLanguage: "en"
+            )
+        )
+        let result = try await dictionary.lookup(Candidate(text: "设计"))
+
+        XCTAssertEqual(result?.text, "design")
+        XCTAssertEqual(result?.options.first?.partsOfSpeech, [])
     }
 
     func testSchemaWithoutRankingColumnsIsRejected() throws {

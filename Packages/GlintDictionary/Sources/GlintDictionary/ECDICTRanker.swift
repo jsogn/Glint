@@ -1,4 +1,5 @@
 import Foundation
+import GlintCore
 import SQLite3
 
 struct EnglishRanking: Sendable, Equatable {
@@ -9,9 +10,10 @@ struct EnglishRanking: Sendable, Equatable {
     let examTagged: Bool
 }
 
-public final class ECDICTRanker: @unchecked Sendable {
+public final class ECDICTRanker: PartOfSpeechProviding, @unchecked Sendable {
     private var database: OpaquePointer?
     private var statement: OpaquePointer?
+    private var posStatement: OpaquePointer?
     private let lock = NSLock()
     private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
@@ -31,7 +33,12 @@ public final class ECDICTRanker: @unchecked Sendable {
         let prepareResult = sqlite3_prepare_v2(
             database,
             """
-            SELECT english, frequency, collins, oxford, exam_tag
+            SELECT
+                english,
+                frequency,
+                collins,
+                oxford,
+                exam_tag
             FROM ranks
             WHERE term = ?
             ORDER BY frequency ASC, collins DESC, oxford DESC
@@ -46,11 +53,27 @@ public final class ECDICTRanker: @unchecked Sendable {
             statement = nil
             sqlite3_close(database)
             database = nil
+            return
+        }
+        if sqlite3_prepare_v2(
+            database,
+            """
+            SELECT parts_of_speech
+            FROM english_parts_of_speech
+            WHERE english_key = ?
+            """,
+            -1,
+            &posStatement,
+            nil
+        ) != SQLITE_OK {
+            sqlite3_finalize(posStatement)
+            posStatement = nil
         }
     }
 
     deinit {
         sqlite3_finalize(statement)
+        sqlite3_finalize(posStatement)
         sqlite3_close(database)
     }
 
@@ -59,17 +82,36 @@ public final class ECDICTRanker: @unchecked Sendable {
         maxFrequency: Int = 100_000,
         limit: Int = 3
     ) -> [String] {
+        fallbackRankings(
+            term: term,
+            maxFrequency: maxFrequency,
+            limit: limit
+        )
+        .map(\.english)
+    }
+
+    func fallbackRankings(
+        term: String,
+        maxFrequency: Int = 100_000,
+        limit: Int = 3
+    ) -> [EnglishRanking] {
         rows(for: term)
             .filter {
                 $0.frequency <= maxFrequency
                     && $0.english.count > 1
             }
             .prefix(max(0, limit))
-            .map(\.english)
+            .map { $0 }
     }
 
     func rankings(for term: String) -> [EnglishRanking] {
         rows(for: term)
+    }
+
+    public func partsOfSpeech(forEnglish word: String) async -> [PartOfSpeech] {
+        lock.withLock {
+            partsOfSpeechLocked(forEnglish: word)
+        }
     }
 
     private func rows(for term: String) -> [EnglishRanking] {
@@ -97,6 +139,39 @@ public final class ECDICTRanker: @unchecked Sendable {
             )
         }
         return result
+    }
+
+    private func partsOfSpeechLocked(
+        forEnglish word: String
+    ) -> [PartOfSpeech] {
+        guard
+            let posStatement,
+            let key = ECDICTPartOfSpeech.englishKey(for: word)
+        else {
+            return []
+        }
+        sqlite3_reset(posStatement)
+        sqlite3_clear_bindings(posStatement)
+        sqlite3_bind_text(posStatement, 1, key, -1, sqliteTransient)
+        guard sqlite3_step(posStatement) == SQLITE_ROW else {
+            return []
+        }
+        return ECDICTPartOfSpeech.decode(
+            Self.columnText(posStatement, 0) ?? ""
+        )
+    }
+
+    private static func columnText(
+        _ statement: OpaquePointer?,
+        _ index: Int32
+    ) -> String? {
+        guard let value = sqlite3_column_text(statement, index) else {
+            return nil
+        }
+        return String(
+            cString: UnsafeRawPointer(value)
+                .assumingMemoryBound(to: CChar.self)
+        )
     }
 
     private static func locateDatabase() -> URL? {
