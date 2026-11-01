@@ -211,6 +211,9 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 
 - 行为、架构或性能结论变化时同步更新对应 `docs/` 文件。
 - README 只保留用户需要的产品介绍、功能、安装和隐私说明。
+- Release Notes 只写用户可感知的新增、优化和修复，每条一句，简洁有力。
+- Release Notes 不写实现细节、内部算法、参数、测试数据或开发过程；技术细节留在
+  `docs/`。
 - 提交前执行 `git diff --check`。
 - Commit 使用清晰的英文祈使句，例如 `Fix plugin card alignment`。
 - 用户要求交付或推送时，再执行 commit 和 `git push origin main`。
