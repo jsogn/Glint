@@ -77,14 +77,20 @@ final class AppSmokeTests: XCTestCase {
             return
         }
 
-        let output = String(
-            data: standardOutput.fileHandleForReading.readDataToEndOfFile(),
-            encoding: .utf8
-        ) ?? ""
-        let error = String(
-            data: standardError.fileHandleForReading.readDataToEndOfFile(),
-            encoding: .utf8
-        ) ?? ""
+        let output =
+            String(
+                data:
+                    standardOutput.fileHandleForReading
+                    .readDataToEndOfFile(),
+                encoding: .utf8
+            ) ?? ""
+        let error =
+            String(
+                data:
+                    standardError.fileHandleForReading
+                    .readDataToEndOfFile(),
+                encoding: .utf8
+            ) ?? ""
         XCTAssertEqual(
             process.terminationStatus,
             0,
