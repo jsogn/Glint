@@ -210,8 +210,9 @@ GlintCore
 - HUD 使用 borderless、non-activating `NSPanel`，加入所有 Space 与全屏空间。
 - HUD 不抢焦点、不改变候选选择，也不创建新的内容根视图。
 - macOS 26 及以上使用系统 SwiftUI Liquid Glass；macOS 15–25 回退到
-  `NSVisualEffectView` 的 HUD 窗口材质。玻璃模式不叠加自定义透明度或描边，
-  让系统统一处理明暗、模糊和辅助功能；“纯色”模式继续提供可调透明度。
+  `NSVisualEffectView` 的 HUD 窗口材质。HUD 固定为深色外观，系统切换浅色或深色
+  时玻璃不随之变白。玻璃模式不叠加自定义透明度或描边；“纯色”模式继续提供
+  可调透明度。
 - 单词译项可携带来自 ECDICT 释义行标签的最多两个标准英文词性缩写。词性使用
   次要文字样式紧跟英文词，只出现在选中模式；可用宽度不足时先移除词性，
   不得截断译文、改变字号或增加第二行。

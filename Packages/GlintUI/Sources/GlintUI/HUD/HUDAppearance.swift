@@ -1,6 +1,12 @@
 import AppKit
 import SwiftUI
 
+@MainActor
+enum HUDAppearancePolicy {
+    static let colorScheme: ColorScheme = .dark
+    static let panelAppearance = NSAppearance(named: .darkAqua)
+}
+
 public enum HUDLayoutStyle: Equatable, Sendable {
     case selectedTranslations
     case candidateRow

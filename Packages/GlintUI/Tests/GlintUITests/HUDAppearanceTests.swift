@@ -3,6 +3,12 @@ import XCTest
 @testable import GlintUI
 
 final class HUDAppearanceTests: XCTestCase {
+    @MainActor
+    func testHUDUsesFixedDarkGlassAppearance() {
+        XCTAssertEqual(HUDAppearancePolicy.colorScheme, .dark)
+        XCTAssertEqual(HUDAppearancePolicy.panelAppearance?.name, .darkAqua)
+    }
+
     func testSelectedTranslationSpacingIsClamped() {
         XCTAssertEqual(
             HUDAppearance(selectedTranslationSpacing: 2)

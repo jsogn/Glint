@@ -6,32 +6,37 @@ import XCTest
 final class HUDPresentationSchedulerTests: XCTestCase {
     func testCoalescesRapidRequestsToLatestRevision() async {
         var revisions: [UInt64] = []
+        let presented = expectation(description: "HUD presented")
         let scheduler = HUDPresentationScheduler(
             present: { request in
                 revisions.append(request.revision ?? 0)
+                presented.fulfill()
             },
             dimStaleContent: {}
         )
 
         scheduler.enqueue(request(revision: 1))
         scheduler.enqueue(request(revision: 2))
-        try? await Task.sleep(nanoseconds: 30_000_000)
+        await fulfillment(of: [presented], timeout: 1)
 
         XCTAssertEqual(revisions, [2])
     }
 
     func testCancellingQueuedRequestsPreventsPresentation() async {
         var presentationCount = 0
+        let presented = expectation(description: "HUD presentation")
+        presented.isInverted = true
         let scheduler = HUDPresentationScheduler(
             present: { _ in
                 presentationCount += 1
+                presented.fulfill()
             },
             dimStaleContent: {}
         )
 
         scheduler.enqueue(request(revision: 1))
         scheduler.cancelQueuedPresentations()
-        try? await Task.sleep(nanoseconds: 30_000_000)
+        await fulfillment(of: [presented], timeout: 0.2)
 
         XCTAssertEqual(presentationCount, 0)
     }

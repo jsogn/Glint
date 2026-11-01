@@ -105,6 +105,10 @@ struct HUDView: View {
             maxWidth: .infinity,
             alignment: .leading
         )
+        .environment(
+            \.colorScheme,
+            HUDAppearancePolicy.colorScheme
+        )
     }
 }
 
@@ -335,7 +339,7 @@ struct HUDNativeMaterialBackground: NSViewRepresentable {
     private var resolvedAppearance: NSAppearance? {
         switch backgroundStyle {
         case .darkGlass:
-            return NSAppearance(named: .darkAqua)
+            return HUDAppearancePolicy.panelAppearance
         case .solid, nil:
             return nil
         }
