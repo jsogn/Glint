@@ -911,7 +911,7 @@ final class HUDLayoutTests: XCTestCase {
         let metrics = HUDLayoutMetrics(appearance: .default)
 
         XCTAssertEqual(metrics.textFontSize, 14)
-        XCTAssertEqual(metrics.numberFontSize, 10)
+        XCTAssertEqual(metrics.numberFontSize, 9)
         XCTAssertEqual(metrics.minimumItemWidth, 44)
         XCTAssertEqual(metrics.itemSpacing, 4)
         XCTAssertEqual(metrics.selectedLeadingHorizontalPadding, 3)

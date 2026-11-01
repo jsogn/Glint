@@ -33,7 +33,7 @@ struct HUDLayoutMetrics: Equatable {
         let density = appearance.density
 
         textFontSize = fontSize
-        numberFontSize = max(9, (10 * scale).rounded())
+        numberFontSize = max(9, (9 * scale).rounded())
         partOfSpeechFontSize = max(
             9,
             (fontSize * 0.75 * 2).rounded() / 2
