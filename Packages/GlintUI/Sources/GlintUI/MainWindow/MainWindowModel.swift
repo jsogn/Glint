@@ -361,7 +361,7 @@ public final class MainWindowModel {
     }
 
     public var candidateSummary: String {
-        "系统候选词"
+        "输入候选词"
     }
 
     public var isLaunchAtLoginEnabled: Bool {

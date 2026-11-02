@@ -4,11 +4,22 @@ import SwiftUI
 struct AboutPage: View {
     private let repositoryURL = URL(string: "https://github.com/jsogn/Glint")!
     private let issuesURL = URL(string: "https://github.com/jsogn/Glint/issues")!
+    @Environment(\.openURL) private var openURL
+    @State private var updateModel: AppUpdateModel
+    private let version: String
+    private let onCheckForUpdates: @MainActor () -> Void
 
-    private var version: String {
-        Bundle.main.object(
-            forInfoDictionaryKey: "CFBundleShortVersionString"
-        ) as? String ?? "未知"
+    init(
+        updateModel: AppUpdateModel,
+        onCheckForUpdates: @MainActor @escaping () -> Void
+    ) {
+        let version =
+            Bundle.main.object(
+                forInfoDictionaryKey: "CFBundleShortVersionString"
+            ) as? String ?? "未知"
+        self.version = version
+        self.onCheckForUpdates = onCheckForUpdates
+        _updateModel = State(initialValue: updateModel)
     }
 
     var body: some View {
@@ -35,6 +46,22 @@ struct AboutPage: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
+
+                        Button(updatePresentation.title) {
+                            if let destinationURL =
+                                updatePresentation.destinationURL
+                            {
+                                openURL(destinationURL)
+                            } else {
+                                onCheckForUpdates()
+                            }
+                        }
+                        .controlSize(.small)
+                        .disabled(
+                            !updatePresentation.isEnabled
+                                || updateModel.isChecking
+                        )
+                        .padding(.top, 4)
                     }
 
                     HStack(spacing: 32) {
@@ -72,5 +99,9 @@ struct AboutPage: View {
                 .offset(y: -24)
             }
         }
+    }
+
+    private var updatePresentation: AppUpdateMenuPresentation {
+        updateModel.status.menuPresentation
     }
 }

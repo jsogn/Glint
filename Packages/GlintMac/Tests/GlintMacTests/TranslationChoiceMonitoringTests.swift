@@ -18,6 +18,29 @@ private struct InsertionFocus: FocusReading {
     }
 }
 
+private struct ProcessFallbackInsertionFocus: FocusReading {
+    func snapshot() -> FocusSnapshot? {
+        FocusSnapshot(
+            caretRect: nil,
+            elementFrame: CGRect(x: 20, y: 20, width: 600, height: 400),
+            compositionState: .unknown,
+            isEditableTextInput: false,
+            processIdentifier: 4242
+        )
+    }
+
+    func processFallbackSnapshot() -> FocusSnapshot? {
+        FocusSnapshot(
+            caretRect: nil,
+            elementFrame: nil,
+            compositionState: .unknown,
+            isEditableTextInput: false,
+            processIdentifier: 4242,
+            usesProcessFallback: true
+        )
+    }
+}
+
 private final class MutableInsertionFocus:
     FocusReading, @unchecked Sendable
 {
@@ -95,6 +118,23 @@ private struct InsertionCandidateRouter: CandidateReaderRouting {
         for source: ActiveInputSource
     ) -> Bool {
         false
+    }
+}
+
+private struct ProcessFallbackInsertionCandidateRouter:
+    CandidateReaderRouting
+{
+    func reader(
+        for source: ActiveInputSource,
+        allowProfileDiscovery: Bool
+    ) -> any AXCandidateReading {
+        InsertionCandidates()
+    }
+
+    func allowsProcessFallback(
+        for source: ActiveInputSource
+    ) -> Bool {
+        true
     }
 }
 
@@ -331,6 +371,57 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
             offer.choices,
             ["primary", "alternative", "secondary"]
         )
+        let inserted = await controller.insertTranslation(
+            offer,
+            choiceIndex: 1
+        )
+
+        XCTAssertTrue(inserted)
+        XCTAssertEqual(
+            writer.recordedRequests.map(\.text),
+            ["alternative"]
+        )
+        XCTAssertEqual(
+            writer.recordedRequests.map(\.pid),
+            [pid_t(4242)]
+        )
+    }
+
+    func testProcessFallbackWritesTranslationToCurrentHost()
+        async throws
+    {
+        let writer = RecordingTranslationTextWriter()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyInsertionDictionary(),
+                translation: InsertionMultiOptionTranslation()
+            ),
+            inputSource: InsertionInputSource(),
+            focus: ProcessFallbackInsertionFocus(),
+            candidateReaders:
+                ProcessFallbackInsertionCandidateRouter(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false },
+            translationTextInserter: writer
+        )
+        let recorder = InsertionOfferRecorder()
+        let events = await controller.events
+        let collector = Task {
+            for await event in events {
+                if case .insertionOffer(let offer) = event {
+                    recorder.record(offer)
+                }
+            }
+        }
+        defer { collector.cancel() }
+
+        await controller.setCandidateDwellDuration(0.08)
+        _ = await controller.tick()
+        try await Task.sleep(for: .milliseconds(90))
+        _ = await controller.tick()
+        try await waitUntil { recorder.current != nil }
+        let offer = try XCTUnwrap(recorder.current)
+
         let inserted = await controller.insertTranslation(
             offer,
             choiceIndex: 1

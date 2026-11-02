@@ -29,30 +29,24 @@ struct RimeSchemaPatchEditor {
                 createdFile: true
             )
         }
-        let originalLines = source.components(separatedBy: "\n")
-        let patchIndices = Self.patchRootIndices(in: originalLines)
-        guard patchIndices.count <= 1 else {
-            throw RimeSchemaPatchError.missingPatchRoot
-        }
-        guard !Self.containsYAMLAnchorOrAlias(in: originalLines) else {
-            throw RimeSchemaPatchError.unsupportedEngineStructure
-        }
         guard
-            !Self.containsUnsupportedDocumentSyntax(
-                in: originalLines
+            !source.unicodeScalars.contains(
+                UnicodeScalar("\r")
             )
         else {
             throw RimeSchemaPatchError.unsupportedEngineStructure
         }
-        let markerLineCount = originalLines.filter { line in
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            return trimmed == Self.beginMarker
-                || trimmed == Self.endMarker
-        }.count
-        if markerLineCount > 0 {
+
+        let lines = source.components(separatedBy: "\n")
+        let markerIndices = lines.indices.filter { index in
+            let line = lines[index].trimmingCharacters(in: .whitespaces)
+            return line == Self.beginMarker || line == Self.endMarker
+        }
+        if !markerIndices.isEmpty {
             guard
-                markerLineCount == 2,
-                removeManagedFilter(from: source) != source
+                Self.managedPatchBlock(in: lines) != nil
+                    || Self.legacyManagedOverrideBlock(in: lines) != nil
+                    || Self.legacyManagedFilterList(in: lines) != nil
             else {
                 throw RimeSchemaPatchError.unsupportedFilterList
             }
@@ -62,137 +56,18 @@ struct RimeSchemaPatchEditor {
                 createdFile: false
             )
         }
-        guard let patchIndex = patchIndices.first else {
-            guard Self.isEffectivelyEmpty(source) else {
-                throw RimeSchemaPatchError.missingPatchRoot
-            }
-            let separator =
-                source.hasSuffix("\n") ? "" : "\n"
+        try validateDocumentStructure(lines: lines)
+        if containsFilter(in: source) {
             return RimeSchemaPatchResult(
-                source:
-                    source + separator + Self.managedPatchFile,
-                changed: true,
+                source: source,
+                changed: false,
                 createdFile: false
             )
         }
 
-        guard
-            Self.contentBeforeComment(originalLines[patchIndex])
-                .trimmingCharacters(in: .whitespaces) == "patch:"
-        else {
-            throw RimeSchemaPatchError.missingPatchRoot
-        }
-
-        var lines = originalLines
-        let patchEnd = Self.endOfMapping(
-            lines: lines,
-            after: patchIndex
-        )
-        let meaningfulChildIndices = ((patchIndex + 1)..<patchEnd)
-            .filter { index in
-                let content = Self.contentBeforeComment(lines[index])
-                    .trimmingCharacters(in: .whitespaces)
-                return !content.isEmpty
-            }
-        let directIndent =
-            meaningfulChildIndices.first.map {
-                Self.indentation(of: lines[$0])
-            } ?? 2
-        guard directIndent > 0 else {
-            throw RimeSchemaPatchError.missingPatchRoot
-        }
-        if meaningfulChildIndices.contains(where: {
-            let indentation = Self.indentation(of: lines[$0])
-            return indentation > 0 && indentation < directIndent
-        }) {
-            throw RimeSchemaPatchError.unsupportedEngineStructure
-        }
-        let directChildIndices = meaningfulChildIndices.filter {
-            Self.indentation(of: lines[$0]) == directIndent
-        }
-        let filterKeys = directChildIndices.filter { index in
-            let (key, _) = Self.keyAndValue(
-                Self.contentBeforeComment(lines[index])
-            )
-            return Self.unquoted(key) == "engine/filters/+"
-        }
-        guard filterKeys.count <= 1 else {
-            throw RimeSchemaPatchError.unsupportedFilterList
-        }
-        if let filterKeyIndex = filterKeys.first {
-            let (_, value) = Self.keyAndValue(
-                Self.contentBeforeComment(lines[filterKeyIndex])
-            )
-            guard value.isEmpty else {
-                throw RimeSchemaPatchError.unsupportedFilterList
-            }
-            if Self.filterListContainsManagedFilter(
-                lines: lines,
-                keyIndex: filterKeyIndex,
-                parentIndent: directIndent
-            ) {
-                return RimeSchemaPatchResult(
-                    source: source,
-                    changed: false,
-                    createdFile: false
-                )
-            }
-            let itemIndent = String(
-                repeating: " ",
-                count: directIndent + 2
-            )
-            lines.insert(
-                contentsOf: [
-                    "\(itemIndent)\(Self.beginMarker)",
-                    "\(itemIndent)- \(Self.filterValue)",
-                    "\(itemIndent)\(Self.endMarker)",
-                ],
-                at: filterKeyIndex + 1
-            )
-            return RimeSchemaPatchResult(
-                source: lines.joined(separator: "\n"),
-                changed: true,
-                createdFile: false
-            )
-        }
-
-        for index in directChildIndices {
-            let content = Self.contentBeforeComment(lines[index])
-            let (rawKey, value) = Self.keyAndValue(content)
-            let key = Self.unquoted(rawKey)
-            if key == "engine" {
-                throw RimeSchemaPatchError.unsupportedEngineStructure
-            }
-            if key.hasPrefix("engine/filters") {
-                if key.hasPrefix("engine/filters/@"),
-                    Self.unquoted(value) == Self.filterValue
-                {
-                    return RimeSchemaPatchResult(
-                        source: source,
-                        changed: false,
-                        createdFile: false
-                    )
-                }
-                throw RimeSchemaPatchError.unsupportedFilterList
-            }
-        }
-
-        let keyIndent = String(repeating: " ", count: directIndent)
-        let itemIndent = String(
-            repeating: " ",
-            count: directIndent + 2
-        )
-        lines.insert(
-            contentsOf: [
-                "\(keyIndent)engine/filters/+:",
-                "\(itemIndent)\(Self.beginMarker)",
-                "\(itemIndent)- \(Self.filterValue)",
-                "\(itemIndent)\(Self.endMarker)",
-            ],
-            at: patchEnd
-        )
+        let separator = source.hasSuffix("\n") ? "" : "\n"
         return RimeSchemaPatchResult(
-            source: lines.joined(separator: "\n"),
+            source: source + separator + Self.managedPatchFile,
             changed: true,
             createdFile: false
         )
@@ -203,56 +78,27 @@ struct RimeSchemaPatchEditor {
         removingEmptyFilterKey: Bool = false
     ) -> String {
         var lines = source.components(separatedBy: "\n")
-        let begins = lines.indices.filter { index in
-            lines[index].trimmingCharacters(in: .whitespaces)
-                == Self.beginMarker
-        }
-        let ends = lines.indices.filter { index in
-            lines[index].trimmingCharacters(in: .whitespaces)
-                == Self.endMarker
-        }
-        if begins.isEmpty, ends.isEmpty {
-            return source
-        }
-        guard
-            begins.count == 1,
-            ends.count == 1,
-            let begin = begins.first,
-            let end = ends.first,
-            begin < end,
-            let parentIndex = Self.parentFilterKeyIndex(
-                lines: lines,
-                before: begin
-            )
-        else {
-            return source
-        }
-        let managedBody = lines[(begin + 1)..<end]
-            .filter { line in
-                let trimmed = line.trimmingCharacters(
-                    in: .whitespaces
-                )
-                return !trimmed.isEmpty && !trimmed.hasPrefix("#")
+        if let block = Self.managedPatchBlock(in: lines) {
+            lines.removeSubrange(block.begin...block.end)
+            if lines.allSatisfy({
+                $0.trimmingCharacters(in: .whitespaces).isEmpty
+            }) {
+                return ""
             }
-        guard
-            managedBody.count == 1,
-            Self.scalarValue(in: managedBody[0]) == Self.filterValue,
-            Self.indentation(of: managedBody[0])
-                == Self.indentation(of: lines[begin]),
-            Self.indentation(of: lines[end])
-                == Self.indentation(of: lines[begin])
-        else {
+            return lines.joined(separator: "\n")
+        }
+        if let block = Self.legacyManagedOverrideBlock(in: lines) {
+            lines.removeSubrange(block.begin...block.end)
+            return lines.joined(separator: "\n")
+        }
+        guard let block = Self.legacyManagedFilterList(in: lines) else {
             return source
         }
-        if let begin = begins.first,
-            let end = ends.first
-        {
-            lines.removeSubrange(begin...end)
-        }
+        lines.removeSubrange(block.begin...block.end)
         if removingEmptyFilterKey {
-            lines = removingEmptyManagedFilterKey(
+            lines = removeEmptyFilterKey(
                 from: lines,
-                at: parentIndex
+                at: block.parent
             )
         }
         return lines.joined(separator: "\n")
@@ -260,12 +106,21 @@ struct RimeSchemaPatchEditor {
 
     func containsFilter(in source: String) -> Bool {
         let lines = source.components(separatedBy: "\n")
+        if Self.managedPatchBlock(in: lines) != nil
+            || Self.legacyManagedOverrideBlock(in: lines) != nil
+            || Self.legacyManagedFilterList(in: lines) != nil
+        {
+            return true
+        }
         let patchIndices = Self.patchRootIndices(in: lines)
         guard patchIndices.count == 1, let patchIndex = patchIndices.first
         else {
             return false
         }
-        let patchEnd = Self.endOfMapping(lines: lines, after: patchIndex)
+        let patchEnd = Self.endOfTopLevelMapping(
+            lines: lines,
+            after: patchIndex
+        )
         let children = ((patchIndex + 1)..<patchEnd).filter {
             !Self.contentBeforeComment(lines[$0])
                 .trimmingCharacters(in: .whitespaces).isEmpty
@@ -283,17 +138,114 @@ struct RimeSchemaPatchEditor {
                 Self.contentBeforeComment(lines[index])
             )
             let key = Self.unquoted(rawKey)
+            if key == "engine", value.isEmpty,
+                Self.nestedEngineContainsFilter(
+                    lines: lines,
+                    engineIndex: index,
+                    engineIndent: directIndent,
+                    limit: patchEnd
+                )
+            {
+                return true
+            }
             if key == "engine/filters/+", value.isEmpty {
-                return Self.filterListContainsManagedFilter(
+                return Self.filterListContainsFilter(
                     lines: lines,
                     keyIndex: index,
                     parentIndent: directIndent
                 )
             }
-            if key.hasPrefix("engine/filters"),
-                key.hasPrefix("engine/filters/@"),
+            if key == "engine/filters/+",
+                Self.inlineListContainsFilter(value)
+            {
+                return true
+            }
+            if key.hasPrefix("engine/filters/@"),
                 Self.unquoted(value) == Self.filterValue
             {
+                return true
+            }
+        }
+        return false
+    }
+
+    func containsManagedFilter(in source: String) -> Bool {
+        let lines = source.components(separatedBy: "\n")
+        return Self.managedPatchBlock(in: lines) != nil
+            || Self.legacyManagedOverrideBlock(in: lines) != nil
+            || Self.legacyManagedFilterList(in: lines) != nil
+    }
+
+    private func validateDocumentStructure(
+        lines: [String]
+    ) throws {
+        var patchRootCount = 0
+        var rootPatchCount = 0
+        for line in lines {
+            let content = Self.contentBeforeComment(line)
+            let trimmed = content.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { continue }
+            if trimmed == "---" || trimmed == "..." {
+                throw RimeSchemaPatchError.unsupportedEngineStructure
+            }
+            let indent = Self.indentation(of: content)
+            if content.dropFirst(indent).first == "\t" {
+                throw RimeSchemaPatchError.unsupportedEngineStructure
+            }
+            guard indent == 0 else { continue }
+            let key = Self.unquoted(Self.keyAndValue(content).key)
+            if key == "patch" {
+                patchRootCount += 1
+            } else if key == "__patch" {
+                rootPatchCount += 1
+            }
+        }
+        guard patchRootCount <= 1, rootPatchCount == 0 else {
+            throw RimeSchemaPatchError.missingPatchRoot
+        }
+    }
+
+    private static func nestedEngineContainsFilter(
+        lines: [String],
+        engineIndex: Int,
+        engineIndent: Int,
+        limit: Int
+    ) -> Bool {
+        let engineEnd =
+            ((engineIndex + 1)..<limit).first { index in
+                let content = contentBeforeComment(lines[index])
+                guard
+                    !content.trimmingCharacters(in: .whitespaces).isEmpty
+                else {
+                    return false
+                }
+                return indentation(of: content) <= engineIndent
+            } ?? limit
+        let children = ((engineIndex + 1)..<engineEnd).filter {
+            !contentBeforeComment(lines[$0])
+                .trimmingCharacters(in: .whitespaces).isEmpty
+        }
+        guard
+            let directIndent = children.first.map({
+                indentation(of: lines[$0])
+            })
+        else {
+            return false
+        }
+        for index in children
+        where indentation(of: lines[index]) == directIndent {
+            let (rawKey, value) = keyAndValue(
+                contentBeforeComment(lines[index])
+            )
+            let key = unquoted(rawKey)
+            if key == "filters", value.isEmpty {
+                return filterListContainsFilter(
+                    lines: lines,
+                    keyIndex: index,
+                    parentIndent: directIndent
+                )
+            }
+            if key == "filters", inlineListContainsFilter(value) {
                 return true
             }
         }
@@ -303,9 +255,7 @@ struct RimeSchemaPatchEditor {
     private static func patchRootIndices(in lines: [String]) -> [Int] {
         lines.indices.filter { index in
             let content = contentBeforeComment(lines[index])
-            let trimmed = content.trimmingCharacters(
-                in: .whitespaces
-            )
+            let trimmed = content.trimmingCharacters(in: .whitespaces)
             guard
                 !trimmed.isEmpty,
                 indentation(of: content) == 0
@@ -317,69 +267,20 @@ struct RimeSchemaPatchEditor {
         }
     }
 
-    private static func containsYAMLAnchorOrAlias(
-        in lines: [String]
-    ) -> Bool {
-        lines.contains { line in
-            let content = contentBeforeComment(line)
-                .trimmingCharacters(in: .whitespaces)
-            guard !content.isEmpty else { return false }
-            if content.hasPrefix("<<:")
-                || content.hasPrefix("!")
-            {
-                return true
-            }
-            let tokens = content.split(
-                whereSeparator: { $0.isWhitespace }
-            )
-            return tokens.contains { token in
-                token.first == "&"
-                    || token.first == "*"
-                    || token.first == "!"
-            }
+    private static func inlineListContainsFilter(_ source: String) -> Bool {
+        let value = source.trimmingCharacters(in: .whitespaces)
+        guard value.hasPrefix("["), value.hasSuffix("]") else {
+            return false
         }
+        return value.dropFirst().dropLast()
+            .split(separator: ",", omittingEmptySubsequences: true)
+            .contains {
+                unquoted($0.trimmingCharacters(in: .whitespaces))
+                    == filterValue
+            }
     }
 
-    private static func containsUnsupportedDocumentSyntax(
-        in lines: [String]
-    ) -> Bool {
-        lines.contains { line in
-            if line.contains("\r") { return true }
-            let content = contentBeforeComment(line)
-            let trimmed = content.trimmingCharacters(
-                in: .whitespaces
-            )
-            if trimmed == "---" || trimmed == "..." {
-                return true
-            }
-            let leadingSpaces = content.prefix(
-                while: { $0 == " " }
-            ).count
-            if content.dropFirst(leadingSpaces).first == "\t" {
-                return true
-            }
-            let (rawKey, _) = keyAndValue(trimmed)
-            return unquoted(rawKey).hasPrefix("__")
-        }
-    }
-
-    private static func scalarValue(in line: String) -> String? {
-        let content = contentBeforeComment(line)
-            .trimmingCharacters(in: .whitespaces)
-        guard !content.isEmpty else { return nil }
-        let rawValue: String
-        if content.hasPrefix("- ") {
-            rawValue = String(content.dropFirst(2))
-                .trimmingCharacters(in: .whitespaces)
-        } else {
-            let (_, value) = keyAndValue(content)
-            rawValue = value
-        }
-        guard !rawValue.isEmpty else { return nil }
-        return unquoted(rawValue)
-    }
-
-    private static func filterListContainsManagedFilter(
+    private static func filterListContainsFilter(
         lines: [String],
         keyIndex: Int,
         parentIndent: Int
@@ -402,6 +303,117 @@ struct RimeSchemaPatchEditor {
                     .trimmingCharacters(in: .whitespaces)
                     == filterValue
         }
+    }
+
+    private static func legacyManagedFilterList(
+        in lines: [String]
+    ) -> (begin: Int, end: Int, parent: Int)? {
+        guard
+            let block = markerBlock(
+                in: lines,
+                expectedBodyCount: 1
+            ),
+            let parent = parentFilterKeyIndex(
+                lines: lines,
+                before: block.begin
+            ),
+            let value = scalarValue(in: lines[block.begin + 1]),
+            value == filterValue,
+            indentation(of: lines[block.begin + 1])
+                == indentation(of: lines[block.begin]),
+            indentation(of: lines[block.end])
+                == indentation(of: lines[block.begin])
+        else {
+            return nil
+        }
+        return (block.begin, block.end, parent)
+    }
+
+    private static func legacyManagedOverrideBlock(
+        in lines: [String]
+    ) -> (begin: Int, end: Int)? {
+        guard let block = markerBlock(in: lines, expectedBodyCount: 1)
+        else {
+            return nil
+        }
+        let indent = indentation(of: lines[block.begin])
+        guard
+            indentation(of: lines[block.begin + 1]) == indent,
+            indentation(of: lines[block.end]) == indent
+        else {
+            return nil
+        }
+        let (rawKey, value) = keyAndValue(
+            contentBeforeComment(lines[block.begin + 1])
+        )
+        guard
+            unquoted(rawKey) == "engine/filters/@before 0",
+            unquoted(value) == Self.filterValue
+        else {
+            return nil
+        }
+        return (block.begin, block.end)
+    }
+
+    private static func managedPatchBlock(
+        in lines: [String]
+    ) -> (begin: Int, end: Int)? {
+        guard let block = markerBlock(in: lines, expectedBodyCount: 3)
+        else {
+            return nil
+        }
+        guard
+            indentation(of: lines[block.begin]) == 0,
+            indentation(of: lines[block.end]) == 0
+        else {
+            return nil
+        }
+        let patch = keyAndValue(
+            contentBeforeComment(lines[block.begin + 1])
+        )
+        let patchMerge = keyAndValue(
+            contentBeforeComment(lines[block.begin + 2])
+        )
+        let filter = keyAndValue(
+            contentBeforeComment(lines[block.begin + 3])
+        )
+        guard
+            unquoted(patch.key) == "__patch",
+            patch.value.isEmpty,
+            indentation(of: lines[block.begin + 2]) == 2,
+            unquoted(patchMerge.key) == "patch/+",
+            patchMerge.value.isEmpty,
+            indentation(of: lines[block.begin + 3]) == 4,
+            unquoted(filter.key) == "engine/filters/@before 0",
+            unquoted(filter.value) == Self.filterValue
+        else {
+            return nil
+        }
+        return (block.begin, block.end)
+    }
+
+    private static func markerBlock(
+        in lines: [String],
+        expectedBodyCount: Int
+    ) -> (begin: Int, end: Int)? {
+        let begins = lines.indices.filter {
+            lines[$0].trimmingCharacters(in: .whitespaces)
+                == Self.beginMarker
+        }
+        let ends = lines.indices.filter {
+            lines[$0].trimmingCharacters(in: .whitespaces)
+                == Self.endMarker
+        }
+        guard
+            begins.count == 1,
+            ends.count == 1,
+            let begin = begins.first,
+            let end = ends.first,
+            end == begin + expectedBodyCount + 1
+        else {
+            return nil
+        }
+        return (begin, end)
     }
 
     private static func parentFilterKeyIndex(
@@ -431,6 +443,22 @@ struct RimeSchemaPatchEditor {
         return nil
     }
 
+    private static func scalarValue(in line: String) -> String? {
+        let content = contentBeforeComment(line)
+            .trimmingCharacters(in: .whitespaces)
+        guard !content.isEmpty else { return nil }
+        let rawValue: String
+        if content.hasPrefix("- ") {
+            rawValue = String(content.dropFirst(2))
+                .trimmingCharacters(in: .whitespaces)
+        } else {
+            let (_, value) = keyAndValue(content)
+            rawValue = value
+        }
+        guard !rawValue.isEmpty else { return nil }
+        return unquoted(rawValue)
+    }
+
     private static func contentBeforeComment(_ line: String) -> String {
         var quote: Character?
         for index in line.indices {
@@ -453,12 +481,14 @@ struct RimeSchemaPatchEditor {
     private static func keyAndValue(
         _ line: String
     ) -> (key: String, value: String) {
-        guard let colon = line.firstIndex(of: ":") else {
-            return (line.trimmingCharacters(in: .whitespaces), "")
-        }
-        let key = String(line[..<colon])
+        let content = contentBeforeComment(line)
             .trimmingCharacters(in: .whitespaces)
-        let value = String(line[line.index(after: colon)...])
+        guard let colon = content.firstIndex(of: ":") else {
+            return (content, "")
+        }
+        let key = String(content[..<colon])
+            .trimmingCharacters(in: .whitespaces)
+        let value = String(content[content.index(after: colon)...])
             .trimmingCharacters(in: .whitespaces)
         return (key, value)
     }
@@ -477,7 +507,7 @@ struct RimeSchemaPatchEditor {
         return value
     }
 
-    private static func endOfMapping(
+    private static func endOfTopLevelMapping(
         lines: [String],
         after index: Int
     ) -> Int {
@@ -500,16 +530,7 @@ struct RimeSchemaPatchEditor {
         return lines.count
     }
 
-    private static func isEffectivelyEmpty(_ source: String) -> Bool {
-        source.components(separatedBy: "\n").allSatisfy { line in
-            let trimmed = line.trimmingCharacters(
-                in: .whitespaces
-            )
-            return trimmed.isEmpty || trimmed.hasPrefix("#")
-        }
-    }
-
-    private func removingEmptyManagedFilterKey(
+    private func removeEmptyFilterKey(
         from lines: [String],
         at keyIndex: Int
     ) -> [String] {
@@ -542,11 +563,11 @@ struct RimeSchemaPatchEditor {
     }
 
     private static let managedPatchFile = """
-        patch:
-          engine/filters/+:
-            # BEGIN GLINT RIME CANDIDATE BRIDGE
-            - lua_filter@*glint.candidate_bridge
-            # END GLINT RIME CANDIDATE BRIDGE
+        # BEGIN GLINT RIME CANDIDATE BRIDGE
+        __patch:
+          patch/+:
+            engine/filters/@before 0: lua_filter@*glint.candidate_bridge
+        # END GLINT RIME CANDIDATE BRIDGE
 
         """
 }

@@ -5,6 +5,7 @@ import SwiftUI
 
 struct OverviewPage: View {
     let model: MainWindowModel
+    let appUpdateModel: AppUpdateModel
     @Binding var selection: SidebarItem?
     let openTranslationModels: () -> Void
 
@@ -23,6 +24,10 @@ struct OverviewPage: View {
                 model: model,
                 openModelSettings: openTranslationModels
             )
+
+            if let updatePrompt = appUpdateModel.overviewPrompt {
+                OverviewUpdatePrompt(prompt: updatePrompt)
+            }
 
             LazyVGrid(
                 columns: [
@@ -89,12 +94,35 @@ struct OverviewPage: View {
                 }
             }
 
-            Label(
-                "仅识别输入法候选区域，不读取输入框正文。",
-                systemImage: "lock.shield"
-            )
+            Button {
+                selection = .general
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "keyboard")
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Text(
+                        OverviewFormatting.shortcutHint(
+                            insertionShortcut:
+                                model.generalPreferences.insertionShortcut,
+                            speechShortcut:
+                                model.generalPreferences.speechShortcut,
+                            maximumTranslationCount:
+                                model.displayPreferences
+                                .maximumTranslationCount
+                        )
+                    )
+                    .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
+            }
+            .buttonStyle(.plain)
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .help("打开通用配置调整快捷键")
+            .accessibilityHint("打开通用配置")
             .padding(.horizontal, 4)
         }
     }
@@ -103,6 +131,52 @@ struct OverviewPage: View {
         {
             selection = .inputMethods
         }
+    }
+}
+
+struct OverviewUpdatePrompt: View {
+    let prompt: AppUpdateOverviewPrompt
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.14))
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .frame(width: 40, height: 40)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("发现新版本 \(prompt.releaseVersion)")
+                    .font(.headline)
+                Text("当前版本 \(prompt.currentVersion)")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .accessibilityElement(children: .combine)
+
+            Spacer(minLength: 16)
+
+            Button("前往下载") {
+                openURL(prompt.destinationURL)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .accessibilityHint("在 GitHub 上查看最新版本")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            Color.accentColor.opacity(0.07),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
+        .cardSurface()
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -602,10 +676,13 @@ private enum OverviewPreviewState: Equatable {
     case preparing
     case permission
     case attention
+    case updateAvailable
 }
 
+@MainActor
 private struct OverviewPagePreview: View {
     @State private var model: MainWindowModel
+    private let appUpdateModel: AppUpdateModel
     private let width: CGFloat
 
     init(_ state: OverviewPreviewState, width: CGFloat = 729) {
@@ -642,18 +719,40 @@ private struct OverviewPagePreview: View {
             defaults: defaults
         )
         model.accessibilityGranted = state != .permission
-        model.isMonitoring = state == .running || state == .attention
+        model.isMonitoring =
+            state == .running
+            || state == .attention
+            || state == .updateAvailable
         model.isPreparingMonitoring = state == .preparing
         if state == .attention {
             model.statusText = "翻译模型暂时不可用，请检查插件与模型。"
         }
         model.setTranslationMode(.dictionaryFirst)
         _model = State(initialValue: model)
+        appUpdateModel = AppUpdateModel(
+            currentVersion: "0.7.5",
+            initialStatus:
+                state == .updateAvailable
+                ? .available(
+                    AppRelease(
+                        version: "v0.8.0",
+                        pageURL: URL(
+                            string:
+                                "https://github.com/jsogn/Glint/releases/tag/v0.8.0"
+                        )!
+                    )
+                )
+                : .idle,
+            fetchLatestRelease: {
+                throw URLError(.notConnectedToInternet)
+            }
+        )
     }
 
     var body: some View {
         OverviewPage(
             model: model,
+            appUpdateModel: appUpdateModel,
             selection: .constant(.overview),
             openTranslationModels: {}
         )
@@ -716,6 +815,11 @@ private enum OverviewPreviewManifests {
 
 #Preview("概览 · 需要检查") {
     OverviewPagePreview(.attention)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("概览 · 发现更新") {
+    OverviewPagePreview(.updateAvailable)
         .preferredColorScheme(.dark)
 }
 

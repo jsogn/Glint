@@ -12,13 +12,22 @@ private let appLogger = Logger(
 )
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+private final class GlintUpdatePanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+}
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private static let initialPermissionRequestKey =
         "glint.permissions.accessibilityInitialRequestAttempted"
 
     private let readinessToken: String?
     private var statusItem: NSStatusItem!
     private var monitoringMenuItem: NSMenuItem!
+    private var updateMenuItem: NSMenuItem!
+    private var updatePanel: NSPanel?
+    private var pendingUpdateURL: URL?
     private var mainWindowController: MainWindowController!
     private let hudEventCoordinator: HUDEventCoordinator
     private let translationChoiceShortcutCoordinator: TranslationChoiceShortcutCoordinator
@@ -28,7 +37,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let environment: AppEnvironment
     private let launchAtLoginController: LaunchAtLoginController
     private let windowModel: MainWindowModel
+    private let appUpdateModel: AppUpdateModel
     private var eventPumpTask: Task<Void, Never>?
+    private var automaticAppUpdateCheckTask: Task<Void, Never>?
     private var sessionState: MonitoringSessionState = .idle
     private var permissionRequestPending = false
     private var permissionRequestWasIssued = false
@@ -48,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.environment = environment
         self.launchAtLoginController = LaunchAtLoginController()
         self.windowModel = windowModel
+        self.appUpdateModel = AppUpdateModel()
         self.hudEventCoordinator = HUDEventCoordinator(
             hud: HUDController(),
             model: windowModel
@@ -139,7 +151,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     coordinator:
                         environment.systemTranslationCoordinator
                 )
-            )
+            ),
+            appUpdateModel: appUpdateModel,
+            onCheckForUpdates: { [weak self] in
+                self?.performUpdateCheck()
+            }
         )
         if !wasLaunchedAtLogin {
             mainWindowController.show()
@@ -149,6 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateStatusItem(isMonitoring: false)
         startEventPump()
         refreshPermissionState()
+        scheduleAutomaticAppUpdateCheck()
         startupPreparationTask = Task { [weak self] in
             guard let self else { return }
             await environment.repairInvalidCoreDictionaryInstallations()
@@ -234,6 +251,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        automaticAppUpdateCheckTask?.cancel()
         environment.systemTranslationCoordinator.shutdown()
         if let selectedInputSourceObserver {
             DistributedNotificationCenter.default()
@@ -247,12 +265,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateStatusItem(isMonitoring: false)
 
         let menu = NSMenu()
+        menu.autoenablesItems = false
         menu.addItem(item("显示主界面", action: #selector(openMainWindow)))
         monitoringMenuItem = item("开启翻译显示", action: #selector(toggleMonitoring))
         menu.addItem(monitoringMenuItem)
         menu.addItem(NSMenuItem.separator())
+        updateMenuItem = item("检查更新…", action: #selector(checkForUpdates))
+        menu.addItem(updateMenuItem)
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(item("退出", action: #selector(quit)))
+        menu.delegate = self
         statusItem.menu = menu
+        updateAppUpdateMenuItem()
     }
 
     private func setupMainMenu() {
@@ -674,6 +698,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return item
     }
 
+    func menuWillOpen(_ menu: NSMenu) {
+        guard menu === statusItem.menu else { return }
+        updateAppUpdateMenuItem()
+    }
+
+    private func updateAppUpdateMenuItem() {
+        guard let updateMenuItem else { return }
+        let presentation = appUpdateModel.status.menuPresentation
+        updateMenuItem.title = presentation.title
+        updateMenuItem.isEnabled = presentation.isEnabled
+    }
+
     @objc private func openMainWindow() {
         showMainWindow()
     }
@@ -694,6 +730,150 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .starting, .stopping:
             break
         }
+    }
+
+    @objc private func checkForUpdates() {
+        let presentation = appUpdateModel.status.menuPresentation
+        if let destinationURL = presentation.destinationURL {
+            NSWorkspace.shared.open(destinationURL)
+            return
+        }
+
+        performUpdateCheck()
+    }
+
+    private func performUpdateCheck() {
+        guard !appUpdateModel.isChecking else { return }
+
+        updateMenuItem.title =
+            AppUpdateStatus.checking.menuPresentation.title
+        updateMenuItem.isEnabled = false
+        showUpdateProgress()
+        Task { [weak self] in
+            guard let self else { return }
+            await appUpdateModel.checkForUpdates()
+            updateAppUpdateMenuItem()
+            showUpdateResult()
+        }
+    }
+
+    private func scheduleAutomaticAppUpdateCheck() {
+        automaticAppUpdateCheckTask?.cancel()
+        automaticAppUpdateCheckTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(30))
+            } catch {
+                return
+            }
+            guard let self, !Task.isCancelled else { return }
+            await appUpdateModel.automaticallyCheckForUpdates()
+            guard !Task.isCancelled else { return }
+            updateAppUpdateMenuItem()
+            automaticAppUpdateCheckTask = nil
+        }
+    }
+
+    private func showUpdateProgress() {
+        dismissUpdatePanel()
+
+        let panel = makeUpdatePanel()
+        updatePanel = panel
+        let content = AppUpdatePanelContent.checking
+        installUpdatePanelContent(
+            AppUpdatePanelView(content: content),
+            size: AppUpdatePanelView.panelSize(for: content),
+            in: panel
+        )
+    }
+
+    private func showUpdateResult() {
+        guard let presentation = appUpdateModel.status.resultPresentation else {
+            dismissUpdatePanel()
+            return
+        }
+
+        presentUpdateResult(presentation)
+    }
+
+    private func presentUpdateResult(
+        _ presentation: AppUpdateResultPresentation
+    ) {
+        guard let panel = updatePanel else { return }
+        pendingUpdateURL = presentation.destinationURL
+        let content = AppUpdatePanelContent.result(presentation)
+
+        installUpdatePanelContent(
+            AppUpdatePanelView(
+                content: content,
+                onPrimaryAction: { [weak self] in
+                    guard let self else { return }
+                    if presentation.destinationURL == nil {
+                        dismissUpdatePanel()
+                    } else {
+                        openUpdateDownload()
+                    }
+                },
+                onSecondaryAction: { [weak self] in
+                    self?.dismissUpdatePanel()
+                }
+            ),
+            size: AppUpdatePanelView.panelSize(for: content),
+            in: panel
+        )
+    }
+
+    private func makeUpdatePanel() -> GlintUpdatePanel {
+        let panel = GlintUpdatePanel(
+            contentRect: .zero,
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.isReleasedWhenClosed = false
+        panel.hidesOnDeactivate = false
+        panel.level = .floating
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = true
+        panel.isMovableByWindowBackground = true
+
+        let contentView = NSView()
+        contentView.wantsLayer = true
+        contentView.layer?.backgroundColor = NSColor.clear.cgColor
+        panel.contentView = contentView
+        return panel
+    }
+
+    private func installUpdatePanelContent<Content: View>(
+        _ content: Content,
+        size: CGSize,
+        in panel: NSPanel
+    ) {
+        let hostingView = NSHostingView(rootView: content)
+        hostingView.sizingOptions = []
+        panel.setContentSize(size)
+
+        guard let contentView = panel.contentView else { return }
+        UpdatePanelContent.install(hostingView, in: contentView)
+        hostingView.frame = contentView.bounds
+        hostingView.autoresizingMask = [.width, .height]
+        panel.center()
+        panel.orderFrontRegardless()
+    }
+
+    @objc private func openUpdateDownload() {
+        if let pendingUpdateURL {
+            NSWorkspace.shared.open(pendingUpdateURL)
+        }
+        dismissUpdatePanel()
+    }
+
+    @objc private func dismissUpdatePanel() {
+        updatePanel?.orderOut(nil)
+        updatePanel = nil
+        pendingUpdateURL = nil
     }
 
     @objc private func startMonitoring() {

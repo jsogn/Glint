@@ -1,3 +1,4 @@
+import GlintCore
 import XCTest
 
 @testable import GlintUI
@@ -78,6 +79,54 @@ final class OverviewFormattingTests: XCTestCase {
         XCTAssertEqual(
             OverviewFormatting.compactModelName("未安装"),
             "未安装"
+        )
+    }
+
+    func testShortcutHintShowsInsertionAndSpeechRanges() {
+        XCTAssertEqual(
+            OverviewFormatting.shortcutHint(
+                insertionShortcut:
+                    TranslationInsertionShortcut(modifiers: [.option]),
+                speechShortcut:
+                    TranslationInsertionShortcut(modifiers: [.command]),
+                maximumTranslationCount: 4
+            ),
+            "按 ⌥1–⌥4 插入译文 · ⌘1–⌘4 朗读译文"
+        )
+    }
+
+    func testShortcutHintUsesSingleNumberForSingleTranslation() {
+        XCTAssertEqual(
+            OverviewFormatting.shortcutHint(
+                insertionShortcut:
+                    TranslationInsertionShortcut(modifiers: [.option]),
+                speechShortcut: nil,
+                maximumTranslationCount: 1
+            ),
+            "按 ⌥1 插入译文"
+        )
+    }
+
+    func testShortcutHintShowsOnlyEnabledAction() {
+        XCTAssertEqual(
+            OverviewFormatting.shortcutHint(
+                insertionShortcut: nil,
+                speechShortcut:
+                    TranslationInsertionShortcut(modifiers: [.command]),
+                maximumTranslationCount: 3
+            ),
+            "按 ⌘1–⌘3 朗读译文"
+        )
+    }
+
+    func testShortcutHintPromptsForConfigurationWhenDisabled() {
+        XCTAssertEqual(
+            OverviewFormatting.shortcutHint(
+                insertionShortcut: nil,
+                speechShortcut: nil,
+                maximumTranslationCount: 4
+            ),
+            "在“通用配置”中设置译文快捷键"
         )
     }
 }

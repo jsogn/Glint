@@ -7,7 +7,9 @@ public final class MainWindowController: NSWindowController, NSWindowDelegate {
 
     public init(
         model: MainWindowModel,
-        auxiliaryContent: AnyView? = nil
+        auxiliaryContent: AnyView? = nil,
+        appUpdateModel: AppUpdateModel = AppUpdateModel(),
+        onCheckForUpdates: @MainActor @escaping () -> Void = {}
     ) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1_040, height: 720),
@@ -30,6 +32,8 @@ public final class MainWindowController: NSWindowController, NSWindowDelegate {
         window.contentViewController = NSHostingController(
             rootView: MainWindowView(
                 model: model,
+                appUpdateModel: appUpdateModel,
+                onCheckForUpdates: onCheckForUpdates,
                 auxiliaryContent: auxiliaryContent
             )
         )

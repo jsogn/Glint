@@ -1295,12 +1295,24 @@ public actor SquirrelIntegrationService {
                 compiledSchemaIDs: compiledSchemaIDs
             )
         } catch {
+            let managedSchemaIDs = compiledSchemaIDs.filter(
+                schemaContainsManagedFilter
+            )
+            guard !managedSchemaIDs.isEmpty else {
+                throw SquirrelIntegrationError.unsupportedSchemaSelection
+            }
+            return managedSchemaIDs
+        }
+        if !schemaIDs.isEmpty {
+            return schemaIDs
+        }
+        let managedSchemaIDs = compiledSchemaIDs.filter(
+            schemaContainsManagedFilter
+        )
+        guard !managedSchemaIDs.isEmpty else {
             throw SquirrelIntegrationError.unsupportedSchemaSelection
         }
-        guard !schemaIDs.isEmpty else {
-            throw SquirrelIntegrationError.unsupportedSchemaSelection
-        }
-        return schemaIDs
+        return managedSchemaIDs
     }
 
     private func readSharedDefaultConfiguration() -> String? {
@@ -1409,6 +1421,18 @@ public actor SquirrelIntegrationService {
             return false
         }
         return patchEditor.containsFilter(in: source)
+    }
+
+    private func schemaContainsManagedFilter(schemaID: String) -> Bool {
+        guard
+            let source = try? String(
+                contentsOf: schemaCustomURL(schemaID: schemaID),
+                encoding: .utf8
+            )
+        else {
+            return false
+        }
+        return patchEditor.containsManagedFilter(in: source)
     }
 
     private func loadLuaAssets() throws -> [(name: String, data: Data)] {

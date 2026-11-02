@@ -3,6 +3,13 @@ import XCTest
 
 final class RimeSchemaPatchEditorTests: XCTestCase {
     private let editor = RimeSchemaPatchEditor()
+    private let managedBlock = """
+        # BEGIN GLINT RIME CANDIDATE BRIDGE
+        __patch:
+          patch/+:
+            engine/filters/@before 0: lua_filter@*glint.candidate_bridge
+        # END GLINT RIME CANDIDATE BRIDGE
+        """
 
     func testCreatesManagedPatchForMissingCustomFile() throws {
         let result = try editor.install(
@@ -12,20 +19,12 @@ final class RimeSchemaPatchEditorTests: XCTestCase {
 
         XCTAssertTrue(result.changed)
         XCTAssertTrue(result.createdFile)
-        XCTAssertEqual(
-            result.source,
-            """
-            patch:
-              engine/filters/+:
-                # BEGIN GLINT RIME CANDIDATE BRIDGE
-                - lua_filter@*glint.candidate_bridge
-                # END GLINT RIME CANDIDATE BRIDGE
-
-            """
-        )
+        XCTAssertEqual(result.source, managedBlock + "\n")
     }
 
-    func testPreservesExistingPatchAndAddsFilterKey() throws {
+    func testAppendsStandalonePatchWithoutChangingExistingConfiguration()
+        throws
+    {
         let source = """
             # User preference
             patch:
@@ -41,26 +40,12 @@ final class RimeSchemaPatchEditorTests: XCTestCase {
 
         XCTAssertTrue(result.changed)
         XCTAssertFalse(result.createdFile)
-        XCTAssertTrue(result.source.hasPrefix(source))
-        XCTAssertTrue(
-            result.source.contains(
-                """
-                  engine/filters/+:
-                    # BEGIN GLINT RIME CANDIDATE BRIDGE
-                    - lua_filter@*glint.candidate_bridge
-                    # END GLINT RIME CANDIDATE BRIDGE
-                """
-            )
-        )
+        XCTAssertEqual(result.source, source + "\n" + managedBlock + "\n")
     }
 
-    func testExtendsExistingFilterList() throws {
+    func testInlinePatchDoesNotNeedStructuralParsing() throws {
         let source = """
-            patch:
-              engine/filters/+:
-                - lua_filter@*user_filter
-              menu:
-                page_size: 5
+            patch: { engine: { filters: [ lua_filter@*user_filter ] } }
             """
 
         let result = try editor.install(
@@ -68,22 +53,46 @@ final class RimeSchemaPatchEditorTests: XCTestCase {
             schemaID: "luna_pinyin"
         )
 
-        XCTAssertTrue(result.changed)
-        XCTAssertTrue(
-            result.source.contains(
-                """
-                  engine/filters/+:
-                    # BEGIN GLINT RIME CANDIDATE BRIDGE
-                    - lua_filter@*glint.candidate_bridge
-                    # END GLINT RIME CANDIDATE BRIDGE
-                    - lua_filter@*user_filter
-                """
-            )
-        )
-        XCTAssertTrue(result.source.contains("  menu:\n    page_size: 5"))
+        XCTAssertEqual(result.source, source + "\n" + managedBlock + "\n")
     }
 
-    func testAlreadyInstalledFilterIsIdempotent() throws {
+    func testRejectsExistingForeignRootPatch() {
+        let source = """
+            patch:
+              menu/page_size: 5
+            __patch:
+              menu/page_size: 9
+            """
+
+        XCTAssertThrowsError(
+            try editor.install(
+                into: source,
+                schemaID: "luna_pinyin"
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? RimeSchemaPatchError,
+                .missingPatchRoot
+            )
+        }
+    }
+
+    func testDuplicatePatchRootIsRejectedWithoutRewriting() throws {
+        let source = """
+            patch:
+              menu/page_size: 5
+            patch:
+              menu/page_size: 9
+            """
+        let result = try? editor.install(
+            into: source,
+            schemaID: "luna_pinyin"
+        )
+
+        XCTAssertNil(result)
+    }
+
+    func testManualRootFilterIsIdempotent() throws {
         let source = """
             patch:
               engine/filters/@before 0: lua_filter@*glint.candidate_bridge
@@ -95,51 +104,55 @@ final class RimeSchemaPatchEditorTests: XCTestCase {
         )
 
         XCTAssertFalse(result.changed)
-        XCTAssertFalse(result.createdFile)
         XCTAssertEqual(result.source, source)
     }
 
-    func testNestedEngineMappingIsRejectedWithoutRewriting() {
+    func testNestedEngineFilterIsIdempotent() throws {
         let source = """
             patch:
               engine:
                 filters:
-                  - lua_filter@*user_filter
+                  - lua_filter@*glint.candidate_bridge
             """
 
-        XCTAssertThrowsError(
-            try editor.install(
-                into: source,
-                schemaID: "luna_pinyin"
-            )
-        ) { error in
-            XCTAssertEqual(
-                error as? RimeSchemaPatchError,
-                .unsupportedEngineStructure
-            )
-        }
+        let result = try editor.install(
+            into: source,
+            schemaID: "luna_pinyin"
+        )
+
+        XCTAssertFalse(result.changed)
+        XCTAssertEqual(result.source, source)
     }
 
-    func testInlineFilterListIsRejectedWithoutGuessing() {
+    func testUnrelatedFilterScalarDoesNotCountAsInstalled() throws {
         let source = """
             patch:
-              engine/filters/+: [ lua_filter@*user_filter ]
+              notes: "use lua_filter@*glint.candidate_bridge"
             """
 
-        XCTAssertThrowsError(
-            try editor.install(
-                into: source,
-                schemaID: "luna_pinyin"
-            )
-        ) { error in
-            XCTAssertEqual(
-                error as? RimeSchemaPatchError,
-                .unsupportedFilterList
-            )
-        }
+        let result = try editor.install(
+            into: source,
+            schemaID: "luna_pinyin"
+        )
+
+        XCTAssertTrue(result.changed)
+        XCTAssertEqual(result.source, source + "\n" + managedBlock + "\n")
     }
 
-    func testRemoveManagedFilterPreservesUserContent() {
+    func testRemovingStandalonePatchBlockRestoresOriginalConfiguration() {
+        let original = """
+            patch:
+              menu/page_size: 5
+            """
+        let installed = original + "\n" + managedBlock + "\n"
+
+        XCTAssertEqual(
+            editor.removeManagedFilter(from: installed),
+            original + "\n"
+        )
+    }
+
+    func testRemovingLegacyManagedFilterPreservesUserContent() {
         let source = """
             patch:
               engine/filters/+:
@@ -151,10 +164,8 @@ final class RimeSchemaPatchEditorTests: XCTestCase {
                 page_size: 5
             """
 
-        let result = editor.removeManagedFilter(from: source)
-
         XCTAssertEqual(
-            result,
+            editor.removeManagedFilter(from: source),
             """
             patch:
               engine/filters/+:
@@ -177,209 +188,7 @@ final class RimeSchemaPatchEditorTests: XCTestCase {
         )
     }
 
-    func testLongerFilterNameIsNotTreatedAsInstalled() throws {
-        let source = """
-            patch:
-              engine/filters/+:
-                - lua_filter@*glint.candidate_bridge_custom
-            """
-
-        let result = try editor.install(
-            into: source,
-            schemaID: "luna_pinyin"
-        )
-
-        XCTAssertTrue(result.changed)
-        XCTAssertTrue(
-            result.source.contains(
-                "- lua_filter@*glint.candidate_bridge\n"
-            )
-        )
-        XCTAssertTrue(
-            result.source.contains(
-                "- lua_filter@*glint.candidate_bridge_custom"
-            )
-        )
-    }
-
-    func testFilterNameInsideAnotherScalarIsNotTreatedAsInstalled()
-        throws
-    {
-        let source = """
-            patch:
-              notes: "use lua_filter@*glint.candidate_bridge"
-            """
-
-        let result = try editor.install(
-            into: source,
-            schemaID: "luna_pinyin"
-        )
-
-        XCTAssertTrue(result.changed)
-        XCTAssertTrue(
-            result.source.contains(
-                "- lua_filter@*glint.candidate_bridge\n"
-            )
-        )
-    }
-
-    func testRemoveManagedFilterDoesNotRemoveLongerFilterName() {
-        let source = """
-            patch:
-              engine/filters/@before 0: lua_filter@*glint.candidate_bridge_custom
-            """
-
-        XCTAssertEqual(
-            editor.removeManagedFilter(from: source),
-            source
-        )
-    }
-
-    func testIncompleteManagedMarkersAreLeftUntouched() {
-        let source = """
-            patch:
-              engine/filters/+:
-                # BEGIN GLINT RIME CANDIDATE BRIDGE
-                - lua_filter@*glint.candidate_bridge
-            """
-
-        XCTAssertEqual(
-            editor.removeManagedFilter(from: source),
-            source
-        )
-    }
-
-    func testDuplicatePatchRootIsRejectedWithoutRewriting() {
-        let source = """
-            patch:
-              menu:
-                page_size: 5
-            patch:
-              menu:
-                page_size: 9
-            """
-
-        XCTAssertThrowsError(
-            try editor.install(
-                into: source,
-                schemaID: "luna_pinyin"
-            )
-        )
-    }
-
-    func testAnchorInPatchRootIsRejectedWithoutRewriting() {
-        let source = """
-            patch:
-              defaults: &defaults
-                menu:
-                  page_size: 5
-            """
-
-        XCTAssertThrowsError(
-            try editor.install(
-                into: source,
-                schemaID: "luna_pinyin"
-            )
-        )
-    }
-
-    func testExactFilterInUnrelatedMappingIsNotTreatedAsInstalled()
-        throws
-    {
-        let source = """
-            patch:
-              labels:
-                value: lua_filter@*glint.candidate_bridge
-            """
-
-        let result = try editor.install(
-            into: source,
-            schemaID: "luna_pinyin"
-        )
-
-        XCTAssertTrue(result.changed)
-        XCTAssertTrue(
-            result.source.contains(
-                "engine/filters/+:\n"
-                    + "    # BEGIN GLINT RIME CANDIDATE BRIDGE\n"
-                    + "    - lua_filter@*glint.candidate_bridge"
-            )
-        )
-    }
-
-    func testExactFilterInsideNestedEngineIsRejected() {
-        let source = """
-            patch:
-              engine:
-                filters:
-                  - lua_filter@*glint.candidate_bridge
-            """
-
-        XCTAssertThrowsError(
-            try editor.install(
-                into: source,
-                schemaID: "luna_pinyin"
-            )
-        )
-    }
-
-    func testManagedMarkersOutsideFilterListAreNotOwned() {
-        let source = """
-            patch:
-              labels:
-                # BEGIN GLINT RIME CANDIDATE BRIDGE
-                - lua_filter@*glint.candidate_bridge
-                # END GLINT RIME CANDIDATE BRIDGE
-            """
-
-        XCTAssertEqual(
-            editor.removeManagedFilter(from: source),
-            source
-        )
-    }
-
-    func testUnsupportedDocumentStructuresFailClosed() {
-        let sources = [
-            """
-            patch:
-            \tmenu:
-            \t  page_size: 5
-            """,
-            """
-            ---
-            patch:
-              menu:
-                page_size: 5
-            """,
-            """
-            __include: shared:/patch
-            patch:
-              menu:
-                page_size: 5
-            """,
-            """
-            patch:
-              engine/filters/+:
-                - lua_filter@*user
-              engine/filters/+:
-                - lua_filter@*another
-            """,
-        ]
-
-        for source in sources {
-            XCTAssertThrowsError(
-                try editor.install(
-                    into: source,
-                    schemaID: "luna_pinyin"
-                ),
-                "Expected fail-closed handling for \(source)"
-            )
-        }
-    }
-
-    func testMalformedManagedMarkerBlockIsNotRepairedByAppending()
-        throws
-    {
+    func testIncompleteManagedMarkersAreNotRepaired() {
         let source = """
             patch:
               engine/filters/+:
@@ -395,29 +204,8 @@ final class RimeSchemaPatchEditorTests: XCTestCase {
         )
     }
 
-    func testRemovingManagedFilterKeepsPreexistingEmptyFilterKey() {
-        let source = """
-            patch:
-              engine/filters/+:
-                # BEGIN GLINT RIME CANDIDATE BRIDGE
-                - lua_filter@*glint.candidate_bridge
-                # END GLINT RIME CANDIDATE BRIDGE
-            """
-
-        XCTAssertEqual(
-            editor.removeManagedFilter(from: source),
-            """
-            patch:
-              engine/filters/+:
-            """
-        )
-    }
-
-    func testExactFilterUnderUnknownFilterPathIsRejected() {
-        let source = """
-            patch:
-              engine/filters/custom: lua_filter@*glint.candidate_bridge
-            """
+    func testCRLFConfigurationFailsClosed() {
+        let source = "patch:\r\n  menu/page_size: 5\r\n"
 
         XCTAssertThrowsError(
             try editor.install(

@@ -76,14 +76,14 @@ final class RimeSchemaListResolverTests: XCTestCase {
         XCTAssertEqual(result, ["luna_pinyin", "luna_pinyin_simp"])
     }
 
-    func testInlineUserSchemaListIsRejectedInsteadOfGuessing() {
+    func testInlineUserSchemaListWithExtraFieldsIsRejected() {
         let shared = """
             schema_list:
               - schema: luna_pinyin
             """
         let custom = """
             patch:
-              schema_list: [ { schema: luna_pinyin_simp } ]
+              schema_list: [ { schema: luna_pinyin_simp, name: test } ]
             """
 
         XCTAssertThrowsError(
@@ -98,6 +98,25 @@ final class RimeSchemaListResolverTests: XCTestCase {
                 .unsupportedSchemaList
             )
         }
+    }
+
+    func testUnambiguousInlineUserSchemaListIsAccepted() throws {
+        let shared = """
+            schema_list:
+              - schema: luna_pinyin
+            """
+        let custom = """
+            patch:
+              schema_list: [ { schema: luna_pinyin_simp } ]
+            """
+
+        let result = try resolver.enabledSchemaIDs(
+            sharedDefault: shared,
+            userDefaultCustom: custom,
+            compiledSchemaIDs: ["luna_pinyin", "luna_pinyin_simp"]
+        )
+
+        XCTAssertEqual(result, ["luna_pinyin_simp"])
     }
 
     func testUnknownSchemaListPatchOperationIsRejected() {

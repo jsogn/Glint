@@ -74,6 +74,26 @@ final class InputMethodSupportPresentationTests: XCTestCase {
         )
     }
 
+    func testManualStateUsesUserFacingSetupLanguage() {
+        let status = makeStatus(
+            state: .manualSetupRequired,
+            detail: "无法安全确认 Rime 当前启用的输入方案"
+        )
+
+        XCTAssertEqual(
+            status.presentation.statusTitle,
+            "需要简单设置"
+        )
+        XCTAssertEqual(
+            status.presentation.description,
+            "按步骤操作一次即可完成。Glint 不会自动修改难以识别的 Rime 配置。"
+        )
+        XCTAssertEqual(
+            status.presentation.primaryActionTitle,
+            "开始设置"
+        )
+    }
+
     func testHeadlineAndActionOmitRedundantRimeNameInsideRimeCard() {
         let states: [InputMethodSupportState] = [
             .available,

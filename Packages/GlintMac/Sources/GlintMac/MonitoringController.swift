@@ -464,19 +464,13 @@ public actor MonitoringController {
             candidateSessionActive,
             offer.choices.indices.contains(choiceIndex),
             !secureInputIsEnabled(),
-            let insertionHostProcessIdentifier,
-            let snapshot = focus.snapshot(),
-            snapshot.processIdentifier == insertionHostProcessIdentifier,
-            snapshot.isEditableTextInput,
-            !snapshot.hasTextSelection,
-            !snapshot.usesProcessFallback
+            let insertionHostProcessIdentifier
         else {
             monitoringLogger.notice(
                 "translation insertion result=rejected"
             )
             return false
         }
-
         let inserted = await translationTextInserter.insert(
             offer.choices[choiceIndex],
             into: insertionHostProcessIdentifier

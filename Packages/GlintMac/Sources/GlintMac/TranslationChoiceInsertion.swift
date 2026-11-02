@@ -197,15 +197,11 @@ struct SystemTranslationKeyboardEventPoster:
 }
 
 struct SystemTranslationTextInserter: TranslationTextInserting {
-    private let focusSnapshot: @Sendable () -> FocusSnapshot?
     private let frontmostProcessIdentifier: @Sendable () -> pid_t?
     private let secureInputIsEnabled: @Sendable () -> Bool
     private let keyboardEventPoster: any TranslationKeyboardEventPosting
 
     init(
-        focusSnapshot: @escaping @Sendable () -> FocusSnapshot? = {
-            FocusMonitor().snapshot()
-        },
         frontmostProcessIdentifier: @escaping @Sendable () -> pid_t? = {
             NSWorkspace.shared.frontmostApplication?.processIdentifier
         },
@@ -215,7 +211,6 @@ struct SystemTranslationTextInserter: TranslationTextInserting {
         keyboardEventPoster: any TranslationKeyboardEventPosting =
             SystemTranslationKeyboardEventPoster()
     ) {
-        self.focusSnapshot = focusSnapshot
         self.frontmostProcessIdentifier = frontmostProcessIdentifier
         self.secureInputIsEnabled = secureInputIsEnabled
         self.keyboardEventPoster = keyboardEventPoster
@@ -225,150 +220,58 @@ struct SystemTranslationTextInserter: TranslationTextInserting {
         _ text: String,
         into processIdentifier: pid_t
     ) async -> Bool {
-        let host =
-            NSRunningApplication(
-                processIdentifier: processIdentifier
-            )?.bundleIdentifier ?? "unknown"
         guard !text.isEmpty else {
             translationChoiceLogger.notice(
-                "insert writer rejected reason=empty host=\(host, privacy: .public)"
+                "insert writer rejected reason=empty target=\(processIdentifier, privacy: .public)"
             )
             return false
         }
         guard !secureInputIsEnabled() else {
             translationChoiceLogger.notice(
-                "insert writer rejected reason=secure_input host=\(host, privacy: .public)"
+                "insert writer rejected reason=secure_input target=\(processIdentifier, privacy: .public)"
             )
             return false
         }
-        guard let firstSnapshot = focusSnapshot() else {
-            translationChoiceLogger.notice(
-                "insert writer rejected reason=focus_missing host=\(host, privacy: .public)"
-            )
-            return false
-        }
-        guard firstSnapshot.processIdentifier == processIdentifier else {
-            translationChoiceLogger.notice(
-                "insert writer rejected reason=pid_changed host=\(host, privacy: .public)"
-            )
-            return false
-        }
-        guard
-            let focusContextIdentifier =
-                firstSnapshot.focusContextIdentifier
-        else {
-            translationChoiceLogger.notice(
-                "insert writer rejected reason=focus_identity_missing host=\(host, privacy: .public)"
-            )
-            return false
-        }
-        guard firstSnapshot.isEditableTextInput else {
-            translationChoiceLogger.notice(
-                "insert writer rejected reason=not_editable host=\(host, privacy: .public)"
-            )
-            return false
-        }
-        guard !firstSnapshot.hasTextSelection else {
-            translationChoiceLogger.notice(
-                "insert writer rejected reason=text_selection host=\(host, privacy: .public)"
-            )
-            return false
-        }
-        guard !firstSnapshot.usesProcessFallback else {
-            translationChoiceLogger.notice(
-                "insert writer rejected reason=process_fallback host=\(host, privacy: .public)"
-            )
-            return false
-        }
-
-        translationChoiceLogger.notice(
-            "insert writer input host=\(host, privacy: .public) composition=\(firstSnapshot.compositionState.logValue, privacy: .public)"
-        )
-        let requiresCancellation =
-            firstSnapshot.compositionState != .inactive
-        if requiresCancellation {
-            translationChoiceLogger.notice(
-                "insert writer cancelling composition state=\(firstSnapshot.compositionState.logValue, privacy: .public)"
-            )
-            guard frontmostProcessIdentifier() == processIdentifier else {
-                translationChoiceLogger.notice(
-                    "insert writer rejected reason=frontmost_changed host=\(host, privacy: .public)"
-                )
-                return false
-            }
-            guard
-                keyboardEventPoster.postKey(
-                    virtualKey: UInt16(kVK_Escape),
-                    isKeyDown: true,
-                    to: processIdentifier
-                ),
-                keyboardEventPoster.postKey(
-                    virtualKey: UInt16(kVK_Escape),
-                    isKeyDown: false,
-                    to: processIdentifier
-                )
-            else {
-                translationChoiceLogger.notice(
-                    "insert writer rejected reason=escape_post_failed host=\(host, privacy: .public)"
-                )
-                return false
-            }
-
-            if firstSnapshot.compositionState == .composing {
-                var compositionEnded = false
-                for _ in 0..<12 {
-                    do {
-                        try await Task.sleep(for: .milliseconds(5))
-                    } catch {
-                        return false
-                    }
-                    guard
-                        let snapshot = focusSnapshot(),
-                        snapshot.processIdentifier == processIdentifier,
-                        snapshot.focusContextIdentifier
-                            == focusContextIdentifier,
-                        snapshot.isEditableTextInput,
-                        !snapshot.hasTextSelection
-                    else {
-                        return false
-                    }
-                    if snapshot.compositionState != .composing {
-                        compositionEnded = true
-                        break
-                    }
-                }
-                guard compositionEnded else {
-                    translationChoiceLogger.notice(
-                        "insert writer rejected reason=composition_not_cancelled host=\(host, privacy: .public)"
-                    )
-                    return false
-                }
-            } else {
-                do {
-                    try await Task.sleep(for: .milliseconds(25))
-                } catch {
-                    return false
-                }
-            }
-        }
-
         guard frontmostProcessIdentifier() == processIdentifier else {
             translationChoiceLogger.notice(
-                "insert writer rejected reason=frontmost_changed host=\(host, privacy: .public)"
+                "insert writer rejected reason=frontmost_changed target=\(processIdentifier, privacy: .public)"
             )
             return false
         }
+        translationChoiceLogger.notice(
+            "insert writer input target=\(processIdentifier, privacy: .public)"
+        )
         guard
-            let finalSnapshot = focusSnapshot(),
-            finalSnapshot.processIdentifier == processIdentifier,
-            finalSnapshot.focusContextIdentifier == focusContextIdentifier,
-            finalSnapshot.isEditableTextInput,
-            !finalSnapshot.hasTextSelection,
-            !finalSnapshot.usesProcessFallback,
-            !secureInputIsEnabled()
+            keyboardEventPoster.postKey(
+                virtualKey: UInt16(kVK_Escape),
+                isKeyDown: true,
+                to: processIdentifier
+            ),
+            keyboardEventPoster.postKey(
+                virtualKey: UInt16(kVK_Escape),
+                isKeyDown: false,
+                to: processIdentifier
+            )
         else {
             translationChoiceLogger.notice(
-                "insert writer rejected reason=target_changed host=\(host, privacy: .public)"
+                "insert writer rejected reason=escape_post_failed target=\(processIdentifier, privacy: .public)"
+            )
+            return false
+        }
+        do {
+            try await Task.sleep(for: .milliseconds(25))
+        } catch {
+            return false
+        }
+        guard frontmostProcessIdentifier() == processIdentifier else {
+            translationChoiceLogger.notice(
+                "insert writer rejected reason=frontmost_changed target=\(processIdentifier, privacy: .public)"
+            )
+            return false
+        }
+        guard !secureInputIsEnabled() else {
+            translationChoiceLogger.notice(
+                "insert writer rejected reason=secure_input target=\(processIdentifier, privacy: .public)"
             )
             return false
         }
@@ -377,22 +280,9 @@ struct SystemTranslationTextInserter: TranslationTextInserting {
             to: processIdentifier
         )
         translationChoiceLogger.notice(
-            "insert writer posted_unicode=\(posted, privacy: .public) transport=targeted_hid host=\(host, privacy: .public) composition=\(firstSnapshot.compositionState.logValue, privacy: .public)"
+            "insert writer posted_unicode=\(posted, privacy: .public) transport=targeted_hid target=\(processIdentifier, privacy: .public)"
         )
         return posted
-    }
-}
-
-private extension TextCompositionState {
-    var logValue: String {
-        switch self {
-        case .unknown:
-            return "unknown"
-        case .composing:
-            return "composing"
-        case .inactive:
-            return "inactive"
-        }
     }
 }
 

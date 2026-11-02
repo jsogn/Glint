@@ -26,6 +26,24 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         XCTAssertEqual(status.protocolVersion, RimeCandidateEnvelope.currentVersion)
     }
 
+    func testStatusUnderstandsUnambiguousInlineSchemaList() async throws {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        try """
+        patch:
+          schema_list: [ { schema: luna_pinyin } ]
+        """.write(
+            to: fixture.defaultCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let status = await fixture.service.status()
+
+        XCTAssertEqual(status.state, .available)
+        XCTAssertEqual(status.schemaIDs, ["luna_pinyin"])
+    }
+
     func testInstallWritesBridgeAndSchemaPatch() async throws {
         let fixture = try SquirrelFixture()
         defer { fixture.cleanup() }
@@ -91,6 +109,124 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
             FileManager.default.fileExists(
                 atPath: fixture.pendingTransactionURL.path
             )
+        )
+    }
+
+    func testInstallAppendsManagedOverrideForNestedEngine() async throws {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = """
+            # Keep this comment
+            patch:
+              engine:
+                filters:
+                  - lua_filter@*user_filter
+            """
+        try original.write(
+            to: fixture.schemaCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let status = try await fixture.service.install()
+
+        XCTAssertEqual(status.state, .installed)
+        XCTAssertEqual(
+            try String(
+                contentsOf: fixture.schemaCustom,
+                encoding: .utf8
+            ),
+            original + """
+
+                # BEGIN GLINT RIME CANDIDATE BRIDGE
+                __patch:
+                  patch/+:
+                    engine/filters/@before 0: lua_filter@*glint.candidate_bridge
+                # END GLINT RIME CANDIDATE BRIDGE
+                """ + "\n"
+        )
+    }
+
+    func testInstallDoesNotDuplicateInlinePatchFilter() async throws {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = """
+            patch:
+              engine/filters/+: [ lua_filter@*glint.candidate_bridge ]
+            """
+        try original.write(
+            to: fixture.schemaCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let status = try await fixture.service.install()
+
+        XCTAssertEqual(status.state, .installed)
+        XCTAssertEqual(
+            try String(
+                contentsOf: fixture.schemaCustom,
+                encoding: .utf8
+            ),
+            original
+        )
+    }
+
+    func testInstallDoesNotDuplicateNestedEngineFilter() async throws {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = """
+            patch:
+              engine:
+                filters:
+                  - lua_filter@*glint.candidate_bridge
+            """
+        try original.write(
+            to: fixture.schemaCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let status = try await fixture.service.install()
+
+        XCTAssertEqual(status.state, .installed)
+        XCTAssertEqual(
+            try String(
+                contentsOf: fixture.schemaCustom,
+                encoding: .utf8
+            ),
+            original
+        )
+    }
+
+    func testUninstallRestoresNestedEngineAfterAppendedOverride()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        let original = """
+            # Keep this comment
+            patch:
+              engine:
+                filters:
+                  - lua_filter@*user_filter
+            """
+        try original.write(
+            to: fixture.schemaCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+        _ = try await fixture.service.install()
+
+        let status = try await fixture.service.uninstall()
+
+        XCTAssertEqual(status.state, .available)
+        XCTAssertEqual(
+            try String(
+                contentsOf: fixture.schemaCustom,
+                encoding: .utf8
+            ),
+            original
         )
     }
 
@@ -211,7 +347,9 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         XCTAssertEqual(fixture.reloadCount.withLock { $0 }, 1)
     }
 
-    func testSynchronizeUpgradeStopsOnUnsupportedSchema() async throws {
+    func testSynchronizeUpgradeStopsWhenManagedSchemaWasReplaced()
+        async throws
+    {
         let fixture = try SquirrelFixture()
         defer { fixture.cleanup() }
         _ = try await fixture.service.install()
@@ -232,14 +370,11 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         do {
             _ = try await fixture.service
                 .synchronizeInstalledSupportIfNeeded()
-            XCTFail("Expected unsupported schema failure")
+            XCTFail("Expected management conflict")
         } catch {
             XCTAssertEqual(
                 error as? SquirrelIntegrationError,
-                .unsupportedSchema(
-                    "luna_pinyin",
-                    .unsupportedEngineStructure
-                )
+                .installConflict
             )
         }
 
@@ -277,7 +412,8 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         defer { fixture.cleanup() }
         try """
         patch:
-          schema_list: [ { schema: luna_pinyin } ]
+          schema_list/@before 0:
+            - schema: luna_pinyin
         """.write(
             to: fixture.defaultCustom,
             atomically: true,
@@ -312,7 +448,8 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         defer { fixture.cleanup() }
         try """
         patch:
-          schema_list: [ { schema: luna_pinyin } ]
+          schema_list/@before 0:
+            - schema: luna_pinyin
         """.write(
             to: fixture.defaultCustom,
             atomically: true,
@@ -323,6 +460,37 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
 
         XCTAssertEqual(status.state, .manualSetupRequired)
         XCTAssertTrue(status.schemaIDs.isEmpty)
+    }
+
+    func testManagedSchemaBlockLetsManualSetupFinish()
+        async throws
+    {
+        let fixture = try SquirrelFixture()
+        defer { fixture.cleanup() }
+        try """
+        patch:
+          schema_list/@before 0:
+            - schema: luna_pinyin
+        """.write(
+            to: fixture.defaultCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+        let editor = RimeSchemaPatchEditor()
+        let managed = try editor.install(
+            into: nil,
+            schemaID: "luna_pinyin"
+        )
+        try managed.source.write(
+            to: fixture.schemaCustom,
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let status = try await fixture.service.install()
+
+        XCTAssertEqual(status.state, .installed)
+        XCTAssertEqual(status.schemaIDs, ["luna_pinyin"])
     }
 
     func testUninstallRestoresExistingCustomConfiguration() async throws {
@@ -648,7 +816,7 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
                 contentsOf: fixture.schemaCustom,
                 encoding: .utf8
             ),
-            "patch:\n  engine/filters/+:\n"
+            ""
         )
         XCTAssertFalse(
             FileManager.default.fileExists(
@@ -830,14 +998,16 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         )
     }
 
-    func testUnsupportedSchemaAbortsBeforeWritingAnything() async throws {
+    func testDuplicatePatchRootsAbortBeforeWritingAnything() async throws {
         let fixture = try SquirrelFixture()
         defer { fixture.cleanup() }
         try """
         patch:
-          engine:
-            filters:
-              - lua_filter@*user_filter
+          menu:
+            page_size: 5
+        patch:
+          menu:
+            page_size: 9
         """.write(
             to: fixture.schemaCustom,
             atomically: true,
@@ -852,7 +1022,7 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
                 error as? SquirrelIntegrationError,
                 .unsupportedSchema(
                     "luna_pinyin",
-                    .unsupportedEngineStructure
+                    .missingPatchRoot
                 )
             )
         }
@@ -1647,16 +1817,18 @@ final class SquirrelIntegrationServiceTests: XCTestCase {
         XCTAssertEqual(status.state, .repairRequired)
     }
 
-    func testStatusRequiresManualSetupForUnsupportedEnabledSchema()
+    func testStatusRequiresManualSetupForDuplicatePatchRoots()
         async throws
     {
         let fixture = try SquirrelFixture()
         defer { fixture.cleanup() }
         try """
         patch:
-          engine:
-            filters:
-              - lua_filter@*user_filter
+          menu:
+            page_size: 5
+        patch:
+          menu:
+            page_size: 9
         """.write(
             to: fixture.schemaCustom,
             atomically: true,

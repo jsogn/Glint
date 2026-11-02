@@ -47,12 +47,16 @@ Squirrel / librime-lua
 
 在“输入法支持”页检测到 Rime 和已部署方案后，用户点击
 “安装支持”并确认；安装不完整时显示“重新安装”。首次安装不会自动发生。
+无法安全自动写入时显示“需要简单设置”，点击后打开应用内四步向导：打开 Rime
+配置文件夹、定位方案的自定义文件、复制受管配置、完成后继续安装。GitHub 技术
+文档只作为“高级说明与排错”入口。
 
 安装器只执行以下操作：
 
 1. 读取 Squirrel 共享配置和用户 `default.custom.yaml`，确定 `schema_list`。
 2. 与 `~/Library/Rime/build/*.schema.yaml` 取交集，只处理已启用且已编译方案。
-3. 预检所有目标 `.custom.yaml`；任一配置不能安全合并时，在任何写操作前停止。
+3. 预检所有目标 `.custom.yaml`；在每个文件末尾追加独立的 Glint 专属
+   `__patch:` 块，通过 `patch/+:` 合并 filter，不进入或改写用户现有 `patch:`。
 4. 比较目标内容，只写入真正变化的文件；已完整安装时直接返回，不重写或重新部署。
 5. 为现有文件保留首次安装前的字节级原件、权限和 SHA256；后续修复继续沿用该原件。
 6. 写入事务日志和事务快照，再原子写入 Lua、helper 和受管 schema 配置。
@@ -110,10 +114,21 @@ helper 权限为 `0700`，Socket 权限为 `0600`。安装器不会下载可执�
 路径检查，并限制在明确允许的 helper、Lua、schema 和 manifest 目标内；目标或
 备份路径的符号链接、越界父目录和不相关 Rime 文件都会被拒绝。
 
-UTF-8 BOM 会原样保留。当前自动编辑器只接受 LF 文本和严格支持的 YAML 子集；
-CRLF、重复 `patch`、anchor/alias、merge key、Rime `__include`、文档分隔符、
-嵌套 `engine`、inline filter list、带缩进的 tab 或其他不确定结构会停止自动
-安装，要求手动合并。
+UTF-8 BOM 会原样保留。自动编辑器不解析或改写用户现有 `patch:`；嵌套 `engine`、
+inline filter list、anchor/alias、merge key 和 Rime `__include` 都不再单独
+阻止安装。安装器只在文件末尾追加：
+
+```yaml
+# BEGIN GLINT RIME CANDIDATE BRIDGE
+__patch:
+  patch/+:
+    engine/filters/@before 0: lua_filter@*glint.candidate_bridge
+# END GLINT RIME CANDIDATE BRIDGE
+```
+
+原有字节、注释和过滤器保持不变；卸载只删除这段受管条目。CRLF、重复 `patch`、
+已有其他顶层 `__patch`、文档分隔符、带缩进的 tab 或其他无法确定追加位置的结构
+仍会停止自动安装，要求手动合并。
 
 “卸载”优先恢复 manifest 记录的原文件，删除安装器创建的受管文件，再重新部署。
 manifest 损坏时退回保守清理路径：只删除 Glint 专用 helper/Lua 路径，并只移除
@@ -122,9 +137,9 @@ manifest 损坏时退回保守清理路径：只删除 Glint 专用 helper/Lua �
 `RimeCandidateBridge` 和 `lua/glint/*.lua` 位于 Glint 专用路径，即使安装前已存在
 旧研究版本，也会在卸载末尾作为托管组件移除，不能恢复成残留文件。
 
-无 manifest 的回退清理只移除完整、精确匹配且位于
-`patch -> engine/filters/+` 下的 Glint 管理块；它不会删除 `.custom.yaml`，也不会
-删除用户原有的 filter、注释或空键。损坏、不完整或位置不正确的管理标记会停止操作。
+无 manifest 的回退清理只移除完整、精确匹配的顶层 `__patch` 管理块，并兼容清理
+旧版本位于 `patch -> engine/filters/+` 下的管理块；它不会删除用户原有的 filter、
+注释或空键。损坏、不完整或位置不正确的管理标记会停止操作。
 
 filter 识别按完整 YAML 标量比较，不使用子串。用户原先手动配置的同一个 filter
 不计入安装器所有权，卸载时保持原样；如果用户之后决定彻底移除 Glint，需要按手动
@@ -138,15 +153,19 @@ filter 识别按完整 YAML 标量比较，不使用子串。用户原先手动�
    `Squirrel.app/Contents/SharedSupport/build/default.yaml`，缺失时回退到同目录的
    `default.yaml`。
 2. 读取 `~/Library/Rime/default.custom.yaml` 中简单的 `schema_list:` 替换或
-   `schema_list/+:` 追加。
+   `schema_list/+:` 追加，包括只包含 `schema` 字段的块式或 inline 列表。
 3. 与已编译 schema 求交集，并保持 Rime 配置顺序。
+4. 如果无法解析 `schema_list`，则使用用户已明确写入 Glint 受管标记的已编译
+   schema，允许应用内向导在用户粘贴配置后完成剩余安装。
 
 以下情况停止自动安装并要求手动配置：
 
-- `schema_list` 使用无法安全解释的嵌套或 inline 结构；
+- `schema_list` 包含 `schema` 以外的字段或其他无法安全解释的 inline 结构；
 - 未知 `schema_list` patch 操作；
-- 使用 anchor、alias、merge key、`__include` 或其他会改变有效合并结果的结构；
-- 目标 `.custom.yaml` 使用嵌套 `engine:`、inline filter list 或其他未支持结构。
+- `default.custom.yaml` 使用 anchor、alias、merge key、`__include` 或其他会改变
+  有效方案列表的结构；
+- 目标 `.custom.yaml` 使用 CRLF、重复顶层 `patch`、文档分隔符、已有其他顶层
+  `__patch`、带缩进的 tab 等无法安全追加的结构。
 
 这样可以避免更新一个输入法后误写到用户未启用的方案，也避免猜测复杂 YAML
 的合并语义。
@@ -217,12 +236,15 @@ Release 产物还必须确认 `Contents/Helpers/RimeCandidateBridge` 和
 
 ## 手动备用安装
 
-仅在自动安装明确提示“需要手动配置”时使用。先备份目标
-`<schema>.custom.yaml`，再把 filter 合并到现有 `patch:` 中：
+仅在应用内向导仍无法完成时使用。先备份目标 `<schema>.custom.yaml`，优先在
+文件末尾追加独立受管块：
 
 ```yaml
-patch:
-  engine/filters/@before 0: lua_filter@*glint.candidate_bridge
+# BEGIN GLINT RIME CANDIDATE BRIDGE
+__patch:
+  patch/+:
+    engine/filters/@before 0: lua_filter@*glint.candidate_bridge
+# END GLINT RIME CANDIDATE BRIDGE
 ```
 
 App 内的资源位于：

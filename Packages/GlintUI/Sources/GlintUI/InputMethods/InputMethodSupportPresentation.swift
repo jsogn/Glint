@@ -52,10 +52,11 @@ extension InputMethodSupportStatus {
             )
         case .manualSetupRequired:
             InputMethodSupportPresentation(
-                statusTitle: "需要手动配置",
+                statusTitle: "需要简单设置",
                 headline: "候选读取支持",
-                description: detail,
-                primaryActionTitle: nil
+                description:
+                    "按步骤操作一次即可完成。Glint 不会自动修改难以识别的 Rime 配置。",
+                primaryActionTitle: "开始设置"
             )
         case .unavailable:
             InputMethodSupportPresentation(

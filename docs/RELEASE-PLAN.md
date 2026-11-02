@@ -9,7 +9,7 @@
 | Team ID | 未配置 | 固定 Apple Developer Team |
 | Hardened Runtime | 正式签名需要；ad-hoc 测试包不可用 | 启用 |
 | 公证 | 无 | Apple notarization + staple |
-| 更新 | 未接入 | Sparkle 2 或等价方案 |
+| 更新 | 菜单栏与“关于”页手动检查并跳转 GitHub | Sparkle 2 或等价方案 |
 | 分发 | 源码或 ad-hoc PKG/DMG | 签名、公证的 PKG/DMG |
 | Homebrew | 实验性 `jsogn/homebrew-glint` | 签名公证后转入正式 Cask 流程 |
 
@@ -143,6 +143,11 @@ OPUS-MT 模型数据与 App 分开发布：
 - 构建失败时保留用户正在运行的 App；测试完成后保持最新 Debug App 运行。
 
 ## 更新策略
+
+App 启动约 30 秒后自动请求 GitHub Latest Release，成功或失败均记录尝试时间，
+24 小时内不重复。自动检查失败保持静默；发现新版本时只在菜单栏、概览和“关于”
+页显示被动提示，不弹窗。用户可随时手动检查并绕过冷却，手动检查失败会显示轻量
+结果。所有检查都只读取版本和发布页地址，不下载或替换 App。
 
 第一轮外部 Beta 只提供签名、公证的 arm64 安装包，不立即启用自动更新。安装和
 TCC 流程稳定后再接入 Sparkle 2：

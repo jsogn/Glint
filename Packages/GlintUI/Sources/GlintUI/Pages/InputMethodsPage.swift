@@ -3,6 +3,7 @@ import SwiftUI
 struct InputMethodsPage: View {
     let model: MainWindowModel
     @State private var pendingAction: PendingInputMethodAction?
+    @State private var manualSetupStatus: InputMethodSupportStatus?
 
     var body: some View {
         PageContainer {
@@ -46,6 +47,12 @@ struct InputMethodsPage: View {
         }
         .task {
             await model.refreshInputMethodSupport()
+        }
+        .sheet(item: $manualSetupStatus) { status in
+            ManualRimeSetupGuide(
+                model: model,
+                schemaIDs: status.schemaIDs
+            )
         }
         .confirmationDialog(
             confirmationTitle,
@@ -121,10 +128,14 @@ struct InputMethodsPage: View {
                 Divider()
                 HStack(spacing: 10) {
                     Button(actionTitle) {
-                        pendingAction =
-                            status.state == .available
-                            ? .install
-                            : .reinstall
+                        if status.state == .manualSetupRequired {
+                            manualSetupStatus = status
+                        } else {
+                            pendingAction =
+                                status.state == .available
+                                ? .install
+                                : .reinstall
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(model.isUpdatingInputMethodSupport)
@@ -144,16 +155,6 @@ struct InputMethodsPage: View {
                     }
                     Spacer()
                 }
-            } else if status.state == .manualSetupRequired {
-                Divider()
-                Link(
-                    "查看手动配置说明",
-                    destination: URL(
-                        string:
-                            "https://github.com/jsogn/Glint/blob/main/docs/SQUIRREL-CANDIDATE-BRIDGE.md"
-                    )!
-                )
-                .font(.callout)
             }
         }
     }

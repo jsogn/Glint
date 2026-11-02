@@ -94,6 +94,8 @@ struct RimeSchemaListResolver {
 
         var replacementIndex: Int?
         var appendIndex: Int?
+        var replacementItems: [String]?
+        var appendItems: [String]?
         for index in (patchIndex + 1)..<patchEnd {
             let content = Self.contentBeforeComment(lines[index])
             guard
@@ -111,15 +113,29 @@ struct RimeSchemaListResolver {
             }
             switch normalizedKey {
             case "schema_list":
-                guard replacementIndex == nil, value.isEmpty else {
+                guard
+                    replacementIndex == nil,
+                    replacementItems == nil
+                else {
                     throw RimeSchemaListError.unsupportedSchemaList
                 }
-                replacementIndex = index
+                if value.isEmpty {
+                    replacementIndex = index
+                } else {
+                    replacementItems = try parseInlineListItems(value)
+                }
             case "schema_list/+":
-                guard appendIndex == nil, value.isEmpty else {
+                guard
+                    appendIndex == nil,
+                    appendItems == nil
+                else {
                     throw RimeSchemaListError.unsupportedSchemaList
                 }
-                appendIndex = index
+                if value.isEmpty {
+                    appendIndex = index
+                } else {
+                    appendItems = try parseInlineListItems(value)
+                }
             case let key where key.hasPrefix("schema_list"):
                 throw RimeSchemaListError.unsupportedSchemaList
             default:
@@ -127,8 +143,19 @@ struct RimeSchemaListResolver {
             }
         }
 
-        guard replacementIndex == nil || appendIndex == nil else {
+        guard
+            replacementIndex == nil || appendIndex == nil,
+            replacementItems == nil || appendItems == nil,
+            replacementIndex == nil || appendItems == nil,
+            appendIndex == nil || replacementItems == nil
+        else {
             throw RimeSchemaListError.unsupportedSchemaList
+        }
+        if let replacementItems {
+            return .replace(replacementItems)
+        }
+        if let appendItems {
+            return .append(appendItems)
         }
         if let replacementIndex {
             return .replace(
@@ -149,6 +176,46 @@ struct RimeSchemaListResolver {
             )
         }
         return nil
+    }
+
+    private func parseInlineListItems(
+        _ value: String
+    ) throws -> [String] {
+        let trimmed = value.trimmingCharacters(in: .whitespaces)
+        guard trimmed.hasPrefix("["), trimmed.hasSuffix("]") else {
+            throw RimeSchemaListError.unsupportedSchemaList
+        }
+        let body = trimmed.dropFirst().dropLast()
+        guard !body.trimmingCharacters(in: .whitespaces).isEmpty else {
+            throw RimeSchemaListError.unsupportedSchemaList
+        }
+        let schemaIDs =
+            try body
+            .split(separator: ",", omittingEmptySubsequences: false)
+            .map { item in
+                let mapping = item.trimmingCharacters(in: .whitespaces)
+                guard
+                    mapping.hasPrefix("{"),
+                    mapping.hasSuffix("}")
+                else {
+                    throw RimeSchemaListError.unsupportedSchemaList
+                }
+                let content = mapping.dropFirst().dropLast()
+                    .trimmingCharacters(in: .whitespaces)
+                let (rawKey, rawValue) = Self.keyAndValue(content)
+                let schemaID = Self.unquoted(rawValue)
+                guard
+                    Self.unquoted(rawKey) == "schema",
+                    Self.isValidSchemaID(schemaID)
+                else {
+                    throw RimeSchemaListError.unsupportedSchemaList
+                }
+                return schemaID
+            }
+        guard !schemaIDs.isEmpty else {
+            throw RimeSchemaListError.unsupportedSchemaList
+        }
+        return schemaIDs
     }
 
     private static func validateSupportedUserOverride(

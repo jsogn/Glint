@@ -4,13 +4,19 @@ public struct MainWindowView: View {
     @State private var selection: SidebarItem? = .overview
     @State private var pluginTab: PluginTab = .dictionary
     private let model: MainWindowModel
+    private let appUpdateModel: AppUpdateModel
+    private let onCheckForUpdates: @MainActor () -> Void
     private let auxiliaryContent: AnyView?
 
     public init(
         model: MainWindowModel,
+        appUpdateModel: AppUpdateModel,
+        onCheckForUpdates: @MainActor @escaping () -> Void,
         auxiliaryContent: AnyView? = nil
     ) {
         self.model = model
+        self.appUpdateModel = appUpdateModel
+        self.onCheckForUpdates = onCheckForUpdates
         self.auxiliaryContent = auxiliaryContent
     }
 
@@ -57,6 +63,7 @@ public struct MainWindowView: View {
         case .overview:
             OverviewPage(
                 model: model,
+                appUpdateModel: appUpdateModel,
                 selection: $selection,
                 openTranslationModels: {
                     pluginTab = .translation
@@ -74,7 +81,10 @@ public struct MainWindowView: View {
         case .permissions:
             PermissionsPage(model: model)
         case .about:
-            AboutPage()
+            AboutPage(
+                updateModel: appUpdateModel,
+                onCheckForUpdates: onCheckForUpdates
+            )
         }
     }
 }
