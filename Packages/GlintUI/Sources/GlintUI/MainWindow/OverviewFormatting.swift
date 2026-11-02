@@ -6,17 +6,18 @@ enum OverviewFormatting {
     }
 
     static func appearance(
-        backgroundStyle: HUDBackgroundStyle = .darkGlass,
+        backgroundStyle: HUDBackgroundStyle = .frostedGlass,
         hudOpacity: Double,
         hudFontSize: Double,
         candidateSpacing: Double
     ) -> String {
         if backgroundStyle != .solid {
-            return String(
-                format: "系统玻璃 · 字号 %.0f pt · 间距 %.0f pt",
-                hudFontSize,
-                candidateSpacing
-            )
+            return "\(backgroundStyle.title) · "
+                + String(
+                    format: "字号 %.0f pt · 间距 %.0f pt",
+                    hudFontSize,
+                    candidateSpacing
+                )
         }
         return String(
             format: "背景不透明度 %.0f%% · 字号 %.0f pt · 间距 %.0f pt",

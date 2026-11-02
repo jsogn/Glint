@@ -136,7 +136,7 @@ struct DisplayPage: View {
                                 preferences.hudOpacity * 100
                             ),
                             binding: $preferences.hudOpacity,
-                            range: 0.4...1.0,
+                            range: DisplayPreferences.hudOpacityRange,
                             step: 0.02,
                             caption: "只调整纯色背景，不改变文字清晰度。"
                         )

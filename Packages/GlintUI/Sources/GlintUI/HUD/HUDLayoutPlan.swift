@@ -59,10 +59,6 @@ struct HUDLayoutMetrics: Equatable {
             (10 * scale).rounded() + density.multiItemHorizontalDelta
         )
         numberSpacing = max(1, (2 * scale).rounded())
-        singleItemVerticalPadding = max(
-            4,
-            (6 * scale).rounded() + density.verticalDelta
-        )
         multiItemVerticalPadding = max(
             2,
             (3 * scale).rounded() + density.verticalDelta
@@ -71,6 +67,8 @@ struct HUDLayoutMetrics: Equatable {
             1,
             (2 * scale).rounded() + density.verticalDelta
         )
+        singleItemVerticalPadding =
+            multiItemVerticalPadding + itemVerticalPadding
         measurementSafetyPadding = 3
         let textFont = NSFont.systemFont(
             ofSize: fontSize,
@@ -79,16 +77,13 @@ struct HUDLayoutMetrics: Equatable {
         let lineHeight = ceil(
             textFont.ascender - textFont.descender + textFont.leading
         )
-        singleItemHeight = max(
-            24,
-            lineHeight + singleItemVerticalPadding * 2
-        )
         multiItemHeight = max(
             24,
             lineHeight
                 + multiItemVerticalPadding * 2
                 + itemVerticalPadding * 2
         )
+        singleItemHeight = multiItemHeight
     }
 }
 

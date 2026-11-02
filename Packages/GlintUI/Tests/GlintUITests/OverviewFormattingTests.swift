@@ -20,6 +20,18 @@ final class OverviewFormattingTests: XCTestCase {
         )
     }
 
+    func testAppearanceUsesFrostedGlassWithoutCustomOpacity() {
+        XCTAssertEqual(
+            OverviewFormatting.appearance(
+                backgroundStyle: .frostedGlass,
+                hudOpacity: 0.92,
+                hudFontSize: 15,
+                candidateSpacing: 5
+            ),
+            "磨砂玻璃 · 字号 15 pt · 间距 5 pt"
+        )
+    }
+
     func testAppearanceSummarizesSolidOpacitySizeAndSpacing() {
         XCTAssertEqual(
             OverviewFormatting.appearance(

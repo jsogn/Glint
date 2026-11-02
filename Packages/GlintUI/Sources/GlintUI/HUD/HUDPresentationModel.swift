@@ -45,10 +45,6 @@ struct HUDLiveView: View {
             maxWidth: .infinity,
             alignment: .leading
         )
-        .environment(
-            \.colorScheme,
-            HUDAppearancePolicy.colorScheme
-        )
     }
 
     private var displayedItems: [HUDItem] {

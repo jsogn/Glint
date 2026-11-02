@@ -105,10 +105,6 @@ struct HUDView: View {
             maxWidth: .infinity,
             alignment: .leading
         )
-        .environment(
-            \.colorScheme,
-            HUDAppearancePolicy.colorScheme
-        )
     }
 }
 
@@ -121,28 +117,38 @@ struct HUDItemRow: View {
     let textOpacity: Double
 
     private var primaryTextColor: Color {
-        usesSystemGlassTextColors
-            ? .primary
-            : appearance.resolvedTextColor
+        if usesSystemMaterialTextColors {
+            return .primary
+        }
+        if usesFixedFrostedTextColors {
+            return .white
+        }
+        return appearance.resolvedTextColor
     }
 
     private var secondaryTextColor: Color {
-        usesSystemGlassTextColors
-            ? .secondary
-            : appearance.resolvedSecondaryTextColor
+        if usesSystemMaterialTextColors {
+            return .secondary
+        }
+        if usesFixedFrostedTextColors {
+            return .white.opacity(0.72)
+        }
+        return appearance.resolvedSecondaryTextColor
     }
 
-    private var usesSystemGlassTextColors: Bool {
+    private var usesSystemMaterialTextColors: Bool {
         guard
             !appearance.usesCustomTextColor,
-            appearance.backgroundStyle != .solid
+            appearance.backgroundStyle == .darkGlass
         else {
             return false
         }
-        if #available(macOS 26.0, *) {
-            return true
-        }
-        return false
+        return true
+    }
+
+    private var usesFixedFrostedTextColors: Bool {
+        !appearance.usesCustomTextColor
+            && appearance.backgroundStyle == .frostedGlass
     }
 
     var body: some View {
@@ -293,6 +299,24 @@ private struct HUDSurfaceStyle: ViewModifier {
                 .overlay {
                     Capsule().strokeBorder(.separator, lineWidth: 1)
                 }
+        } else if appearance.backgroundStyle == .frostedGlass {
+            content
+                .background {
+                    HUDNativeMaterialBackground(
+                        material: .popover,
+                        blendingMode: materialBlendingMode,
+                        appearance: NSAppearance(named: .darkAqua),
+                        state: .active
+                    )
+                    .clipShape(Capsule())
+                }
+                .overlay {
+                    Capsule()
+                        .strokeBorder(
+                            Color.white.opacity(0.09),
+                            lineWidth: 0.5
+                        )
+                }
         } else if #available(macOS 26.0, *) {
             content
                 .glassEffect(.regular, in: Capsule())
@@ -300,7 +324,6 @@ private struct HUDSurfaceStyle: ViewModifier {
             content
                 .background {
                     HUDNativeMaterialBackground(
-                        backgroundStyle: appearance.backgroundStyle,
                         blendingMode: materialBlendingMode
                     )
                     .clipShape(Capsule())
@@ -310,39 +333,38 @@ private struct HUDSurfaceStyle: ViewModifier {
 }
 
 struct HUDNativeMaterialBackground: NSViewRepresentable {
-    let backgroundStyle: HUDBackgroundStyle?
+    let material: NSVisualEffectView.Material
     let blendingMode: NSVisualEffectView.BlendingMode
+    let appearance: NSAppearance?
+    let state: NSVisualEffectView.State
 
     init(
-        backgroundStyle: HUDBackgroundStyle? = nil,
-        blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+        material: NSVisualEffectView.Material = .hudWindow,
+        blendingMode: NSVisualEffectView.BlendingMode = .behindWindow,
+        appearance: NSAppearance? = nil,
+        state: NSVisualEffectView.State = .active
     ) {
-        self.backgroundStyle = backgroundStyle
+        self.material = material
         self.blendingMode = blendingMode
+        self.appearance = appearance
+        self.state = state
     }
 
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
-        view.material = .hudWindow
+        view.material = material
         view.blendingMode = blendingMode
-        view.state = .active
+        view.state = state
         view.isEmphasized = false
-        view.appearance = resolvedAppearance
+        view.appearance = appearance
         return view
     }
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
         nsView.blendingMode = blendingMode
-        nsView.appearance = resolvedAppearance
-    }
-
-    private var resolvedAppearance: NSAppearance? {
-        switch backgroundStyle {
-        case .darkGlass:
-            return HUDAppearancePolicy.panelAppearance
-        case .solid, nil:
-            return nil
-        }
+        nsView.appearance = appearance
+        nsView.state = state
     }
 }
 

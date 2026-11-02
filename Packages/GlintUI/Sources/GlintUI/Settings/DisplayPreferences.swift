@@ -30,6 +30,8 @@ public final class DisplayPreferences {
     public static let candidateDwellDurationRange = 0.05...0.3
     public static let defaultCandidateDwellDuration = 0.10
     public static let defaultCandidateSpacing = 6.0
+    public static let hudOpacityRange = 0.4...1.0
+    public static let defaultHUDOpacity = 0.8
 
     private enum Key {
         static let position = "display.position"
@@ -37,8 +39,7 @@ public final class DisplayPreferences {
         static let candidateSpacing = "display.candidateSpacing"
         static let hudBackgroundStyle = "display.hudBackgroundStyle"
         static let hudUsesCustomTextColor = "display.hudUsesCustomTextColor"
-        static let hudGlassOpacity = "display.hudGlassOpacity"
-        static let hudSolidOpacity = "display.hudSolidOpacity"
+        static let hudOpacity = "display.hudOpacity"
         static let hudTextColor = "display.hudTextColor"
         static let hudBackgroundColor = "display.hudBackgroundColor"
         static let hudFontSize = "display.hudFontSize"
@@ -122,40 +123,14 @@ public final class DisplayPreferences {
         }
     }
 
-    public var hudGlassOpacity: Double {
-        didSet {
-            let clamped = Self.clampedOpacity(hudGlassOpacity)
-            if clamped != hudGlassOpacity {
-                hudGlassOpacity = clamped
-                return
-            }
-            defaults.set(clamped, forKey: Key.hudGlassOpacity)
-        }
-    }
-
-    public var hudSolidOpacity: Double {
-        didSet {
-            let clamped = Self.clampedOpacity(hudSolidOpacity)
-            if clamped != hudSolidOpacity {
-                hudSolidOpacity = clamped
-                return
-            }
-            defaults.set(clamped, forKey: Key.hudSolidOpacity)
-        }
-    }
-
     public var hudOpacity: Double {
-        get {
-            hudBackgroundStyle == .solid
-                ? hudSolidOpacity
-                : hudGlassOpacity
-        }
-        set {
-            if hudBackgroundStyle == .solid {
-                hudSolidOpacity = newValue
-            } else {
-                hudGlassOpacity = newValue
+        didSet {
+            let clamped = Self.clampedOpacity(hudOpacity)
+            if clamped != hudOpacity {
+                hudOpacity = clamped
+                return
             }
+            defaults.set(clamped, forKey: Key.hudOpacity)
         }
     }
 
@@ -273,10 +248,11 @@ public final class DisplayPreferences {
         let storedBackgroundStyle = defaults.string(
             forKey: Key.hudBackgroundStyle
         )
-        self.hudBackgroundStyle =
+        let initialBackgroundStyle =
             storedBackgroundStyle.flatMap(
                 HUDBackgroundStyle.init(rawValue:)
-            ) ?? .darkGlass
+            ) ?? .frostedGlass
+        self.hudBackgroundStyle = initialBackgroundStyle
 
         let storedUsesCustomTextColor =
             defaults.object(
@@ -284,20 +260,18 @@ public final class DisplayPreferences {
             ) as? Bool
         self.hudUsesCustomTextColor = storedUsesCustomTextColor ?? false
 
-        let storedGlassOpacity =
+        let storedHUDOpacity =
             defaults.object(
-                forKey: Key.hudGlassOpacity
+                forKey: Key.hudOpacity
             ) as? Double
-        let storedSolidOpacity =
-            defaults.object(
-                forKey: Key.hudSolidOpacity
-            ) as? Double
-        self.hudGlassOpacity = Self.clampedOpacity(
-            storedGlassOpacity ?? 0.8
+        let resolvedHUDOpacity = Self.clampedOpacity(
+            storedHUDOpacity
+                ?? Self.defaultHUDOpacity
         )
-        self.hudSolidOpacity = Self.clampedOpacity(
-            storedSolidOpacity ?? 0.8
-        )
+        self.hudOpacity = resolvedHUDOpacity
+        if storedHUDOpacity != resolvedHUDOpacity {
+            defaults.set(resolvedHUDOpacity, forKey: Key.hudOpacity)
+        }
 
         self.hudTextColor =
             Self.storedColor(
@@ -350,12 +324,11 @@ public final class DisplayPreferences {
     }
 
     public func resetHUDAppearance() {
-        hudBackgroundStyle = .darkGlass
+        hudBackgroundStyle = .frostedGlass
         hudUsesCustomTextColor = false
         hudTextColor = HUDAppearance.defaultTextColor
         hudBackgroundColor = HUDAppearance.defaultBackgroundColor
-        hudGlassOpacity = 0.8
-        hudSolidOpacity = 0.8
+        hudOpacity = Self.defaultHUDOpacity
         hudFontSize = 14
         hudDensity = .standard
         hudSelectedTranslationSpacing = 14
@@ -410,8 +383,11 @@ public final class DisplayPreferences {
     }
 
     private static func clampedOpacity(_ value: Double) -> Double {
-        guard value.isFinite else { return 0.8 }
-        return min(max(value, 0.4), 1.0)
+        guard value.isFinite else { return defaultHUDOpacity }
+        return min(
+            max(value, hudOpacityRange.lowerBound),
+            hudOpacityRange.upperBound
+        )
     }
 
     private static func clampedMaximumTranslationCount(

@@ -127,6 +127,7 @@ final class DisplayPreferencesTests: XCTestCase {
         preferences.candidateSpacing = .nan
         XCTAssertEqual(preferences.candidateSpacing, 6)
 
+        preferences.hudBackgroundStyle = .solid
         preferences.hudOpacity = 2
         XCTAssertEqual(preferences.hudOpacity, 1)
         preferences.hudOpacity = 0
@@ -272,14 +273,14 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
-    func testHUDAppearanceDefaultsUseDarkGlass() throws {
+    func testHUDAppearanceDefaultsUseFrostedGlass() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let preferences = DisplayPreferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.hudBackgroundStyle, .darkGlass)
+        XCTAssertEqual(preferences.hudBackgroundStyle, .frostedGlass)
         XCTAssertFalse(preferences.hudUsesCustomTextColor)
         XCTAssertEqual(preferences.hudOpacity, 0.8, accuracy: 0.001)
         XCTAssertEqual(preferences.hudFontSize, 14)
@@ -378,23 +379,6 @@ final class DisplayPreferencesTests: XCTestCase {
         reloaded.maximumTranslationCount = 0
         XCTAssertEqual(reloaded.maximumTranslationCount, 1)
         XCTAssertEqual(observed, [6])
-    }
-
-    @MainActor
-    func testGlassAndSolidOpacityAreStoredSeparately() throws {
-        let suiteName = "GlintUITests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        let preferences = DisplayPreferences(defaults: defaults)
-        preferences.hudGlassOpacity = 0.76
-        preferences.hudBackgroundStyle = .solid
-        preferences.hudSolidOpacity = 0.64
-
-        preferences.hudBackgroundStyle = .darkGlass
-        XCTAssertEqual(preferences.hudOpacity, 0.76, accuracy: 0.001)
-        preferences.hudBackgroundStyle = .solid
-        XCTAssertEqual(preferences.hudOpacity, 0.64, accuracy: 0.001)
     }
 
 }

@@ -1,24 +1,20 @@
 import AppKit
 import SwiftUI
 
-@MainActor
-enum HUDAppearancePolicy {
-    static let colorScheme: ColorScheme = .dark
-    static let panelAppearance = NSAppearance(named: .darkAqua)
-}
-
 public enum HUDLayoutStyle: Equatable, Sendable {
     case selectedTranslations
     case candidateRow
 }
 
 public enum HUDBackgroundStyle: String, CaseIterable, Sendable {
+    case frostedGlass
     case darkGlass
     case solid
 
     public var title: String {
         switch self {
         case .darkGlass: return "系统玻璃"
+        case .frostedGlass: return "磨砂玻璃"
         case .solid: return "纯色"
         }
     }
@@ -120,7 +116,7 @@ public struct HUDAppearance: Equatable, Sendable {
     public var selectedTranslationSpacing: Double
 
     public init(
-        backgroundStyle: HUDBackgroundStyle = .darkGlass,
+        backgroundStyle: HUDBackgroundStyle = .frostedGlass,
         textColor: HUDColor = Self.defaultTextColor,
         backgroundColor: HUDColor = Self.defaultBackgroundColor,
         usesCustomTextColor: Bool = false,

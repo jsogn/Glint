@@ -919,8 +919,52 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(metrics.singleItemHorizontalPadding, 12)
         XCTAssertEqual(metrics.itemHorizontalPadding, 5)
         XCTAssertEqual(metrics.numberSpacing, 2)
-        XCTAssertEqual(metrics.singleItemHeight, 29)
+        XCTAssertEqual(metrics.singleItemHeight, 27)
         XCTAssertEqual(metrics.multiItemHeight, 27)
+    }
+
+    @MainActor
+    func testHUDHeightRemainsStableAcrossItemCountsAndAppearance() {
+        let singleItem = [
+            HUDItem(id: 0, text: "WeChat")
+        ]
+        let multipleItems = [
+            HUDItem(id: 0, text: "WeChat"),
+            HUDItem(id: 1, text: "WeChat input method"),
+            HUDItem(id: 2, text: "WeChat message"),
+        ]
+
+        for fontSize in stride(from: 12.0, through: 18.0, by: 1) {
+            for density in HUDDensity.allCases {
+                let appearance = HUDAppearance(
+                    fontSize: fontSize,
+                    density: density
+                )
+                for layoutStyle in [
+                    HUDLayoutStyle.selectedTranslations,
+                    .candidateRow,
+                ] {
+                    let singleSize = HUDLayoutPlan.panelSize(
+                        for: singleItem,
+                        maximumWidth: 2_000,
+                        layoutStyle: layoutStyle,
+                        appearance: appearance
+                    )
+                    let multipleSize = HUDLayoutPlan.panelSize(
+                        for: multipleItems,
+                        maximumWidth: 2_000,
+                        layoutStyle: layoutStyle,
+                        appearance: appearance
+                    )
+
+                    XCTAssertEqual(
+                        singleSize.height,
+                        multipleSize.height,
+                        "\(fontSize)pt \(density.rawValue) \(layoutStyle)"
+                    )
+                }
+            }
+        }
     }
 
     @MainActor
@@ -1154,7 +1198,7 @@ final class HUDLayoutTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(metrics.singleItemHeight, 28)
+        XCTAssertEqual(metrics.singleItemHeight, 24)
         XCTAssertEqual(metrics.multiItemHeight, 24)
     }
 

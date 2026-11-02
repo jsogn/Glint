@@ -49,7 +49,6 @@ public final class HUDController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.appearance = HUDAppearancePolicy.panelAppearance
         panel.hasShadow = true
         panel.ignoresMouseEvents = true
         panel.isReleasedWhenClosed = false
@@ -57,7 +56,6 @@ public final class HUDController {
         let hostingView = NSHostingView(
             rootView: HUDLiveView(model: contentModel)
         )
-        hostingView.appearance = HUDAppearancePolicy.panelAppearance
         // HUDGeometryResolver owns the panel geometry. Without this,
         // NSHostingView can shrink the panel to its intrinsic content height
         // after ordering it on screen, moving the candidate-facing edge.

@@ -1,12 +1,130 @@
+import AppKit
 import Foundation
+import SwiftUI
 import XCTest
 @testable import GlintUI
 
 final class HUDAppearanceTests: XCTestCase {
     @MainActor
-    func testHUDUsesFixedDarkGlassAppearance() {
-        XCTAssertEqual(HUDAppearancePolicy.colorScheme, .dark)
-        XCTAssertEqual(HUDAppearancePolicy.panelAppearance?.name, .darkAqua)
+    func testHUDPanelUsesSystemAppearance() throws {
+        let hud = HUDController()
+        let panel = try XCTUnwrap(
+            NSApp.windows.first {
+                $0.level == .popUpMenu
+                    && $0.styleMask.contains(.borderless)
+                    && $0.styleMask.contains(.nonactivatingPanel)
+            }
+        )
+
+        XCTAssertNil(panel.appearance)
+        XCTAssertNil(panel.contentView?.appearance)
+        _ = hud
+    }
+
+    @MainActor
+    func testHUDNativeMaterialUsesSystemAppearance() throws {
+        let hostingView = NSHostingView(
+            rootView: HUDNativeMaterialBackground()
+        )
+        hostingView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 40
+        )
+        hostingView.layoutSubtreeIfNeeded()
+
+        let materialView = try XCTUnwrap(
+            hostingView.descendants.first {
+                $0 is NSVisualEffectView
+            } as? NSVisualEffectView
+        )
+        XCTAssertNil(materialView.appearance)
+    }
+
+    @MainActor
+    func testSystemGlassUsesLiquidGlassOnMacOS26() throws {
+        guard #available(macOS 26.0, *) else {
+            throw XCTSkip("System glass uses Liquid Glass on macOS 26+")
+        }
+
+        let hostingView = NSHostingView(
+            rootView: HUDView(
+                text: "hello",
+                appearance: HUDAppearance(
+                    backgroundStyle: .darkGlass
+                )
+            )
+        )
+        hostingView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 40
+        )
+        hostingView.layoutSubtreeIfNeeded()
+
+        XCTAssertFalse(
+            hostingView.descendants.contains {
+                $0 is NSVisualEffectView
+            }
+        )
+    }
+
+    @MainActor
+    func testFrostedGlassUsesStableDarkPopoverMaterial() throws {
+        let hostingView = NSHostingView(
+            rootView: HUDView(
+                text: "hello",
+                appearance: HUDAppearance(
+                    backgroundStyle: .frostedGlass
+                )
+            )
+        )
+        hostingView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 40
+        )
+        hostingView.layoutSubtreeIfNeeded()
+
+        let materialView = try XCTUnwrap(
+            hostingView.descendants.first {
+                $0 is NSVisualEffectView
+            } as? NSVisualEffectView
+        )
+        XCTAssertEqual(materialView.material, .popover)
+        XCTAssertEqual(materialView.blendingMode, .behindWindow)
+        XCTAssertEqual(materialView.appearance?.name, .darkAqua)
+        XCTAssertEqual(materialView.state, .active)
+    }
+
+    @MainActor
+    func testFrostedGlassIgnoresConfiguredBackgroundOpacity() throws {
+        let hostingView = NSHostingView(
+            rootView: HUDView(
+                text: "hello",
+                appearance: HUDAppearance(
+                    backgroundStyle: .frostedGlass
+                ),
+                backgroundOpacity: 0.88
+            )
+        )
+        hostingView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 40
+        )
+        hostingView.layoutSubtreeIfNeeded()
+
+        let materialView = try XCTUnwrap(
+            hostingView.descendants.first {
+                $0 is NSVisualEffectView
+            } as? NSVisualEffectView
+        )
+        XCTAssertEqual(materialView.alphaValue, 1, accuracy: 0.001)
     }
 
     func testSelectedTranslationSpacingIsClamped() {
@@ -25,7 +143,7 @@ final class HUDAppearanceTests: XCTestCase {
     func testBackgroundStyleTitlesStaySimple() {
         XCTAssertEqual(
             HUDBackgroundStyle.allCases.map(\.title),
-            ["系统玻璃", "纯色"]
+            ["磨砂玻璃", "系统玻璃", "纯色"]
         )
     }
 
@@ -54,10 +172,10 @@ final class HUDAppearanceTests: XCTestCase {
     }
 
     func testAutomaticTextColorUsesDefaultTextColor() {
-        let darkGlass = HUDAppearance()
+        let appearance = HUDAppearance()
 
         XCTAssertEqual(
-            darkGlass.effectiveTextColor,
+            appearance.effectiveTextColor,
             HUDAppearance.defaultTextColor
         )
     }
@@ -65,5 +183,11 @@ final class HUDAppearanceTests: XCTestCase {
     func testFontSizeIsClampedToSupportedRange() {
         XCTAssertEqual(HUDAppearance(fontSize: 8).fontSize, 12)
         XCTAssertEqual(HUDAppearance(fontSize: 30).fontSize, 18)
+    }
+}
+
+private extension NSView {
+    var descendants: [NSView] {
+        subviews + subviews.flatMap(\.descendants)
     }
 }
