@@ -62,3 +62,15 @@ public struct TranslationRequest: Sendable, Equatable {
         self.direction = direction
     }
 }
+
+public enum TranslationReadiness:
+    Sendable, Equatable
+{
+    case idle
+    case preparing(TranslationTarget)
+    case ready(TranslationTarget)
+    case needsSetup(TranslationTarget, String)
+    case failed(TranslationTarget, String)
+    case unsupported(TranslationTarget)
+    case superseded
+}

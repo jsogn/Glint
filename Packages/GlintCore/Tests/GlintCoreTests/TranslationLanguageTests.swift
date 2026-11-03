@@ -20,4 +20,18 @@ final class TranslationLanguageTests: XCTestCase {
         XCTAssertEqual(request.direction.target, .japanese)
         XCTAssertEqual(request.direction.source, .simplifiedChinese)
     }
+
+    func testReadinessRetainsTargetSpecificState() {
+        XCTAssertEqual(
+            TranslationReadiness.ready(.japanese),
+            .ready(.japanese)
+        )
+        XCTAssertEqual(
+            TranslationReadiness.needsSetup(
+                .japanese,
+                "需要安装语言包"
+            ),
+            .needsSetup(.japanese, "需要安装语言包")
+        )
+    }
 }

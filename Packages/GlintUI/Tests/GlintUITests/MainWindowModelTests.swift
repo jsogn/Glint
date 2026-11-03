@@ -7,6 +7,48 @@ import XCTest
 
 final class MainWindowModelTests: XCTestCase {
     @MainActor
+    func testLanguageSwitchUpdatesPerLanguageModelSelection() async throws {
+        let context = try makeMultilingualContext()
+        defer { context.cleanup() }
+        context.model.changeTranslationTargetAction = { target in
+            .ready(target)
+        }
+
+        await context.model.setTranslationTarget(.japanese)
+
+        XCTAssertEqual(context.model.translationTarget, .japanese)
+        XCTAssertEqual(
+            context.model.activeModelID,
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertEqual(
+            context.store.selectedModelID(for: .english),
+            SystemTranslationModel.appleTranslationID
+        )
+    }
+
+    @MainActor
+    func testJapaneseFiltersEnglishOnlyModels() {
+        let manifest = translationManifest(
+            id: "english-only",
+            targets: [.english]
+        )
+
+        XCTAssertFalse(
+            MainWindowModel.supports(
+                manifest,
+                target: .japanese
+            )
+        )
+        XCTAssertTrue(
+            MainWindowModel.supports(
+                manifest,
+                target: .english
+            )
+        )
+    }
+
+    @MainActor
     func testSystemTranslationPreparationDoesNotChangeSelection()
         async throws
     {
@@ -329,9 +371,11 @@ final class MainWindowModelTests: XCTestCase {
         let suiteName = "GlintDownloadedOPUSTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        TranslationModelSelection.select(
+        let store = TranslationSelectionStore(defaults: defaults)
+        store.migrateIfNeeded()
+        store.selectModel(
             TranslationModelSelection.opusMTModelID,
-            in: defaults
+            for: .english
         )
 
         let manifest = translationManifest(
@@ -359,7 +403,8 @@ final class MainWindowModelTests: XCTestCase {
         let model = MainWindowModel(
             pluginManager: manager,
             catalogURL: catalogURL,
-            defaults: defaults
+            defaults: defaults,
+            translationSelectionStore: store
         )
 
         await model.refreshInstalledPlugins()
@@ -1361,14 +1406,16 @@ final class MainWindowModelTests: XCTestCase {
             using: PluginManager(baseDirectory: fixture.root),
             root: fixture.root
         )
-        TranslationModelSelection.select(
-            fixture.manifest.id,
-            in: fixture.defaults
+        let store = TranslationSelectionStore(
+            defaults: fixture.defaults
         )
+        store.migrateIfNeeded()
+        store.selectModel(fixture.manifest.id, for: .english)
         let model = MainWindowModel(
             pluginManager: PluginManager(baseDirectory: fixture.root),
             catalogURL: nil,
-            defaults: fixture.defaults
+            defaults: fixture.defaults,
+            translationSelectionStore: store
         )
         await model.refreshInstalledPlugins()
         var checkedModelIDs: [String] = []
@@ -1912,7 +1959,8 @@ final class MainWindowModelTests: XCTestCase {
         version: String = "1.0",
         runtime: String = "mlx",
         source: PluginSource = .catalog,
-        summary: String? = nil
+        summary: String? = nil,
+        targets: [TranslationTarget] = [.english]
     ) -> PluginManifest {
         PluginManifest(
             id: id,
@@ -1926,7 +1974,8 @@ final class MainWindowModelTests: XCTestCase {
             license: "MIT",
             minRAMBytes: 0,
             summary: summary,
-            source: source
+            source: source,
+            translationTargets: targets
         )
     }
 
@@ -2114,6 +2163,42 @@ private func makeContext(
         ),
         suiteName: suiteName,
         defaults: defaults,
+        root: root
+    )
+}
+
+@MainActor
+private struct MultilingualContext {
+    let model: MainWindowModel
+    let store: TranslationSelectionStore
+    let defaults: UserDefaults
+    let suiteName: String
+    let root: URL
+
+    func cleanup() {
+        defaults.removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: root)
+    }
+}
+
+@MainActor
+private func makeMultilingualContext() throws -> MultilingualContext {
+    let suiteName = "GlintMultilingualUI.\(UUID().uuidString)"
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+    let store = TranslationSelectionStore(defaults: defaults)
+    store.migrateIfNeeded()
+    let root = FileManager.default.temporaryDirectory
+        .appendingPathComponent(suiteName, isDirectory: true)
+    return MultilingualContext(
+        model: MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil,
+            defaults: defaults,
+            translationSelectionStore: store
+        ),
+        store: store,
+        defaults: defaults,
+        suiteName: suiteName,
         root: root
     )
 }

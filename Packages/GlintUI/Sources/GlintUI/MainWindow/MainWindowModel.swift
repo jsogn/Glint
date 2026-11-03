@@ -145,6 +145,9 @@ public final class MainWindowModel {
     public private(set) var isCancellingInstallation = false
     public private(set) var installProgress: [String: PluginInstallProgress] = [:]
     public private(set) var catalogError: String?
+    public private(set) var translationTarget: TranslationTarget
+    public private(set) var translationReadiness: TranslationReadiness = .idle
+    public private(set) var isChangingTranslationTarget = false
     public private(set) var activeModelID: String
     public private(set) var translationMode: TranslationMode
     public private(set) var isImportingLocalModel = false
@@ -178,6 +181,8 @@ public final class MainWindowModel {
     private let builtInPlugins: [PluginManifest]
     @ObservationIgnored
     private let defaults: UserDefaults
+    @ObservationIgnored
+    private let translationSelectionStore: TranslationSelectionStore
     @ObservationIgnored
     private let now: @MainActor () -> Date
     @ObservationIgnored
@@ -245,6 +250,16 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var releaseTranslationModelAction: @MainActor (String) async -> Void = { _ in }
     @ObservationIgnored
+    public var changeTranslationTargetAction:
+        @MainActor (TranslationTarget) async -> TranslationReadiness = {
+            target in .failed(target, "翻译语言切换不可用")
+        }
+    @ObservationIgnored
+    public var selectTranslationModelAction:
+        @MainActor (String, TranslationTarget) async -> TranslationReadiness = {
+            _, target in .failed(target, "翻译模型切换不可用")
+        }
+    @ObservationIgnored
     public var translationModeAction: @MainActor (TranslationMode) -> Void = { _ in }
     @ObservationIgnored
     public var translationConfigurationChangedAction: @MainActor () -> Void = {}
@@ -289,6 +304,7 @@ public final class MainWindowModel {
         builtInPlugins: [PluginManifest] = [],
         catalogURL: URL? = nil,
         defaults: UserDefaults = .standard,
+        translationSelectionStore: TranslationSelectionStore? = nil,
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.generalPreferences = generalPreferences ?? GeneralPreferences()
@@ -304,9 +320,88 @@ public final class MainWindowModel {
                 defaults: defaults
             )
         self.defaults = defaults
+        let selectionStore =
+            translationSelectionStore
+            ?? TranslationSelectionStore(defaults: defaults)
+        if translationSelectionStore == nil {
+            selectionStore.migrateIfNeeded()
+        }
+        self.translationSelectionStore = selectionStore
+        let selectedTarget = selectionStore.selectedTarget
+        self.translationTarget = selectedTarget
         self.now = now
-        self.activeModelID = TranslationModelSelection.selected(in: defaults)
+        self.activeModelID = selectionStore.selectedModelID(
+            for: selectedTarget
+        )
         self.translationMode = TranslationModeSelection.selected(in: defaults)
+    }
+
+    public static func supports(
+        _ plugin: PluginManifest,
+        target: TranslationTarget
+    ) -> Bool {
+        plugin.type == .translation
+            && plugin.supportedTranslationTargets.contains(target)
+    }
+
+    public var isEnglishTarget: Bool {
+        translationTarget == .english
+    }
+
+    public var compatibleTranslationPlugins: [PluginManifest] {
+        translationPlugins.filter {
+            Self.supports($0, target: translationTarget)
+        }
+    }
+
+    public func setTranslationTarget(
+        _ target: TranslationTarget
+    ) async {
+        guard target != translationTarget,
+            !isChangingTranslationTarget
+        else {
+            return
+        }
+        isChangingTranslationTarget = true
+        translationReadiness = .preparing(target)
+        defer { isChangingTranslationTarget = false }
+
+        let readiness = await changeTranslationTargetAction(target)
+        translationReadiness = readiness
+        switch readiness {
+        case .preparing, .ready, .needsSetup, .failed, .unsupported:
+            translationTarget = target
+            activeModelID = translationSelectionStore.selectedModelID(
+                for: target
+            )
+            translationConfigurationChangedAction()
+        case .idle, .superseded:
+            break
+        }
+    }
+
+    public func setTranslationModel(
+        _ modelID: String,
+        for target: TranslationTarget
+    ) async {
+        guard target == translationTarget,
+            !isChangingTranslationTarget
+        else {
+            return
+        }
+        isChangingTranslationTarget = true
+        translationReadiness = .preparing(target)
+        defer { isChangingTranslationTarget = false }
+
+        let readiness = await selectTranslationModelAction(
+            modelID,
+            target
+        )
+        translationReadiness = readiness
+        guard readiness != .superseded else { return }
+        activeModelID = modelID
+        translationSelectionStore.selectModel(modelID, for: target)
+        translationConfigurationChangedAction()
     }
 
     public var dictionaryPlugins: [PluginManifest] {
@@ -358,6 +453,13 @@ public final class MainWindowModel {
 
     private var activeTranslationPlugin: PluginManifest? {
         translationPlugins.first { $0.id == activeModelID }
+    }
+
+    private func persistActiveModelID() {
+        translationSelectionStore.selectModel(
+            activeModelID,
+            for: translationTarget
+        )
     }
 
     public var candidateSummary: String {
@@ -458,10 +560,7 @@ public final class MainWindowModel {
         }
         let previousModelID = activeModelID
         activeModelID = SystemTranslationModel.appleTranslationID
-        TranslationModelSelection.select(
-            activeModelID,
-            in: defaults
-        )
+        persistActiveModelID()
         translationModelStatusText = "正在连接系统翻译…"
         translationModelStatusIsError = false
         translationModelStatusModelID = activeModelID
@@ -469,10 +568,7 @@ public final class MainWindowModel {
         if let error = await activateSystemTranslationAction() {
             systemTranslationError = error
             activeModelID = previousModelID
-            TranslationModelSelection.select(
-                previousModelID,
-                in: defaults
-            )
+            persistActiveModelID()
             translationModelStatusText = error
             translationModelStatusIsError = true
             translationModelStatusModelID =
@@ -1092,7 +1188,7 @@ public final class MainWindowModel {
                     return
                 }
                 activeModelID = manifest.id
-                TranslationModelSelection.select(manifest.id, in: defaults)
+                persistActiveModelID()
                 translationModelStatusText = "正在加载本地模型…"
                 translationModelStatusIsError = false
                 translationModelStatusModelID = manifest.id
@@ -1177,7 +1273,7 @@ public final class MainWindowModel {
         }
 
         activeModelID = previousModelID
-        TranslationModelSelection.select(previousModelID, in: defaults)
+        persistActiveModelID()
         await refreshInstalledPlugins()
         if let recoveryError = await activateTranslationModelAction(
             previousModelID
@@ -1456,7 +1552,7 @@ public final class MainWindowModel {
         guard plugin.type == .translation else { return }
         let previousModelID = activeModelID
         activeModelID = plugin.id
-        TranslationModelSelection.select(plugin.id, in: defaults)
+        persistActiveModelID()
         prepareActiveTranslationModel(rollbackTo: previousModelID)
     }
 
@@ -1528,10 +1624,7 @@ public final class MainWindowModel {
                     previousModelID != modelID
                 {
                     activeModelID = previousModelID
-                    TranslationModelSelection.select(
-                        previousModelID,
-                        in: defaults
-                    )
+                    persistActiveModelID()
                     _ = await activateTranslationModelAction(previousModelID)
                 }
             } else {
