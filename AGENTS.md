@@ -155,6 +155,9 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 - UI 修改要启动真实 App 并检查浅色/深色、窗口缩放和空状态。
 - UI 样式可先用 Preview 快速迭代，但涉及 AppKit 生命周期、TCC、AX、输入法或
   NSPanel 行为时必须启动真实 App 验证。
+- OCR 截图文字断言依赖 runner 字体和 Vision 模型，默认不进入发布门禁；需要时用
+  `GLINT_RUN_OCR_UI_TESTS=1` 显式运行。UI 发布门禁保留确定性状态测试和基础渲染
+  测试。
 
 ## 翻译与插件规则
 

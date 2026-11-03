@@ -10,6 +10,7 @@ import XCTest
 @MainActor
 final class LanguageTranslationPageTests: XCTestCase {
     func testLanguagePackActionAppearsInLanguageAndModelCards() throws {
+        try requireOCRVisualTests()
         let suite = "GlintLanguagePageLayout.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -85,6 +86,7 @@ final class LanguageTranslationPageTests: XCTestCase {
     }
 
     func testInstallingLanguagePackOffersSystemDownloadAction() throws {
+        try requireOCRVisualTests()
         let suite = "GlintLanguagePageInstalling.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -123,6 +125,7 @@ final class LanguageTranslationPageTests: XCTestCase {
     func testIncompleteLanguagePackOffersContinueInstallAndDownloadManagement()
         async throws
     {
+        try requireOCRVisualTests()
         let suite = "GlintLanguagePageInterrupted.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -166,6 +169,7 @@ final class LanguageTranslationPageTests: XCTestCase {
     func testIncompleteLanguagePackInPluginsPageOffersContinueAndManagement()
         async throws
     {
+        try requireOCRVisualTests()
         let suite = "GlintPluginsPageIncomplete.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -209,6 +213,7 @@ final class LanguageTranslationPageTests: XCTestCase {
     func testIncompleteLanguagePackInOverviewOffersContinueAndManagement()
         async throws
     {
+        try requireOCRVisualTests()
         let suite = "GlintOverviewIncomplete.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -261,6 +266,7 @@ final class LanguageTranslationPageTests: XCTestCase {
     }
 
     func testLocalModelFailureShowsRetryBesideModelStatus() throws {
+        try requireOCRVisualTests()
         let suite = "GlintLanguagePageFailure.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -314,6 +320,7 @@ final class LanguageTranslationPageTests: XCTestCase {
     }
 
     func testVoiceRowsAvoidRepeatingTargetLanguageNames() throws {
+        try requireOCRVisualTests()
         for sample in [
             (
                 target: TranslationTarget.english,
@@ -367,6 +374,7 @@ final class LanguageTranslationPageTests: XCTestCase {
     }
 
     func testReadyStatusUsesConciseLabel() throws {
+        try requireOCRVisualTests()
         let suite = "GlintLanguagePageReady.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -411,6 +419,7 @@ final class LanguageTranslationPageTests: XCTestCase {
     }
 
     func testLanguageDirectionUsesLanguageRoleLabels() throws {
+        try requireOCRVisualTests()
         let suite = "GlintLanguagePageDirection.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -546,6 +555,18 @@ final class LanguageTranslationPageTests: XCTestCase {
             to: bitmap
         )
         return bitmap
+    }
+
+    private func requireOCRVisualTests() throws {
+        guard
+            ProcessInfo.processInfo.environment[
+                "GLINT_RUN_OCR_UI_TESTS"
+            ] == "1"
+        else {
+            throw XCTSkip(
+                "Set GLINT_RUN_OCR_UI_TESTS=1 to run OCR visual assertions."
+            )
+        }
     }
 
     private func recognizedTextFrames(
