@@ -18,6 +18,14 @@ public enum TranslationTarget:
         case .japanese: "日语"
         }
     }
+
+    public var supportsPartsOfSpeech: Bool {
+        self == .english
+    }
+
+    public var supportsMultipleMeanings: Bool {
+        self == .english
+    }
 }
 
 public struct TranslationDirection:

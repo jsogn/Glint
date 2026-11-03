@@ -15,6 +15,7 @@ public enum MonitoringSessionEvent: Sendable {
 
 public struct MonitoringSettings: Sendable, Equatable {
     public let mode: TranslationMode
+    public let translationTarget: TranslationTarget
     public let candidateDwellDuration: Double
     public let translationScope: CandidateTranslationScope
     public let maximumTranslationCount: Int
@@ -23,6 +24,7 @@ public struct MonitoringSettings: Sendable, Equatable {
 
     public init(
         mode: TranslationMode,
+        translationTarget: TranslationTarget = .english,
         candidateDwellDuration: Double,
         translationScope: CandidateTranslationScope,
         maximumTranslationCount: Int = 4,
@@ -30,6 +32,7 @@ public struct MonitoringSettings: Sendable, Equatable {
         configurationToken: String
     ) {
         self.mode = mode
+        self.translationTarget = translationTarget
         self.candidateDwellDuration = candidateDwellDuration
         self.translationScope = translationScope
         self.maximumTranslationCount = maximumTranslationCount
@@ -121,6 +124,9 @@ public actor MonitoringSession {
         state = .starting
         continuation.yield(.state(.starting))
         await controller.setMode(settings.mode)
+        await controller.setTranslationTarget(
+            settings.translationTarget
+        )
         await controller.setCandidateDwellDuration(
             settings.candidateDwellDuration
         )

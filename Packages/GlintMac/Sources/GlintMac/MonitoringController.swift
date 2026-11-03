@@ -292,12 +292,12 @@ public actor MonitoringController {
     private var task: Task<Void, Never>?
     private var translationTask: Task<Void, Never>?
     private var mode: TranslationMode = .dictionaryFirst
+    private var translationTarget: TranslationTarget = .english
     private var translationScope: CandidateTranslationScope = .selected
     private var showsPartsOfSpeech = true
     private var maximumTranslationCount = 4
     private var candidateDwellNanoseconds: UInt64 = 100_000_000
-    private var translationConfigurationToken =
-        TranslationModelSelection.selected()
+    private var translationConfigurationToken = "target=en"
     private var typingTracker = TypingActivityTracker()
     private var handledRevision: UInt64?
     private var dwellDetectedAt: ContinuousClock.Instant?
@@ -396,6 +396,14 @@ public actor MonitoringController {
     public func setMode(_ mode: TranslationMode) {
         guard self.mode != mode else { return }
         self.mode = mode
+        invalidateCandidate(immediate: true)
+    }
+
+    public func setTranslationTarget(
+        _ target: TranslationTarget
+    ) {
+        guard translationTarget != target else { return }
+        translationTarget = target
         invalidateCandidate(immediate: true)
     }
 
@@ -1051,9 +1059,11 @@ public actor MonitoringController {
     }
 
     static func shouldPrefetchDictionary(
+        target: TranslationTarget = .english,
         mode: TranslationMode,
         scope: CandidateTranslationScope
     ) -> Bool {
+        guard target == .english else { return false }
         switch mode {
         case .smartFusion, .dictionaryFirst:
             return true
@@ -1078,15 +1088,18 @@ public actor MonitoringController {
         cancelDictionaryPrefetch()
         dictionaryPrefetchRevision = revision
         let shouldPrefetchDictionary = Self.shouldPrefetchDictionary(
+            target: translationTarget,
             mode: mode,
             scope: translationScope
         )
         let mode = mode
+        let translationTarget = translationTarget
         let configurationToken = translationConfigurationToken
         let includesAlternatives =
             CandidateTranslationPipeline.displayOptionLimit(
                 for: translationScope,
-                maximumTranslationCount: maximumTranslationCount
+                maximumTranslationCount: maximumTranslationCount,
+                target: translationTarget
             ) > 1
         let memo = translationMemo
         let router = router
@@ -1096,6 +1109,7 @@ public actor MonitoringController {
         {
             let key = CandidateTranslationPipeline.memoKey(
                 candidate: candidate,
+                target: translationTarget,
                 mode: mode,
                 configurationToken: configurationToken,
                 includesAlternatives: includesAlternatives
@@ -1106,7 +1120,14 @@ public actor MonitoringController {
                 dictionaryPrefetchTasks[index] = Task.detached(
                     priority: .utility
                 ) {
-                    await router.prefetchDictionary(candidate)
+                    await router.prefetchDictionary(
+                        TranslationRequest(
+                            candidate: candidate,
+                            direction: TranslationDirection(
+                                target: translationTarget
+                            )
+                        )
+                    )
                 }
             }
         }
@@ -1132,13 +1153,15 @@ public actor MonitoringController {
         cachedPrefetchResults: [Int: TranslationResult]
     ) {
         let mode = mode
+        let translationTarget = translationTarget
         let router = router
         let memo = translationMemo
         let configurationToken = translationConfigurationToken
         let displayOptionLimit =
             CandidateTranslationPipeline.displayOptionLimit(
                 for: translationScope,
-                maximumTranslationCount: maximumTranslationCount
+                maximumTranslationCount: maximumTranslationCount,
+                target: translationTarget
             )
         let translationCandidates =
             translationScope == .row
@@ -1169,6 +1192,7 @@ public actor MonitoringController {
                 revision,
                 inputCaretRect,
                 mode,
+                translationTarget,
                 shouldShowPartsOfSpeech,
             ] in
             guard !Task.isCancelled else { return }
@@ -1177,6 +1201,7 @@ public actor MonitoringController {
                 selectedIndex: pipelineSelectedIndex,
                 selectionIsExact: pipelineSelectionIsExact,
                 mode: mode,
+                target: translationTarget,
                 configurationToken: configurationToken,
                 router: router,
                 memo: memo,

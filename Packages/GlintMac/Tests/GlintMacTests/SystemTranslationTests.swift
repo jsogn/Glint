@@ -1,10 +1,104 @@
 import GlintCore
 import Translation
 import XCTest
+import os
 @testable import GlintMac
 
 @MainActor
+private extension SystemTranslationCoordinator {
+    convenience init(
+        availabilityProvider:
+            @escaping @MainActor () async ->
+            SystemTranslationAvailability,
+        driverReadyTimeout: Duration = .seconds(2)
+    ) {
+        self.init(
+            direction: .simplifiedChineseToEnglish,
+            availabilityProvider: { _ in
+                await availabilityProvider()
+            },
+            driverReadyTimeout: driverReadyTimeout
+        )
+    }
+
+    func refreshAvailability() async {
+        await refreshAvailability(for: currentDirection)
+    }
+
+    func prepareLanguagePack() async throws {
+        try await prepareLanguagePack(for: currentDirection)
+    }
+
+    @discardableResult
+    func prepareInstalledSessionIfAvailable() async -> Bool {
+        await prepareInstalledSessionIfAvailable(for: currentDirection)
+    }
+
+    func translate(_ text: String) async throws -> String {
+        try await translate(text, direction: currentDirection)
+    }
+}
+
+@MainActor
 final class SystemTranslationCoordinatorTests: XCTestCase {
+    func testAvailabilityUsesConfiguredJapaneseDirection() async {
+        let recorded = OSAllocatedUnfairLock<[TranslationDirection]>(
+            initialState: []
+        )
+        let coordinator = SystemTranslationCoordinator(
+            direction: .simplifiedChineseToJapanese,
+            availabilityProvider: { direction in
+                recorded.withLock { $0.append(direction) }
+                return .available
+            }
+        )
+
+        await coordinator.refreshAvailability(
+            for: .simplifiedChineseToJapanese
+        )
+
+        XCTAssertEqual(
+            coordinator.currentDirection,
+            .simplifiedChineseToJapanese
+        )
+        XCTAssertEqual(
+            recorded.withLock { $0 },
+            [.simplifiedChineseToJapanese]
+        )
+        XCTAssertEqual(coordinator.availability, .available)
+    }
+
+    func testTranslationRejectsMismatchedDirection() async throws {
+        let availability = LockedAvailability(.installed)
+        let driver = FakeSystemTranslationDriver()
+        driver.onPrepare = {
+            availability.value = .installed
+        }
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+        try await coordinator.prepareLanguagePack()
+
+        do {
+            _ = try await coordinator.translate(
+                "你好",
+                direction: .simplifiedChineseToJapanese
+            )
+            XCTFail("Mismatched direction must not use the active session")
+        } catch let error as SystemTranslationError {
+            XCTAssertEqual(error, .sessionUnavailable)
+        }
+
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
     func testPreparationMarksLanguagePackInstalled() async throws {
         let availability = LockedAvailability(.available)
         let driver = FakeSystemTranslationDriver()
@@ -472,7 +566,10 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
         )
 
         let result = try await engine.translate(
-            Candidate(text: "你好", kind: .word)
+            TranslationRequest(
+                candidate: Candidate(text: "你好", kind: .word),
+                direction: .simplifiedChineseToEnglish
+            )
         )
 
         XCTAssertEqual(result?.options.count, 1)
@@ -505,7 +602,10 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
 
         do {
             _ = try await engine.translate(
-                Candidate(text: "你好", kind: .word)
+                TranslationRequest(
+                    candidate: Candidate(text: "你好", kind: .word),
+                    direction: .simplifiedChineseToEnglish
+                )
             )
             XCTFail("Translation should fail")
         } catch {

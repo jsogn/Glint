@@ -9,6 +9,7 @@ enum CandidateTranslationPipeline {
         selectedIndex: Int,
         selectionIsExact: Bool = true,
         mode: TranslationMode,
+        target: TranslationTarget = .english,
         configurationToken: String,
         router: SmartRouter,
         memo: TranslationMemo,
@@ -37,6 +38,7 @@ enum CandidateTranslationPipeline {
                 group.addTask {
                     let result = await translateCandidate(
                         candidate,
+                        target: target,
                         mode: mode,
                         configurationToken: configurationToken,
                         router: router,
@@ -64,7 +66,8 @@ enum CandidateTranslationPipeline {
                             selectedIndex: selectedIndex,
                             selectionIsExact: selectionIsExact,
                             displayOptionLimit: displayOptionLimit,
-                            showsPartsOfSpeech: showsPartsOfSpeech
+                            showsPartsOfSpeech: showsPartsOfSpeech,
+                            target: target
                         )
                     }
                     await publishProgress?(partialPresentations)
@@ -79,16 +82,19 @@ enum CandidateTranslationPipeline {
                 selectedIndex: selectedIndex,
                 selectionIsExact: selectionIsExact,
                 displayOptionLimit: displayOptionLimit,
-                showsPartsOfSpeech: showsPartsOfSpeech
+                showsPartsOfSpeech: showsPartsOfSpeech,
+                target: target
             )
         }
     }
 
     static func displayOptionLimit(
         for scope: CandidateTranslationScope,
-        maximumTranslationCount: Int
+        maximumTranslationCount: Int,
+        target: TranslationTarget = .english
     ) -> Int {
         guard scope == .selected else { return 1 }
+        guard target.supportsMultipleMeanings else { return 1 }
         return min(
             max(
                 maximumTranslationCount,
@@ -100,12 +106,14 @@ enum CandidateTranslationPipeline {
 
     static func memoKey(
         candidate: Candidate,
+        target: TranslationTarget,
         mode: TranslationMode,
         configurationToken: String,
         includesAlternatives: Bool
     ) -> TranslationMemoKey {
         TranslationMemoKey(
             text: candidate.text,
+            direction: TranslationDirection(target: target),
             mode: mode,
             configuration: configurationToken,
             includesAlternatives: includesAlternatives
@@ -129,6 +137,7 @@ enum CandidateTranslationPipeline {
 
     private static func translateCandidate(
         _ candidate: Candidate,
+        target: TranslationTarget,
         mode: TranslationMode,
         configurationToken: String,
         router: SmartRouter,
@@ -143,13 +152,19 @@ enum CandidateTranslationPipeline {
         }
         let key = memoKey(
             candidate: candidate,
+            target: target,
             mode: mode,
             configurationToken: configurationToken,
             includesAlternatives: includesAlternatives
         )
         let result = try? await memo.resolve(for: key) {
             let routed = try await router.route(
-                candidate,
+                TranslationRequest(
+                    candidate: candidate,
+                    direction: TranslationDirection(
+                        target: target
+                    )
+                ),
                 mode: mode,
                 includesAlternatives: includesAlternatives,
                 dictionaryPrefetch: dictionaryPrefetch
@@ -166,13 +181,15 @@ enum CandidateTranslationPipeline {
         selectedIndex: Int,
         selectionIsExact: Bool,
         displayOptionLimit: Int,
-        showsPartsOfSpeech: Bool
+        showsPartsOfSpeech: Bool,
+        target: TranslationTarget
     ) -> CandidateTranslationPresentation {
         let result = results[index].flatMap {
             presentationResult(
                 for: candidates[index],
                 result: $0,
-                displayOptionLimit: displayOptionLimit
+                displayOptionLimit: displayOptionLimit,
+                target: target
             )
         }
         let translation: String? = result.flatMap { result -> String? in
@@ -188,7 +205,7 @@ enum CandidateTranslationPipeline {
                 .map(\.text)
             : []
         let displayOptions =
-            showsPartsOfSpeech
+            showsPartsOfSpeech && target.supportsPartsOfSpeech
             ? Array(
                 result?.options.prefix(displayOptionLimit) ?? []
             ).map {
@@ -213,7 +230,8 @@ enum CandidateTranslationPipeline {
     private static func presentationResult(
         for candidate: Candidate,
         result: TranslationResult,
-        displayOptionLimit: Int
+        displayOptionLimit: Int,
+        target: TranslationTarget
     ) -> TranslationResult? {
         let conciseOptions: [TranslationOption]
         if displayOptionLimit > 1, candidate.text.count <= 4 {
@@ -227,7 +245,9 @@ enum CandidateTranslationPipeline {
             conciseOptions.count >= 2
             ? TranslationResult(options: conciseOptions)
             : result
-        return isDisplayable(filtered) ? filtered : nil
+        return isDisplayable(filtered, target: target)
+            ? filtered
+            : nil
     }
 
     private static func isConciseOption(_ text: String) -> Bool {
@@ -235,16 +255,13 @@ enum CandidateTranslationPipeline {
             && text.split(whereSeparator: \.isWhitespace).count <= 8
     }
 
-    private static func isDisplayable(_ result: TranslationResult) -> Bool {
-        let text = result.displayText.trimmingCharacters(
-            in: .whitespacesAndNewlines
+    private static func isDisplayable(
+        _ result: TranslationResult,
+        target: TranslationTarget
+    ) -> Bool {
+        TranslationTextPolicy.isDisplayable(
+            result.displayText,
+            target: target
         )
-        guard !text.isEmpty, !text.contains(where: \.isNewline) else {
-            return false
-        }
-        let hanCount = text.unicodeScalars.filter {
-            (0x4E00...0x9FFF).contains($0.value)
-        }.count
-        return hanCount <= max(1, text.count / 5)
     }
 }

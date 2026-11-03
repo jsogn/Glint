@@ -249,28 +249,70 @@ private struct NonTextFocusWithProcessFallback: FocusReading {
 }
 
 private struct EmptyDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }
 
 private struct EmptyTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }
 
 private struct ImmediateTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         try Task.checkCancellation()
         return TranslationResult(
-            text: "english-\(candidate.text)"
+            text: "english-\(request.candidate.text)"
         )
     }
 }
 
+private struct JapaneseTranslation: TranslationEngine {
+    let text: String
+
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        direction.target == .japanese
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        TranslationResult(text: text)
+    }
+}
+
 private struct MultiOptionTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(
             options: [
                 TranslationOption(text: "primary", score: 1),
@@ -286,7 +328,9 @@ private struct MultiOptionTranslation: TranslationEngine {
 }
 
 private struct POSDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(
             options: [
                 TranslationOption(
@@ -305,7 +349,15 @@ private struct POSDictionary: DictionaryEngine {
 }
 
 private struct MixedLengthTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(
             options: [
                 TranslationOption(text: "The curtain", score: 1),
@@ -326,13 +378,21 @@ private actor ParallelTranslation: TranslationEngine {
     private var activeCount = 0
     private var peakActiveCount = 0
 
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         activeCount += 1
         peakActiveCount = max(peakActiveCount, activeCount)
         try await Task.sleep(nanoseconds: 20_000_000)
         activeCount -= 1
         return TranslationResult(
-            text: "english-\(candidate.text)"
+            text: "english-\(request.candidate.text)"
         )
     }
 
@@ -358,6 +418,33 @@ private actor PresentationBatchRecorder {
 }
 
 final class GlintMacTests: XCTestCase {
+    func testJapaneseKanjiTranslationRemainsDisplayable() async {
+        let presentations = await CandidateTranslationPipeline.translate(
+            [Candidate(text: "学生")],
+            selectedIndex: 0,
+            mode: .dictionaryFirst,
+            target: .japanese,
+            configurationToken: "ja-model",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: JapaneseTranslation(text: "学生")
+            ),
+            memo: TranslationMemo()
+        )
+
+        XCTAssertEqual(presentations.first?.translation, "学生")
+    }
+
+    func testJapaneseNeverPrefetchesDictionary() {
+        XCTAssertFalse(
+            MonitoringController.shouldPrefetchDictionary(
+                target: .japanese,
+                mode: .dictionaryFirst,
+                scope: .selected
+            )
+        )
+    }
+
     func testMonitoringControllerUsesInjectedBoundaries() async {
         let controller = MonitoringController(
             router: SmartRouter(
