@@ -17,32 +17,71 @@ final class MLXTranslationEngineTests: XCTestCase {
 
     func testCleanRemovesLabelsAndQuotes() {
         XCTAssertEqual(
-            MLXTranslationEngine.clean("Translation: \"Hello.\"\nignored"),
+            MLXTranslationEngine.clean(
+                "Translation: \"Hello.\"\nignored",
+                target: .english
+            ),
             "Hello."
         )
     }
 
     func testCleanKeepsTextAfterThinkingBlock() {
         XCTAssertEqual(
-            MLXTranslationEngine.clean("<think>internal reasoning</think>\nHello there."),
+            MLXTranslationEngine.clean(
+                "<think>internal reasoning</think>\nHello there.",
+                target: .english
+            ),
             "Hello there."
         )
     }
 
     func testUnfinishedThinkingBlockIsRejected() {
-        XCTAssertNil(MLXTranslationEngine.clean("<think>unfinished"))
+        XCTAssertNil(
+            MLXTranslationEngine.clean(
+                "<think>unfinished",
+                target: .english
+            )
+        )
     }
 
     func testChineseEchoIsRejected() {
-        XCTAssertNil(MLXTranslationEngine.clean("这是一个测试"))
+        XCTAssertNil(
+            MLXTranslationEngine.clean(
+                "这是一个测试",
+                target: .english
+            )
+        )
+    }
+
+    func testJapaneseCleanAcceptsKanjiAndKana() {
+        XCTAssertEqual(
+            MLXTranslationEngine.clean(
+                "翻訳：学生です。",
+                target: .japanese
+            ),
+            "学生です。"
+        )
+        XCTAssertEqual(
+            MLXTranslationEngine.clean(
+                "天気がいい",
+                target: .japanese
+            ),
+            "天気がいい"
+        )
     }
 
     func testSpecializedModelsUseTheirOwnPrompts() {
         let hy = MLXPromptProfile(modelID: "mt-hy-mt2-1.8b")
         XCTAssertEqual(hy.defaultAdapterMode, .translationInstruction)
-        XCTAssertNil(hy.instructions(for: .translationInstruction))
+        XCTAssertNil(
+            hy.instructions(
+                for: .translationInstruction,
+                target: .english
+            )
+        )
         let hyPrompt = hy.prompt(
             for: "关于",
+            target: .english,
             adapterMode: .translationInstruction
         )
         XCTAssertEqual(
@@ -52,9 +91,15 @@ final class MLXTranslationEngineTests: XCTestCase {
 
         let index = MLXPromptProfile(modelID: "mt-index-translate-2b")
         XCTAssertEqual(index.defaultAdapterMode, .translationInstruction)
-        XCTAssertNil(index.instructions(for: .translationInstruction))
+        XCTAssertNil(
+            index.instructions(
+                for: .translationInstruction,
+                target: .english
+            )
+        )
         let indexPrompt = index.prompt(
             for: "关于",
+            target: .english,
             adapterMode: .translationInstruction
         )
         XCTAssertEqual(
@@ -64,10 +109,16 @@ final class MLXTranslationEngineTests: XCTestCase {
 
         let qwen = MLXPromptProfile(modelID: "llm-qwen3-1.7b")
         XCTAssertEqual(qwen.defaultAdapterMode, .systemInstruction)
-        XCTAssertNotNil(qwen.instructions(for: .systemInstruction))
+        XCTAssertNotNil(
+            qwen.instructions(
+                for: .systemInstruction,
+                target: .english
+            )
+        )
         XCTAssertEqual(
             qwen.prompt(
                 for: "你好",
+                target: .english,
                 adapterMode: .systemInstruction
             ),
             "你好"
@@ -75,10 +126,16 @@ final class MLXTranslationEngineTests: XCTestCase {
 
         let generic = MLXPromptProfile(modelID: "custom-translation-model")
         XCTAssertEqual(generic.defaultAdapterMode, .directSource)
-        XCTAssertNil(generic.instructions(for: .directSource))
+        XCTAssertNil(
+            generic.instructions(
+                for: .directSource,
+                target: .english
+            )
+        )
         XCTAssertEqual(
             generic.prompt(
                 for: "你好",
+                target: .english,
                 adapterMode: .directSource
             ),
             "你好"
@@ -86,10 +143,28 @@ final class MLXTranslationEngineTests: XCTestCase {
         XCTAssertTrue(
             generic.prompt(
                 for: "你好",
+                target: .english,
                 adapterMode: .translationInstruction
             ).contains("只输出翻译结果")
         )
-        XCTAssertNotNil(generic.instructions(for: .systemInstruction))
+        XCTAssertNotNil(
+            generic.instructions(
+                for: .systemInstruction,
+                target: .english
+            )
+        )
+    }
+
+    func testJapaneseTranslationPromptTargetsJapanese() {
+        let qwen = MLXPromptProfile(modelID: "llm-qwen3-1.7b")
+        let prompt = qwen.prompt(
+            for: "你好",
+            target: .japanese,
+            adapterMode: .translationInstruction
+        )
+
+        XCTAssertTrue(prompt.contains("日语"))
+        XCTAssertFalse(prompt.contains("翻译为英语"))
     }
 
     func testCompatibilityProbeAcceptsShortTranslations() {
@@ -121,6 +196,21 @@ final class MLXTranslationEngineTests: XCTestCase {
             MLXTranslationEngine.isAcceptedProbeOutput(
                 "This is a response",
                 expected: ["hello", "hi"]
+            )
+        )
+    }
+
+    func testJapaneseCompatibilityProbeAcceptsNaturalSentence() {
+        XCTAssertTrue(
+            MLXTranslationEngine.isAcceptedProbeOutput(
+                "今日はこんにちは。",
+                expected: ["こんにちは", "ハロー"]
+            )
+        )
+        XCTAssertFalse(
+            MLXTranslationEngine.isAcceptedProbeOutput(
+                "hello",
+                expected: ["こんにちは", "ハロー"]
             )
         )
     }
@@ -190,11 +280,15 @@ final class MLXTranslationEngineTests: XCTestCase {
 
     func testBatchPromptPreservesNumbersAndOrder() {
         let profile = MLXPromptProfile(modelID: "mt-hy-mt2-1.8b")
-        let prompt = profile.batchPrompt(for: ["学习", "学校", "学生"])
+        let prompt = profile.batchPrompt(
+            for: ["学习", "学校", "学生"],
+            target: .japanese
+        )
 
         XCTAssertTrue(prompt.contains("1. 学习"))
         XCTAssertTrue(prompt.contains("2. 学校"))
         XCTAssertTrue(prompt.contains("3. 学生"))
+        XCTAssertTrue(prompt.contains("日语"))
         XCTAssertTrue(prompt.contains("不要合并"))
     }
 

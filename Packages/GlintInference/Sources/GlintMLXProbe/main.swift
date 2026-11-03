@@ -99,10 +99,13 @@ struct GlintMLXProbe {
                 kind: CandidateClassifier.classify($0)
             )
         }
-        try await engine.warmUp()
+        try await engine.warmUp(target: direction.target)
 
         let batchStarted = ContinuousClock.now
-        let batch = try await engine.translateBatch(candidates)
+        let batch = try await engine.translateBatch(
+            candidates,
+            target: direction.target
+        )
         let batchMilliseconds = milliseconds(
             batchStarted.duration(to: .now)
         )
