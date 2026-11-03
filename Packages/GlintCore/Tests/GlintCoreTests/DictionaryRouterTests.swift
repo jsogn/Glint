@@ -4,7 +4,9 @@ import XCTest
 private struct OrderedDictionary: DictionaryEngine {
     let value: String?
 
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         guard let value else { return nil }
         return TranslationResult(text: value)
     }
@@ -13,7 +15,9 @@ private struct OrderedDictionary: DictionaryEngine {
 private struct OptionsDictionary: DictionaryEngine {
     let options: [String]
 
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         guard !options.isEmpty else { return nil }
         return TranslationResult(
             options: options.enumerated().map {
@@ -29,13 +33,17 @@ private struct OptionsDictionary: DictionaryEngine {
 private struct POSOptionsDictionary: DictionaryEngine {
     let options: [TranslationOption]
 
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(options: options)
     }
 }
 
 private struct FailingDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         throw GlintError.engineUnavailable
     }
 }
@@ -48,13 +56,26 @@ private actor CountingDictionary: DictionaryEngine {
         self.value = value
     }
 
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         count += 1
         return value.map(TranslationResult.init(text:))
     }
 
     func lookupCount() -> Int {
         count
+    }
+}
+
+private extension DictionaryRouter {
+    func lookup(_ candidate: Candidate) async -> TranslationResult? {
+        await lookup(
+            TranslationRequest(
+                candidate: candidate,
+                direction: .simplifiedChineseToEnglish
+            )
+        )
     }
 }
 

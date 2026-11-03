@@ -12,17 +12,22 @@ public struct DictionaryRoute: Sendable {
     public let id: String
     public let priority: Int
     public let role: DictionaryRouteRole
+    public let directions: Set<TranslationDirection>
     public let engine: any DictionaryEngine
 
     public init(
         id: String,
         priority: Int,
         role: DictionaryRouteRole = .fallback,
+        directions: Set<TranslationDirection> = [
+            .simplifiedChineseToEnglish
+        ],
         engine: any DictionaryEngine
     ) {
         self.id = id
         self.priority = priority
         self.role = role
+        self.directions = directions
         self.engine = engine
     }
 }
@@ -39,17 +44,24 @@ public struct DictionaryRouter: DictionaryEngine {
         self.blocked = blocked
     }
 
-    public func lookup(_ candidate: Candidate) async -> TranslationResult? {
-        let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    public func lookup(
+        _ request: TranslationRequest
+    ) async -> TranslationResult? {
+        let text = request.candidate.text.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
         guard !blocked.contains(text) else { return nil }
 
         var options: [TranslationOption] = []
-        for route in routes where route.role == .authoritative {
+        for route in routes
+        where route.role == .authoritative
+            && route.directions.contains(request.direction)
+        {
             if Task.isCancelled { return nil }
             options.append(
                 contentsOf: await routeOptions(
                     from: route,
-                    candidate: candidate
+                    request: request
                 )
             )
         }
@@ -57,11 +69,14 @@ public struct DictionaryRouter: DictionaryEngine {
             return TranslationResult(options: options)
         }
 
-        for route in routes where route.role == .fallback {
+        for route in routes
+        where route.role == .fallback
+            && route.directions.contains(request.direction)
+        {
             if Task.isCancelled { return nil }
             let fallbackOptions = await routeOptions(
                 from: route,
-                candidate: candidate
+                request: request
             )
             if !fallbackOptions.isEmpty {
                 return TranslationResult(options: fallbackOptions)
@@ -72,10 +87,10 @@ public struct DictionaryRouter: DictionaryEngine {
 
     private func routeOptions(
         from route: DictionaryRoute,
-        candidate: Candidate
+        request: TranslationRequest
     ) async -> [TranslationOption] {
         guard
-            let result = try? await route.engine.lookup(candidate)
+            let result = try? await route.engine.lookup(request)
         else {
             return []
         }

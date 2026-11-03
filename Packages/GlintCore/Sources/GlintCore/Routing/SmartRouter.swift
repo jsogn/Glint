@@ -16,47 +16,56 @@ public struct SmartRouter: Sendable {
     }
 
     public func route(
-        _ candidate: Candidate,
+        _ request: TranslationRequest,
         mode: TranslationMode = .dictionaryFirst,
         includesAlternatives: Bool = true,
         dictionaryPrefetch: Task<TranslationResult?, Never>? = nil
     ) async throws -> TranslationResult? {
         try Task.checkCancellation()
-        guard !candidate.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard !request.candidate.text.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        ).isEmpty else {
             return nil
         }
+        if request.direction.target == .japanese {
+            return try await translation.translate(request)
+        }
         let routed = try await routeWithoutPartOfSpeech(
-            candidate,
+            request,
             mode: mode,
             includesAlternatives: includesAlternatives,
             dictionaryPrefetch: dictionaryPrefetch
         )
-        return await enrichingPartsOfSpeech(routed)
+        return await enrichingPartsOfSpeech(
+            routed,
+            direction: request.direction
+        )
     }
 
     private func routeWithoutPartOfSpeech(
-        _ candidate: Candidate,
+        _ request: TranslationRequest,
         mode: TranslationMode,
         includesAlternatives: Bool,
         dictionaryPrefetch: Task<TranslationResult?, Never>?
     ) async throws -> TranslationResult? {
+        let candidate = request.candidate
         switch mode {
         case .smartFusion:
             if candidate.kind == .sentence {
-                if let modelResult = try? await translation.translate(candidate),
+                if let modelResult = try? await translation.translate(request),
                     !modelResult.options.isEmpty
                 {
                     return modelResult
                 }
                 try Task.checkCancellation()
                 return await dictionaryResult(
-                    for: candidate,
+                    for: request,
                     prefetch: dictionaryPrefetch
                 )
             }
-            async let modelResultTask = translation.translate(candidate)
+            async let modelResultTask = translation.translate(request)
             async let dictionaryResultTask = dictionaryResult(
-                for: candidate,
+                for: request,
                 prefetch: dictionaryPrefetch
             )
             let modelResult = try? await modelResultTask
@@ -78,28 +87,28 @@ public struct SmartRouter: Sendable {
             return dictionaryResult
         case .dictionaryFirst:
             if candidate.kind == .sentence,
-                let modelResult = try? await translation.translate(candidate),
+                let modelResult = try? await translation.translate(request),
                 !modelResult.options.isEmpty
             {
                 return modelResult
             }
             try Task.checkCancellation()
             if let dictionaryResult = await dictionaryResult(
-                for: candidate,
+                for: request,
                 prefetch: dictionaryPrefetch
             ) {
                 return dictionaryResult
             }
             try Task.checkCancellation()
-            return try await translation.translate(candidate)
+            return try await translation.translate(request)
         case .modelFirst:
-            if let modelResult = try? await translation.translate(candidate),
+            if let modelResult = try? await translation.translate(request),
                 !modelResult.options.isEmpty
             {
                 guard includesAlternatives,
                     candidate.kind != .sentence,
                     let dictionaryResult = await dictionaryResult(
-                        for: candidate,
+                        for: request,
                         prefetch: dictionaryPrefetch
                     ),
                     !dictionaryResult.options.isEmpty
@@ -113,16 +122,20 @@ public struct SmartRouter: Sendable {
             }
             try Task.checkCancellation()
             return await dictionaryResult(
-                for: candidate,
+                for: request,
                 prefetch: dictionaryPrefetch
             )
         }
     }
 
     private func enrichingPartsOfSpeech(
-        _ result: TranslationResult?
+        _ result: TranslationResult?,
+        direction: TranslationDirection
     ) async -> TranslationResult? {
-        guard let result, let partOfSpeechProvider else {
+        guard direction.target == .english,
+            let result,
+            let partOfSpeechProvider
+        else {
             return result
         }
         var enriched = result.options
@@ -145,23 +158,25 @@ public struct SmartRouter: Sendable {
     }
 
     public func prefetchDictionary(
-        _ candidate: Candidate
+        _ request: TranslationRequest
     ) async -> TranslationResult? {
-        guard !Task.isCancelled else {
+        guard !Task.isCancelled,
+            request.direction.target == .english
+        else {
             return nil
         }
-        let result = try? await dictionary.lookup(candidate)
+        let result = try? await dictionary.lookup(request)
         return Task.isCancelled ? nil : result
     }
 
     private func dictionaryResult(
-        for candidate: Candidate,
+        for request: TranslationRequest,
         prefetch: Task<TranslationResult?, Never>?
     ) async -> TranslationResult? {
         if let prefetch {
             return await prefetch.value
         }
-        return try? await dictionary.lookup(candidate)
+        return try? await dictionary.lookup(request)
     }
 
     private static func modelFirstMerged(
