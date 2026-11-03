@@ -7,16 +7,15 @@ struct OverviewPage: View {
     let model: MainWindowModel
     let appUpdateModel: AppUpdateModel
     @Binding var selection: SidebarItem?
+    let openLanguageTranslation: () -> Void
     let openTranslationModels: () -> Void
 
     var body: some View {
         PageContainer {
             OverviewStatusCard(
                 model: model,
-                openGeneralSettings: {
-                    selection = .general
-                },
                 openInputMethodSettings: inputMethodSettingsAction,
+                openLanguageTranslation: openLanguageTranslation,
                 openTranslationModels: openTranslationModels
             )
 
@@ -77,16 +76,20 @@ struct OverviewPage: View {
                     actionTitle: "管理",
                     rows: [
                         OverviewInfoRow(
+                            label: "学习语言",
+                            value: model.translationTarget
+                                .chineseDisplayName
+                        ),
+                        OverviewInfoRow(
+                            label: "翻译方式",
+                            value: model.translationTarget
+                                .supportsDictionaryRouting
+                                ? "模型 + 英文词典"
+                                : "模型翻译"
+                        ),
+                        OverviewInfoRow(
                             label: "翻译模型",
                             value: model.translationSummary
-                        ),
-                        OverviewInfoRow(
-                            label: "模型特点",
-                            value: model.translationCharacterSummary
-                        ),
-                        OverviewInfoRow(
-                            label: "词典覆盖",
-                            value: OverviewFormatting.dictionaryCoverage
                         ),
                     ]
                 ) {
@@ -282,7 +285,7 @@ private extension SystemTranslationSetupState {
     var detail: String {
         switch self {
         case .installationRequired:
-            "安装中文到英文语言包后，Apple 翻译才能处理短句。"
+            "安装当前目标语言的 Apple 翻译语言包后，才能处理短句。"
         case .installationIncomplete:
             "你可以继续安装；如果系统仍在下载，完成后会自动更新。"
         case .installing:
@@ -290,7 +293,7 @@ private extension SystemTranslationSetupState {
         case .failed(let message):
             message
         case .unsupported:
-            "仍可使用词典或其他本地翻译模型。"
+            "仍可选择其他已安装的本地翻译模型。"
         }
     }
 
@@ -308,8 +311,8 @@ private extension SystemTranslationSetupState {
 
 private struct OverviewStatusCard: View {
     let model: MainWindowModel
-    let openGeneralSettings: () -> Void
     let openInputMethodSettings: (() -> Void)?
+    let openLanguageTranslation: () -> Void
     let openTranslationModels: () -> Void
 
     private var state: OverviewRuntimeState {
@@ -392,8 +395,8 @@ private struct OverviewStatusCard: View {
 
             OverviewPipeline(
                 model: model,
-                openGeneralSettings: openGeneralSettings,
                 openInputMethodSettings: openInputMethodSettings,
+                openLanguageTranslation: openLanguageTranslation,
                 openTranslationModels: openTranslationModels
             )
         }
@@ -453,46 +456,51 @@ private struct OverviewStatusCard: View {
 
 private struct OverviewPipeline: View {
     let model: MainWindowModel
-    let openGeneralSettings: () -> Void
     let openInputMethodSettings: (() -> Void)?
+    let openLanguageTranslation: () -> Void
     let openTranslationModels: () -> Void
 
     var body: some View {
+        let steps = OverviewFormatting.statusSteps(
+            target: model.translationTarget,
+            mode: model.translationMode,
+            modelName: model.translationSummary
+        )
         HStack(spacing: 8) {
             stage(
                 symbol: "keyboard",
-                label: "输入",
+                label: steps[0].title,
                 value: model.activeInputMethodName,
                 action: openInputMethodSettings,
                 actionHint: "打开输入法支持"
             )
             arrow
             stage(
-                symbol: "text.cursor",
-                label: "识别",
-                value: model.candidateSummary
+                symbol: "character.bubble",
+                label: steps[1].title,
+                value: steps[1].value,
+                action: openLanguageTranslation,
+                actionHint: "打开语言与翻译"
             )
             arrow
             stage(
                 symbol: "arrow.triangle.branch",
-                label: "策略",
-                value: model.translationMode.title,
-                action: openGeneralSettings,
-                actionHint: "打开通用配置"
+                label: steps[2].title,
+                value: steps[2].value,
+                action: model.translationTarget.supportsDictionaryRouting
+                    ? openLanguageTranslation
+                    : nil,
+                actionHint: "打开翻译方式设置"
             )
             arrow
             stage(
                 symbol: "text.bubble",
-                label: "翻译",
-                value: translationModelName,
+                label: steps[3].title,
+                value: steps[3].value,
                 action: openTranslationModels,
                 actionHint: "打开翻译模型"
             )
         }
-    }
-
-    private var translationModelName: String {
-        OverviewFormatting.compactModelName(model.translationSummary)
     }
 
     private func stage(
@@ -754,6 +762,7 @@ private struct OverviewPagePreview: View {
             model: model,
             appUpdateModel: appUpdateModel,
             selection: .constant(.overview),
+            openLanguageTranslation: {},
             openTranslationModels: {}
         )
         .frame(width: width, height: 640)
@@ -762,7 +771,7 @@ private struct OverviewPagePreview: View {
 
 private enum OverviewPreviewManifests {
     static let translation = PluginManifest(
-        id: TranslationModelSelection.defaultModelID,
+        id: SystemTranslationModel.appleTranslationID,
         type: .translation,
         name: "OPUS-MT Chinese-English",
         version: "0.1.0",

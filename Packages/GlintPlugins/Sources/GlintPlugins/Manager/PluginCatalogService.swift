@@ -1079,7 +1079,7 @@ public actor PluginCatalogService {
             requiredNames = ["ecdict_rank.sqlite3"]
         case "ctranslate2-data":
             guard
-                manifest.id == TranslationModelSelection.opusMTModelID
+                manifest.id == ManagedTranslationModelIDs.opusMT
             else {
                 return false
             }

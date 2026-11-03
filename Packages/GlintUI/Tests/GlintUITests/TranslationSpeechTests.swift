@@ -48,9 +48,24 @@ final class TranslationSpeechTests: XCTestCase {
             }
         )
 
-        controller.speak("Slower", accent: .system, rate: .slower)
-        controller.speak("Standard", accent: .system, rate: .standard)
-        controller.speak("Faster", accent: .system, rate: .faster)
+        controller.speak(
+            "Slower",
+            target: .english,
+            accent: .system,
+            rate: .slower
+        )
+        controller.speak(
+            "Standard",
+            target: .english,
+            accent: .system,
+            rate: .standard
+        )
+        controller.speak(
+            "Faster",
+            target: .english,
+            accent: .system,
+            rate: .faster
+        )
 
         let defaultRate = AVSpeechUtteranceDefaultSpeechRate
         XCTAssertEqual(
@@ -70,6 +85,66 @@ final class TranslationSpeechTests: XCTestCase {
         )
     }
 
+    func testVoicePreviewUsesTargetLanguageSample() {
+        let synthesizer = FakeTranslationSpeechSynthesizer()
+        var requestedLanguages: [String] = []
+        let controller = TranslationSpeechController(
+            synthesizer: synthesizer,
+            voiceForLanguage: { language in
+                requestedLanguages.append(language)
+                return AVSpeechSynthesisVoice(language: language)
+            }
+        )
+
+        controller.speakPreview(
+            target: .japanese,
+            accent: .system
+        )
+        controller.speakPreview(
+            target: .english,
+            accent: .american
+        )
+        controller.speakPreview(
+            target: .spanish,
+            accent: .system
+        )
+        controller.speakPreview(
+            target: .french,
+            accent: .system
+        )
+        controller.speakPreview(
+            target: .german,
+            accent: .system
+        )
+        controller.speakPreview(
+            target: .russian,
+            accent: .system
+        )
+
+        XCTAssertEqual(
+            requestedLanguages,
+            [
+                "ja-JP",
+                "en-US",
+                "es-ES",
+                "fr-FR",
+                "de-DE",
+                "ru-RU",
+            ]
+        )
+        XCTAssertEqual(
+            synthesizer.utterances.map(\.speechString),
+            [
+                TranslationSpeechController.previewText(for: .japanese),
+                TranslationSpeechController.previewText(for: .english),
+                TranslationSpeechController.previewText(for: .spanish),
+                TranslationSpeechController.previewText(for: .french),
+                TranslationSpeechController.previewText(for: .german),
+                TranslationSpeechController.previewText(for: .russian),
+            ]
+        )
+    }
+
     func testAmericanAccentUsesUSVoiceAndTrimsText() {
         let synthesizer = FakeTranslationSpeechSynthesizer()
         var requestedLanguages: [String] = []
@@ -81,13 +156,126 @@ final class TranslationSpeechTests: XCTestCase {
             }
         )
 
-        controller.speak("  Hello  ", accent: .american)
+        controller.speak(
+            "  Hello  ",
+            target: .english,
+            accent: .american
+        )
 
         XCTAssertEqual(requestedLanguages, ["en-US"])
         XCTAssertEqual(
             synthesizer.utterances.first?.speechString,
             "Hello"
         )
+    }
+
+    func testJapaneseUsesJapaneseVoiceAndDoesNotFallBackToEnglish() {
+        let synthesizer = FakeTranslationSpeechSynthesizer()
+        var requestedLanguages: [String] = []
+        let controller = TranslationSpeechController(
+            synthesizer: synthesizer,
+            voiceForLanguage: { language in
+                requestedLanguages.append(language)
+                return language == "ja-JP"
+                    ? AVSpeechSynthesisVoice(language: "ja-JP")
+                    : nil
+            }
+        )
+
+        controller.speak(
+            "学生",
+            target: .japanese,
+            accent: .british
+        )
+
+        XCTAssertEqual(requestedLanguages, ["ja-JP"])
+        XCTAssertEqual(synthesizer.utterances.count, 1)
+    }
+
+    func testSelectedJapaneseVoiceUsesStoredIdentifier()
+        throws
+    {
+        let synthesizer = FakeTranslationSpeechSynthesizer()
+        let japaneseVoice = try XCTUnwrap(
+            AVSpeechSynthesisVoice(language: "ja-JP")
+        )
+        var requestedIdentifiers: [String] = []
+        let controller = TranslationSpeechController(
+            synthesizer: synthesizer,
+            voiceForLanguage: { _ in nil },
+            voiceForIdentifier: { identifier in
+                requestedIdentifiers.append(identifier)
+                return japaneseVoice
+            }
+        )
+
+        controller.speak(
+            "学生",
+            target: .japanese,
+            accent: .system,
+            voiceIdentifier: japaneseVoice.identifier
+        )
+
+        XCTAssertEqual(
+            requestedIdentifiers,
+            [japaneseVoice.identifier]
+        )
+        XCTAssertEqual(
+            synthesizer.utterances.first?.voice?.identifier,
+            japaneseVoice.identifier
+        )
+    }
+
+    func testUnavailableOrNonJapaneseVoiceFallsBackToSystemJapanese()
+        throws
+    {
+        let synthesizer = FakeTranslationSpeechSynthesizer()
+        let japaneseVoice = try XCTUnwrap(
+            AVSpeechSynthesisVoice(language: "ja-JP")
+        )
+        let englishVoice = try XCTUnwrap(
+            AVSpeechSynthesisVoice(language: "en-US")
+        )
+        var requestedLanguages: [String] = []
+        let controller = TranslationSpeechController(
+            synthesizer: synthesizer,
+            voiceForLanguage: { language in
+                requestedLanguages.append(language)
+                return language == "ja-JP"
+                    ? japaneseVoice
+                    : nil
+            },
+            voiceForIdentifier: { _ in englishVoice }
+        )
+
+        controller.speak(
+            "学生",
+            target: .japanese,
+            accent: .system,
+            voiceIdentifier: "unavailable-or-english"
+        )
+
+        XCTAssertEqual(requestedLanguages, ["ja-JP"])
+        XCTAssertEqual(
+            synthesizer.utterances.first?.voice?.language,
+            "ja-JP"
+        )
+    }
+
+    func testMissingJapaneseVoiceDoesNotUseEnglishFallback() {
+        let synthesizer = FakeTranslationSpeechSynthesizer()
+        let controller = TranslationSpeechController(
+            synthesizer: synthesizer,
+            voiceForLanguage: { _ in nil }
+        )
+
+        controller.speak(
+            "学生",
+            target: .japanese,
+            accent: .system
+        )
+
+        XCTAssertTrue(synthesizer.utterances.isEmpty)
     }
 
     func testBritishAccentUsesGBVoice() {
@@ -101,7 +289,11 @@ final class TranslationSpeechTests: XCTestCase {
             }
         )
 
-        controller.speak("Hello", accent: .british)
+        controller.speak(
+            "Hello",
+            target: .english,
+            accent: .british
+        )
 
         XCTAssertEqual(requestedLanguages, ["en-GB"])
     }
@@ -118,7 +310,11 @@ final class TranslationSpeechTests: XCTestCase {
             preferredLanguages: { ["zh-Hans-CN"] }
         )
 
-        controller.speak("Hello", accent: .system)
+        controller.speak(
+            "Hello",
+            target: .english,
+            accent: .system
+        )
 
         XCTAssertEqual(requestedLanguages, ["en-US"])
     }
@@ -135,7 +331,11 @@ final class TranslationSpeechTests: XCTestCase {
             preferredLanguages: { ["zh-Hans-CN", "en-GB"] }
         )
 
-        controller.speak("Hello", accent: .system)
+        controller.speak(
+            "Hello",
+            target: .english,
+            accent: .system
+        )
 
         XCTAssertEqual(requestedLanguages, ["en-GB"])
     }
@@ -154,7 +354,11 @@ final class TranslationSpeechTests: XCTestCase {
             preferredLanguages: { ["en-AU"] }
         )
 
-        controller.speak("Hello", accent: .system)
+        controller.speak(
+            "Hello",
+            target: .english,
+            accent: .system
+        )
 
         XCTAssertEqual(requestedLanguages, ["en-AU", "en-US"])
         XCTAssertEqual(synthesizer.utterances.count, 1)
@@ -171,7 +375,11 @@ final class TranslationSpeechTests: XCTestCase {
             }
         )
 
-        controller.speak("Hello", accent: .british)
+        controller.speak(
+            "Hello",
+            target: .english,
+            accent: .british
+        )
 
         XCTAssertTrue(synthesizer.utterances.isEmpty)
     }
@@ -185,8 +393,16 @@ final class TranslationSpeechTests: XCTestCase {
             }
         )
 
-        controller.speak("One", accent: .system)
-        controller.speak("Two", accent: .system)
+        controller.speak(
+            "One",
+            target: .english,
+            accent: .system
+        )
+        controller.speak(
+            "Two",
+            target: .english,
+            accent: .system
+        )
 
         XCTAssertEqual(synthesizer.stopCount, 1)
         XCTAssertEqual(
@@ -204,7 +420,11 @@ final class TranslationSpeechTests: XCTestCase {
             }
         )
 
-        controller.speak(" \n ", accent: .system)
+        controller.speak(
+            " \n ",
+            target: .english,
+            accent: .system
+        )
 
         XCTAssertTrue(synthesizer.utterances.isEmpty)
     }
@@ -216,7 +436,11 @@ final class TranslationSpeechTests: XCTestCase {
             voiceForLanguage: { _ in nil }
         )
 
-        controller.speak("Hello", accent: .american)
+        controller.speak(
+            "Hello",
+            target: .english,
+            accent: .american
+        )
 
         XCTAssertTrue(synthesizer.utterances.isEmpty)
     }
@@ -229,7 +453,11 @@ final class TranslationSpeechTests: XCTestCase {
                 AVSpeechSynthesisVoice(language: "en-US")
             }
         )
-        controller.speak("Hello", accent: .system)
+        controller.speak(
+            "Hello",
+            target: .english,
+            accent: .system
+        )
 
         controller.stop()
 
@@ -246,6 +474,7 @@ final class TranslationSpeechTests: XCTestCase {
         )
         controller.speak(
             "Automatic",
+            target: .english,
             accent: .system,
             source: .automatic
         )
@@ -265,6 +494,7 @@ final class TranslationSpeechTests: XCTestCase {
         )
         controller.speak(
             "Manual",
+            target: .english,
             accent: .system,
             source: .manual
         )
@@ -285,6 +515,7 @@ final class TranslationSpeechTests: XCTestCase {
         )
         controller.speak(
             "Manual",
+            target: .english,
             accent: .system,
             source: .manual
         )
@@ -304,6 +535,7 @@ final class TranslationSpeechTests: XCTestCase {
         )
         controller.speak(
             "Automatic",
+            target: .english,
             accent: .system,
             source: .automatic
         )

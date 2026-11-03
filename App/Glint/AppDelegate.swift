@@ -35,6 +35,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let translationAutoSpeechScheduler: TranslationAutoSpeechScheduler
     private let translationSpeechShortcutCoordinator: TranslationChoiceShortcutCoordinator
     private let environment: AppEnvironment
+    private let translationLanguageCoordinator:
+        TranslationLanguageCoordinator
     private let launchAtLoginController: LaunchAtLoginController
     private let windowModel: MainWindowModel
     private let appUpdateModel: AppUpdateModel
@@ -50,13 +52,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var wasLaunchedAtLogin = false
 
     override init() {
-        TranslationModelSelection.migrateBundledModelSelection()
-        let environment = AppEnvironment()
+        let selectionStore = TranslationSelectionStore()
+        selectionStore.migrateIfNeeded()
+        let environment = AppEnvironment(
+            selectionStore: selectionStore
+        )
         let windowModel = MainWindowModel(
             pluginManager: environment.pluginManager,
-            builtInPlugins: BundledPluginResources.manifests
+            builtInPlugins: BundledPluginResources.manifests,
+            translationSelectionStore: selectionStore
         )
         self.environment = environment
+        self.translationLanguageCoordinator =
+            TranslationLanguageCoordinator(
+                store: selectionStore,
+                languageRuntime:
+                    TranslationLanguageRuntimeAdapter(
+                        runtime: environment.translationRuntime
+                    ),
+                system: environment.systemTranslationCoordinator
+            )
         self.launchAtLoginController = LaunchAtLoginController()
         self.windowModel = windowModel
         self.appUpdateModel = AppUpdateModel()
@@ -84,6 +99,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             from: CommandLine.arguments
         )
         super.init()
+        translationLanguageCoordinator.wasMonitoring = { [weak self] in
+            self?.windowModel.isMonitoring ?? false
+        }
+        translationLanguageCoordinator.stopActiveOutput = { [weak self] in
+            await self?.stopMonitoringForLanguageSwitch()
+        }
+        translationLanguageCoordinator.clearTranslationCache = {
+            [weak self] in
+            guard let self else { return }
+            await self.environment.monitoring
+                .setTranslationConfigurationToken(
+                    "switching=\(UUID().uuidString)"
+                )
+        }
+        translationLanguageCoordinator.resumeMonitoring = { [weak self] in
+            guard let self else { return }
+            self.windowModel.updateTranslationReadiness(
+                .ready(self.windowModel.translationTarget)
+            )
+            self.startMonitoring(
+                requestPermissionIfNeeded: false
+            )
+        }
         translationAutoSpeechScheduler.onSpeak = { [weak self] text in
             guard
                 let self,
@@ -92,10 +130,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             else {
                 return
             }
+            let preferences = self.windowModel.generalPreferences
+            let target = self.windowModel.translationTarget
             self.translationSpeechController.speak(
                 text,
-                accent: self.windowModel.generalPreferences.speechAccent,
-                rate: self.windowModel.generalPreferences.speechRate,
+                target: target,
+                accent: preferences.speechAccent,
+                voiceIdentifier:
+                    preferences.speechVoiceIdentifier(for: target),
+                rate: preferences.speechRate,
                 source: .automatic
             )
         }
@@ -127,10 +170,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 return false
             }
             self.translationAutoSpeechScheduler.manualSpeechStarted()
+            let preferences = self.windowModel.generalPreferences
+            let target = self.windowModel.translationTarget
             self.translationSpeechController.speak(
                 offer.choices[choiceIndex],
-                accent: self.windowModel.generalPreferences.speechAccent,
-                rate: self.windowModel.generalPreferences.speechRate,
+                target: target,
+                accent: preferences.speechAccent,
+                voiceIdentifier:
+                    preferences.speechVoiceIdentifier(for: target),
+                rate: preferences.speechRate,
                 source: .manual
             )
             return false
@@ -171,25 +219,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             await environment.repairInvalidCoreDictionaryInstallations()
             await environment.refreshDictionaryRoutes()
             await synchronizeInstalledInputMethodSupport()
-            await environment.systemTranslationCoordinator
-                .refreshAvailability()
-            if let availability =
-                environment.systemTranslationCoordinator.availability
-            {
-                windowModel.updateSystemTranslationAvailability(
-                    availability
-                )
+            let readiness = await translationLanguageCoordinator
+                .prepareCurrentConfiguration()
+            if readiness != .superseded {
+                windowModel.updateTranslationReadiness(readiness)
             }
-            if TranslationModelSelection.isSystemTranslation(
-                TranslationModelSelection.selected()
-            ) {
-                await environment.systemTranslationCoordinator
-                    .prepareInstalledSessionIfAvailable()
-            }
-            await environment.translationRuntime.prepareSelectedModel()
             startupPreparationTask = nil
             windowModel.isPreparingMonitoring = false
-            if shouldStartMonitoringAfterPreparation {
+            if shouldStartMonitoringAfterPreparation,
+                windowModel.translationReadiness
+                    == .ready(windowModel.translationTarget)
+            {
                 shouldStartMonitoringAfterPreparation = false
                 let shouldRequestPermission =
                     shouldRequestPermissionAfterPreparation
@@ -198,6 +238,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     requestPermissionIfNeeded: shouldRequestPermission
                 )
             } else {
+                shouldStartMonitoringAfterPreparation = false
+                shouldRequestPermissionAfterPreparation = false
                 updateStatusItem(isMonitoring: windowModel.isMonitoring)
                 updateMonitoringMenuItem()
             }
@@ -384,8 +426,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             )
         }
         environment.systemTranslationCoordinator.onAvailabilityChange = {
-            [weak windowModel] availability in
-            windowModel?.updateSystemTranslationAvailability(availability)
+            [weak self] direction, availability in
+            guard let self else { return }
+            let currentDirection = TranslationDirection(
+                target: self.windowModel.translationTarget
+            )
+            guard direction == currentDirection else { return }
+            self.windowModel.updateSystemTranslationAvailability(
+                availability
+            )
         }
         windowModel.startMonitoringAction = { [weak self] in
             self?.startMonitoring()
@@ -441,13 +490,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         windowModel.activateTranslationModelAction = { [weak self] modelID in
             guard let self else { return "翻译运行时不可用" }
             return await self.environment.translationRuntime.prepare(
-                modelID: modelID
+                modelID: modelID,
+                direction: TranslationDirection(
+                    target: self.windowModel.translationTarget
+                )
             )
         }
         windowModel.refreshSystemTranslationAction = { [weak self] in
             guard let self else { return .unsupported }
+            let direction = TranslationDirection(
+                target: self.windowModel.translationTarget
+            )
             await self.environment.systemTranslationCoordinator
-                .refreshAvailability()
+                .refreshAvailability(for: direction)
             return self.environment.systemTranslationCoordinator
                 .availability ?? .unsupported
         }
@@ -455,30 +510,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             guard let self else {
                 throw SystemTranslationError.sessionUnavailable
             }
+            let direction = TranslationDirection(
+                target: self.windowModel.translationTarget
+            )
             try await self.environment.systemTranslationCoordinator
-                .prepareLanguagePack()
+                .prepareLanguagePack(for: direction)
             return self.environment.systemTranslationCoordinator
                 .availability ?? .failed("系统翻译状态未知")
         }
-        windowModel.activateSystemTranslationAction = { [weak self] in
+        windowModel.changeTranslationTargetAction = { [weak self] target in
             guard let self else {
-                return "系统翻译会话不可用"
+                return .failed(target, "翻译运行时不可用")
             }
-            guard
-                await self.environment.systemTranslationCoordinator
-                    .prepareInstalledSessionIfAvailable()
-            else {
-                if case .failed(let message) =
-                    self.environment.systemTranslationCoordinator
-                    .availability
-                {
-                    return message
-                }
-                return "系统翻译会话不可用，请稍后重试"
+            return await self.translationLanguageCoordinator
+                .switchTarget(to: target)
+        }
+        windowModel.selectTranslationModelAction = {
+            [weak self] modelID, target in
+            guard let self else {
+                return .failed(target, "翻译运行时不可用")
             }
-            return await self.environment.translationRuntime.prepare(
-                modelID: SystemTranslationModel.appleTranslationID
-            )
+            return await self.translationLanguageCoordinator
+                .selectModel(modelID, for: target)
         }
         windowModel.systemTranslationPresentationAction = {
             [weak self] in
@@ -590,8 +643,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.translationSpeechController.stopManual()
             }
         }
+        windowModel.previewTranslationSpeechAction = { [weak self] target in
+            guard let self else { return }
+            let preferences = self.windowModel.generalPreferences
+            self.translationSpeechController.speakPreview(
+                target: target,
+                accent: preferences.speechAccent,
+                voiceIdentifier:
+                    preferences.speechVoiceIdentifier(for: target),
+                rate: preferences.speechRate
+            )
+        }
         windowModel.generalPreferences.speechAccentDidChange = {
             [weak self] _ in
+            self?.translationSpeechController.stop()
+        }
+        windowModel.generalPreferences.speechVoiceDidChange = {
+            [weak self] in
             self?.translationSpeechController.stop()
         }
         windowModel.generalPreferences.speechRateDidChange = {
@@ -891,6 +959,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             updateMonitoringMenuItem()
             return
         }
+        guard
+            windowModel.translationReadiness
+                == .ready(windowModel.translationTarget)
+        else {
+            if requestPermissionIfNeeded {
+                showMainWindow()
+            }
+            return
+        }
         guard sessionState == .idle else { return }
         refreshPermissionState()
         if !windowModel.accessibilityGranted,
@@ -906,6 +983,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func stopMonitoring() {
+        translationLanguageCoordinator.cancelPendingResume()
+        prepareForMonitoringStop()
+        let session = environment.monitoringSession
+        Task.detached(priority: .userInitiated) {
+            await session.stop()
+        }
+    }
+
+    private func stopMonitoringForLanguageSwitch() async {
+        prepareForMonitoringStop()
+        await environment.monitoringSession.stop()
+        if sessionState != .idle {
+            sessionState = .idle
+            updateStatusItem(isMonitoring: false)
+            updateMonitoringMenuItem()
+        }
+    }
+
+    private func prepareForMonitoringStop() {
         shouldStartMonitoringAfterPreparation = false
         shouldRequestPermissionAfterPreparation = false
         translationChoiceShortcutCoordinator.update(nil)
@@ -917,15 +1013,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         windowModel.statusText = ""
         updateStatusItem(isMonitoring: false)
         updateMonitoringMenuItem()
-        let session = environment.monitoringSession
-        Task.detached(priority: .userInitiated) {
-            await session.stop()
-        }
     }
 
     private var monitoringSettings: MonitoringSettings {
         MonitoringSettings(
             mode: windowModel.translationMode,
+            translationTarget: windowModel.translationTarget,
             candidateDwellDuration: windowModel.displayPreferences
                 .candidateDwellDuration,
             translationScope: windowModel.displayPreferences.translationScope,
@@ -1034,8 +1127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 highlight: highlight,
                 inputCaretRect: inputCaretRect,
                 revision: revision,
-                isProgressive: isProgressive,
-                isMonitoring: windowModel.isMonitoring
+                isProgressive: isProgressive
             )
             if windowModel.generalPreferences.autoSpeechEnabled {
                 translationAutoSpeechScheduler.updateTranslations(
@@ -1100,8 +1192,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .sorted()
         return
             ([
+                "target=\(windowModel.translationTarget.rawValue)",
                 "model=\(windowModel.activeModelID)",
-                "prompt=1",
+                "prompt=2",
             ]
             + pluginVersions).joined(separator: "|")
     }

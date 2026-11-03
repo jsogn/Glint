@@ -29,10 +29,16 @@ struct GlintMLXProbe {
         let modelID =
             ProcessInfo.processInfo.environment["GLINT_MLX_MODEL_ID"]
             ?? "llm-qwen3-1.7b"
+        let target =
+            ProcessInfo.processInfo.environment["GLINT_MLX_TARGET"]
+                .flatMap(TranslationTarget.init(rawValue:))
+            ?? .english
         let engine = MLXTranslationEngine(
             modelDirectory: directory,
-            modelID: modelID
+            modelID: modelID,
+            supportedTargets: [target]
         )
+        let direction = TranslationDirection(target: target)
 
         do {
             if arguments.count > 1,
@@ -41,15 +47,19 @@ struct GlintMLXProbe {
                 try await runBatch(
                     engine: engine,
                     directory: directory,
-                    payload: arguments.dropFirst(2).joined(separator: " ")
+                    payload: arguments.dropFirst(2).joined(separator: " "),
+                    direction: direction
                 )
                 return
             }
             let started = ContinuousClock.now
             let result = try await engine.translate(
-                Candidate(
-                    text: input,
-                    kind: CandidateClassifier.classify(input)
+                TranslationRequest(
+                    candidate: Candidate(
+                        text: input,
+                        kind: CandidateClassifier.classify(input)
+                    ),
+                    direction: direction
                 )
             )
             let elapsed = started.duration(to: .now)
@@ -70,7 +80,8 @@ struct GlintMLXProbe {
     private static func runBatch(
         engine: MLXTranslationEngine,
         directory: URL,
-        payload: String
+        payload: String,
+        direction: TranslationDirection
     ) async throws {
         let rawInputs =
             payload.isEmpty
@@ -89,10 +100,13 @@ struct GlintMLXProbe {
                 kind: CandidateClassifier.classify($0)
             )
         }
-        try await engine.warmUp()
+        try await engine.warmUp(target: direction.target)
 
         let batchStarted = ContinuousClock.now
-        let batch = try await engine.translateBatch(candidates)
+        let batch = try await engine.translateBatch(
+            candidates,
+            target: direction.target
+        )
         let batchMilliseconds = milliseconds(
             batchStarted.duration(to: .now)
         )
@@ -100,7 +114,12 @@ struct GlintMLXProbe {
         let sequentialStarted = ContinuousClock.now
         var sequential: [String] = []
         for candidate in candidates {
-            let result = try await engine.translate(candidate)
+            let result = try await engine.translate(
+                TranslationRequest(
+                    candidate: candidate,
+                    direction: direction
+                )
+            )
             sequential.append(result?.text ?? "<not found>")
         }
         let sequentialMilliseconds = milliseconds(

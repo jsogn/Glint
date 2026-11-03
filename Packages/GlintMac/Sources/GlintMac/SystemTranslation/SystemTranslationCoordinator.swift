@@ -1,7 +1,13 @@
 import Foundation
 import GlintCore
+import OSLog
 import SwiftUI
 @preconcurrency import Translation
+
+private let systemTranslationLogger = Logger(
+    subsystem: "com.local.glint",
+    category: "SystemTranslation"
+)
 
 @MainActor
 protocol SystemTranslationSessionDriving: AnyObject {
@@ -40,15 +46,9 @@ public final class SystemTranslationCoordinator: ObservableObject {
     }
 
     private static let maximumPendingRequests = 9
-    private static let defaultDriverReadyTimeout: Duration = .seconds(2)
+    private static let defaultDriverReadyTimeout: Duration = .seconds(5)
     private static let availabilityMonitorDuration: Duration = .seconds(30 * 60)
     private static let maximumAvailabilityPollInterval = 15
-    private static let sourceLanguage = Locale.Language(
-        identifier: "zh-Hans"
-    )
-    private static let targetLanguage = Locale.Language(
-        identifier: "en"
-    )
 
     @Published public private(set) var availability: SystemTranslationAvailability? {
         didSet {
@@ -57,19 +57,30 @@ public final class SystemTranslationCoordinator: ObservableObject {
             else {
                 return
             }
-            onAvailabilityChange?(availability)
+            onAvailabilityChange?(currentDirection, availability)
         }
     }
     @Published public private(set) var configuration: TranslationSession.Configuration?
     @Published public private(set) var isPreparing = false
-    public var onAvailabilityChange: (@MainActor (SystemTranslationAvailability) -> Void)?
+    public var onAvailabilityChange:
+        (@MainActor (
+            TranslationDirection,
+            SystemTranslationAvailability
+        ) -> Void)?
     var currentSessionGeneration: UInt64 { sessionGeneration }
+    public private(set) var currentDirection: TranslationDirection
 
-    private let availabilityProvider: @MainActor () async -> SystemTranslationAvailability
+    private let availabilityProvider:
+        @MainActor (TranslationDirection) async ->
+            SystemTranslationAvailability
     private let driverReadyTimeout: Duration
     private var driver: (any SystemTranslationSessionDriving)?
     private var driverWaiters: [UUID: CheckedContinuation<Bool, Never>] = [:]
     private var sessionGeneration: UInt64 = 0
+    private var directionGeneration: UInt64 = 0
+    private var preparationGeneration: UInt64 = 0
+    private var preparingDirection: TranslationDirection?
+    private var preparingDirectionGeneration: UInt64 = 0
     private var pendingRequests: [PendingRequest] = []
     private var currentRequest: PendingRequest?
     private var cancelledRequestIDs: Set<UUID> = []
@@ -77,42 +88,113 @@ public final class SystemTranslationCoordinator: ObservableObject {
     private var availabilityMonitorTask: Task<Void, Never>?
     private var shouldStop = false
 
-    public convenience init() {
+    public convenience init(
+        direction: TranslationDirection
+    ) {
         self.init(
-            availabilityProvider: {
-                await Self.queryAvailability()
+            direction: direction,
+            availabilityProvider: { direction in
+                await Self.queryAvailability(for: direction)
             }
         )
     }
 
     init(
+        direction: TranslationDirection =
+            .simplifiedChineseToEnglish,
         availabilityProvider:
-            @escaping @MainActor () async ->
+            @escaping @MainActor (TranslationDirection) async ->
             SystemTranslationAvailability,
         driverReadyTimeout: Duration =
             SystemTranslationCoordinator.defaultDriverReadyTimeout
     ) {
+        self.currentDirection = direction
         self.availabilityProvider = availabilityProvider
         self.driverReadyTimeout = driverReadyTimeout
     }
 
-    public func refreshAvailability() async {
+    public func setDirection(
+        _ direction: TranslationDirection
+    ) async {
+        guard currentDirection != direction else { return }
+        systemTranslationLogger.notice(
+            "session direction from=\(self.currentDirection.target.rawValue, privacy: .public) to=\(direction.target.rawValue, privacy: .public)"
+        )
+        currentDirection = direction
+        directionGeneration &+= 1
+        sessionGeneration &+= 1
+        driver = nil
+        if var nextConfiguration = configuration {
+            nextConfiguration.invalidate()
+            configuration = nextConfiguration
+        }
+        availability = nil
+        signalIdleLoop()
+        failDriverWaiters()
+        failPendingRequests(
+            SystemTranslationError.sessionUnavailable
+        )
+        stopAvailabilityMonitoring()
+    }
+
+    public func refreshAvailability(
+        for direction: TranslationDirection
+    ) async {
+        if currentDirection != direction {
+            await setDirection(direction)
+        }
         guard !isPreparing else { return }
-        let current = await availabilityProvider()
-        guard !isPreparing else { return }
+        let operationGeneration = directionGeneration
+        let current = await availabilityProvider(direction)
+        guard isCurrentDirection(
+            direction,
+            generation: operationGeneration
+        ), !isPreparing else {
+            return
+        }
         availability = current
         if current != .available {
             stopAvailabilityMonitoring()
         }
     }
 
-    public func prepareLanguagePack() async throws {
-        guard !isPreparing else { return }
+    public func prepareLanguagePack(
+        for direction: TranslationDirection
+    ) async throws {
+        if currentDirection != direction {
+            await setDirection(direction)
+        }
+        let operationGeneration = directionGeneration
+        if isPreparing,
+            preparingDirection == direction,
+            preparingDirectionGeneration == operationGeneration
+        {
+            return
+        }
+        preparationGeneration &+= 1
+        let operation = preparationGeneration
         stopAvailabilityMonitoring()
         isPreparing = true
-        defer { isPreparing = false }
+        preparingDirection = direction
+        preparingDirectionGeneration = operationGeneration
+        defer {
+            if operation == preparationGeneration {
+                isPreparing = false
+                preparingDirection = nil
+                preparingDirectionGeneration = 0
+            }
+        }
 
-        let current = await availabilityProvider()
+        let current = await availabilityProvider(direction)
+        guard isCurrentDirection(
+            direction,
+            generation: operationGeneration
+        ) else {
+            return
+        }
+        systemTranslationLogger.notice(
+            "language pack prepare target=\(direction.target.rawValue, privacy: .public) status=\(String(describing: current), privacy: .public)"
+        )
         availability = current
         guard current != .unsupported else {
             availability = .unsupported
@@ -122,11 +204,29 @@ public final class SystemTranslationCoordinator: ObservableObject {
         availability = .installing
         do {
             try await startConfiguration(forceNewSession: true)
+            guard isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ) else {
+                return
+            }
             guard let driver else {
                 throw SystemTranslationError.sessionUnavailable
             }
             try await driver.prepareTranslation()
-            let updated = await availabilityProvider()
+            guard isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ) else {
+                return
+            }
+            let updated = await availabilityProvider(direction)
+            guard isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ) else {
+                return
+            }
             availability = updated
             switch updated {
             case .installed:
@@ -139,12 +239,24 @@ public final class SystemTranslationCoordinator: ObservableObject {
                 throw SystemTranslationError.languagePackUnavailable
             }
         } catch SystemTranslationError.sessionUnavailable {
+            guard isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ) else {
+                return
+            }
             availability = .failed(
                 SystemTranslationError.sessionUnavailable.localizedDescription
             )
             throw SystemTranslationError.sessionUnavailable
         } catch {
-            let updated = await availabilityProvider()
+            let updated = await availabilityProvider(direction)
+            guard isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ) else {
+                return
+            }
             availability = updated
             switch updated {
             case .installed:
@@ -162,26 +274,75 @@ public final class SystemTranslationCoordinator: ObservableObject {
         }
     }
 
+    private func isCurrentDirection(
+        _ direction: TranslationDirection,
+        generation: UInt64
+    ) -> Bool {
+        currentDirection == direction
+            && directionGeneration == generation
+    }
+
     @discardableResult
-    public func prepareInstalledSessionIfAvailable() async -> Bool {
-        let current = await availabilityProvider()
+    public func prepareInstalledSessionIfAvailable(
+        for direction: TranslationDirection
+    ) async -> Bool {
+        if currentDirection != direction {
+            await setDirection(direction)
+        }
+        let operationGeneration = directionGeneration
+        let current = await availabilityProvider(direction)
+        guard isCurrentDirection(
+            direction,
+            generation: operationGeneration
+        ) else {
+            return false
+        }
         availability = current
+        systemTranslationLogger.notice(
+            "installed session prepare target=\(direction.target.rawValue, privacy: .public) status=\(String(describing: current), privacy: .public)"
+        )
         guard current.canSelect else { return false }
         do {
-            try await startConfiguration()
+            try await startConfiguration(forceNewSession: true)
+            guard isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ) else {
+                return false
+            }
             try await driver?.prepareTranslation()
+            guard isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ) else {
+                return false
+            }
             return true
         } catch SystemTranslationError.sessionUnavailable {
             return false
         } catch {
+            guard isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ) else {
+                return false
+            }
             availability = .failed(error.localizedDescription)
             return false
         }
     }
 
-    public func translate(_ text: String) async throws -> String {
+    public func translate(
+        _ text: String,
+        direction: TranslationDirection
+    ) async throws -> String {
         try Task.checkCancellation()
-        guard driver != nil else {
+        guard currentDirection == direction,
+            driver != nil
+        else {
+            systemTranslationLogger.error(
+                "translate rejected target=\(direction.target.rawValue, privacy: .public) session_target=\(self.currentDirection.target.rawValue, privacy: .public) driver=\(String(self.driver != nil), privacy: .public)"
+            )
             throw SystemTranslationError.sessionUnavailable
         }
         let requestID = UUID()
@@ -282,6 +443,7 @@ public final class SystemTranslationCoordinator: ObservableObject {
         if driver == nil {
             configuration = nil
             await Task.yield()
+            try? await Task.sleep(for: .milliseconds(20))
             makeConfiguration()
             guard await waitForDriver() else {
                 throw SystemTranslationError.sessionUnavailable
@@ -312,9 +474,14 @@ public final class SystemTranslationCoordinator: ObservableObject {
     }
 
     private func makeConfiguration() {
+        let direction = currentDirection
         configuration = TranslationSession.Configuration(
-            source: Self.sourceLanguage,
-            target: Self.targetLanguage
+            source: Locale.Language(
+                identifier: direction.source.rawValue
+            ),
+            target: Locale.Language(
+                identifier: direction.target.rawValue
+            )
         )
     }
 
@@ -497,7 +664,9 @@ public final class SystemTranslationCoordinator: ObservableObject {
                 }
                 guard let self else { return }
                 guard !self.isPreparing else { continue }
-                let current = await availabilityProvider()
+                let current = await availabilityProvider(
+                    currentDirection
+                )
                 guard !Task.isCancelled, !self.isPreparing else {
                     return
                 }
@@ -518,12 +687,18 @@ public final class SystemTranslationCoordinator: ObservableObject {
         availabilityMonitorTask = nil
     }
 
-    private static func queryAvailability() async
+    private static func queryAvailability(
+        for direction: TranslationDirection
+    ) async
         -> SystemTranslationAvailability
     {
         let status = await LanguageAvailability().status(
-            from: sourceLanguage,
-            to: targetLanguage
+            from: Locale.Language(
+                identifier: direction.source.rawValue
+            ),
+            to: Locale.Language(
+                identifier: direction.target.rawValue
+            )
         )
         switch status {
         case .installed:
@@ -552,7 +727,7 @@ public enum SystemTranslationError:
     public var errorDescription: String? {
         switch self {
         case .unsupported:
-            "当前 Mac 不支持简体中文到英文翻译"
+            "当前 Mac 不支持该翻译方向"
         case .languagePackUnavailable:
             "系统翻译语言包尚未安装"
         case .sessionUnavailable:

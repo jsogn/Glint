@@ -12,8 +12,12 @@ public final class ECDICTDictionary: DictionaryEngine, @unchecked Sendable {
         self.ranker = ranker
     }
 
-    public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
-        let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    public func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        let text = request.candidate.text.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
         guard !text.isEmpty,
             !DictionaryPolicy.blockedTerms.contains(text)
         else {

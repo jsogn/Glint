@@ -788,13 +788,23 @@ private struct RimeTestCandidateReaderRouter: CandidateReaderRouting {
 }
 
 private struct RimeTestDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }
 
 private struct RimeTestTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }

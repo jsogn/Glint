@@ -1,4 +1,5 @@
 import AVFAudio
+import GlintCore
 
 @MainActor
 protocol TranslationSpeechSynthesizing: AnyObject {
@@ -22,6 +23,7 @@ public final class TranslationSpeechController {
 
     private let synthesizer: any TranslationSpeechSynthesizing
     private let voiceForLanguage: (String) -> AVSpeechSynthesisVoice?
+    private let voiceForIdentifier: (String) -> AVSpeechSynthesisVoice?
     private let preferredLanguages: () -> [String]
     private var activeSource: TranslationSpeechSource?
 
@@ -31,6 +33,9 @@ public final class TranslationSpeechController {
             voiceForLanguage: { language in
                 AVSpeechSynthesisVoice(language: language)
             },
+            voiceForIdentifier: { identifier in
+                AVSpeechSynthesisVoice(identifier: identifier)
+            },
             preferredLanguages: { Locale.preferredLanguages }
         )
     }
@@ -38,18 +43,25 @@ public final class TranslationSpeechController {
     init(
         synthesizer: any TranslationSpeechSynthesizing,
         voiceForLanguage: @escaping (String) -> AVSpeechSynthesisVoice?,
+        voiceForIdentifier: @escaping (String) ->
+            AVSpeechSynthesisVoice? = { identifier in
+                AVSpeechSynthesisVoice(identifier: identifier)
+            },
         preferredLanguages: @escaping () -> [String] = {
             Locale.preferredLanguages
         }
     ) {
         self.synthesizer = synthesizer
         self.voiceForLanguage = voiceForLanguage
+        self.voiceForIdentifier = voiceForIdentifier
         self.preferredLanguages = preferredLanguages
     }
 
     public func speak(
         _ text: String,
+        target: TranslationTarget,
         accent: TranslationSpeechAccent,
+        voiceIdentifier: String? = nil,
         rate: TranslationSpeechRate = .standard,
         source: TranslationSpeechSource = .manual
     ) {
@@ -60,14 +72,13 @@ public final class TranslationSpeechController {
         }
         activeSource = nil
         let utterance = AVSpeechUtterance(string: trimmed)
-        let languageCode = accent.languageCode(
-            preferredLanguages: preferredLanguages()
-        )
         let voice =
-            voiceForLanguage(languageCode)
-            ?? (accent == .system && languageCode != "en-US"
-                ? voiceForLanguage("en-US")
-                : nil)
+            target.supportsSpeechAccents
+            ? englishVoice(accent: accent)
+            : targetVoice(
+                identifier: voiceIdentifier,
+                target: target
+            )
         guard let voice else {
             return
         }
@@ -75,6 +86,39 @@ public final class TranslationSpeechController {
         utterance.rate = Self.utteranceRate(for: rate)
         activeSource = source
         synthesizer.speak(utterance)
+    }
+
+    public func speakPreview(
+        target: TranslationTarget,
+        accent: TranslationSpeechAccent,
+        voiceIdentifier: String? = nil,
+        rate: TranslationSpeechRate = .standard
+    ) {
+        speak(
+            Self.previewText(for: target),
+            target: target,
+            accent: accent,
+            voiceIdentifier: voiceIdentifier,
+            rate: rate,
+            source: .manual
+        )
+    }
+
+    static func previewText(for target: TranslationTarget) -> String {
+        switch target {
+        case .english:
+            "Hello. It's a beautiful day, isn't it?"
+        case .japanese:
+            "こんにちは。今日はいい天気ですね。"
+        case .spanish:
+            "Hola. Hoy hace un día precioso, ¿verdad?"
+        case .french:
+            "Bonjour. Il fait très beau aujourd'hui, n'est-ce pas ?"
+        case .german:
+            "Hallo. Heute ist es wirklich schön, nicht wahr?"
+        case .russian:
+            "Здравствуйте. Сегодня прекрасная погода, не так ли?"
+        }
     }
 
     public func stop() {
@@ -92,6 +136,34 @@ public final class TranslationSpeechController {
     public func stopManual() {
         guard activeSource == .manual else { return }
         stop()
+    }
+
+    private func englishVoice(
+        accent: TranslationSpeechAccent
+    ) -> AVSpeechSynthesisVoice? {
+        let languageCode = accent.languageCode(
+            preferredLanguages: preferredLanguages()
+        )
+        return voiceForLanguage(languageCode)
+            ?? (accent == .system && languageCode != "en-US"
+                ? voiceForLanguage("en-US")
+                : nil)
+    }
+
+    private func targetVoice(
+        identifier: String?,
+        target: TranslationTarget
+    ) -> AVSpeechSynthesisVoice? {
+        if let identifier,
+            let selected = voiceForIdentifier(identifier),
+            TranslationSpeechVoiceCatalog.isVoice(
+                selected,
+                for: target
+            )
+        {
+            return selected
+        }
+        return voiceForLanguage(target.speechLocaleIdentifier)
     }
 
     private static func utteranceRate(

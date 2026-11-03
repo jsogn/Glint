@@ -2,24 +2,13 @@ import Foundation
 import GlintCore
 import XCTest
 import os
+
 @testable import GlintInference
 
 final class TranslationRuntimeTests: XCTestCase {
     func testSystemModelUsesInjectedEngineWithoutResolvingPlugin() async throws {
-        let suiteName = "GlintTranslationRuntimeTests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer {
-            UserDefaults.standard.removePersistentDomain(
-                forName: suiteName
-            )
-        }
-        TranslationModelSelection.select(
-            SystemTranslationModel.appleTranslationID,
-            in: defaults
-        )
         let resolverCalls = OSAllocatedUnfairLock(initialState: 0)
         let runtime = TranslationRuntime(
-            defaults: defaults,
             systemEngine: StubTranslationEngine(
                 output: "System translation"
             ),
@@ -29,43 +18,83 @@ final class TranslationRuntimeTests: XCTestCase {
             }
         )
 
-        await runtime.prepareSelectedModel()
+        let preparationError = await runtime.prepare(
+            modelID: SystemTranslationModel.appleTranslationID,
+            direction: .simplifiedChineseToEnglish
+        )
         let result = try await runtime.translate(
-            Candidate(text: "你好", kind: .word)
+            TranslationRequest(
+                candidate: Candidate(text: "你好", kind: .word),
+                direction: .simplifiedChineseToEnglish
+            )
         )
 
+        XCTAssertNil(preparationError)
         XCTAssertEqual(result?.text, "System translation")
         XCTAssertEqual(resolverCalls.withLock { $0 }, 0)
+        let activeDirection = await runtime.activeDirection
+        XCTAssertEqual(activeDirection, .simplifiedChineseToEnglish)
     }
 
-    func testFailedPreparationReportsDetailedErrorAndIsNotUsable() async throws {
-        let suiteName = "GlintTranslationRuntimeTests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer {
-            UserDefaults.standard.removePersistentDomain(
-                forName: suiteName
-            )
-        }
-        TranslationModelSelection.select("broken-ct2", in: defaults)
-        let missingDirectory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("missing-ct2-\(UUID().uuidString)")
-        let runtime = TranslationRuntime(defaults: defaults) { modelID in
-            .ctranslate2(
+    func testPreparingEnglishModelForJapaneseFailsBeforeLoading() async {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("missing-\(UUID().uuidString)")
+        let runtime = TranslationRuntime { modelID in
+            ResolvedTranslationModel(
                 modelID: modelID,
-                directory: missingDirectory
+                storage: .mlx(
+                    directory: directory,
+                    promptProfile: .generic
+                ),
+                supportedDirections: [
+                    .simplifiedChineseToEnglish
+                ]
             )
         }
 
-        let error = await runtime.prepare(modelID: "broken-ct2")
+        let error = await runtime.prepare(
+            modelID: "english-only",
+            direction: .simplifiedChineseToJapanese
+        )
+
+        XCTAssertEqual(error, "当前模型不支持目标语言")
+        let activeDirection = await runtime.activeDirection
+        XCTAssertNil(activeDirection)
+    }
+
+    func testFailedPreparationReportsDetailedErrorAndIsNotUsable() async {
+        let missingDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "missing-ct2-\(UUID().uuidString)"
+            )
+        let runtime = TranslationRuntime { modelID in
+            ResolvedTranslationModel(
+                modelID: modelID,
+                storage: .ctranslate2(
+                    directory: missingDirectory
+                ),
+                supportedDirections: [
+                    .simplifiedChineseToEnglish
+                ]
+            )
+        }
+
+        let error = await runtime.prepare(
+            modelID: "broken-ct2",
+            direction: .simplifiedChineseToEnglish
+        )
         let lastError = await runtime.lastError
 
         XCTAssertNotNil(error)
         XCTAssertEqual(lastError, error)
         do {
             _ = try await runtime.translate(
-                Candidate(
-                    text: "你好",
-                    kind: .word
+                TranslationRequest(
+                    candidate: Candidate(
+                        text: "你好",
+                        kind: .word
+                    ),
+                    direction: .simplifiedChineseToEnglish
                 )
             )
             XCTFail("A failed model must not be used")
@@ -77,22 +106,10 @@ final class TranslationRuntimeTests: XCTestCase {
     }
 
     func testSystemTranslationFailureDoesNotResolveFallbackModel()
-        async throws
+        async
     {
-        let suiteName = "GlintTranslationRuntimeTests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer {
-            UserDefaults.standard.removePersistentDomain(
-                forName: suiteName
-            )
-        }
-        TranslationModelSelection.select(
-            SystemTranslationModel.appleTranslationID,
-            in: defaults
-        )
         let resolverCalls = OSAllocatedUnfairLock(initialState: 0)
         let runtime = TranslationRuntime(
-            defaults: defaults,
             systemEngine: StubTranslationEngine(
                 error: TranslationRuntimeTestError.systemFailed
             ),
@@ -102,10 +119,19 @@ final class TranslationRuntimeTests: XCTestCase {
             }
         )
 
-        await runtime.prepareSelectedModel()
+        _ = await runtime.prepare(
+            modelID: SystemTranslationModel.appleTranslationID,
+            direction: .simplifiedChineseToEnglish
+        )
         do {
             _ = try await runtime.translate(
-                Candidate(text: "今天天气不错", kind: .sentence)
+                TranslationRequest(
+                    candidate: Candidate(
+                        text: "今天天气不错",
+                        kind: .sentence
+                    ),
+                    direction: .simplifiedChineseToEnglish
+                )
             )
             XCTFail("System translation failure must not use another model")
         } catch {
@@ -118,10 +144,7 @@ final class TranslationRuntimeTests: XCTestCase {
     }
 
     func testOnlineOPUSModelDataLoadsWithBundledRuntime() async throws {
-        var repositoryRoot = URL(fileURLWithPath: #filePath)
-        for _ in 0..<5 {
-            repositoryRoot.deleteLastPathComponent()
-        }
+        let repositoryRoot = repositoryRoot()
         let modelDirectory = repositoryRoot.appendingPathComponent(
             "Resources/OnlineModels/mt-opus-zh-en/model",
             isDirectory: true
@@ -132,63 +155,83 @@ final class TranslationRuntimeTests: XCTestCase {
             )
         }
 
+        let direction = TranslationDirection.simplifiedChineseToEnglish
         let engine = try CTranslate2Engine(
+            direction: direction,
             modelDirectory: modelDirectory,
             libraryURL: repositoryRoot.appendingPathComponent(
                 "Resources/CTranslate2Runtime/bin/libglintct2.dylib"
             )
         )
         let result = try await engine.translate(
-            Candidate(
-                text: "今天天气不错",
-                kind: .sentence
+            TranslationRequest(
+                candidate: Candidate(
+                    text: "今天天气不错",
+                    kind: .sentence
+                ),
+                direction: direction
             )
         )
 
         XCTAssertEqual(result?.text, "It's a nice day.")
     }
 
-    func testBrokenSelectedModelDoesNotResolveAnotherModel() async throws {
-        let suiteName = "GlintTranslationRuntimeTests.\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer {
-            UserDefaults.standard.removePersistentDomain(
-                forName: suiteName
-            )
-        }
-        let resolverCalls = OSAllocatedUnfairLock(initialState: [String]())
-        let runtime = TranslationRuntime(
-            defaults: defaults
-        ) { modelID in
+    func testBrokenSelectedModelDoesNotResolveAnotherModel() async {
+        let resolverCalls = OSAllocatedUnfairLock<[String]>(
+            initialState: []
+        )
+        let runtime = TranslationRuntime { modelID in
             resolverCalls.withLock { $0.append(modelID) }
             return nil
         }
 
         let preparationError = await runtime.prepare(
-            modelID: "broken-optional-model"
+            modelID: "broken-optional-model",
+            direction: .simplifiedChineseToEnglish
         )
+
         XCTAssertNotNil(preparationError)
         XCTAssertEqual(
             resolverCalls.withLock { $0 },
             ["broken-optional-model"]
         )
     }
+
+    private func repositoryRoot() -> URL {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<5 {
+            root.deleteLastPathComponent()
+        }
+        return root
+    }
 }
 
 private struct StubTranslationEngine: TranslationEngine {
     let output: String?
     let error: (any Error)?
+    let supportedDirections: Set<TranslationDirection>
 
     init(
         output: String? = nil,
-        error: (any Error)? = nil
+        error: (any Error)? = nil,
+        supportedDirections: Set<TranslationDirection> = [
+            .simplifiedChineseToEnglish,
+            .simplifiedChineseToJapanese,
+        ]
     ) {
         self.output = output
         self.error = error
+        self.supportedDirections = supportedDirections
+    }
+
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        supportedDirections.contains(direction)
     }
 
     func translate(
-        _ candidate: Candidate
+        _ request: TranslationRequest
     ) async throws -> TranslationResult? {
         if let error {
             throw error

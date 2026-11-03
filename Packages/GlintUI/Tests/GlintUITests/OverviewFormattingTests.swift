@@ -4,6 +4,27 @@ import XCTest
 @testable import GlintUI
 
 final class OverviewFormattingTests: XCTestCase {
+    func testStatusFlowUsesTargetLanguageInsteadOfRecognition() {
+        let japanese = OverviewFormatting.statusSteps(
+            target: .japanese,
+            mode: .dictionaryFirst,
+            modelName: "Apple 翻译"
+        )
+        XCTAssertEqual(
+            japanese.map(\.title),
+            ["输入", "目标语言", "策略", "翻译"]
+        )
+        XCTAssertEqual(japanese[1].value, "日语")
+        XCTAssertEqual(japanese[2].value, "模型翻译")
+
+        let english = OverviewFormatting.statusSteps(
+            target: .english,
+            mode: .smartFusion,
+            modelName: "Apple 翻译"
+        )
+        XCTAssertEqual(english[2].value, "智能融合")
+    }
+
     func testDwellDurationUsesMilliseconds() {
         XCTAssertEqual(OverviewFormatting.dwellDuration(0.08), "80 ms")
         XCTAssertEqual(OverviewFormatting.dwellDuration(0.3), "300 ms")

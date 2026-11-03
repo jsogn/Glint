@@ -15,6 +15,7 @@ public enum MLXTranslationError: Error, LocalizedError, Sendable {
     case emptyOutput
     case invalidOutput
     case incompatibleAdapter
+    case unsupportedTarget
 
     public var errorDescription: String? {
         switch self {
@@ -25,7 +26,9 @@ public enum MLXTranslationError: Error, LocalizedError, Sendable {
         case .invalidOutput:
             return "翻译模型返回了无效内容"
         case .incompatibleAdapter:
-            return "模型未通过中英翻译兼容性验证"
+            return "模型未通过目标语言兼容性验证"
+        case .unsupportedTarget:
+            return "模型不支持目标语言"
         }
     }
 }
@@ -73,27 +76,34 @@ internal enum MLXPromptProfile: Sendable, Equatable {
         }
     }
 
-    func instructions(for adapterMode: TranslationAdapterMode) -> String? {
+    func instructions(
+        for adapterMode: TranslationAdapterMode,
+        target: TranslationTarget
+    ) -> String? {
         if adapterMode == .systemInstruction {
-            return MLXTranslationEngine.qwenSystemPrompt
+            return MLXTranslationEngine.qwenSystemPrompt(
+                for: target
+            )
         }
         return nil
     }
 
     func prompt(
         for input: String,
+        target: TranslationTarget,
         adapterMode: TranslationAdapterMode
     ) -> String {
         guard adapterMode == .translationInstruction else {
             return input
         }
+        let language = target.chineseDisplayName
         return switch self {
         case .hyMT2:
-            "将以下文本翻译为英语，注意只需要输出翻译后的结果，不要额外解释：\n\n\(input)"
+            "将以下文本翻译为\(language)，注意只需要输出翻译后的结果，不要额外解释：\n\n\(input)"
         case .indexTranslate:
-            "请将以下中文文本翻译为英语，直接输出翻译结果，不要进行任何解释。\n\n\(input)"
+            "请将以下中文文本翻译为\(language)，直接输出翻译结果，不要进行任何解释。\n\n\(input)"
         case .qwenGeneral, .generic:
-            "将以下文本翻译为英语，只输出翻译结果，不要解释：\n\n\(input)"
+            "将以下文本翻译为\(language)，只输出翻译结果，不要解释：\n\n\(input)"
         }
     }
 
@@ -129,28 +139,31 @@ internal enum MLXPromptProfile: Sendable, Equatable {
         )
     }
 
-    func batchPrompt(for inputs: [String]) -> String {
+    func batchPrompt(
+        for inputs: [String],
+        target: TranslationTarget
+    ) -> String {
         let numberedInputs = inputs.enumerated().map { index, input in
             "\(index + 1). \(input)"
         }.joined(separator: "\n")
         switch self {
         case .qwenGeneral, .generic:
             return """
-                Translate each numbered Chinese item below into natural English.
-                Output exactly one English line per item, preserving the original number.
+                Translate each numbered Chinese item below into natural \(target.englishDisplayName).
+                Output exactly one \(target.englishDisplayName) line per item, preserving the original number.
                 Never explain, merge items, reorder items, or repeat the Chinese input.
 
                 \(numberedInputs)
                 """
         case .hyMT2:
             return """
-                将以下编号文本分别翻译为英语。必须保持原编号和顺序，每条只输出英文翻译，不要解释、不要合并、不要遗漏。每行格式为“编号. 英文”。
+                将以下编号文本分别翻译为\(target.chineseDisplayName)。必须保持原编号和顺序，每条只输出\(target.chineseDisplayName)翻译，不要解释、不要合并、不要遗漏。每行格式为“编号. \(target.chineseDisplayName)译文”。
 
                 \(numberedInputs)
                 """
         case .indexTranslate:
             return """
-                请逐条将以下编号文本翻译为英语。保持原编号和顺序，每行只输出“编号. 英文”，不要解释或合并。
+                请逐条将以下编号文本翻译为\(target.chineseDisplayName)。保持原编号和顺序，每行只输出“编号. \(target.chineseDisplayName)译文”，不要解释或合并。
 
                 \(numberedInputs)
                 """
@@ -159,11 +172,16 @@ internal enum MLXPromptProfile: Sendable, Equatable {
 }
 
 private struct CachedTranslationAdapter: Codable {
-    static let fileName = ".glint-translation-adapter.json"
+    static let legacyFileName = ".glint-translation-adapter.json"
     static let currentSchemaVersion = 1
 
     let schemaVersion: Int
+    let target: TranslationTarget?
     let mode: TranslationAdapterMode
+
+    static func fileName(for target: TranslationTarget) -> String {
+        ".glint-translation-adapter-\(target.rawValue).json"
+    }
 }
 
 /// Local-only translation through MLX.
@@ -173,12 +191,16 @@ private struct CachedTranslationAdapter: Codable {
 /// directory. Keeping a single `ModelContainer` alive avoids reloading several
 /// gigabytes for every candidate.
 public actor MLXTranslationEngine: TranslationEngine {
-    public static let qwenSystemPrompt = """
-        You translate Chinese into natural English for a typing companion.
-        Output only one line of English. Never explain, quote, label, or repeat the input.
-        For a word or short term, output its most common English equivalent.
+    public static func qwenSystemPrompt(
+        for target: TranslationTarget
+    ) -> String {
+        """
+        You translate Chinese into natural \(target.englishDisplayName) for a typing companion.
+        Output only one line in \(target.englishDisplayName). Never explain, quote, label, or repeat the input.
+        For a word or short term, output its most common \(target.englishDisplayName) equivalent.
         For a sentence, produce a concise, natural translation.
         """
+    }
 
     public static func configureMetalLibrary(at url: URL) {
         GPU.metallib = url
@@ -190,36 +212,29 @@ public actor MLXTranslationEngine: TranslationEngine {
     private var lastLoadSeconds: Double?
     private(set) public var lastWarmUpSeconds: Double?
     private let profile: MLXPromptProfile
-    private var adapterMode: TranslationAdapterMode
-    private var adapterModeIsResolved: Bool
+    private let supportedTargets: Set<TranslationTarget>
+    private var adapterMode = TranslationAdapterMode.directSource
+    private var adapterModeIsResolved = false
+    private var adapterTarget: TranslationTarget?
     private var generationIsBusy = false
     private var generationWaiters: [CheckedContinuation<Void, Never>] = []
 
     public init(
         modelDirectory: URL? = nil,
         modelID: String = "llm-qwen3-1.7b",
-        promptProfile: TranslationPromptProfile? = nil
+        promptProfile: TranslationPromptProfile? = nil,
+        supportedTargets: Set<TranslationTarget> = [.english]
     ) {
         let profile = MLXPromptProfile(
             profile: promptProfile ?? .inferred(from: modelID)
         )
         self.profile = profile
+        self.supportedTargets = supportedTargets
         let modelDirectory = Self.resolveDirectory(
             explicit: modelDirectory,
             modelID: modelID
         )
         self.modelDirectory = modelDirectory
-        let defaultMode = profile.defaultAdapterMode
-        if profile == .generic,
-            let modelDirectory,
-            let cached = Self.cachedAdapter(in: modelDirectory)
-        {
-            self.adapterMode = cached.mode
-            self.adapterModeIsResolved = true
-        } else {
-            self.adapterMode = defaultMode
-            self.adapterModeIsResolved = profile != .generic
-        }
     }
 
     public var loadSeconds: Double? {
@@ -265,39 +280,74 @@ public actor MLXTranslationEngine: TranslationEngine {
     }
 
     @discardableResult
-    public func prepareForTranslation() async throws -> ModelContainer {
+    public func prepareForTranslation(
+        target: TranslationTarget
+    ) async throws -> ModelContainer {
+        guard supportedTargets.contains(target) else {
+            throw MLXTranslationError.unsupportedTarget
+        }
         let container = try await prepare()
+        prepareAdapterState(for: target)
         guard profile == .generic, !adapterModeIsResolved else {
             return container
         }
-        adapterMode = try await detectAdapterMode()
+        adapterMode = try await detectAdapterMode(target: target)
         adapterModeIsResolved = true
-        persistAdapterMode()
+        persistAdapterMode(target: target)
         return container
     }
 
-    public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    public func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        direction.source == .simplifiedChinese
+            && supportedTargets.contains(direction.target)
+    }
+
+    public func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        try await translateCandidate(
+            request.candidate,
+            target: request.direction.target
+        )
+    }
+
+    private func translateCandidate(
+        _ candidate: Candidate,
+        target: TranslationTarget
+    ) async throws -> TranslationResult? {
         try Task.checkCancellation()
+        guard supportedTargets.contains(target) else {
+            throw MLXTranslationError.unsupportedTarget
+        }
         let input = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty else { return nil }
 
-        let container = try await prepareForTranslation()
+        let container = try await prepareForTranslation(
+            target: target
+        )
         await acquireGenerationSlot()
         defer { releaseGenerationSlot() }
         try Task.checkCancellation()
         let session = Self.makeSession(
             container,
             profile: profile,
+            target: target,
             adapterMode: adapterMode,
             maxTokens: 64
         )
         let output = try await session.respond(
             to: profile.prompt(
                 for: input,
+                target: target,
                 adapterMode: adapterMode
             )
         )
-        guard let translated = Self.clean(output), !translated.isEmpty else {
+        guard
+            let translated = Self.clean(output, target: target),
+            !translated.isEmpty
+        else {
             throw MLXTranslationError.emptyOutput
         }
         guard !Self.isInstructionEcho(translated, for: input) else {
@@ -307,12 +357,21 @@ public actor MLXTranslationEngine: TranslationEngine {
     }
 
     public func translateBatch(
-        _ candidates: [Candidate]
+        _ candidates: [Candidate],
+        target: TranslationTarget
     ) async throws -> [TranslationResult?] {
         try Task.checkCancellation()
+        guard supportedTargets.contains(target) else {
+            throw MLXTranslationError.unsupportedTarget
+        }
         guard !candidates.isEmpty else { return [] }
         guard candidates.count > 1 else {
-            return [try await translate(candidates[0])]
+            return [
+                try await translateCandidate(
+                    candidates[0],
+                    target: target
+                )
+            ]
         }
         let inputs = candidates.compactMap {
             let text = $0.text.trimmingCharacters(
@@ -324,7 +383,9 @@ public actor MLXTranslationEngine: TranslationEngine {
             throw MLXTranslationError.invalidOutput
         }
 
-        let container = try await prepareForTranslation()
+        let container = try await prepareForTranslation(
+            target: target
+        )
         await acquireGenerationSlot()
         defer { releaseGenerationSlot() }
         try Task.checkCancellation()
@@ -332,15 +393,20 @@ public actor MLXTranslationEngine: TranslationEngine {
         let session = Self.makeSession(
             container,
             profile: profile,
+            target: target,
             adapterMode: adapterMode,
             maxTokens: maximumTokens
         )
         let output = try await session.respond(
-            to: profile.batchPrompt(for: inputs)
+            to: profile.batchPrompt(
+                for: inputs,
+                target: target
+            )
         )
         let translations = try Self.parseBatchTranslations(
             output,
-            expectedCount: inputs.count
+            expectedCount: inputs.count,
+            target: target
         )
         guard
             !zip(translations, inputs).contains(where: {
@@ -355,9 +421,14 @@ public actor MLXTranslationEngine: TranslationEngine {
     }
 
     /// Compile and exercise the first generation path without user text.
-    public func warmUp() async throws {
+    public func warmUp(target: TranslationTarget) async throws {
         try Task.checkCancellation()
-        let container = try await prepareForTranslation()
+        guard supportedTargets.contains(target) else {
+            throw MLXTranslationError.unsupportedTarget
+        }
+        let container = try await prepareForTranslation(
+            target: target
+        )
         await acquireGenerationSlot()
         defer { releaseGenerationSlot() }
         try Task.checkCancellation()
@@ -365,12 +436,14 @@ public actor MLXTranslationEngine: TranslationEngine {
         let session = Self.makeSession(
             container,
             profile: profile,
+            target: target,
             adapterMode: adapterMode,
             maxTokens: 16
         )
         _ = try await session.respond(
             to: profile.prompt(
                 for: "今天天气不错",
+                target: target,
                 adapterMode: adapterMode
             )
         )
@@ -385,12 +458,14 @@ public actor MLXTranslationEngine: TranslationEngine {
     private nonisolated static func makeSession(
         _ container: ModelContainer,
         profile: MLXPromptProfile,
+        target: TranslationTarget,
         adapterMode: TranslationAdapterMode,
         maxTokens: Int
     ) -> ChatSession {
         makeSession(
             container,
             profile: profile,
+            target: target,
             adapterMode: adapterMode,
             parameters: profile.generationParameters(
                 maxTokens: maxTokens
@@ -401,13 +476,15 @@ public actor MLXTranslationEngine: TranslationEngine {
     private nonisolated static func makeSession(
         _ container: ModelContainer,
         profile: MLXPromptProfile,
+        target: TranslationTarget,
         adapterMode: TranslationAdapterMode,
         parameters: GenerateParameters
     ) -> ChatSession {
         ChatSession(
             container,
             instructions: profile.instructions(
-                for: adapterMode
+                for: adapterMode,
+                target: target
             ),
             generateParameters: parameters,
             additionalContext: profile.additionalContext
@@ -432,7 +509,9 @@ public actor MLXTranslationEngine: TranslationEngine {
         generationWaiters.removeFirst().resume()
     }
 
-    private func detectAdapterMode() async throws -> TranslationAdapterMode {
+    private func detectAdapterMode(
+        target: TranslationTarget
+    ) async throws -> TranslationAdapterMode {
         guard let container else {
             throw MLXTranslationError.modelNotFound
         }
@@ -449,22 +528,27 @@ public actor MLXTranslationEngine: TranslationEngine {
             let session = Self.makeSession(
                 container,
                 profile: profile,
+                target: target,
                 adapterMode: mode,
                 parameters: profile.probeGenerationParameters(
                     maxTokens: 32
                 )
             )
             var passed = true
-            for probe in Self.adapterProbes {
+            for probe in Self.adapterProbes(target: target) {
                 do {
                     let raw = try await session.respond(
                         to: profile.prompt(
                             for: probe.source,
+                            target: target,
                             adapterMode: mode
                         )
                     )
                     guard
-                        let translated = Self.clean(raw),
+                        let translated = Self.clean(
+                            raw,
+                            target: target
+                        ),
                         !Self.isInstructionEcho(
                             translated,
                             for: probe.source
@@ -491,10 +575,32 @@ public actor MLXTranslationEngine: TranslationEngine {
         throw MLXTranslationError.incompatibleAdapter
     }
 
-    private func persistAdapterMode() {
+    private func prepareAdapterState(
+        for target: TranslationTarget
+    ) {
+        guard adapterTarget != target else { return }
+        adapterTarget = target
+        adapterMode = profile.defaultAdapterMode
+        adapterModeIsResolved = profile != .generic
+
+        guard profile == .generic,
+            let modelDirectory,
+            let cached = Self.cachedAdapter(
+                in: modelDirectory,
+                target: target
+            )
+        else {
+            return
+        }
+        adapterMode = cached.mode
+        adapterModeIsResolved = true
+    }
+
+    private func persistAdapterMode(target: TranslationTarget) {
         guard let modelDirectory else { return }
         let cached = CachedTranslationAdapter(
             schemaVersion: CachedTranslationAdapter.currentSchemaVersion,
+            target: target,
             mode: adapterMode
         )
         do {
@@ -502,7 +608,9 @@ public actor MLXTranslationEngine: TranslationEngine {
             encoder.outputFormatting = [.sortedKeys]
             try encoder.encode(cached).write(
                 to: modelDirectory.appendingPathComponent(
-                    CachedTranslationAdapter.fileName
+                    CachedTranslationAdapter.fileName(
+                        for: target
+                    )
                 ),
                 options: .atomic
             )
@@ -514,13 +622,22 @@ public actor MLXTranslationEngine: TranslationEngine {
     }
 
     private static func cachedAdapter(
-        in modelDirectory: URL
+        in modelDirectory: URL,
+        target: TranslationTarget
     ) -> CachedTranslationAdapter? {
+        let targetURL = modelDirectory.appendingPathComponent(
+            CachedTranslationAdapter.fileName(for: target)
+        )
+        let legacyURL = modelDirectory.appendingPathComponent(
+            CachedTranslationAdapter.legacyFileName
+        )
+        let url =
+            FileManager.default.fileExists(atPath: targetURL.path)
+            ? targetURL
+            : legacyURL
         guard
             let data = try? Data(
-                contentsOf: modelDirectory.appendingPathComponent(
-                    CachedTranslationAdapter.fileName
-                )
+                contentsOf: url
             ),
             let cached = try? JSONDecoder().decode(
                 CachedTranslationAdapter.self,
@@ -528,6 +645,11 @@ public actor MLXTranslationEngine: TranslationEngine {
             ),
             cached.schemaVersion
                 == CachedTranslationAdapter.currentSchemaVersion
+        else {
+            return nil
+        }
+        guard cached.target == target
+            || (cached.target == nil && target == .english)
         else {
             return nil
         }
@@ -539,25 +661,128 @@ public actor MLXTranslationEngine: TranslationEngine {
         let expected: Set<String>
     }
 
-    private static let adapterProbes = [
-        AdapterProbe(
-            source: "你好",
-            expected: ["hello", "hi"]
-        ),
-        AdapterProbe(
-            source: "天气",
-            expected: ["weather"]
-        ),
-        AdapterProbe(
-            source: "翻译",
-            expected: ["translate", "translation"]
-        ),
-    ]
+    private static func adapterProbes(
+        target: TranslationTarget
+    ) -> [AdapterProbe] {
+        switch target {
+        case .english:
+            [
+                AdapterProbe(
+                    source: "你好",
+                    expected: ["hello", "hi"]
+                ),
+                AdapterProbe(
+                    source: "天气",
+                    expected: ["weather"]
+                ),
+                AdapterProbe(
+                    source: "翻译",
+                    expected: ["translate", "translation"]
+                ),
+            ]
+        case .japanese:
+            [
+                AdapterProbe(
+                    source: "你好",
+                    expected: ["こんにちは", "ハロー"]
+                ),
+                AdapterProbe(
+                    source: "天气",
+                    expected: ["天気", "天候"]
+                ),
+                AdapterProbe(
+                    source: "翻译",
+                    expected: ["翻訳", "訳す"]
+                ),
+            ]
+        case .spanish:
+            [
+                AdapterProbe(
+                    source: "你好",
+                    expected: ["hola"]
+                ),
+                AdapterProbe(
+                    source: "天气",
+                    expected: ["tiempo", "clima"]
+                ),
+                AdapterProbe(
+                    source: "翻译",
+                    expected: ["traducción", "traducir"]
+                ),
+            ]
+        case .french:
+            [
+                AdapterProbe(
+                    source: "你好",
+                    expected: ["bonjour", "salut"]
+                ),
+                AdapterProbe(
+                    source: "天气",
+                    expected: ["temps", "météo"]
+                ),
+                AdapterProbe(
+                    source: "翻译",
+                    expected: ["traduction", "traduire"]
+                ),
+            ]
+        case .german:
+            [
+                AdapterProbe(
+                    source: "你好",
+                    expected: ["hallo"]
+                ),
+                AdapterProbe(
+                    source: "天气",
+                    expected: ["wetter"]
+                ),
+                AdapterProbe(
+                    source: "翻译",
+                    expected: ["übersetzung", "übersetzen"]
+                ),
+            ]
+        case .russian:
+            [
+                AdapterProbe(
+                    source: "你好",
+                    expected: ["привет", "здравствуйте"]
+                ),
+                AdapterProbe(
+                    source: "天气",
+                    expected: ["погода"]
+                ),
+                AdapterProbe(
+                    source: "翻译",
+                    expected: ["перевод", "перевести"]
+                ),
+            ]
+        }
+    }
 
     static func isAcceptedProbeOutput(
         _ output: String,
         expected: Set<String>
     ) -> Bool {
+        let usesNonLatinScript = expected.contains {
+            $0.unicodeScalars.contains { $0.value > 127 }
+        }
+        if usesNonLatinScript {
+            let normalized = output
+                .lowercased()
+                .unicodeScalars
+                .filter(CharacterSet.alphanumerics.contains)
+                .map(String.init)
+                .joined()
+            return expected.contains {
+                let value = $0
+                    .lowercased()
+                    .unicodeScalars
+                    .filter(CharacterSet.alphanumerics.contains)
+                    .map(String.init)
+                    .joined()
+                return !value.isEmpty && normalized.contains(value)
+            }
+        }
+
         let normalized =
             output
             .lowercased()
@@ -637,7 +862,10 @@ public actor MLXTranslationEngine: TranslationEngine {
         return names.contains("config.json") && hasTokenizer && hasWeights
     }
 
-    static func clean(_ raw: String) -> String? {
+    static func clean(
+        _ raw: String,
+        target: TranslationTarget
+    ) -> String? {
         let markers = ["<|im_end|>", "<|endoftext|>", "</s>", "<|im_start|>"]
         var value = raw
         for marker in markers {
@@ -660,7 +888,19 @@ public actor MLXTranslationEngine: TranslationEngine {
         }
 
         var output = firstLine
-        for prefix in ["Translation:", "English:", "翻译：", "英文："] {
+        var prefixes = [
+            "Translation:",
+            "\(target.englishDisplayName):",
+            "翻译：",
+            "\(target.chineseDisplayName)：",
+        ]
+        if target == .english {
+            prefixes.append("英文：")
+        }
+        if target == .japanese {
+            prefixes += ["翻訳：", "日文：", "日语："]
+        }
+        for prefix in prefixes {
             if output.lowercased().hasPrefix(prefix.lowercased()) {
                 output = String(output.dropFirst(prefix.count))
                     .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -671,11 +911,12 @@ public actor MLXTranslationEngine: TranslationEngine {
         )
         output = output.replacingOccurrences(of: "**", with: "")
 
-        let han = output.unicodeScalars.filter {
-            (0x4E00...0x9FFF).contains($0.value)
-        }.count
-        guard !output.isEmpty else { return nil }
-        guard han <= max(1, output.count / 5) else { return nil }
+        guard TranslationTextPolicy.isDisplayable(
+            output,
+            target: target
+        ) else {
+            return nil
+        }
         return output
     }
 
@@ -716,7 +957,8 @@ public actor MLXTranslationEngine: TranslationEngine {
 
     static func parseBatchTranslations(
         _ raw: String,
-        expectedCount: Int
+        expectedCount: Int,
+        target: TranslationTarget
     ) throws -> [String] {
         guard expectedCount > 0 else {
             return []
@@ -743,7 +985,10 @@ public actor MLXTranslationEngine: TranslationEngine {
             guard let (index, translation) = numberedLine(line),
                 (1...expectedCount).contains(index),
                 numbered[index] == nil,
-                let cleaned = clean(translation)
+                let cleaned = clean(
+                    translation,
+                    target: target
+                )
             else {
                 continue
             }
@@ -756,7 +1001,9 @@ public actor MLXTranslationEngine: TranslationEngine {
             throw MLXTranslationError.invalidOutput
         }
 
-        let sequential = lines.compactMap(clean)
+        let sequential = lines.compactMap {
+            clean($0, target: target)
+        }
         guard sequential.count == expectedCount else {
             throw MLXTranslationError.invalidOutput
         }

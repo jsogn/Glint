@@ -2,12 +2,14 @@ import Foundation
 
 public struct TranslationMemoKey: Hashable, Sendable {
     public let text: String
+    public let direction: TranslationDirection
     public let mode: TranslationMode
     public let configuration: String
     public let includesAlternatives: Bool
 
     public init(
         text: String,
+        direction: TranslationDirection,
         mode: TranslationMode,
         configuration: String,
         includesAlternatives: Bool = true
@@ -15,6 +17,7 @@ public struct TranslationMemoKey: Hashable, Sendable {
         self.text = text
             .precomposedStringWithCanonicalMapping
             .trimmingCharacters(in: .whitespacesAndNewlines)
+        self.direction = direction
         self.mode = mode
         self.configuration = configuration
         self.includesAlternatives = includesAlternatives

@@ -27,7 +27,7 @@ enum PluginRuntimePolicy {
                 return true
             }
             return manifest.runtime == "ctranslate2-data"
-                && manifest.id == TranslationModelSelection.opusMTModelID
+                && manifest.id == ManagedTranslationModelIDs.opusMT
                 && manifest.source == .catalog
         case .dictionary:
             return [
@@ -60,6 +60,11 @@ public struct PluginManifest: Codable, Sendable, Equatable {
     public let sourceChecksum: String?
     public let coreUpdateKind: CoreDictionaryUpdateKind?
     public let promptProfile: TranslationPromptProfile?
+    public let translationTargets: [TranslationTarget]?
+
+    public var availableTranslationTargets: [TranslationTarget] {
+        translationTargets ?? TranslationTarget.allCases
+    }
 
     public init(
         id: String,
@@ -79,7 +84,8 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         sourceDate: String? = nil,
         sourceChecksum: String? = nil,
         coreUpdateKind: CoreDictionaryUpdateKind? = nil,
-        promptProfile: TranslationPromptProfile? = nil
+        promptProfile: TranslationPromptProfile? = nil,
+        translationTargets: [TranslationTarget]? = nil
     ) {
         self.id = id
         self.type = type
@@ -99,6 +105,7 @@ public struct PluginManifest: Codable, Sendable, Equatable {
         self.sourceChecksum = sourceChecksum
         self.coreUpdateKind = coreUpdateKind
         self.promptProfile = promptProfile
+        self.translationTargets = translationTargets
     }
 
     public static func load(from directory: URL) throws -> PluginManifest {

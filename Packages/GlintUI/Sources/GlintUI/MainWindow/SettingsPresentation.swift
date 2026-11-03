@@ -25,6 +25,18 @@ extension TranslationMode {
 }
 
 extension CandidateTranslationScope {
+    func explanation(
+        for target: TranslationTarget
+    ) -> String {
+        let language = target.chineseDisplayName
+        switch self {
+        case .selected:
+            return "只显示当前高亮候选的对应\(language)译文，展开更多候选后隐藏。"
+        case .row:
+            return "仅在单行候选栏显示首栏候选的对应\(language)译文，展开更多候选后隐藏。"
+        }
+    }
+
     var title: String {
         switch self {
         case .selected:
@@ -35,11 +47,6 @@ extension CandidateTranslationScope {
     }
 
     var explanation: String {
-        switch self {
-        case .selected:
-            "只显示当前高亮候选的对应英文翻译，展开更多候选后隐藏。"
-        case .row:
-            "仅在单行候选栏显示首栏候选的对应英文翻译，展开更多候选后隐藏。"
-        }
+        explanation(for: .english)
     }
 }

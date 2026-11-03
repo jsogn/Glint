@@ -1,4 +1,5 @@
 import Foundation
+import GlintCore
 import XCTest
 @testable import GlintPlugins
 
@@ -122,6 +123,11 @@ final class ModelHubServiceTests: XCTestCase {
         )
 
         XCTAssertEqual(manifest.promptProfile, .hyMT2)
+        XCTAssertNil(manifest.translationTargets)
+        XCTAssertEqual(
+            manifest.availableTranslationTargets,
+            TranslationTarget.allCases
+        )
     }
 
     func testInspectRejectsOverflowingSnapshotSize() async {

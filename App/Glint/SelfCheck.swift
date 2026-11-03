@@ -202,14 +202,26 @@ enum SelfCheck {
 
             for word in ["你好", "算法", "程序", "设计", "内卷"] {
                 let result = await dictionary.lookup(
-                    Candidate(text: word, kind: .word)
+                    TranslationRequest(
+                        candidate: Candidate(
+                            text: word,
+                            kind: .word
+                        ),
+                        direction: .simplifiedChineseToEnglish
+                    )
                 )
                 print("dict \(word) -> \(result?.displayText ?? "<not found>")")
             }
 
             if let engine = CTranslate2Engine() {
                 let result = try? await engine.translate(
-                    Candidate(text: "今天天气不错", kind: .sentence)
+                    TranslationRequest(
+                        candidate: Candidate(
+                            text: "今天天气不错",
+                            kind: .sentence
+                        ),
+                        direction: .simplifiedChineseToEnglish
+                    )
                 )
                 print("ct2 今天天气不错 -> \(result?.text ?? "<not found>")")
                 let smartRouter = SmartRouter(
@@ -218,9 +230,14 @@ enum SelfCheck {
                     partOfSpeechProvider: dictionary
                 )
                 let routed = try? await smartRouter.route(
-                    Candidate(
-                        text: "今天天气不错",
-                        kind: CandidateClassifier.classify("今天天气不错")
+                    TranslationRequest(
+                        candidate: Candidate(
+                            text: "今天天气不错",
+                            kind: CandidateClassifier.classify(
+                                "今天天气不错"
+                            )
+                        ),
+                        direction: .simplifiedChineseToEnglish
                     ),
                     mode: .dictionaryFirst
                 )
@@ -244,7 +261,7 @@ enum SelfCheck {
             } else {
                 mlxModel =
                     [
-                        TranslationModelSelection.selected(),
+                        SystemTranslationModel.appleTranslationID,
                         "mt-hy-mt2-1.8b",
                         "mt-index-translate-2b",
                         "llm-qwen3-1.7b",
@@ -263,9 +280,12 @@ enum SelfCheck {
                 let input = "这个功能什么时候上线"
                 do {
                     let result = try await engine.translate(
-                        Candidate(
-                            text: input,
-                            kind: CandidateClassifier.classify(input)
+                        TranslationRequest(
+                            candidate: Candidate(
+                                text: input,
+                                kind: CandidateClassifier.classify(input)
+                            ),
+                            direction: .simplifiedChineseToEnglish
                         )
                     )
                     let load = await engine.loadSeconds

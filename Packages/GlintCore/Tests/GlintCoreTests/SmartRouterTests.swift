@@ -4,7 +4,9 @@ import XCTest
 private struct MockDictionary: DictionaryEngine {
     let result: TranslationResult?
 
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         result
     }
 }
@@ -12,19 +14,37 @@ private struct MockDictionary: DictionaryEngine {
 private struct MockTranslator: TranslationEngine {
     let result: TranslationResult?
 
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         result
     }
 }
 
 private struct FailingDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         throw GlintError.engineUnavailable
     }
 }
 
 private struct FailingTranslator: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         throw GlintError.engineUnavailable
     }
 }
@@ -37,7 +57,15 @@ private actor DelayedTranslator: TranslationEngine {
         self.result = result
     }
 
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         started = true
         try await Task.sleep(for: .seconds(5))
         return result
@@ -56,7 +84,9 @@ private actor CountingDictionary: DictionaryEngine {
         self.result = result
     }
 
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         count += 1
         return result
     }
@@ -66,7 +96,84 @@ private actor CountingDictionary: DictionaryEngine {
     }
 }
 
+private extension SmartRouter {
+    func route(
+        _ candidate: Candidate,
+        mode: TranslationMode = .dictionaryFirst,
+        includesAlternatives: Bool = true,
+        dictionaryPrefetch: Task<TranslationResult?, Never>? = nil
+    ) async throws -> TranslationResult? {
+        try await route(
+            TranslationRequest(
+                candidate: candidate,
+                direction: .simplifiedChineseToEnglish
+            ),
+            mode: mode,
+            includesAlternatives: includesAlternatives,
+            dictionaryPrefetch: dictionaryPrefetch
+        )
+    }
+
+    func prefetchDictionary(
+        _ candidate: Candidate
+    ) async -> TranslationResult? {
+        await prefetchDictionary(
+            TranslationRequest(
+                candidate: candidate,
+                direction: .simplifiedChineseToEnglish
+            )
+        )
+    }
+}
+
 final class SmartRouterTests: XCTestCase {
+    func testNonEnglishTargetsBypassDictionaryInEveryMode()
+        async throws
+    {
+        for target in TranslationTarget.allCases
+            where target != .english
+        {
+            for mode in TranslationMode.allCases {
+                let dictionary = CountingDictionary(
+                    result: TranslationResult(
+                        text: "english fallback"
+                    )
+                )
+                let expected = "\(target.rawValue) translation"
+                let router = SmartRouter(
+                    dictionary: dictionary,
+                    translation: MockTranslator(
+                        result: TranslationResult(text: expected)
+                    )
+                )
+                let result = try await router.route(
+                    TranslationRequest(
+                        candidate: Candidate(
+                            text: "你好",
+                            kind: .word
+                        ),
+                        direction: TranslationDirection(
+                            target: target
+                        )
+                    ),
+                    mode: mode
+                )
+
+                XCTAssertEqual(
+                    result?.text,
+                    expected,
+                    "\(target) / \(mode)"
+                )
+                let lookupCount = await dictionary.lookupCount()
+                XCTAssertEqual(
+                    lookupCount,
+                    0,
+                    "\(target) / \(mode)"
+                )
+            }
+        }
+    }
+
     func testDictionaryFirstUsesDictionaryWhenAvailable() async throws {
         let result = TranslationResult(
             text: "hello"

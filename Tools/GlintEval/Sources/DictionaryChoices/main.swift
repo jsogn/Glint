@@ -80,7 +80,13 @@ struct DictionaryChoices {
         for item in cases {
             let kind = CandidateKind(rawValue: item.kind) ?? .unknown
             let result = await dictionary.lookup(
-                Candidate(text: item.target, kind: kind)
+                TranslationRequest(
+                    candidate: Candidate(
+                        text: item.target,
+                        kind: kind
+                    ),
+                    direction: .simplifiedChineseToEnglish
+                )
             )
             entries[item.id] = ChoicesOutput.Entry(
                 target: item.target,

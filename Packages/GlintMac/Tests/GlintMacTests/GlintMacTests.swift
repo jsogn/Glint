@@ -249,28 +249,70 @@ private struct NonTextFocusWithProcessFallback: FocusReading {
 }
 
 private struct EmptyDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }
 
 private struct EmptyTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }
 
 private struct ImmediateTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         try Task.checkCancellation()
         return TranslationResult(
-            text: "english-\(candidate.text)"
+            text: "english-\(request.candidate.text)"
         )
     }
 }
 
+private struct JapaneseTranslation: TranslationEngine {
+    let text: String
+
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        direction.target == .japanese
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        TranslationResult(text: text)
+    }
+}
+
 private struct MultiOptionTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(
             options: [
                 TranslationOption(text: "primary", score: 1),
@@ -286,7 +328,9 @@ private struct MultiOptionTranslation: TranslationEngine {
 }
 
 private struct POSDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(
             options: [
                 TranslationOption(
@@ -305,7 +349,15 @@ private struct POSDictionary: DictionaryEngine {
 }
 
 private struct MixedLengthTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(
             options: [
                 TranslationOption(text: "The curtain", score: 1),
@@ -326,13 +378,21 @@ private actor ParallelTranslation: TranslationEngine {
     private var activeCount = 0
     private var peakActiveCount = 0
 
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         activeCount += 1
         peakActiveCount = max(peakActiveCount, activeCount)
         try await Task.sleep(nanoseconds: 20_000_000)
         activeCount -= 1
         return TranslationResult(
-            text: "english-\(candidate.text)"
+            text: "english-\(request.candidate.text)"
         )
     }
 
@@ -358,6 +418,33 @@ private actor PresentationBatchRecorder {
 }
 
 final class GlintMacTests: XCTestCase {
+    func testJapaneseKanjiTranslationRemainsDisplayable() async {
+        let presentations = await CandidateTranslationPipeline.translate(
+            [Candidate(text: "学生")],
+            selectedIndex: 0,
+            mode: .dictionaryFirst,
+            target: .japanese,
+            configurationToken: "ja-model",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: JapaneseTranslation(text: "学生")
+            ),
+            memo: TranslationMemo()
+        )
+
+        XCTAssertEqual(presentations.first?.translation, "学生")
+    }
+
+    func testJapaneseNeverPrefetchesDictionary() {
+        XCTAssertFalse(
+            MonitoringController.shouldPrefetchDictionary(
+                target: .japanese,
+                mode: .dictionaryFirst,
+                scope: .selected
+            )
+        )
+    }
+
     func testMonitoringControllerUsesInjectedBoundaries() async {
         let controller = MonitoringController(
             router: SmartRouter(
@@ -773,6 +860,7 @@ final class GlintMacTests: XCTestCase {
             candidates,
             selectedIndex: 1,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -807,6 +895,7 @@ final class GlintMacTests: XCTestCase {
             ],
             selectedIndex: 0,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -815,7 +904,8 @@ final class GlintMacTests: XCTestCase {
             memo: TranslationMemo(),
             displayOptionLimit: CandidateTranslationPipeline.displayOptionLimit(
                 for: .row,
-                maximumTranslationCount: 4
+                maximumTranslationCount: 4,
+                target: .english
             )
         )
 
@@ -838,6 +928,7 @@ final class GlintMacTests: XCTestCase {
             selectedIndex: 0,
             selectionIsExact: false,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -855,36 +946,42 @@ final class GlintMacTests: XCTestCase {
     func testPrefetchDictionaryDependsOnModeAndScope() {
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .smartFusion,
                 scope: .row
             )
         )
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .smartFusion,
                 scope: .selected
             )
         )
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .dictionaryFirst,
                 scope: .row
             )
         )
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .dictionaryFirst,
                 scope: .selected
             )
         )
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .modelFirst,
                 scope: .selected
             )
         )
         XCTAssertFalse(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .modelFirst,
                 scope: .row
             )
@@ -904,6 +1001,7 @@ final class GlintMacTests: XCTestCase {
             ],
             selectedIndex: 0,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -921,21 +1019,24 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(
             CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected,
-                maximumTranslationCount: 4
+                maximumTranslationCount: 4,
+                target: .english
             ),
             4
         )
         XCTAssertEqual(
             CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected,
-                maximumTranslationCount: 0
+                maximumTranslationCount: 0,
+                target: .english
             ),
             1
         )
         XCTAssertEqual(
             CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected,
-                maximumTranslationCount: 12
+                maximumTranslationCount: 12,
+                target: .english
             ),
             9
         )
@@ -948,6 +1049,7 @@ final class GlintMacTests: XCTestCase {
             ],
             selectedIndex: 0,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -956,7 +1058,8 @@ final class GlintMacTests: XCTestCase {
             memo: TranslationMemo(),
             displayOptionLimit: CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected,
-                maximumTranslationCount: 4
+                maximumTranslationCount: 4,
+                target: .english
             )
         )
 
@@ -980,6 +1083,7 @@ final class GlintMacTests: XCTestCase {
             [Candidate(text: "设计")],
             selectedIndex: 0,
             mode: .dictionaryFirst,
+            target: .english,
             configurationToken: "pos-test",
             router: SmartRouter(
                 dictionary: POSDictionary(),
@@ -1014,6 +1118,7 @@ final class GlintMacTests: XCTestCase {
             [Candidate(text: "设计")],
             selectedIndex: 0,
             mode: .dictionaryFirst,
+            target: .english,
             configurationToken: "pos-test",
             router: SmartRouter(
                 dictionary: POSDictionary(),
@@ -1036,6 +1141,7 @@ final class GlintMacTests: XCTestCase {
             [Candidate(text: "设计")],
             selectedIndex: 0,
             mode: .dictionaryFirst,
+            target: .english,
             configurationToken: "pos-test",
             router: SmartRouter(
                 dictionary: POSDictionary(),
@@ -1069,6 +1175,7 @@ final class GlintMacTests: XCTestCase {
             ],
             selectedIndex: 0,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -1106,6 +1213,7 @@ final class GlintMacTests: XCTestCase {
             candidates,
             selectedIndex: 1,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -4326,6 +4434,7 @@ final class MonitoringSessionTests: XCTestCase {
         await session.start(
             MonitoringSettings(
                 mode: .modelFirst,
+                translationTarget: .english,
                 candidateDwellDuration: 0.3,
                 translationScope: .selected,
                 maximumTranslationCount: 7,
@@ -4376,6 +4485,7 @@ final class MonitoringSessionTests: XCTestCase {
 
         let settings = MonitoringSettings(
             mode: .modelFirst,
+            translationTarget: .english,
             candidateDwellDuration: 0.08,
             translationScope: .selected,
             configurationToken: "test"
@@ -4477,6 +4587,7 @@ final class MonitoringSessionTests: XCTestCase {
     private var testSettings: MonitoringSettings {
         MonitoringSettings(
             mode: .modelFirst,
+            translationTarget: .english,
             candidateDwellDuration: 0.08,
             translationScope: .selected,
             configurationToken: "test"

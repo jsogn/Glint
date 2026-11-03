@@ -41,6 +41,9 @@
 - 在线 OPUS-MT 数据、SentencePiece、Bridge 的实际加载和翻译
 - 全量单元测试与集成测试
 - DMG/PKG 生成、校验和与应用签名验证
+- `zh-Hans → ja` 语言资源下载、系统会话准备和 165 条中日翻译实测
+- 2026-11-03 在 macOS 26.6.2 查询 `LanguageAvailability`：
+  `zh-Hans → en/ja` 为 installed，`zh-Hans → es/fr/de/ru` 为 supported
 
 正式公开发布前仍需在真实 macOS 15 主机上完成以下运行矩阵：
 
@@ -48,5 +51,8 @@
 - HUD 定位、失焦、多显示器与缩放
 - 权限、登录启动、安装和 Rime 候选读取支持安装
 - 在线 OPUS-MT 与 MLX 模型首次加载和翻译
+- `zh-Hans → en` 与 `zh-Hans → ja` 的 Apple 语言包安装、取消、失败和完成状态
+- `zh-Hans → es`、`fr`、`de`、`ru` 的语言包安装、取消、失败和完成状态
+- 六种目标语言之间的全局切换、运行中暂停/恢复和语音方向
 
 发布文件名、下载页同步和公开版门禁由[发布计划](RELEASE-PLAN.md)维护。

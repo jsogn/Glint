@@ -73,6 +73,8 @@ public final class GeneralPreferences {
             "general.translationSpeechEnabled"
         static let speechAccent =
             "general.translationSpeechAccent"
+        static let speechVoicePrefix =
+            "general.translationSpeechVoice."
         static let speechRate =
             "general.translationSpeechRate"
         static let autoSpeechEnabled =
@@ -84,6 +86,8 @@ public final class GeneralPreferences {
     public private(set) var insertionShortcut: TranslationInsertionShortcut?
     public private(set) var speechShortcut: TranslationInsertionShortcut?
     public private(set) var speechAccent: TranslationSpeechAccent
+    public private(set) var speechVoiceIdentifiers:
+        [TranslationTarget: String]
     public private(set) var speechRate: TranslationSpeechRate
     public private(set) var autoSpeechEnabled: Bool
     public private(set) var autoSpeechDelay: Double
@@ -105,6 +109,8 @@ public final class GeneralPreferences {
     public var speechShortcutDidChange: (@MainActor (TranslationInsertionShortcut?) -> Void)?
     @ObservationIgnored
     public var speechAccentDidChange: (@MainActor (TranslationSpeechAccent) -> Void)?
+    @ObservationIgnored
+    public var speechVoiceDidChange: (@MainActor () -> Void)?
     @ObservationIgnored
     public var speechRateDidChange: (@MainActor (TranslationSpeechRate) -> Void)?
     @ObservationIgnored
@@ -167,6 +173,9 @@ public final class GeneralPreferences {
             defaults.string(forKey: Key.speechAccent).flatMap(
                 TranslationSpeechAccent.init(rawValue:)
             ) ?? .system
+        speechVoiceIdentifiers = Self.loadSpeechVoiceIdentifiers(
+            from: defaults
+        )
         speechRate =
             defaults.string(forKey: Key.speechRate).flatMap(
                 TranslationSpeechRate.init(rawValue:)
@@ -254,6 +263,38 @@ public final class GeneralPreferences {
         speechAccentDidChange?(accent)
     }
 
+    public func speechVoiceIdentifier(
+        for target: TranslationTarget
+    ) -> String? {
+        speechVoiceIdentifiers[target]
+    }
+
+    public func setSpeechVoiceIdentifier(
+        _ identifier: String?,
+        for target: TranslationTarget
+    ) {
+        let normalized =
+            identifier?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .nonEmpty
+        guard speechVoiceIdentifiers[target] != normalized else {
+            return
+        }
+        if let normalized {
+            speechVoiceIdentifiers[target] = normalized
+            defaults.set(
+                normalized,
+                forKey: Self.speechVoiceKey(for: target)
+            )
+        } else {
+            speechVoiceIdentifiers.removeValue(forKey: target)
+            defaults.removeObject(
+                forKey: Self.speechVoiceKey(for: target)
+            )
+        }
+        speechVoiceDidChange?()
+    }
+
     public func setSpeechRate(_ rate: TranslationSpeechRate) {
         guard speechRate != rate else { return }
         speechRate = rate
@@ -299,6 +340,7 @@ public final class GeneralPreferences {
             )
         )
         setSpeechAccent(.system)
+        clearSpeechVoiceIdentifiers()
         setSpeechRate(.standard)
         setAutoSpeechEnabled(false)
         setAutoSpeechDelay(Self.defaultAutoSpeechDelay)
@@ -318,6 +360,38 @@ public final class GeneralPreferences {
             return
         }
         defaults.set(data, forKey: key)
+    }
+
+    private func clearSpeechVoiceIdentifiers() {
+        guard !speechVoiceIdentifiers.isEmpty else { return }
+        for target in TranslationTarget.allCases {
+            defaults.removeObject(forKey: Self.speechVoiceKey(for: target))
+        }
+        speechVoiceIdentifiers.removeAll()
+        speechVoiceDidChange?()
+    }
+
+    private static func loadSpeechVoiceIdentifiers(
+        from defaults: UserDefaults
+    ) -> [TranslationTarget: String] {
+        var voices: [TranslationTarget: String] = [:]
+        for target in TranslationTarget.allCases {
+            if let voice = defaults.string(
+                forKey: speechVoiceKey(for: target)
+            )?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .nonEmpty
+            {
+                voices[target] = voice
+            }
+        }
+        return voices
+    }
+
+    private static func speechVoiceKey(
+        for target: TranslationTarget
+    ) -> String {
+        Key.speechVoicePrefix + target.rawValue
     }
 
     private static func defaultSpeechShortcut(
@@ -370,5 +444,11 @@ public final class GeneralPreferences {
             max(value, Self.autoSpeechDelayRange.lowerBound),
             Self.autoSpeechDelayRange.upperBound
         )
+    }
+}
+
+private extension String {
+    var nonEmpty: String? {
+        isEmpty ? nil : self
     }
 }

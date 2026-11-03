@@ -11,6 +11,7 @@ app_path="$repository_root/build/AppleTranslationCompare.app"
 output_path="${GLINT_APPLE_TRANSLATION_OUTPUT:-$repository_root/build/apple-translation-benchmark.json}"
 rounds="${GLINT_APPLE_TRANSLATION_ROUNDS:-3}"
 cases_path="${GLINT_APPLE_TRANSLATION_CASES:-$repository_root/Resources/Evaluation/translation-mode-benchmark.json,$repository_root/Resources/Evaluation/dictionary-benchmark.json}"
+direction="${GLINT_APPLE_TRANSLATION_DIRECTION:-zh-en}"
 ct2_path="$repository_root/Resources/OnlineModels/mt-opus-zh-en/model"
 
 swift build \
@@ -52,13 +53,15 @@ rm -f "$output_path"
 printf 'Launching Apple Translation comparison\n'
 printf 'Cases: %s\n' "$cases_path"
 printf 'Rounds: %s\n' "$rounds"
+printf 'Direction: %s\n' "$direction"
 printf 'Report: %s\n' "$output_path"
 
 open -W "$app_path" --args \
     --cases "$cases_path" \
     --ct2 "$ct2_path" \
     --output "$output_path" \
-    --rounds "$rounds"
+    --rounds "$rounds" \
+    --direction "$direction"
 
 if [[ ! -f "$output_path" ]]; then
     printf 'No report was written.\n' >&2

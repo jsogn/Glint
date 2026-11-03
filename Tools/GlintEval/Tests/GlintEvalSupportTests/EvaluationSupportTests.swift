@@ -168,4 +168,20 @@ struct EvaluationSupportTests {
         #expect(options.outputPath == "/tmp/report.json")
         #expect(options.rounds == 5)
     }
+
+    @Test
+    func optionsAcceptMultilingualDirections() {
+        for target in ["ja", "es", "fr", "de", "ru"] {
+            let options = AppleTranslationEvaluationOptions(
+                arguments: [
+                    "AppleTranslationCompare",
+                    "--direction",
+                    "zh-\(target)",
+                ]
+            )
+
+            #expect(options.sourceLanguage == "zh-Hans")
+            #expect(options.targetLanguage == target)
+        }
+    }
 }

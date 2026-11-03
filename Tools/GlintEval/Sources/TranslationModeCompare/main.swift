@@ -67,6 +67,7 @@ struct TranslationModeCompare {
         var rows: [ModeRow] = []
 
         if let engine = try? CTranslate2Engine(
+            direction: .simplifiedChineseToEnglish,
             modelDirectory: URL(fileURLWithPath: options.ct2Path)
         ) {
             let router = SmartRouter(
@@ -88,8 +89,8 @@ struct TranslationModeCompare {
             modelDirectory: URL(fileURLWithPath: options.mlxPath),
             modelID: options.mlxModelID
         )
-        try await mlx.prepareForTranslation()
-        try? await mlx.warmUp()
+        try await mlx.prepareForTranslation(target: .english)
+        try? await mlx.warmUp(target: .english)
         let router = SmartRouter(
             dictionary: dictionary,
             translation: mlx
@@ -165,7 +166,10 @@ struct TranslationModeCompare {
                 )
                 let started = ContinuousClock.now
                 let result = try? await router.route(
-                    candidate,
+                    TranslationRequest(
+                        candidate: candidate,
+                        direction: .simplifiedChineseToEnglish
+                    ),
                     mode: mode,
                     includesAlternatives: true
                 )

@@ -1,6 +1,23 @@
 import XCTest
 @testable import GlintCore
 
+private extension TranslationMemoKey {
+    init(
+        text: String,
+        mode: TranslationMode,
+        configuration: String,
+        includesAlternatives: Bool = true
+    ) {
+        self.init(
+            text: text,
+            direction: .simplifiedChineseToEnglish,
+            mode: mode,
+            configuration: configuration,
+            includesAlternatives: includesAlternatives
+        )
+    }
+}
+
 final class TranslationMemoTests: XCTestCase {
     private actor Counter {
         private(set) var value = 0
@@ -199,6 +216,31 @@ final class TranslationMemoTests: XCTestCase {
                 return TranslationResult(
                     text: "result-\(value)"
                 )
+            }
+        }
+
+        let count = await counter.value
+        XCTAssertEqual(count, 2)
+    }
+
+    func testTargetDirectionBypassesCachedResult() async throws {
+        let memo = TranslationMemo()
+        let counter = Counter()
+
+        for direction in [
+            TranslationDirection.simplifiedChineseToEnglish,
+            .simplifiedChineseToJapanese,
+        ] {
+            _ = try await memo.resolve(
+                for: TranslationMemoKey(
+                    text: "你好",
+                    direction: direction,
+                    mode: .modelFirst,
+                    configuration: "model-a"
+                )
+            ) {
+                let value = await counter.increment()
+                return TranslationResult(text: "result-\(value)")
             }
         }
 

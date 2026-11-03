@@ -123,8 +123,12 @@ public final class GenericSQLiteDictionary: DictionaryEngine, @unchecked Sendabl
         ])
     }
 
-    public func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
-        let source = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    public func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        let source = request.candidate.text.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
         guard !source.isEmpty else { return nil }
 
         let traditional = source.applyingTransform(

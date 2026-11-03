@@ -1,9 +1,16 @@
 public protocol DictionaryEngine: Sendable {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult?
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult?
 }
 
 public protocol TranslationEngine: Sendable {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult?
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult?
 }
 
 public protocol PartOfSpeechProviding: Sendable {

@@ -7,6 +7,7 @@ import GlintPlugins
 @MainActor
 final class AppEnvironment {
     let pluginManager: PluginManager
+    let selectionStore: TranslationSelectionStore
     let modelHubService: ModelHubService
     let coreDictionaryUpdateService: CoreDictionaryUpdateService
     let ecdictUpdateService: ECDICTUpdateService
@@ -18,7 +19,13 @@ final class AppEnvironment {
     private let dictionary: PluginDictionaryRouter
     private let rimeCandidateBridgeReceiver: RimeCandidateBridgeReceiver?
 
-    init() {
+    init(
+        selectionStore: TranslationSelectionStore? = nil
+    ) {
+        let selectionStore =
+            selectionStore
+            ?? TranslationSelectionStore()
+        selectionStore.migrateIfNeeded()
         let pluginManager = PluginManager()
         let coreDictionaryUpdateService = CoreDictionaryUpdateService(
             pluginManager: pluginManager,
@@ -34,7 +41,11 @@ final class AppEnvironment {
         )
         let dictionary = PluginDictionaryRouter()
         let systemTranslationCoordinator =
-            SystemTranslationCoordinator()
+            SystemTranslationCoordinator(
+                direction: TranslationDirection(
+                    target: selectionStore.selectedTarget
+                )
+            )
         let systemTranslationEngine = SystemTranslationEngine(
             coordinator: systemTranslationCoordinator
         )
@@ -54,11 +65,14 @@ final class AppEnvironment {
                 )
                 switch manifest.runtime {
                 case "mlx":
-                    return .mlx(
+                    return ResolvedTranslationModel(
                         modelID: modelID,
-                        directory: directory,
-                        promptProfile: manifest.promptProfile
-                            ?? .inferred(from: modelID)
+                        storage: .mlx(
+                            directory: directory,
+                            promptProfile: manifest.promptProfile
+                                ?? .inferred(from: modelID)
+                        ),
+                        supportedDirections: Self.directions(for: manifest)
                     )
                 default:
                     return nil
@@ -76,22 +90,26 @@ final class AppEnvironment {
             )
             switch manifest.runtime {
             case "mlx":
-                return .mlx(
+                return ResolvedTranslationModel(
                     modelID: modelID,
-                    directory: directory,
-                    promptProfile: manifest.promptProfile
-                        ?? .inferred(from: modelID)
+                    storage: .mlx(
+                        directory: directory,
+                        promptProfile: manifest.promptProfile
+                            ?? .inferred(from: modelID)
+                    ),
+                    supportedDirections: Self.directions(for: manifest)
                 )
             case "ctranslate2-data":
                 guard
-                    manifest.id == TranslationModelSelection.opusMTModelID,
+                    manifest.id == ManagedTranslationModelIDs.opusMT,
                     manifest.source == .catalog
                 else {
                     return nil
                 }
-                return .ctranslate2(
+                return ResolvedTranslationModel(
                     modelID: modelID,
-                    directory: directory
+                    storage: .ctranslate2(directory: directory),
+                    supportedDirections: Self.directions(for: manifest)
                 )
             default:
                 return nil
@@ -99,6 +117,7 @@ final class AppEnvironment {
         }
         self.dictionary = dictionary
         self.pluginManager = pluginManager
+        self.selectionStore = selectionStore
         self.modelHubService = ModelHubService()
         self.coreDictionaryUpdateService = coreDictionaryUpdateService
         self.ecdictUpdateService = ecdictUpdateService
@@ -171,6 +190,16 @@ final class AppEnvironment {
 
     static func rimeSupportDirectory() -> URL {
         RimeSupportPaths.defaultSupportDirectory
+    }
+
+    private nonisolated static func directions(
+        for manifest: PluginManifest
+    ) -> Set<TranslationDirection> {
+        Set(
+            manifest.availableTranslationTargets.map {
+                TranslationDirection(target: $0)
+            }
+        )
     }
 
     func refreshDictionaryRoutes() async {

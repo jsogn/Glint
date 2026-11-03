@@ -80,6 +80,58 @@ final class GeneralPreferencesTests: XCTestCase {
     }
 
     @MainActor
+    func testSpeechVoicesPersistPerTargetAndClear() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = GeneralPreferences(defaults: defaults)
+        var observedChangeCount = 0
+        preferences.speechVoiceDidChange = {
+            observedChangeCount += 1
+        }
+
+        XCTAssertNil(
+            preferences.speechVoiceIdentifier(for: .japanese)
+        )
+        preferences.setSpeechVoiceIdentifier(
+            "  com.apple.voice.compact.ja-JP.Kyoko  ",
+            for: .japanese
+        )
+        preferences.setSpeechVoiceIdentifier(
+            "com.apple.voice.compact.es-ES.Mónica",
+            for: .spanish
+        )
+
+        XCTAssertEqual(
+            preferences.speechVoiceIdentifier(for: .japanese),
+            "com.apple.voice.compact.ja-JP.Kyoko"
+        )
+        XCTAssertEqual(
+            GeneralPreferences(defaults: defaults)
+                .speechVoiceIdentifier(for: .japanese),
+            "com.apple.voice.compact.ja-JP.Kyoko"
+        )
+        XCTAssertEqual(
+            GeneralPreferences(defaults: defaults)
+                .speechVoiceIdentifier(for: .spanish),
+            "com.apple.voice.compact.es-ES.Mónica"
+        )
+
+        preferences.setSpeechVoiceIdentifier(nil, for: .japanese)
+
+        XCTAssertNil(
+            GeneralPreferences(defaults: defaults)
+                .speechVoiceIdentifier(for: .japanese)
+        )
+        XCTAssertEqual(
+            GeneralPreferences(defaults: defaults)
+                .speechVoiceIdentifier(for: .spanish),
+            "com.apple.voice.compact.es-ES.Mónica"
+        )
+        XCTAssertEqual(observedChangeCount, 3)
+    }
+
+    @MainActor
     func testLegacyDisabledFlagsMigrateToEmptyShortcuts() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
@@ -162,6 +214,7 @@ final class GeneralPreferencesTests: XCTestCase {
         let preferences = GeneralPreferences(defaults: defaults)
         var observedShortcuts: [TranslationInsertionShortcut?] = []
         var observedAccents: [TranslationSpeechAccent] = []
+        var observedSpeechVoiceChangeCount = 0
         var observedRates: [TranslationSpeechRate] = []
         var observedAutoEnabled: [Bool] = []
         var observedAutoDelays: [Double] = []
@@ -170,6 +223,9 @@ final class GeneralPreferencesTests: XCTestCase {
         }
         preferences.speechAccentDidChange = {
             observedAccents.append($0)
+        }
+        preferences.speechVoiceDidChange = {
+            observedSpeechVoiceChangeCount += 1
         }
         preferences.speechRateDidChange = {
             observedRates.append($0)
@@ -187,12 +243,15 @@ final class GeneralPreferencesTests: XCTestCase {
         XCTAssertNil(preferences.setSpeechShortcut(shortcut))
         XCTAssertNil(preferences.setSpeechShortcut(nil))
         preferences.setSpeechAccent(.british)
+        preferences.setSpeechVoiceIdentifier("ja.voice", for: .japanese)
+        preferences.setSpeechVoiceIdentifier("es.voice", for: .spanish)
         preferences.setSpeechRate(.faster)
         preferences.setAutoSpeechEnabled(true)
         preferences.setAutoSpeechDelay(2.1)
 
         XCTAssertEqual(observedShortcuts, [shortcut, nil])
         XCTAssertEqual(observedAccents, [.british])
+        XCTAssertEqual(observedSpeechVoiceChangeCount, 2)
         XCTAssertEqual(observedRates, [.faster])
         XCTAssertEqual(observedAutoEnabled, [true])
         XCTAssertEqual(observedAutoDelays, [2.1])
@@ -525,6 +584,7 @@ final class GeneralPreferencesTests: XCTestCase {
         )
         XCTAssertNil(preferences.setSpeechShortcut(nil))
         preferences.setSpeechAccent(.british)
+        preferences.setSpeechVoiceIdentifier("fr.voice", for: .french)
         preferences.setSpeechRate(.faster)
         preferences.setAutoSpeechEnabled(true)
         preferences.setAutoSpeechDelay(2.5)
@@ -542,6 +602,7 @@ final class GeneralPreferencesTests: XCTestCase {
         XCTAssertTrue(preferences.insertionEnabled)
         XCTAssertTrue(preferences.manualSpeechEnabled)
         XCTAssertEqual(preferences.speechAccent, .system)
+        XCTAssertNil(preferences.speechVoiceIdentifier(for: .french))
         XCTAssertEqual(preferences.speechRate, .standard)
         XCTAssertFalse(preferences.autoSpeechEnabled)
         XCTAssertEqual(

@@ -12,6 +12,7 @@
       "license": "CC-BY-4.0",
       "minRAMBytes": 1073741824,
       "summary": "速度快、占用低，适合轻量日常翻译。",
+      "translationTargets": ["en"],
       "source": "catalog"
     },
     {

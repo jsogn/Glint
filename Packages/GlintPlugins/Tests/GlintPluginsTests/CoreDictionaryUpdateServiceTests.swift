@@ -8,6 +8,17 @@ import zlib
 
 @testable import GlintPlugins
 
+private extension DictionaryEngine {
+    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+        try await lookup(
+            TranslationRequest(
+                candidate: candidate,
+                direction: .simplifiedChineseToEnglish
+            )
+        )
+    }
+}
+
 private final class CedictStubURLProtocol: URLProtocol {
     private static let responseData =
         OSAllocatedUnfairLock<Data?>(initialState: nil)

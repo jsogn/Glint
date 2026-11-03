@@ -8,12 +8,18 @@ struct PluginsPage: View {
     @Binding var selectedTab: PluginTab
     @State private var pluginToRemove: PluginManifest?
     @State private var marketQuery = ""
+    @State private var pendingTranslationModelID: String?
 
     var body: some View {
         PageContainer {
             HStack(spacing: 12) {
                 pluginTabControl
                 Spacer()
+                Text(
+                    "当前语言：\(model.translationTarget.chineseDisplayName)"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 if model.isLoadingPlugins
                     || model.isLoadingCatalog
                     || model.isInstalling != nil
@@ -253,12 +259,20 @@ struct PluginsPage: View {
         } else {
             switch model.systemTranslationAvailability {
             case .installed:
-                Button("使用") {
-                    Task {
-                        await model.activateSystemTranslationModel()
+                if pendingTranslationModelID
+                    == SystemTranslationModel.appleTranslationID
+                {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Button("使用") {
+                        useTranslationModel(
+                            SystemTranslationModel.appleTranslationID
+                        )
                     }
+                    .buttonStyle(.bordered)
+                    .disabled(model.isChangingTranslationTarget)
                 }
-                .buttonStyle(.borderedProminent)
             case .available:
                 Button(
                     model.systemTranslationSetupState
@@ -288,7 +302,9 @@ struct PluginsPage: View {
                         .foregroundStyle(.secondary)
                 }
             case .unsupported:
-                Text("当前 Mac 不支持简体中文到英文翻译")
+                Text(
+                    "当前 Mac 不支持中文到\(model.translationTarget.chineseDisplayName)翻译"
+                )
                     .foregroundStyle(.secondary)
             case nil:
                 Button("检查支持") {
@@ -338,6 +354,12 @@ struct PluginsPage: View {
 
     private func installedRow(_ plugin: PluginManifest) -> some View {
         let isInUse = model.isActiveTranslationModel(plugin)
+        let supportsCurrentTarget =
+            plugin.type != .translation
+            || MainWindowModel.supports(
+                plugin,
+                target: model.translationTarget
+            )
         return HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text(plugin.name)
@@ -347,6 +369,24 @@ struct PluginsPage: View {
                 Text(modelMetadata(for: plugin))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if plugin.type == .translation,
+                    let label = pluginLanguageCapabilityLabel(for: plugin)
+                {
+                    Text(label)
+                        .font(.caption)
+                        .foregroundStyle(
+                            supportsCurrentTarget
+                                ? Color.secondary
+                                : Color.secondary.opacity(0.7)
+                        )
+                } else if !model.translationTarget
+                    .supportsDictionaryRouting,
+                    plugin.type == .dictionary
+                {
+                    Text("仅英语参与翻译路由")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if model.translationModelStatusModelID == plugin.id,
                     let status = model.translationModelStatusText
                 {
@@ -459,12 +499,22 @@ struct PluginsPage: View {
                         .padding(.vertical, 3)
                         .background(.blue.opacity(0.16), in: Capsule())
                         .foregroundStyle(.blue)
+                } else if pendingTranslationModelID == plugin.id {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("正在使用…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
                     Button("使用") {
-                        model.activateTranslationModel(plugin)
+                        useTranslationModel(plugin.id)
                     }
+                    .buttonStyle(.bordered)
                     .disabled(
-                        model.isInstalling != nil || model.isImportingLocalModel
+                        !supportsCurrentTarget
+                            || model.isChangingTranslationTarget
                     )
                 }
             }
@@ -475,6 +525,19 @@ struct PluginsPage: View {
                 .disabled(
                     model.isInstalling != nil || model.isImportingLocalModel
                 )
+            }
+        }
+        .opacity(supportsCurrentTarget ? 1 : 0.62)
+    }
+
+    private func useTranslationModel(_ modelID: String) {
+        guard pendingTranslationModelID == nil else { return }
+        let target = model.translationTarget
+        pendingTranslationModelID = modelID
+        Task {
+            await model.setTranslationModel(modelID, for: target)
+            if pendingTranslationModelID == modelID {
+                pendingTranslationModelID = nil
             }
         }
     }
@@ -495,6 +558,13 @@ struct PluginsPage: View {
                 Text(modelMetadata(for: plugin))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if plugin.type == .translation,
+                    let label = pluginLanguageCapabilityLabel(for: plugin)
+                {
+                    Text(label)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if let update {
                     Text(
                         "当前 \(update.currentVersion) → 新版本 \(update.availableVersion)"
@@ -767,6 +837,34 @@ struct PluginsPage: View {
     }
 }
 
+func pluginLanguageCapabilityLabel(
+    for plugin: PluginManifest
+) -> String? {
+    guard let names = declaredTranslationTargetNames(for: plugin)
+    else {
+        return nil
+    }
+    guard !names.isEmpty else {
+        return "不支持可用目标语言"
+    }
+    if names == [TranslationTarget.english.chineseDisplayName] {
+        return "仅支持英语"
+    }
+    return "语言能力：" + names.joined(separator: " / ")
+}
+
+private func declaredTranslationTargetNames(
+    for plugin: PluginManifest
+) -> [String]? {
+    guard let targets = plugin.translationTargets else {
+        return nil
+    }
+    let targetSet = Set(targets)
+    return TranslationTarget.allCases
+        .filter(targetSet.contains)
+        .map(\.chineseDisplayName)
+}
+
 enum PluginTab: String, CaseIterable, Hashable {
     case dictionary
     case translation
@@ -825,6 +923,14 @@ private struct ModelInstallConfirmationSheet: View {
                     "版本",
                     String(preparation.snapshot.revision.prefix(12))
                 )
+                if let names = declaredTranslationTargetNames(
+                    for: preparation.manifest
+                ), !names.isEmpty {
+                    detailRow(
+                        "目标语言",
+                        names.joined(separator: " / ")
+                    )
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Text("模型将在下载后执行加载验证。")

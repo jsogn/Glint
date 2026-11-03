@@ -130,6 +130,7 @@ final class OverviewUpdatePromptRenderingTests: XCTestCase {
                 model: model,
                 appUpdateModel: updateModel,
                 selection: .constant(.overview),
+                openLanguageTranslation: {},
                 openTranslationModels: {}
             )
             .environment(\.colorScheme, colorScheme)
@@ -163,7 +164,7 @@ final class OverviewUpdatePromptRenderingTests: XCTestCase {
     }
 
     private static let translationManifest = PluginManifest(
-        id: TranslationModelSelection.defaultModelID,
+        id: SystemTranslationModel.appleTranslationID,
         type: .translation,
         name: "OPUS-MT Chinese-English",
         version: "0.1.0",

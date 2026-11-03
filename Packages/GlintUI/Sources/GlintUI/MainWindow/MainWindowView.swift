@@ -65,6 +65,9 @@ public struct MainWindowView: View {
                 model: model,
                 appUpdateModel: appUpdateModel,
                 selection: $selection,
+                openLanguageTranslation: {
+                    selection = .languageTranslation
+                },
                 openTranslationModels: {
                     pluginTab = .translation
                     selection = .plugins
@@ -74,10 +77,21 @@ public struct MainWindowView: View {
             GeneralPage(model: model)
         case .inputMethods:
             InputMethodsPage(model: model)
+        case .languageTranslation:
+            LanguageTranslationPage(
+                model: model,
+                onManageModels: {
+                    pluginTab = .translation
+                    selection = .plugins
+                }
+            )
         case .display:
             DisplayPage(model: model)
         case .plugins:
-            PluginsPage(model: model, selectedTab: $pluginTab)
+            PluginsPage(
+                model: model,
+                selectedTab: $pluginTab
+            )
         case .permissions:
             PermissionsPage(model: model)
         case .about:
@@ -104,6 +118,7 @@ private struct PageTitle: View {
 enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     case overview
     case general
+    case languageTranslation
     case inputMethods
     case display
     case plugins
@@ -121,6 +136,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .overview: return "概览"
         case .general: return "通用配置"
         case .inputMethods: return "输入法支持"
+        case .languageTranslation: return "语言与翻译"
         case .display: return "显示与触发"
         case .plugins: return "插件与模型"
         case .permissions: return "权限与隐私"
@@ -133,6 +149,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .overview: return "sparkles"
         case .general: return "gearshape"
         case .inputMethods: return "keyboard"
+        case .languageTranslation: return "character.bubble"
         case .display: return "rectangle.on.rectangle"
         case .plugins: return "shippingbox"
         case .permissions: return "lock.shield"

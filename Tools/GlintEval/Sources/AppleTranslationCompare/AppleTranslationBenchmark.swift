@@ -14,7 +14,7 @@ struct AppleTranslationBenchmarkReport: Encodable, Sendable {
     let caseCount: Int
     let measuredRounds: Int
     let appleTranslation: EngineReport
-    let opusMT: EngineReport
+    let opusMT: EngineReport?
     let rows: [CaseReport]
 }
 
@@ -37,6 +37,7 @@ struct EngineReport: Encodable, Sendable {
     let p95Milliseconds: Double?
     let failedRounds: Int
     let categories: [CategoryReport]
+    let evaluationCategories: [CategoryReport]
 }
 
 struct CategoryReport: Encodable, Sendable {
@@ -70,7 +71,7 @@ enum AppleTranslationBenchmarkError: LocalizedError {
         case .noCases:
             "评测语料为空"
         case .unsupportedLanguagePair:
-            "系统不支持简体中文到英文翻译"
+            "系统不支持所选翻译方向"
         }
     }
 }
@@ -84,8 +85,12 @@ enum AppleTranslationBenchmark {
         options: AppleTranslationEvaluationOptions,
         progress: @escaping Progress
     ) async throws -> AppleTranslationBenchmarkReport {
-        let source = Locale.Language(identifier: "zh-Hans")
-        let target = Locale.Language(identifier: "en")
+        let source = Locale.Language(
+            identifier: options.sourceLanguage
+        )
+        let target = Locale.Language(
+            identifier: options.targetLanguage
+        )
         let cases = try EvaluationCase.load(
             paths: options.casesPaths
         )
@@ -118,38 +123,64 @@ enum AppleTranslationBenchmark {
             preparationStarted.duration(to: .now)
         )
 
+        let supportsOPUS = options.targetLanguage == "en"
         let loadStarted = ContinuousClock.now
-        let opus = try CTranslate2Engine(
-            modelDirectory: URL(
-                fileURLWithPath: options.ct2Path,
-                isDirectory: true
+        let opus: CTranslate2Engine? =
+            if supportsOPUS {
+                try CTranslate2Engine(
+                    direction: .simplifiedChineseToEnglish,
+                    modelDirectory: URL(
+                        fileURLWithPath: options.ct2Path,
+                        isDirectory: true
+                    )
+                )
+            } else {
+                nil
+            }
+        let loadMilliseconds = opus.map { _ in
+            milliseconds(
+                loadStarted.duration(to: .now)
             )
-        )
-        let loadMilliseconds = milliseconds(
-            loadStarted.duration(to: .now)
-        )
+        }
 
-        await progress("正在首次调用两个翻译引擎…")
+        await progress(
+            supportsOPUS
+                ? "正在首次调用两个翻译引擎…"
+                : "正在首次调用 Apple Translation…"
+        )
         let firstCase = cases[0]
         let appleFirstCall = await translate(
             text: firstCase.text,
             using: session
         )
-        let opusFirstCall = await translate(
-            candidate: Candidate(
-                text: firstCase.text,
-                kind: CandidateClassifier.classify(firstCase.text)
-            ),
-            using: opus
-        )
+        let opusFirstCall: Observation? =
+            if let opus {
+                await translate(
+                    candidate: Candidate(
+                        text: firstCase.text,
+                        kind: CandidateClassifier.classify(
+                            firstCase.text
+                        )
+                    ),
+                    using: opus
+                )
+            } else {
+                nil
+            }
 
-        await progress("正在预热两个翻译引擎…")
+        await progress(
+            supportsOPUS
+                ? "正在预热两个翻译引擎…"
+                : "正在预热 Apple Translation…"
+        )
         for item in cases {
             _ = await translate(text: item.text, using: session)
-            _ = await translate(
-                candidate: candidate(for: item),
-                using: opus
-            )
+            if let opus {
+                _ = await translate(
+                    candidate: candidate(for: item),
+                    using: opus
+                )
+            }
         }
 
         var apple = Observations(count: cases.count)
@@ -167,15 +198,17 @@ enum AppleTranslationBenchmark {
                 apple.record(observation, at: index)
             }
 
-            await progress(
-                "第 \(round + 1)/\(options.rounds) 轮：OPUS-MT"
-            )
-            for (index, item) in cases.enumerated() {
-                let observation = await translate(
-                    candidate: candidate(for: item),
-                    using: opus
+            if let opus {
+                await progress(
+                    "第 \(round + 1)/\(options.rounds) 轮：OPUS-MT"
                 )
-                opusObservations.record(observation, at: index)
+                for (index, item) in cases.enumerated() {
+                    let observation = await translate(
+                        candidate: candidate(for: item),
+                        using: opus
+                    )
+                    opusObservations.record(observation, at: index)
+                }
             }
         }
 
@@ -184,10 +217,22 @@ enum AppleTranslationBenchmark {
             cases: cases,
             observations: apple
         )
+        let appleEvaluationRows = benchmarkRows(
+            model: "apple-translation",
+            cases: cases,
+            observations: apple,
+            category: \.category
+        )
         let opusRows = benchmarkRows(
             model: "opus-mt",
             cases: cases,
             observations: opusObservations
+        )
+        let opusEvaluationRows = benchmarkRows(
+            model: "opus-mt",
+            cases: cases,
+            observations: opusObservations,
+            category: \.category
         )
         let rows = cases.indices.map {
             CaseReport(
@@ -222,8 +267,8 @@ enum AppleTranslationBenchmark {
                     ProcessInfo.processInfo.operatingSystemVersionString,
                 architecture: machineArchitecture()
             ),
-            sourceLanguage: "zh-Hans",
-            targetLanguage: "en",
+            sourceLanguage: options.sourceLanguage,
+            targetLanguage: options.targetLanguage,
             systemLanguageStatus: statusName(languageStatus),
             systemCanRequestDownloads: canRequestDownloads,
             caseCount: cases.count,
@@ -235,17 +280,22 @@ enum AppleTranslationBenchmark {
                 preparationMilliseconds: preparationMilliseconds,
                 firstCallMilliseconds:
                     appleFirstCall.milliseconds,
-                failedRounds: apple.failedRounds
+                failedRounds: apple.failedRounds,
+                evaluationRows: appleEvaluationRows
             ),
-            opusMT: engineReport(
-                name: "opus-mt",
-                rows: opusRows,
-                loadMilliseconds: loadMilliseconds,
-                preparationMilliseconds: nil,
-                firstCallMilliseconds:
-                    opusFirstCall.milliseconds,
-                failedRounds: opusObservations.failedRounds
-            ),
+            opusMT: opus.map { _ in
+                engineReport(
+                    name: "opus-mt",
+                    rows: opusRows,
+                    loadMilliseconds: loadMilliseconds,
+                    preparationMilliseconds: nil,
+                    firstCallMilliseconds:
+                        opusFirstCall?.milliseconds,
+                    failedRounds:
+                        opusObservations.failedRounds,
+                    evaluationRows: opusEvaluationRows
+                )
+            },
             rows: rows
         )
         try write(report: report, to: options.outputPath)
@@ -317,7 +367,12 @@ enum AppleTranslationBenchmark {
     ) async -> Observation {
         let started = ContinuousClock.now
         do {
-            let result = try await engine.translate(candidate)
+            let result = try await engine.translate(
+                TranslationRequest(
+                    candidate: candidate,
+                    direction: .simplifiedChineseToEnglish
+                )
+            )
             return Observation(
                 output: result?.displayText,
                 error: nil,
@@ -348,15 +403,16 @@ enum AppleTranslationBenchmark {
     private static func benchmarkRows(
         model: String,
         cases: [EvaluationCase],
-        observations: Observations
+        observations: Observations,
+        category: (EvaluationCase) -> String = {
+            CandidateClassifier.classify($0.text).rawValue
+        }
     ) -> [BenchmarkRow] {
         cases.indices.map { index in
             BenchmarkRow(
                 model: model,
                 text: cases[index].text,
-                category: CandidateClassifier.classify(
-                    cases[index].text
-                ).rawValue,
+                category: category(cases[index]),
                 expected: cases[index].expected,
                 forbidden: cases[index].forbidden,
                 output: observations.outputs[index],
@@ -375,9 +431,13 @@ enum AppleTranslationBenchmark {
         loadMilliseconds: Double?,
         preparationMilliseconds: Double?,
         firstCallMilliseconds: Double?,
-        failedRounds: Int
+        failedRounds: Int,
+        evaluationRows: [BenchmarkRow]
     ) -> EngineReport {
         let summary = BenchmarkMetrics.summary(rows: rows)
+        let evaluationSummary = BenchmarkMetrics.summary(
+            rows: evaluationRows
+        )
         return EngineReport(
             name: name,
             loadMilliseconds: rounded(loadMilliseconds),
@@ -396,6 +456,15 @@ enum AppleTranslationBenchmark {
             p95Milliseconds: rounded(summary.p95Milliseconds),
             failedRounds: failedRounds,
             categories: summary.categories.map {
+                CategoryReport(
+                    category: $0.category,
+                    total: $0.total,
+                    top1: $0.top1,
+                    missing: $0.missing,
+                    forbiddenHits: $0.forbiddenHits
+                )
+            },
+            evaluationCategories: evaluationSummary.categories.map {
                 CategoryReport(
                     category: $0.category,
                     total: $0.total,

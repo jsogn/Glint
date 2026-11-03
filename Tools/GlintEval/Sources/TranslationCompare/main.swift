@@ -62,20 +62,24 @@ struct TranslationCompare {
             mlxLoadStart.duration(to: .now)
         )
         let mlxWarmupStart = ContinuousClock.now
-        try await mlx.warmUp()
+        try await mlx.warmUp(target: .english)
         let mlxWarmupMilliseconds = milliseconds(
             mlxWarmupStart.duration(to: .now)
         )
 
         let ct2Start = ContinuousClock.now
         let ct2 = try CTranslate2Engine(
+            direction: .simplifiedChineseToEnglish,
             modelDirectory: URL(fileURLWithPath: options.ct2Path)
         )
         let ct2WarmupStart = ContinuousClock.now
         _ = try await ct2.translate(
-            Candidate(
-                text: "你好",
-                kind: .word
+            TranslationRequest(
+                candidate: Candidate(
+                    text: "你好",
+                    kind: .word
+                ),
+                direction: .simplifiedChineseToEnglish
             )
         )
         let ct2LoadMilliseconds = milliseconds(
@@ -103,12 +107,22 @@ struct TranslationCompare {
                     kind: CandidateClassifier.classify(evaluationCase.input)
                 )
                 let mlxStarted = ContinuousClock.now
-                let mlxResult = try? await mlx.translate(candidate)
+                let mlxResult = try? await mlx.translate(
+                    TranslationRequest(
+                        candidate: candidate,
+                        direction: .simplifiedChineseToEnglish
+                    )
+                )
                 let mlxElapsed = milliseconds(
                     mlxStarted.duration(to: .now)
                 )
                 let ct2Started = ContinuousClock.now
-                let ct2Result = try? await ct2.translate(candidate)
+                let ct2Result = try? await ct2.translate(
+                    TranslationRequest(
+                        candidate: candidate,
+                        direction: .simplifiedChineseToEnglish
+                    )
+                )
                 let ct2Elapsed = milliseconds(
                     ct2Started.duration(to: .now)
                 )

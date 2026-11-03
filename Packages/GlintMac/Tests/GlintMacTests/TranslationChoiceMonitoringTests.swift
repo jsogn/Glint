@@ -757,13 +757,23 @@ private enum TestWaitError: Error {
 }
 
 private struct EmptyInsertionDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }
 
 private struct InsertionMultiOptionTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(
             options: [
                 TranslationOption(text: "primary", score: 1),
@@ -775,7 +785,15 @@ private struct InsertionMultiOptionTranslation: TranslationEngine {
 }
 
 private struct InsertionManyOptionTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(
             options: (1...8).map { index in
                 TranslationOption(
@@ -797,13 +815,21 @@ private struct InsertionManyOptionTranslation: TranslationEngine {
 }
 
 private struct RowInsertionTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         let translations = [
             "并且": "and",
             "并肩": "side by side",
             "合并": "join",
         ]
-        guard let text = translations[candidate.text] else {
+        guard let text = translations[request.candidate.text] else {
             return nil
         }
         return TranslationResult(text: text)
@@ -811,15 +837,29 @@ private struct RowInsertionTranslation: TranslationEngine {
 }
 
 private struct EchoInsertionTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
-        TranslationResult(text: candidate.text)
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        TranslationResult(text: request.candidate.text)
     }
 }
 
 private struct GatedInsertionTranslation: TranslationEngine {
     let gate: TranslationGate
 
-    func translate(_ candidate: Candidate) async throws
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(_ request: TranslationRequest) async throws
         -> TranslationResult?
     {
         await gate.wait()

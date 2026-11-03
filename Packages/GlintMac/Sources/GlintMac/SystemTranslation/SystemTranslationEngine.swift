@@ -7,11 +7,20 @@ public struct SystemTranslationEngine: TranslationEngine {
         self.coordinator = coordinator
     }
 
+    public func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        direction.source == .simplifiedChinese
+    }
+
     public func translate(
-        _ candidate: Candidate
+        _ request: TranslationRequest
     ) async throws -> TranslationResult? {
         try Task.checkCancellation()
-        let output = try await coordinator.translate(candidate.text)
+        let output = try await coordinator.translate(
+            request.candidate.text,
+            direction: request.direction
+        )
         try Task.checkCancellation()
         return output.isEmpty ? nil : TranslationResult(text: output)
     }
