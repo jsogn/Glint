@@ -34,7 +34,7 @@ Glint 是菜单栏工具、主窗口和单行 HUD 组成的 macOS App：
 | 可选翻译 | MLX Swift，下载或本地导入 |
 | 插件管理 | manifest、SHA256 校验和原子安装 |
 | 日志 | OSLog，默认脱敏 |
-| 分发目标 | Developer ID、hardened runtime、公证；当前测试发布见发布计划 |
+| 分发 | GitHub Releases 无 Developer ID 签名 PKG/DMG；Developer ID 与公证属于可选升级 |
 
 ## 3. 仓库结构
 
@@ -105,9 +105,16 @@ Glint/
   `system-apple-translation` 参与现有 `TranslationEngine` 路由。
 - 系统翻译会话方向来自显式 `TranslationDirection`，切换方向会使旧会话和旧请求失效；
   旧配置保留并失效后再创建新配置，确保 `translationTask` 宿主重新挂载。
-- 每次“安装语言包”或“继续安装”都会创建新的翻译会话配置；关闭系统下载
-  窗口不会把仍受支持的语言包标记为安装失败。准备中断后，协调器低频读取
-  `LanguageAvailability`，完成时主动通知界面刷新，不伪造系统下载进度。
+- 用户发起“安装语言包”时，同一方向、准备代次的并发请求合并，不得重建翻译会话；
+  准备调用返回 supported 后立即公开 `available`，不得把系统下载窗口关闭推断为
+  `.installing`。Apple 的 `supported` 同时覆盖未下载、下载中和取消后未完成，
+  无法可靠区分，因此界面显示“语言包尚未准备完成”，保留“继续安装”重新进入 Apple
+  准备流程，并以“下载管理”作为辅助入口。再次调用 `prepareTranslation()` 时，Apple
+  会在已下载或下载中直接返回，不会重复下载。协调器继续低频读取
+  `LanguageAvailability`，准备中只在用户正在系统准备流程或系统明确报告安装中时
+  显示；完成时主动通知界面刷新，不伪造系统下载进度。系统设置入口通过
+  `x-apple.systempreferences:com.apple.Localization?translation`
+  打开系统翻译语言设置；下载进行中不得显示无效的安装重试按钮。
 - 语言资源由 macOS 管理；Glint 只在用户主动安装或资源已安装时连接会话，
   不在候选翻译期间触发下载。选择系统翻译后释放 OPUS-MT/CTranslate2 容器；
   系统翻译失败时不自动加载其他翻译模型，由现有路由决定是否使用词典路径。

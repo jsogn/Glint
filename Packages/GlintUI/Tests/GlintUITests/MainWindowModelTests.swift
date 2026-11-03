@@ -436,6 +436,63 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
+    func testInstallingSystemTranslationIgnoresDuplicatePreparation()
+        async throws
+    {
+        let context = try makeContext(
+            selectedModelID:
+                SystemTranslationModel.appleTranslationID
+        )
+        defer { context.cleanup() }
+        context.model.updateSystemTranslationAvailability(.installing)
+        var preparationCount = 0
+        context.model.prepareSystemTranslationAction = {
+            preparationCount += 1
+            return .installing
+        }
+
+        await context.model.prepareSystemTranslationSupport()
+
+        XCTAssertEqual(preparationCount, 0)
+        XCTAssertEqual(
+            context.model.systemTranslationAvailability,
+            .installing
+        )
+        XCTAssertFalse(context.model.isPreparingSystemTranslation)
+    }
+
+    @MainActor
+    func testOpenSystemTranslationSettingsForwardsAction() throws {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        var openCount = 0
+        context.model.openSystemTranslationSettingsAction = {
+            openCount += 1
+        }
+
+        context.model.openSystemTranslationSettings()
+
+        XCTAssertEqual(openCount, 1)
+    }
+
+    @MainActor
+    func testInterruptedSystemInstallBecomesIncompleteState() throws {
+        let context = try makeContext(
+            selectedModelID:
+                SystemTranslationModel.appleTranslationID
+        )
+        defer { context.cleanup() }
+        context.model.updateSystemTranslationAvailability(.installing)
+
+        context.model.updateSystemTranslationAvailability(.available)
+
+        XCTAssertEqual(
+            context.model.systemTranslationSetupState,
+            .installationIncomplete
+        )
+    }
+
+    @MainActor
     func testLanguageSwitchDiscardsOlderSystemTranslationPreparation()
         async throws
     {

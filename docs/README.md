@@ -6,7 +6,7 @@
 - [通用输入法与候选运行规则](GENERIC-INPUT-METHOD-ADAPTATION.md)：候选结构、
   Profile、探测缓存、轮询与显示规则和 AX 资源边界。
 - [macOS 兼容性](MACOS-COMPATIBILITY.md)：最低系统、运行时版本和兼容性验证。
-- [发布计划](RELEASE-PLAN.md)：签名、公证、分发和发布门禁。
+- [发布计划](RELEASE-PLAN.md)：GitHub 无签名分发、发布门禁和可选签名升级。
 - [AX 候选验证](AX-CANDIDATE-VALIDATION.md)：候选读取结构、性能证据和已知边界。
 - [Rime 输入法支持](SQUIRREL-CANDIDATE-BRIDGE.md)：Rime Lua 候选适配器、
   安装流程和隔离边界。

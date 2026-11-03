@@ -47,6 +47,18 @@ Glint 是面向中文母语者的 macOS 多语种学习工具，不替换输入�
   方向由显式 `TranslationDirection` 传递。
 - 日志：OSLog，默认脱敏。
 
+## 分发策略
+
+- Glint 的既定公开发布渠道是 GitHub Releases，发布无 Developer ID 签名、
+  未公证的 ad-hoc PKG/DMG。缺少 Developer ID、Team ID 或 Apple 公证不是发布
+  阻塞项，不得据此判定项目不适合公开发布。
+- 发布包仍必须完成嵌套 Mach-O 与主 App 的 ad-hoc 签名、资源校验、版本检查、
+  SHA256 校验和 DMG/PKG 完整性验证。
+- README 与 Release Notes 必须明确说明 macOS 可能阻止首次打开，用户可按系统
+  提示允许一次。
+- Developer ID、Hardened Runtime 和公证属于未来的可选升级，只有用户明确决定
+  切换发行身份时才执行；切换时需同时规划 Bundle ID 与 TCC 迁移。
+
 ## 目录职责
 
 - `App/Glint/`：组合根、App 生命周期、菜单栏、主窗口和 HUD 协调。

@@ -20,14 +20,6 @@ struct PluginsPage: View {
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                if model.isLoadingPlugins
-                    || model.isLoadingCatalog
-                    || model.isInstalling != nil
-                    || model.isPreparingModelMarketInstallID != nil
-                {
-                    ProgressView()
-                        .controlSize(.small)
-                }
             }
             if let error = model.catalogError {
                 HStack(alignment: .top) {
@@ -217,10 +209,17 @@ struct PluginsPage: View {
                         == .installationIncomplete
                     {
                         Text(
-                            "安装尚未完成。如果系统仍在下载，完成后会自动更新。"
+                            "语言包尚未准备完成。请继续安装，或前往系统设置管理下载。"
                         )
                         .font(.caption)
                         .foregroundStyle(.orange)
+                    }
+                    if model.systemTranslationSetupState == .installing {
+                        Text(
+                            "正在准备，请在系统设置中管理下载。"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                     if let error = model.systemTranslationError {
                         Text(error)
@@ -274,32 +273,39 @@ struct PluginsPage: View {
                     .disabled(model.isChangingTranslationTarget)
                 }
             case .available:
-                Button(
-                    model.systemTranslationSetupState
-                        == .installationIncomplete
-                        ? "继续安装"
-                        : "安装语言包"
-                ) {
-                    Task {
-                        await model.prepareSystemTranslationSupport()
+                HStack(spacing: 8) {
+                    Button(
+                        model.systemTranslationSetupState
+                            == .installationIncomplete
+                            ? "继续安装"
+                            : "安装语言包"
+                    ) {
+                        Task {
+                            await model.prepareSystemTranslationSupport()
+                        }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(model.isPreparingSystemTranslation)
+                    systemTranslationProgressButton
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(model.isPreparingSystemTranslation)
             case .failed:
-                Button("重试") {
-                    Task {
-                        await model.prepareSystemTranslationSupport()
+                HStack(spacing: 8) {
+                    Button("重新安装") {
+                        Task {
+                            await model.prepareSystemTranslationSupport()
+                        }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(model.isPreparingSystemTranslation)
+                    systemTranslationProgressButton
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(model.isPreparingSystemTranslation)
             case .installing:
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
                     Text("正在准备…")
                         .foregroundStyle(.secondary)
+                    systemTranslationProgressButton
                 }
             case .unsupported:
                 Text(
@@ -314,6 +320,14 @@ struct PluginsPage: View {
                 }
             }
         }
+    }
+
+    private var systemTranslationProgressButton: some View {
+        Button("下载管理") {
+            model.openSystemTranslationSettings()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
     }
 
     private func pluginRows(

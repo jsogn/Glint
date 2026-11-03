@@ -11,9 +11,8 @@
   <img alt="本地离线" src="https://img.shields.io/badge/privacy-local_%26_offline-30363D?style=flat-square">
 </p>
 
-Glint 是一款为 macOS 打造的多语种学习工具。输入中文拼音时，英语、日语、西班牙语、
-法语、德语或俄语译文会出现在候选栏旁，不打断输入。它不替换输入法，也不会改变你的
-输入习惯。
+Glint 是一款为 macOS 打造的英语学习工具，也支持其他学习语言。输入中文拼音时，
+译文会出现在候选栏旁，不打断输入。它不替换输入法，也不会改变你的输入习惯。
 
 [![Glint 45 秒产品演示](docs/assets/glint-video-cover-clean.jpg)](https://www.bilibili.com/video/BV1spnb6kEtW/)
 
@@ -37,6 +36,9 @@ brew install --cask jsogn/glint/glint
 推荐选择 `Glint-*-macOS-arm64.pkg`。如果 macOS 首次阻止打开，请在
 **系统设置 → 隐私与安全性** 中允许一次，再重新打开安装包。
 
+Glint 通过 GitHub 发布无 Developer ID 签名的安装包。macOS 的首次安全提示是
+该分发方式的预期行为，不代表安装包损坏。
+
 也可以在下载页选择 DMG，打开后将 Glint 拖入“应用程序”文件夹。不要直接从
 DMG 或“下载”目录运行。
 
@@ -46,8 +48,8 @@ DMG 或“下载”目录运行。
 2. 在 **系统设置 → 隐私与安全性 → 辅助功能** 中打开 Glint 的开关，然后重新打开
    Glint。
 3. 切换到中文拼音，输入“你好”；候选栏旁出现英语译文即表示安装成功。
-4. 在“语言与翻译”中可切换英语、日语、西班牙语、法语、德语或俄语；首次使用某个
-   Apple 翻译方向时需要安装对应语言包。
+4. 默认学习英语；如需其他语言，可在“语言与翻译”中切换，首次使用对应 Apple
+   翻译方向时安装语言包。
 
 ## 特点
 

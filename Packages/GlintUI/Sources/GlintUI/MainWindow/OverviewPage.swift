@@ -238,17 +238,27 @@ private struct SystemTranslationSetupCard: View {
                 Text("正在准备…")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                systemProgressButton
             }
         case .unsupported:
             Button("查看模型") {
                 openModelSettings()
             }
         case .failed:
-            installButton(title: "重试")
+            HStack(spacing: 8) {
+                installButton(title: "重新安装")
+                systemProgressButton
+            }
         case .installationRequired:
-            installButton(title: "安装语言包")
+            HStack(spacing: 8) {
+                installButton(title: "安装语言包")
+                systemProgressButton
+            }
         case .installationIncomplete:
-            installButton(title: "继续安装")
+            HStack(spacing: 8) {
+                installButton(title: "继续安装")
+                systemProgressButton
+            }
         }
     }
 
@@ -257,6 +267,14 @@ private struct SystemTranslationSetupCard: View {
             install()
         }
         .buttonStyle(.borderedProminent)
+    }
+
+    private var systemProgressButton: some View {
+        Button("下载管理") {
+            model.openSystemTranslationSettings()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
     }
 
     private func install() {
@@ -272,11 +290,11 @@ private extension SystemTranslationSetupState {
         case .installationRequired:
             "请安装 Apple 翻译语言包"
         case .installationIncomplete:
-            "语言包安装未完成"
+            "语言包尚未准备完成"
         case .installing:
             "正在准备 Apple 翻译"
         case .failed:
-            "语言包安装失败"
+            "语言包安装未完成"
         case .unsupported:
             "当前 Mac 不支持 Apple 翻译"
         }
@@ -287,9 +305,9 @@ private extension SystemTranslationSetupState {
         case .installationRequired:
             "安装当前目标语言的 Apple 翻译语言包后，才能处理短句。"
         case .installationIncomplete:
-            "你可以继续安装；如果系统仍在下载，完成后会自动更新。"
+            "请继续安装，或前往系统设置管理下载。"
         case .installing:
-            "完成后会自动打开概览。"
+            "请在系统设置中管理下载。"
         case .failed(let message):
             message
         case .unsupported:

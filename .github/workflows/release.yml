@@ -56,7 +56,7 @@ jobs:
       - name: Run dictionary quality gate
         run: ./scripts/benchmark_dictionary.sh
 
-      - name: Build ad-hoc developer packages
+      - name: Build GitHub unsigned packages
         run: ./scripts/package_test_distributions.sh
 
       - name: Validate tag and package versions

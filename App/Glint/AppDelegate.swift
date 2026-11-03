@@ -45,6 +45,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var permissionRequestPending = false
     private var permissionRequestWasIssued = false
     private var selectedInputSourceObserver: NSObjectProtocol?
+    private var systemSettingsTerminationObserver: NSObjectProtocol?
+    private var systemSettingsReturnPolicy = SystemSettingsReturnPolicy()
     private var startupPreparationTask: Task<Void, Never>?
     private var shouldStartMonitoringAfterPreparation = false
     private var shouldRequestPermissionAfterPreparation = false
@@ -188,6 +190,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         wasLaunchedAtLogin = LoginLaunchDetector.wasLaunchedAtLogin()
         configureWindowModel()
         observeInputSourceChanges()
+        observeSystemSettingsTermination()
         refreshActiveInputMethodName()
         setupMainMenu()
         setupStatusItem()
@@ -298,6 +301,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let selectedInputSourceObserver {
             DistributedNotificationCenter.default()
                 .removeObserver(selectedInputSourceObserver)
+        }
+        if let systemSettingsTerminationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(
+                systemSettingsTerminationObserver
+            )
         }
         stopMonitoring()
     }
@@ -536,6 +544,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         windowModel.systemTranslationPresentationAction = {
             [weak self] in
             self?.showMainWindow()
+        }
+        windowModel.openSystemTranslationSettingsAction = {
+            [weak self] in
+            self?.openSystemTranslationSettings()
         }
         windowModel.releaseTranslationModelAction = { [weak self] modelID in
             guard let self else { return }
@@ -1344,6 +1356,67 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return
         }
         NSWorkspace.shared.open(url)
+    }
+
+    private func openSystemTranslationSettings() {
+        let candidates = [
+            URL(
+                string:
+                    "x-apple.systempreferences:com.apple.Localization?translation"
+            ),
+            URL(
+                string:
+                    "x-apple.systempreferences:com.apple.Localization-Settings.extension?translation"
+            ),
+            URL(
+                string:
+                    "x-apple.systempreferences:com.apple.Localization-Settings.extension"
+            ),
+        ].compactMap { $0 }
+        guard !candidates.isEmpty else { return }
+        appLogger.notice("system settings open requested")
+        systemSettingsReturnPolicy.settingsOpened()
+        for url in candidates where NSWorkspace.shared.open(url) {
+            return
+        }
+    }
+
+    private func observeSystemSettingsTermination() {
+        guard systemSettingsTerminationObserver == nil else { return }
+        systemSettingsTerminationObserver =
+            NSWorkspace.shared.notificationCenter.addObserver(
+                forName:
+                    NSWorkspace.didTerminateApplicationNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                let application =
+                    notification.userInfo?[
+                        NSWorkspace.applicationUserInfoKey
+                    ] as? NSRunningApplication
+                let bundleIdentifier = application?.bundleIdentifier
+                appLogger.notice(
+                    "application terminated bundle=\(bundleIdentifier ?? "unknown", privacy: .public)"
+                )
+                Task { @MainActor [weak self] in
+                    guard let self,
+                        self.systemSettingsReturnPolicy.shouldRestore(
+                            afterTerminating: bundleIdentifier
+                        )
+                    else {
+                        return
+                    }
+                    appLogger.notice(
+                        "restoring Glint after system settings closed"
+                    )
+                    self.showMainWindow()
+                    self.mainWindowController.window?
+                        .orderFrontRegardless()
+                    NSRunningApplication.current.activate(
+                        options: [.activateAllWindows]
+                    )
+                }
+            }
     }
 
     @objc private func quit() {

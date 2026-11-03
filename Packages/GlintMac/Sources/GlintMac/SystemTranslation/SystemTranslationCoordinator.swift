@@ -88,6 +88,8 @@ public final class SystemTranslationCoordinator: ObservableObject {
     private var cancelledRequestIDs: Set<UUID> = []
     private var idleContinuation: CheckedContinuation<Void, Never>?
     private var availabilityMonitorTask: Task<Void, Never>?
+    private var backgroundInstallationDirection: TranslationDirection?
+    private var backgroundInstallationGeneration: UInt64 = 0
     private var shouldStop = false
 
     public convenience init(
@@ -126,6 +128,7 @@ public final class SystemTranslationCoordinator: ObservableObject {
         directionGeneration &+= 1
         sessionGeneration &+= 1
         driver = nil
+        clearBackgroundInstallation()
         if var nextConfiguration = configuration {
             nextConfiguration.invalidate()
             configuration = nextConfiguration
@@ -159,7 +162,24 @@ public final class SystemTranslationCoordinator: ObservableObject {
             return
         }
         availability = current
-        if current != .available {
+        switch current {
+        case .installing:
+            startAvailabilityMonitoring(
+                for: direction,
+                generation: operationGeneration
+            )
+        case .available:
+            if hasBackgroundInstallation(
+                for: direction,
+                generation: operationGeneration
+            ) {
+                startAvailabilityMonitoring(
+                    for: direction,
+                    generation: operationGeneration
+                )
+            }
+        case .installed, .unsupported, .failed:
+            clearBackgroundInstallation()
             stopAvailabilityMonitoring()
         }
     }
@@ -241,15 +261,30 @@ public final class SystemTranslationCoordinator: ObservableObject {
             else {
                 return
             }
-            availability = updated
             switch updated {
             case .installed:
+                clearBackgroundInstallation()
+                availability = .installed
                 break
-            case .available, .installing:
-                startAvailabilityMonitoring()
+            case .available:
+                availability = .available
+                beginBackgroundInstallation(
+                    for: direction,
+                    generation: operationGeneration
+                )
+            case .installing:
+                availability = .installing
+                beginBackgroundInstallation(
+                    for: direction,
+                    generation: operationGeneration
+                )
             case .unsupported:
+                clearBackgroundInstallation()
+                availability = .unsupported
                 throw SystemTranslationError.unsupported
             case .failed:
+                clearBackgroundInstallation()
+                availability = updated
                 throw SystemTranslationError.languagePackUnavailable
             }
         } catch SystemTranslationError.sessionUnavailable {
@@ -261,6 +296,7 @@ public final class SystemTranslationCoordinator: ObservableObject {
             else {
                 return
             }
+            clearBackgroundInstallation()
             availability = .failed(
                 SystemTranslationError.sessionUnavailable.localizedDescription
             )
@@ -278,13 +314,19 @@ public final class SystemTranslationCoordinator: ObservableObject {
             availability = updated
             switch updated {
             case .installed:
+                clearBackgroundInstallation()
                 return
             case .available, .installing:
-                startAvailabilityMonitoring()
+                startAvailabilityMonitoring(
+                    for: direction,
+                    generation: operationGeneration
+                )
                 return
             case .unsupported:
+                clearBackgroundInstallation()
                 throw SystemTranslationError.unsupported
             case .failed:
+                clearBackgroundInstallation()
                 break
             }
             availability = .failed(error.localizedDescription)
@@ -406,6 +448,7 @@ public final class SystemTranslationCoordinator: ObservableObject {
         shouldStop = true
         sessionGeneration &+= 1
         stopAvailabilityMonitoring()
+        clearBackgroundInstallation()
         configuration = nil
         signalIdleLoop()
         failDriverWaiters()
@@ -663,7 +706,35 @@ public final class SystemTranslationCoordinator: ObservableObject {
         }
     }
 
-    private func startAvailabilityMonitoring() {
+    private func beginBackgroundInstallation(
+        for direction: TranslationDirection,
+        generation: UInt64
+    ) {
+        backgroundInstallationDirection = direction
+        backgroundInstallationGeneration = generation
+        startAvailabilityMonitoring(
+            for: direction,
+            generation: generation
+        )
+    }
+
+    private func hasBackgroundInstallation(
+        for direction: TranslationDirection,
+        generation: UInt64
+    ) -> Bool {
+        backgroundInstallationDirection == direction
+            && backgroundInstallationGeneration == generation
+    }
+
+    private func clearBackgroundInstallation() {
+        backgroundInstallationDirection = nil
+        backgroundInstallationGeneration = 0
+    }
+
+    private func startAvailabilityMonitoring(
+        for direction: TranslationDirection,
+        generation: UInt64
+    ) {
         guard availabilityMonitorTask == nil else { return }
         availabilityMonitorTask = Task { [weak self] in
             let clock = ContinuousClock()
@@ -689,18 +760,37 @@ public final class SystemTranslationCoordinator: ObservableObject {
                     return
                 }
                 guard let self else { return }
+                guard
+                    self.isCurrentDirection(
+                        direction,
+                        generation: generation
+                    )
+                else {
+                    self.availabilityMonitorTask = nil
+                    return
+                }
                 guard !self.isPreparing else { continue }
                 let current = await availabilityProvider(
-                    currentDirection
+                    direction
                 )
                 guard !Task.isCancelled, !self.isPreparing else {
                     return
                 }
-                availability = current
                 switch current {
-                case .available, .installing:
+                case .available:
+                    self.availability = current
+                    continue
+                case .installing:
+                    self.availability = .installing
                     continue
                 case .installed, .unsupported, .failed:
+                    if self.hasBackgroundInstallation(
+                        for: direction,
+                        generation: generation
+                    ) {
+                        self.clearBackgroundInstallation()
+                    }
+                    self.availability = current
                     availabilityMonitorTask = nil
                     return
                 }

@@ -60,29 +60,46 @@ private struct LanguageTargetSection: View {
                 languagePackNotice(
                     "\(model.translationTarget.chineseDisplayName)需要安装 Apple 翻译语言包",
                     actionTitle: "安装语言包",
-                    action: prepareLanguagePack
+                    action: prepareLanguagePack,
+                    secondaryTitle: "下载管理",
+                    secondaryAction: openSystemTranslationSettings
                 )
             case .installationIncomplete:
                 languagePackNotice(
-                    "\(model.translationTarget.chineseDisplayName)语言包安装未完成",
+                    "\(model.translationTarget.chineseDisplayName)语言包尚未准备完成",
                     actionTitle: "继续安装",
-                    action: prepareLanguagePack
+                    action: prepareLanguagePack,
+                    secondaryTitle: "下载管理",
+                    secondaryAction: openSystemTranslationSettings
                 )
             case .installing:
-                HStack(spacing: 8) {
+                HStack(spacing: 10) {
                     ProgressView()
                         .controlSize(.small)
-                    Text(
-                        "正在安装\(model.translationTarget.chineseDisplayName)语言包…"
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(
+                            "正在准备\(model.translationTarget.chineseDisplayName)语言包…"
+                        )
+                        .font(.callout)
+                        Text("请在系统设置中管理下载。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 12)
+                    Button(
+                        "下载管理",
+                        action: openSystemTranslationSettings
                     )
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
             case .failed:
                 languagePackNotice(
-                    "\(model.translationTarget.chineseDisplayName)语言包安装失败",
-                    actionTitle: "重试",
-                    action: prepareLanguagePack
+                    "\(model.translationTarget.chineseDisplayName)语言包安装未完成",
+                    actionTitle: "重新安装",
+                    action: prepareLanguagePack,
+                    secondaryTitle: "下载管理",
+                    secondaryAction: openSystemTranslationSettings
                 )
             case .unsupported:
                 Label(
@@ -102,7 +119,9 @@ private struct LanguageTargetSection: View {
     private func languagePackNotice(
         _ text: String,
         actionTitle: String,
-        action: @escaping () -> Void
+        action: @escaping () -> Void,
+        secondaryTitle: String? = nil,
+        secondaryAction: (() -> Void)? = nil
     ) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -111,9 +130,21 @@ private struct LanguageTargetSection: View {
             Text(text)
                 .font(.callout)
             Spacer(minLength: 12)
-            Button(actionTitle, action: action)
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
+            HStack(spacing: 8) {
+                Button(actionTitle, action: action)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                if let secondaryTitle,
+                    let secondaryAction
+                {
+                    Button(
+                        secondaryTitle,
+                        action: secondaryAction
+                    )
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
         }
     }
 
@@ -121,6 +152,10 @@ private struct LanguageTargetSection: View {
         Task {
             await model.prepareSystemTranslationSupport()
         }
+    }
+
+    private func openSystemTranslationSettings() {
+        model.openSystemTranslationSettings()
     }
 
     private var targetDirectionBox: some View {
@@ -332,13 +367,15 @@ private struct ActiveTranslationModelSection: View {
                         Task {
                             await model.prepareSystemTranslationSupport()
                         }
-                    }
+                    },
+                    secondaryActionTitle: "下载管理",
+                    secondaryAction: openSystemTranslationSettings
                 )
             case .installationIncomplete:
                 translationStatusRow(
                     title:
-                        "中文到\(model.translationTarget.chineseDisplayName)语言包安装未完成",
-                    detail: "继续安装后即可使用 Apple 翻译。",
+                        "中文到\(model.translationTarget.chineseDisplayName)语言包尚未准备完成",
+                    detail: "请继续安装，或前往系统设置管理下载。",
                     systemImage: "arrow.down.circle",
                     tint: .orange,
                     actionTitle: "继续安装",
@@ -346,11 +383,14 @@ private struct ActiveTranslationModelSection: View {
                         Task {
                             await model.prepareSystemTranslationSupport()
                         }
-                    }
+                    },
+                    secondaryActionTitle: "下载管理",
+                    secondaryAction: openSystemTranslationSettings
                 )
             case .installing:
                 progressStatus(
-                    "正在准备中文到\(model.translationTarget.chineseDisplayName)翻译…"
+                    "正在准备中文到\(model.translationTarget.chineseDisplayName)翻译…",
+                    showsSystemProgress: true
                 )
             case .failed(let message):
                 translationStatusRow(
@@ -359,12 +399,14 @@ private struct ActiveTranslationModelSection: View {
                     detail: message,
                     systemImage: "exclamationmark.triangle.fill",
                     tint: .red,
-                    actionTitle: "重试",
+                    actionTitle: "重新安装",
                     action: {
                         Task {
                             await model.prepareSystemTranslationSupport()
                         }
-                    }
+                    },
+                    secondaryActionTitle: "下载管理",
+                    secondaryAction: openSystemTranslationSettings
                 )
             case .unsupported:
                 translationStatusRow(
@@ -430,7 +472,9 @@ private struct ActiveTranslationModelSection: View {
         systemImage: String,
         tint: Color,
         actionTitle: String? = nil,
-        action: (() -> Void)? = nil
+        action: (() -> Void)? = nil,
+        secondaryActionTitle: String? = nil,
+        secondaryAction: (() -> Void)? = nil
     ) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: systemImage)
@@ -456,12 +500,27 @@ private struct ActiveTranslationModelSection: View {
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
                 }
+                if let secondaryActionTitle,
+                    let secondaryAction
+                {
+                    Button(
+                        secondaryActionTitle,
+                        action: secondaryAction
+                    )
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
                 manageModelsButton
             }
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(1)
         }
     }
 
-    private func progressStatus(_ text: String) -> some View {
+    private func progressStatus(
+        _ text: String,
+        showsSystemProgress: Bool = false
+    ) -> some View {
         HStack(spacing: 10) {
             ProgressView()
                 .controlSize(.small)
@@ -470,8 +529,20 @@ private struct ActiveTranslationModelSection: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Spacer()
+            if showsSystemProgress {
+                Button(
+                    "下载管理",
+                    action: openSystemTranslationSettings
+                )
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
             manageModelsButton
         }
+    }
+
+    private func openSystemTranslationSettings() {
+        model.openSystemTranslationSettings()
     }
 
     private var readyStatus: some View {

@@ -50,8 +50,9 @@ prepare_release_app() {
     exit 1
   fi
 
-  # Ad-hoc signing has no Team ID, so Hardened Runtime is intentionally
-  # omitted. Sign every nested Mach-O before sealing the app bundle.
+  # GitHub unsigned distribution uses ad-hoc signing without Developer ID,
+  # so Hardened Runtime is intentionally omitted. Sign every nested Mach-O
+  # before sealing the app bundle.
   while IFS= read -r file; do
     [[ "$file" == "$main_executable" ]] && continue
     if file "$file" | grep -q 'Mach-O'; then
@@ -122,7 +123,8 @@ package_dmg() {
 
   echo "dmg=$dmg_path"
   echo "sha256=$(checksum_value "$dmg_path")"
-  echo "signature=ad-hoc (not notarized)"
+  echo "distribution=github-unsigned"
+  echo "signature=ad-hoc"
 }
 
 package_pkg() {
@@ -175,5 +177,6 @@ package_pkg() {
 
   echo "pkg=$pkg_path"
   echo "sha256=$(checksum_value "$pkg_path")"
-  echo "signature=ad-hoc app payload (installer not notarized)"
+  echo "distribution=github-unsigned"
+  echo "signature=ad-hoc-app-payload"
 }

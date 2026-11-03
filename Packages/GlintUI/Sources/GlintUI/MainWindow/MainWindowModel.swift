@@ -252,6 +252,8 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var systemTranslationPresentationAction: @MainActor () -> Void = {}
     @ObservationIgnored
+    public var openSystemTranslationSettingsAction: @MainActor () -> Void = {}
+    @ObservationIgnored
     public var releaseTranslationModelAction: @MainActor (String) async -> Void = { _ in }
     @ObservationIgnored
     public var previewTranslationSpeechAction: @MainActor (TranslationTarget) -> Void = { _ in }
@@ -586,7 +588,13 @@ public final class MainWindowModel {
     public func updateSystemTranslationAvailability(
         _ availability: SystemTranslationAvailability
     ) {
+        let previousAvailability = systemTranslationAvailability
         systemTranslationAvailability = availability
+        if previousAvailability == .installing,
+            availability == .available
+        {
+            systemTranslationPreparationIsIncomplete = true
+        }
         if availability.canSelect {
             systemTranslationPreparationIsIncomplete = false
         }
@@ -610,6 +618,9 @@ public final class MainWindowModel {
     }
 
     public func prepareSystemTranslationSupport() async {
+        guard systemTranslationAvailability != .installing else {
+            return
+        }
         guard !isPreparingSystemTranslation else { return }
         let requestGeneration = systemTranslationRequestGeneration
         let wasInstalled =
@@ -657,6 +668,10 @@ public final class MainWindowModel {
             updateSystemTranslationAvailability(.failed(message))
             systemTranslationError = message
         }
+    }
+
+    public func openSystemTranslationSettings() {
+        openSystemTranslationSettingsAction()
     }
 
     public var launchAtLoginRequiresApproval: Bool {

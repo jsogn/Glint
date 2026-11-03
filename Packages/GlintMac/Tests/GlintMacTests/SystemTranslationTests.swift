@@ -261,6 +261,139 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
         await hostTask.value
     }
 
+    func testReturnedPromptWithoutInstalledPackPublishesAvailable()
+        async throws
+    {
+        let availability = LockedAvailability(.available)
+        let driver = FakeSystemTranslationDriver()
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            },
+            driverReadyTimeout: .milliseconds(100)
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+
+        try await coordinator.prepareLanguagePack()
+
+        XCTAssertEqual(driver.prepareCalls, 1)
+        XCTAssertEqual(coordinator.availability, .available)
+
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testAvailabilityRefreshReportsAvailableWhenPackIsNotInstalled()
+        async throws
+    {
+        let availability = LockedAvailability(.available)
+        let driver = FakeSystemTranslationDriver()
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+
+        try await coordinator.prepareLanguagePack()
+        await coordinator.refreshAvailability()
+
+        XCTAssertEqual(driver.prepareCalls, 1)
+        XCTAssertEqual(coordinator.availability, .available)
+
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testAvailabilityRefreshKeepsMonitoringInstallingPack()
+        async throws
+    {
+        let availability = LockedAvailability(.installing)
+        let driver = FakeSystemTranslationDriver()
+        driver.prepareError = TestPreparationError.windowClosed
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+
+        try? await coordinator.prepareLanguagePack()
+        await coordinator.refreshAvailability()
+        availability.value = .installed
+        await waitUntil(timeout: .seconds(2)) {
+            coordinator.availability == .installed
+        }
+
+        XCTAssertEqual(coordinator.availability, .installed)
+
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testSuccessfulPromptObservationFindsBackgroundInstall()
+        async throws
+    {
+        let availability = LockedAvailability(.available)
+        let driver = FakeSystemTranslationDriver()
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+
+        try await coordinator.prepareLanguagePack()
+        XCTAssertEqual(coordinator.availability, .available)
+        availability.value = .installed
+        await waitUntil(timeout: .seconds(2)) {
+            coordinator.availability == .installed
+        }
+
+        XCTAssertEqual(coordinator.availability, .installed)
+
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testInstallingAvailabilityStaysVisibleWhileObservingInstall()
+        async throws
+    {
+        let availability = LockedAvailability(.available)
+        let driver = FakeSystemTranslationDriver()
+        driver.onPrepare = {
+            availability.value = .installing
+        }
+        let coordinator = SystemTranslationCoordinator(
+            availabilityProvider: {
+                availability.value
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+
+        try await coordinator.prepareLanguagePack()
+
+        XCTAssertEqual(coordinator.availability, .installing)
+
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
     func testSupersededPreparationDoesNotPublishOldDirectionAvailability()
         async throws
     {
@@ -587,7 +720,6 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
     func testContinuingLanguagePackInstallUsesFreshSession() async {
         let availability = LockedAvailability(.available)
         let firstDriver = FakeSystemTranslationDriver()
-        firstDriver.prepareError = TestPreparationError.windowClosed
         let coordinator = SystemTranslationCoordinator(
             availabilityProvider: {
                 availability.value
@@ -598,6 +730,8 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
         }
         await Task.yield()
         try? await coordinator.prepareLanguagePack()
+        XCTAssertEqual(firstDriver.prepareCalls, 1)
+        XCTAssertEqual(coordinator.availability, .available)
         let firstSessionGeneration =
             coordinator.currentSessionGeneration
 

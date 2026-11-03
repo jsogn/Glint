@@ -42,9 +42,6 @@ final class LanguageTranslationPageTests: XCTestCase {
         let observations = try recognizedTextObservations(in: bitmap)
         let textFrames = try recognizedTextFrames(in: bitmap)
         let manageFrame = try XCTUnwrap(textFrames["管理模型"])
-        let targetFrame = try XCTUnwrap(
-            textFrames.first { $0.key.hasPrefix("目标语") }?.value
-        )
         let modelCardFrame = try XCTUnwrap(
             textFrames["翻译模型"]
         )
@@ -53,21 +50,21 @@ final class LanguageTranslationPageTests: XCTestCase {
         }
         let installFrames = installObservations.map(\.frame)
 
-        XCTAssertEqual(installObservations.count, 2)
+        XCTAssertGreaterThanOrEqual(installObservations.count, 1)
         XCTAssertTrue(
-            installFrames.contains {
-                $0.midY < targetFrame.midY
-                    && $0.midY > modelCardFrame.midY
+            observations.contains {
+                $0.text.contains("英语需要安装Apple翻译语言包")
             }
         )
         XCTAssertTrue(
-            installFrames.contains {
-                $0.midY < modelCardFrame.midY
+            observations.contains {
+                $0.text.contains("需要安装中文到英语语言包")
             }
         )
         let modelInstallFrame = try XCTUnwrap(
             installFrames.min { $0.midY < $1.midY }
         )
+        XCTAssertLessThan(modelInstallFrame.midY, modelCardFrame.midY)
         XCTAssertLessThan(
             abs(manageFrame.midY - modelInstallFrame.midY),
             0.04
@@ -82,11 +79,189 @@ final class LanguageTranslationPageTests: XCTestCase {
             blueButtonRatio(for: manageFrame, in: bitmap),
             0.03
         )
+        XCTAssertNotNil(textFrames["下载管理"])
+        XCTAssertNil(textFrames["查看系统设置"])
         XCTAssertTrue(
             observations.contains {
                 $0.text.contains("Apple翻译语言包")
             }
         )
+    }
+
+    func testInstallingLanguagePackOffersSystemDownloadAction() throws {
+        let suite = "GlintLanguagePageInstalling.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(suite, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil,
+            defaults: defaults
+        )
+        model.updateSystemTranslationAvailability(.installing)
+        let hostingView = NSHostingView(
+            rootView: LanguageTranslationPage(
+                model: model,
+                onManageModels: {}
+            )
+        )
+        hostingView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: 900,
+            height: 760
+        )
+        hostingView.layoutSubtreeIfNeeded()
+
+        let textFrames = try recognizedTextFrames(
+            in: renderedBitmap(in: hostingView)
+        )
+
+        XCTAssertNotNil(textFrames["下载管理"])
+        XCTAssertNil(textFrames["查看下载"])
+        XCTAssertNil(textFrames["继续安装"])
+    }
+
+    func testIncompleteLanguagePackOffersContinueInstallAndDownloadManagement()
+        async throws
+    {
+        let suite = "GlintLanguagePageInterrupted.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(suite, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil,
+            defaults: defaults
+        )
+        model.updateSystemTranslationAvailability(.available)
+        model.prepareSystemTranslationAction = {
+            .available
+        }
+        await model.prepareSystemTranslationSupport()
+        let hostingView = NSHostingView(
+            rootView: LanguageTranslationPage(
+                model: model,
+                onManageModels: {}
+            )
+        )
+        hostingView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: 900,
+            height: 760
+        )
+        hostingView.layoutSubtreeIfNeeded()
+
+        let textFrames = try recognizedTextFrames(
+            in: renderedBitmap(in: hostingView)
+        )
+
+        XCTAssertNotNil(textFrames["继续安装"])
+        XCTAssertNil(textFrames["继续下载"])
+        XCTAssertNotNil(textFrames["下载管理"])
+        XCTAssertNil(textFrames["查看系统设置"])
+    }
+
+    func testIncompleteLanguagePackInPluginsPageOffersContinueAndManagement()
+        async throws
+    {
+        let suite = "GlintPluginsPageIncomplete.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(suite, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil,
+            defaults: defaults
+        )
+        model.updateSystemTranslationAvailability(.available)
+        model.prepareSystemTranslationAction = {
+            .available
+        }
+        await model.prepareSystemTranslationSupport()
+        let hostingView = NSHostingView(
+            rootView: PluginsPage(
+                model: model,
+                selectedTab: .constant(.translation)
+            )
+        )
+        hostingView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: 900,
+            height: 760
+        )
+        hostingView.layoutSubtreeIfNeeded()
+
+        let textFrames = try recognizedTextFrames(
+            in: renderedBitmap(in: hostingView)
+        )
+
+        XCTAssertNotNil(textFrames["继续安装"])
+        XCTAssertNil(textFrames["继续下载"])
+        XCTAssertNotNil(textFrames["下载管理"])
+        XCTAssertNil(textFrames["查看系统设置"])
+    }
+
+    func testIncompleteLanguagePackInOverviewOffersContinueAndManagement()
+        async throws
+    {
+        let suite = "GlintOverviewIncomplete.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(suite, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil,
+            defaults: defaults
+        )
+        model.updateSystemTranslationAvailability(.available)
+        model.prepareSystemTranslationAction = {
+            .available
+        }
+        await model.prepareSystemTranslationSupport()
+        let updateModel = AppUpdateModel(
+            currentVersion: "1.0",
+            initialStatus: .idle,
+            defaults: nil,
+            fetchLatestRelease: {
+                throw URLError(.notConnectedToInternet)
+            }
+        )
+        let hostingView = NSHostingView(
+            rootView: OverviewPage(
+                model: model,
+                appUpdateModel: updateModel,
+                selection: .constant(.overview),
+                openLanguageTranslation: {},
+                openTranslationModels: {}
+            )
+        )
+        hostingView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: 729,
+            height: 700
+        )
+        hostingView.layoutSubtreeIfNeeded()
+
+        let textFrames = try recognizedTextFrames(
+            in: renderedBitmap(in: hostingView)
+        )
+
+        XCTAssertNotNil(textFrames["继续安装"])
+        XCTAssertNil(textFrames["继续下载"])
+        XCTAssertNotNil(textFrames["下载管理"])
+        XCTAssertNil(textFrames["查看系统设置"])
     }
 
     func testLocalModelFailureShowsRetryBesideModelStatus() throws {
@@ -350,8 +525,8 @@ final class LanguageTranslationPageTests: XCTestCase {
         }
     }
 
-    private func renderedBitmap(
-        in hostingView: NSHostingView<LanguageTranslationPage>
+    private func renderedBitmap<Content: View>(
+        in hostingView: NSHostingView<Content>
     ) throws -> NSBitmapImageRep {
         let bitmap = try XCTUnwrap(
             hostingView.bitmapImageRepForCachingDisplay(

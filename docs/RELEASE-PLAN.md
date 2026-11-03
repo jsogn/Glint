@@ -2,34 +2,35 @@
 
 ## 当前状态
 
-| 项目 | 当前 | 正式发行目标 |
+| 项目 | 当前既定方案 | 可选升级 |
 | --- | --- | --- |
-| Bundle ID | `com.local.glint` | 长期固定的正式 Bundle ID |
-| 签名 | ad-hoc | Developer ID Application |
-| Team ID | 未配置 | 固定 Apple Developer Team |
-| Hardened Runtime | 正式签名需要；ad-hoc 测试包不可用 | 启用 |
-| 公证 | 无 | Apple notarization + staple |
+| Bundle ID | `com.local.glint` | 仅在明确规划 TCC 迁移时更换 |
+| 签名 | ad-hoc，无 Developer ID | Developer ID Application |
+| Team ID | 不需要 | 可选固定 Apple Developer Team |
+| Hardened Runtime | 当前渠道不启用 | Developer ID 渠道启用 |
+| 公证 | 不使用 | 可选 Apple notarization + staple |
 | 更新 | 菜单栏与“关于”页手动检查并跳转 GitHub | Sparkle 2 或等价方案 |
-| 分发 | 源码或 ad-hoc PKG/DMG | 签名、公证的 PKG/DMG |
-| Homebrew | 实验性 `jsogn/homebrew-glint` | 签名公证后转入正式 Cask 流程 |
+| 分发 | GitHub Releases 无签名 PKG/DMG | 可选的签名、公证 PKG/DMG |
+| Homebrew | `jsogn/homebrew-glint` | 保持当前 Tap；未来可评估官方 Cask |
 
-当前包面向开发和已知测试者。`spctl` 拒绝 ad-hoc App 是预期行为，不代表本地运行
-失败。
+Glint 的公开发布渠道是 GitHub Releases，采用无 Developer ID 签名、未公证的
+ad-hoc PKG/DMG。`spctl` 拒绝 ad-hoc App 是这种分发方式的预期行为，不代表安装包
+损坏或项目不能公开发布。README 与 Release Notes 必须提供一次性的系统允许说明。
 
-## 必选决策
+## 发行决策
 
-邀请外部用户前必须先确定：
+当前发行方案已经确定：
 
-1. 正式 Bundle ID，建议使用项目长期持有的反向域名，而非 `com.local.*`。
-2. Apple Developer Team ID。
-3. 分发范围：本机开发、小范围测试或公开分发。
+1. 通过 GitHub Releases 公开分发自签 ad-hoc PKG/DMG。
+2. 不要求发布者在发布前持有 Developer ID 或完成 Apple 公证。
+3. Bundle ID 保持 `com.local.glint`，除非明确决定迁移签名身份和 TCC 授权。
 
-切换 Bundle ID、签名 Team 或首次修复历史 TCC 记录会改变辅助功能授权身份。该
-切换应在外部 Beta 前完成，避免发布后要求用户重新授权。
+Developer ID、Hardened Runtime 和公证是可选升级，不是版本发布门禁。如果未来切换，
+必须同时规划 Bundle ID、签名 Team 和辅助功能 TCC 授权迁移。
 
-## Ad-hoc 测试发布
+## GitHub 无签名发布
 
-没有 Developer ID 时可以使用：
+当前公开发布使用：
 
 - `scripts/package_test_dmg.sh`：生成 arm64 DMG、安装说明、诊断命令和 SHA256。
 - `scripts/package_test_pkg.sh`：生成标准 macOS Installer PKG；安装后校验、注册
@@ -38,23 +39,24 @@
   再生成 DMG 与 PKG，发布流程优先使用该入口。
 
 三个入口都会从头构建 Release App、重签嵌套 Mach-O、稳定重签主 App，并校验
-arm64、最低系统、必需资源、签名完整性和 SHA256。
+arm64、最低系统、必需资源、签名完整性和 SHA256。脚本名中的 `test` 是历史命名，
+其产物就是当前 GitHub 无签名发行输入。
 
 Release 构建启用 `-Osize`、Dead Code Stripping 和部署后处理剥离，并保留 dSYM
 用于崩溃符号化。打包脚本还会拒绝超过 24 MB 的主程序，防止完整符号表重新进入
 发布包。DMG 使用 `ULMO` 压缩，生成后必须通过 `hdiutil verify`。
 
-ad-hoc 包不能通过 Gatekeeper，也不能启用可用的 Hardened Runtime。面向普通测试
-用户时优先使用 PKG；通过 PKG 或 DMG 首次安装时，仍可能需要在“隐私与安全性”
-中允许一次。Homebrew 渠道的临时处理见下一节。
+ad-hoc 包不能直接通过 Gatekeeper，也不能启用可用的 Hardened Runtime。这是已知且
+接受的发行成本。优先提供 PKG；通过 PKG 或 DMG 首次安装时，用户需要在
+“隐私与安全性”中允许一次。Homebrew 渠道的 quarantine 处理见下一节。
 
 ## Homebrew 实验性渠道
 
-项目维护的 Tap 位于 `jsogn/homebrew-glint`，仅作为正式签名前的实验安装渠道：
+项目维护的 Tap 位于 `jsogn/homebrew-glint`，是当前无签名发行渠道的一部分：
 
 - Cask 当前只支持 arm64 和 macOS 15+。
 - 每次 Tag Release 发布并验证 DMG 后，同步更新 Cask 的 `version` 和 SHA256。
-- Cask 使用 `postflight_steps` 移除 `com.apple.quarantine`，使 ad-hoc 测试包
+- Cask 使用 `postflight_steps` 移除 `com.apple.quarantine`，使当前无签名发布包
   可以直接启动。该操作不是代码签名，也不会提供 Developer ID 身份或 Apple
   公证。
 - 不自动移除整个 Tap 或其他 App 的属性；命令只作用于 Cask 安装的
@@ -71,12 +73,14 @@ ad-hoc 包不能通过 Gatekeeper，也不能启用可用的 Hardened Runtime。
    quarantine 清除行为；再执行 `brew upgrade` 或 `brew reinstall` 验证升级路径。
 4. 运行 `brew uninstall --cask`，确认只会移除 App，不删除词典、模型和设置。
 
-完成 Developer ID 签名、Hardened Runtime 和 Apple 公证后，必须删除
+如果未来明确切换到 Developer ID 签名、Hardened Runtime 和 Apple 公证，应删除
 `postflight_steps` quarantine 处理及对应 caveat，确认 Gatekeeper 直接通过，再
 重新评估官方 `homebrew/cask`。签名和公证不能通过 `xattr` 或重新进行 ad-hoc
 签名替代。
 
-## 正式签名与公证
+## 可选 Developer ID 升级
+
+本节不是当前发布前置条件。只有明确决定升级发行身份时才执行。
 
 直接下载分发不启用 App Sandbox：
 
@@ -88,7 +92,7 @@ ad-hoc 包不能通过 Gatekeeper，也不能启用可用的 Hardened Runtime。
   `scripts/package_opus_model_data.sh` 生成并校验在线数据包。
 - 开发构建完成后运行 `scripts/verify_app.sh`。
 
-取得 Developer ID 后执行：
+取得 Developer ID 并决定升级后执行：
 
 1. 固定 Bundle ID 和 Team ID，archive arm64 Release。
 2. 使用 hardened runtime 和时间戳完成内层优先签名。
@@ -149,8 +153,8 @@ App 启动约 30 秒后自动请求 GitHub Latest Release，成功或失败均�
 页显示被动提示，不弹窗。用户可随时手动检查并绕过冷却，手动检查失败会显示轻量
 结果。所有检查都只读取版本和发布页地址，不下载或替换 App。
 
-第一轮外部 Beta 只提供签名、公证的 arm64 安装包，不立即启用自动更新。安装和
-TCC 流程稳定后再接入 Sparkle 2：
+当前版本只提供 GitHub 无签名 arm64 安装包，由用户手动跳转 GitHub 下载更新。
+安装和 TCC 流程稳定后，再评估 Sparkle 2 或其他更新机制：
 
 - Appcast 使用 HTTPS，更新包使用 EdDSA 签名。
 - 私钥只保存在发布者 Keychain 或 CI Secret。
@@ -169,6 +173,6 @@ TCC 流程稳定后再接入 Sparkle 2：
 - AX fixture 回归不保存候选截图或原文。
 - 干净用户环境的首次授权、安装、更新和卸载通过。
 - 登录项的启用、系统审批撤销、禁用和实际重新登录启动通过。
-- Gatekeeper、公证、staple 和离线启动全部通过。
-- Homebrew Cask 指向签名、公证的资产，且不再包含 quarantine 绕过。
+- GitHub 无签名 PKG/DMG 的 ad-hoc 签名、SHA256、挂载、安装和首次允许流程通过。
+- Homebrew Cask 指向对应的 GitHub 无签名资产，并正确执行当前 Tap 的安装策略。
 - 下载、更新或卸载不会破坏用户词典与模型配置。
