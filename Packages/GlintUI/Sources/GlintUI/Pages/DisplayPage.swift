@@ -87,7 +87,11 @@ struct DisplayPage: View {
                                 }
                                 .fixedSize()
                             }
-                            Text("控制最多显示几项释义。")
+                            Text(
+                                preferences.translationScope == .selected
+                                    ? "控制最多显示几项释义。"
+                                    : "控制一栏模式最多翻译几个候选。"
+                            )
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -177,7 +181,9 @@ struct DisplayPage: View {
                             Text(density.title).tag(density)
                         }
                     }
-                    if preferences.translationScope == .selected {
+                    if preferences.translationScope == .selected,
+                        translationTarget.supportsMultipleMeanings
+                    {
                         Divider()
                         sliderSetting(
                             title: "释义间距",
@@ -393,9 +399,73 @@ struct HUDPreview: View {
     }
 
     var previewItems: [HUDItem] {
-        if target == .japanese {
-            return japanesePreviewItems
+        switch target {
+        case .english:
+            return englishPreviewItems
+        case .japanese:
+            return modelOnlyPreviewItems(
+                selected: "こんにちは",
+                row: [
+                    "こんにちは",
+                    "手を振る",
+                    "元気ですか？",
+                    "こんにちは",
+                    "あなたの番号",
+                    "あなた",
+                ]
+            )
+        case .spanish:
+            return modelOnlyPreviewItems(
+                selected: "Hola",
+                row: [
+                    "hola",
+                    "agitar la mano",
+                    "¿cómo estás?",
+                    "hola",
+                    "tu número",
+                    "tú",
+                ]
+            )
+        case .french:
+            return modelOnlyPreviewItems(
+                selected: "Bonjour",
+                row: [
+                    "bonjour",
+                    "faire signe de la main",
+                    "comment allez-vous ?",
+                    "bonjour",
+                    "votre numéro",
+                    "vous",
+                ]
+            )
+        case .german:
+            return modelOnlyPreviewItems(
+                selected: "Hallo",
+                row: [
+                    "hallo",
+                    "winken",
+                    "wie geht es dir?",
+                    "hallo",
+                    "deine Nummer",
+                    "du",
+                ]
+            )
+        case .russian:
+            return modelOnlyPreviewItems(
+                selected: "Здравствуйте",
+                row: [
+                    "здравствуйте",
+                    "махать рукой",
+                    "как дела?",
+                    "здравствуйте",
+                    "ваш номер",
+                    "вы",
+                ]
+            )
         }
+    }
+
+    private var englishPreviewItems: [HUDItem] {
         switch preferences.translationScope {
         case .selected:
             let showsPartsOfSpeech = preferences.showsPartsOfSpeech
@@ -466,30 +536,28 @@ struct HUDPreview: View {
         }
     }
 
-    private var japanesePreviewItems: [HUDItem] {
+    private func modelOnlyPreviewItems(
+        selected: String,
+        row: [String]
+    ) -> [HUDItem] {
         switch preferences.translationScope {
         case .selected:
             [
                 HUDItem(
                     id: 0,
                     number: 1,
-                    text: "こんにちは"
+                    text: selected
                 )
             ]
         case .row:
-            [
+            row.enumerated().map { index, text in
                 HUDItem(
-                    id: 0,
-                    number: 1,
-                    text: "こんにちは",
-                    isSelected: true
-                ),
-                HUDItem(id: 1, number: 2, text: "手を振る"),
-                HUDItem(id: 2, number: 3, text: "元気ですか？"),
-                HUDItem(id: 3, number: 4, text: "こんにちは"),
-                HUDItem(id: 4, number: 5, text: "あなたの番号"),
-                HUDItem(id: 5, number: 6, text: "あなた"),
-            ]
+                    id: index,
+                    number: index + 1,
+                    text: text,
+                    isSelected: index == 0
+                )
+            }
             .prefix(preferences.maximumTranslationCount)
             .map { $0 }
         }

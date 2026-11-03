@@ -84,6 +84,13 @@ final class InputMethodSupportModelTests: XCTestCase {
         )
     }
 
+    func testLanguageTranslationFollowsGeneralInSidebar() {
+        XCTAssertEqual(
+            Array(SidebarItem.visibleItems.prefix(3)),
+            [.overview, .general, .languageTranslation]
+        )
+    }
+
     @MainActor
     func testInstallPublishesInstalledState() async throws {
         let context = try makeContext()

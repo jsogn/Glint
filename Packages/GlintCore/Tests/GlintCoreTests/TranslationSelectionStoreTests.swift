@@ -21,6 +21,10 @@ final class TranslationSelectionStoreTests: XCTestCase {
             store.selectedModelID(for: .japanese),
             SystemTranslationModel.appleTranslationID
         )
+        XCTAssertEqual(
+            store.selectedModelID(for: .spanish),
+            SystemTranslationModel.appleTranslationID
+        )
     }
 
     func testLegacyModelMigratesToEnglishOnlyOnce() {
@@ -59,7 +63,8 @@ final class TranslationSelectionStoreTests: XCTestCase {
 
         store.selectModel("english-local", for: .english)
         store.selectModel("japanese-local", for: .japanese)
-        store.selectedTarget = .japanese
+        store.selectModel("spanish-local", for: .spanish)
+        store.selectedTarget = .spanish
 
         XCTAssertEqual(
             store.selectedModelID(for: .english),
@@ -69,7 +74,11 @@ final class TranslationSelectionStoreTests: XCTestCase {
             store.selectedModelID(for: .japanese),
             "japanese-local"
         )
-        XCTAssertEqual(store.selectedTarget, .japanese)
+        XCTAssertEqual(
+            store.selectedModelID(for: .spanish),
+            "spanish-local"
+        )
+        XCTAssertEqual(store.selectedTarget, .spanish)
     }
 
     func testLegacyBundledOPUSMigratesToAppleOnEnglishOnly() {

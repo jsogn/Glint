@@ -4,11 +4,17 @@ import XCTest
 @testable import GlintUI
 
 final class DisplayPreferencesTests: XCTestCase {
-    func testTargetCapabilitiesHideEnglishOnlyControlsInJapanese() {
-        XCTAssertTrue(TranslationTarget.english.supportsPartsOfSpeech)
-        XCTAssertTrue(TranslationTarget.english.supportsMultipleMeanings)
-        XCTAssertFalse(TranslationTarget.japanese.supportsPartsOfSpeech)
-        XCTAssertFalse(TranslationTarget.japanese.supportsMultipleMeanings)
+    func testOnlyEnglishEnablesEnglishOnlyDisplayCapabilities() {
+        for target in TranslationTarget.allCases {
+            XCTAssertEqual(
+                target.supportsPartsOfSpeech,
+                target == .english
+            )
+            XCTAssertEqual(
+                target.supportsMultipleMeanings,
+                target == .english
+            )
+        }
     }
 
     @MainActor
@@ -277,6 +283,36 @@ final class DisplayPreferencesTests: XCTestCase {
                 $0.partsOfSpeech.isEmpty
             }
         )
+    }
+
+    @MainActor
+    func testHUDPreviewUsesLanguageSpecificSample() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = DisplayPreferences(defaults: defaults)
+        let expected: [TranslationTarget: String] = [
+            .english: "Hello",
+            .japanese: "こんにちは",
+            .spanish: "Hola",
+            .french: "Bonjour",
+            .german: "Hallo",
+            .russian: "Здравствуйте",
+        ]
+
+        for (target, text) in expected {
+            let preview = HUDPreview(
+                preferences: preferences,
+                target: target
+            )
+            XCTAssertEqual(preview.previewItems.first?.text, text)
+            XCTAssertTrue(
+                preview.previewItems.allSatisfy {
+                    $0.partsOfSpeech.isEmpty
+                        || target.supportsPartsOfSpeech
+                }
+            )
+        }
     }
 
     @MainActor

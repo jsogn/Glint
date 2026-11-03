@@ -101,7 +101,7 @@ final class AppEnvironment {
                 )
             case "ctranslate2-data":
                 guard
-                    manifest.id == TranslationModelSelection.opusMTModelID,
+                    manifest.id == ManagedTranslationModelIDs.opusMT,
                     manifest.source == .catalog
                 else {
                     return nil
@@ -196,7 +196,7 @@ final class AppEnvironment {
         for manifest: PluginManifest
     ) -> Set<TranslationDirection> {
         Set(
-            manifest.supportedTranslationTargets.map {
+            manifest.availableTranslationTargets.map {
                 TranslationDirection(target: $0)
             }
         )

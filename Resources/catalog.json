@@ -29,7 +29,6 @@
       "summary": "速度快、占用低，适合内存较小的设备。",
       "revision": "73e3e38d981303bc594367cd910ea6eb48349da8",
       "modelscopeURL": "https://modelscope.cn/models/mlx-community/Qwen3-0.6B-4bit",
-      "translationTargets": ["en"],
       "source": "catalog"
     },
     {
@@ -46,7 +45,6 @@
       "summary": "速度适中，支持中英及多种语言，适合通用多语言场景。",
       "revision": "3b1b1768f8f8cf8351c712464f906e86c2b8269e",
       "modelscopeURL": "https://modelscope.cn/models/mlx-community/Qwen3-1.7B-4bit",
-      "translationTargets": ["en"],
       "source": "catalog"
     },
     {
@@ -63,7 +61,6 @@
       "summary": "速度较慢，更适合复杂表达和高配置设备。",
       "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
       "modelscopeURL": "https://modelscope.cn/models/mlx-community/Qwen3-4B-Instruct-2507-4bit",
-      "translationTargets": ["en"],
       "source": "catalog"
     },
     {
@@ -80,7 +77,6 @@
       "summary": "速度快、表达自然，适合日常中英输入。",
       "revision": "e5c6fe56c7b3bc77fae5ae92db31f2178f1e6912",
       "modelscopeURL": "https://modelscope.cn/models/mlx-community/Hy-MT2-1.8B-4bit",
-      "translationTargets": ["en"],
       "source": "catalog"
     },
     {
@@ -96,7 +92,6 @@
       "minRAMBytes": 6442450944,
       "summary": "速度较快、表达自然，适合更看重翻译质量的场景。",
       "revision": "b69878e8e8de7a0010e4bd00bca9ad4e8e6280da",
-      "translationTargets": ["en"],
       "source": "catalog"
     }
   ]

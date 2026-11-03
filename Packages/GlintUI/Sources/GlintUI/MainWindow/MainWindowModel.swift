@@ -204,6 +204,12 @@ public final class MainWindowModel {
     @ObservationIgnored
     private var modelMarketInstallTask: Task<Void, Never>?
     @ObservationIgnored
+    private var translationChangeCount = 0
+    @ObservationIgnored
+    private var translationRequestGeneration: UInt64 = 0
+    @ObservationIgnored
+    private var systemTranslationRequestGeneration: UInt64 = 0
+    @ObservationIgnored
     public var startMonitoringAction: @MainActor () -> Void = {}
     @ObservationIgnored
     public var stopMonitoringAction: @MainActor () -> Void = {}
@@ -244,11 +250,12 @@ public final class MainWindowModel {
                 .installed
             }
     @ObservationIgnored
-    public var activateSystemTranslationAction: @MainActor () async -> String? = { nil }
-    @ObservationIgnored
     public var systemTranslationPresentationAction: @MainActor () -> Void = {}
     @ObservationIgnored
     public var releaseTranslationModelAction: @MainActor (String) async -> Void = { _ in }
+    @ObservationIgnored
+    public var previewTranslationSpeechAction:
+        @MainActor (TranslationTarget) -> Void = { _ in }
     @ObservationIgnored
     public var changeTranslationTargetAction:
         @MainActor (TranslationTarget) async -> TranslationReadiness = {
@@ -341,11 +348,7 @@ public final class MainWindowModel {
         target: TranslationTarget
     ) -> Bool {
         plugin.type == .translation
-            && plugin.supportedTranslationTargets.contains(target)
-    }
-
-    public var isEnglishTarget: Bool {
-        translationTarget == .english
+            && plugin.availableTranslationTargets.contains(target)
     }
 
     public var compatibleTranslationPlugins: [PluginManifest] {
@@ -357,26 +360,29 @@ public final class MainWindowModel {
     public func setTranslationTarget(
         _ target: TranslationTarget
     ) async {
-        guard target != translationTarget,
-            !isChangingTranslationTarget
-        else {
+        guard target != translationTarget else {
             return
         }
-        isChangingTranslationTarget = true
+        let requestGeneration = beginTranslationRequest()
+        invalidateSystemTranslationOperations()
+        beginTranslationChange()
+        defer { endTranslationChange() }
         translationReadiness = .preparing(target)
         translationTarget = target
-        activeModelID = translationSelectionStore.selectedModelID(
-            for: target
-        )
-        defer { isChangingTranslationTarget = false }
+        translationModelStatusText = nil
+        translationModelStatusIsError = false
+        translationModelStatusModelID = nil
+        activeModelID = resolvedModelID(for: target)
 
         let readiness = await changeTranslationTargetAction(target)
+        guard requestGeneration == translationRequestGeneration else {
+            return
+        }
+        guard target == translationTarget else { return }
         translationReadiness = readiness
         switch readiness {
         case .preparing, .ready, .needsSetup, .failed, .unsupported:
-            activeModelID = translationSelectionStore.selectedModelID(
-                for: target
-            )
+            activeModelID = resolvedModelID(for: target)
             translationConfigurationChangedAction()
         case .idle, .superseded:
             break
@@ -389,28 +395,94 @@ public final class MainWindowModel {
         translationReadiness = readiness
     }
 
+    public func retryTranslationConfiguration() async {
+        await setTranslationModel(
+            activeModelID,
+            for: translationTarget
+        )
+    }
+
     public func setTranslationModel(
         _ modelID: String,
         for target: TranslationTarget
     ) async {
-        guard target == translationTarget,
-            !isChangingTranslationTarget
-        else {
+        guard target == translationTarget else {
             return
         }
-        isChangingTranslationTarget = true
+        let requestGeneration = beginTranslationRequest()
+        beginTranslationChange()
+        defer { endTranslationChange() }
         translationReadiness = .preparing(target)
-        defer { isChangingTranslationTarget = false }
+        translationModelStatusText = nil
+        translationModelStatusIsError = false
+        translationModelStatusModelID = nil
+        systemTranslationError = nil
 
         let readiness = await selectTranslationModelAction(
             modelID,
             target
         )
+        guard requestGeneration == translationRequestGeneration else {
+            return
+        }
+        guard target == translationTarget else { return }
         translationReadiness = readiness
         guard readiness != .superseded else { return }
         activeModelID = modelID
         translationSelectionStore.selectModel(modelID, for: target)
         translationConfigurationChangedAction()
+    }
+
+    public func previewTranslationSpeech() {
+        previewTranslationSpeechAction(translationTarget)
+    }
+
+    private func beginTranslationRequest() -> UInt64 {
+        translationRequestGeneration &+= 1
+        return translationRequestGeneration
+    }
+
+    private func resolvedModelID(
+        for target: TranslationTarget
+    ) -> String {
+        let stored = translationSelectionStore.selectedModelID(
+            for: target
+        )
+        guard stored != TranslationSelectionStore.defaultModelID else {
+            return stored
+        }
+        guard
+            let plugin = translationPlugins.first(where: {
+                $0.id == stored
+            }),
+            Self.supports(plugin, target: target)
+        else {
+            translationSelectionStore.selectModel(
+                TranslationSelectionStore.defaultModelID,
+                for: target
+            )
+            return TranslationSelectionStore.defaultModelID
+        }
+        return stored
+    }
+
+    private func invalidateSystemTranslationOperations() {
+        systemTranslationRequestGeneration &+= 1
+        isPreparingSystemTranslation = false
+        isRefreshingSystemTranslation = false
+        systemTranslationAvailability = nil
+        systemTranslationError = nil
+        systemTranslationPreparationIsIncomplete = false
+    }
+
+    private func beginTranslationChange() {
+        translationChangeCount += 1
+        isChangingTranslationTarget = true
+    }
+
+    private func endTranslationChange() {
+        translationChangeCount = max(0, translationChangeCount - 1)
+        isChangingTranslationTarget = translationChangeCount > 0
     }
 
     public var dictionaryPlugins: [PluginManifest] {
@@ -525,25 +597,42 @@ public final class MainWindowModel {
 
     public func refreshSystemTranslationSupport() async {
         guard !isRefreshingSystemTranslation else { return }
+        let requestGeneration = translationRequestGeneration
         isRefreshingSystemTranslation = true
         systemTranslationError = nil
-        updateSystemTranslationAvailability(
-            await refreshSystemTranslationAction()
-        )
-        isRefreshingSystemTranslation = false
+        defer {
+            if requestGeneration == systemTranslationRequestGeneration {
+                isRefreshingSystemTranslation = false
+            }
+        }
+        let availability = await refreshSystemTranslationAction()
+        guard requestGeneration == translationRequestGeneration else {
+            return
+        }
+        updateSystemTranslationAvailability(availability)
     }
 
     public func prepareSystemTranslationSupport() async {
         guard !isPreparingSystemTranslation else { return }
+        let requestGeneration = systemTranslationRequestGeneration
         let wasInstalled =
             systemTranslationAvailability?.canSelect == true
         isPreparingSystemTranslation = true
         systemTranslationError = nil
         systemTranslationPreparationIsIncomplete = false
-        defer { isPreparingSystemTranslation = false }
+        defer {
+            if requestGeneration == systemTranslationRequestGeneration {
+                isPreparingSystemTranslation = false
+            }
+        }
         do {
             let availability =
                 try await prepareSystemTranslationAction()
+            guard
+                requestGeneration == systemTranslationRequestGeneration
+            else {
+                return
+            }
             updateSystemTranslationAvailability(availability)
             if availability == .available {
                 systemTranslationPreparationIsIncomplete = true
@@ -552,44 +641,25 @@ public final class MainWindowModel {
                 systemTranslationPresentationEvent &+= 1
                 systemTranslationPresentationAction()
             }
+            await retryTranslationConfiguration()
         } catch {
             if Self.isCancellation(error) {
+                guard
+                    requestGeneration == systemTranslationRequestGeneration
+                else {
+                    return
+                }
                 systemTranslationPreparationIsIncomplete = true
+                return
+            }
+            guard requestGeneration == systemTranslationRequestGeneration
+            else {
                 return
             }
             let message = error.localizedDescription
             updateSystemTranslationAvailability(.failed(message))
             systemTranslationError = message
         }
-    }
-
-    public func activateSystemTranslationModel() async {
-        guard systemTranslationAvailability?.canSelect == true else {
-            return
-        }
-        let previousModelID = activeModelID
-        activeModelID = SystemTranslationModel.appleTranslationID
-        persistActiveModelID()
-        translationModelStatusText = "正在连接系统翻译…"
-        translationModelStatusIsError = false
-        translationModelStatusModelID = activeModelID
-
-        if let error = await activateSystemTranslationAction() {
-            systemTranslationError = error
-            activeModelID = previousModelID
-            persistActiveModelID()
-            translationModelStatusText = error
-            translationModelStatusIsError = true
-            translationModelStatusModelID =
-                SystemTranslationModel.appleTranslationID
-            _ = await activateTranslationModelAction(previousModelID)
-        } else {
-            systemTranslationError = nil
-            translationModelStatusText = nil
-            translationModelStatusIsError = false
-            translationModelStatusModelID = nil
-        }
-        translationConfigurationChangedAction()
     }
 
     public var launchAtLoginRequiresApproval: Bool {

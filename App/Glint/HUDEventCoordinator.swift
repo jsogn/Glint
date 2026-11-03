@@ -55,10 +55,11 @@ final class HUDEventCoordinator {
         highlight: CandidateRegion,
         inputCaretRect: CGRect?,
         revision: UInt64,
-        isProgressive: Bool,
-        isMonitoring: Bool
+        isProgressive: Bool
     ) {
-        guard isMonitoring else { return }
+        // The monitoring stream is the authority for whether these results
+        // are current. Re-checking the observable UI switch here can drop
+        // valid results while a language-switch state event is still in flight.
         // Progressive row results share one revision. Reject only results
         // older than the revision already on screen.
         if let displayedRevision, revision < displayedRevision {

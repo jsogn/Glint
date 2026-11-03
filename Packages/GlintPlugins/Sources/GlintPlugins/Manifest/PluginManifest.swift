@@ -27,7 +27,7 @@ enum PluginRuntimePolicy {
                 return true
             }
             return manifest.runtime == "ctranslate2-data"
-                && manifest.id == TranslationModelSelection.opusMTModelID
+                && manifest.id == ManagedTranslationModelIDs.opusMT
                 && manifest.source == .catalog
         case .dictionary:
             return [
@@ -62,8 +62,8 @@ public struct PluginManifest: Codable, Sendable, Equatable {
     public let promptProfile: TranslationPromptProfile?
     public let translationTargets: [TranslationTarget]?
 
-    public var supportedTranslationTargets: [TranslationTarget] {
-        translationTargets ?? [.english]
+    public var availableTranslationTargets: [TranslationTarget] {
+        translationTargets ?? TranslationTarget.allCases
     }
 
     public init(

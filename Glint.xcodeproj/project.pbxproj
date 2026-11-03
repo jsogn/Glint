@@ -12,6 +12,7 @@
 		1DFD7FC772F747CA4584F247 /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = F9D4B122443AB994DF2359AC /* catalog.json */; };
 		21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */; };
 		22E07096AE8DF1D73689097B /* GlintMac in Frameworks */ = {isa = PBXBuildFile; productRef = C82639D2D34337D5A9CD7D0C /* GlintMac */; };
+		25AACEBE31340CFC4EA80873 /* TranslationLanguageCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3633A26F82427921466A94 /* TranslationLanguageCoordinator.swift */; };
 		30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6CE2C298747A802E1589A8C /* main.swift */; };
 		3E613C7F36DD9E6B1469CD0C /* GlintPlugins in Frameworks */ = {isa = PBXBuildFile; productRef = 5C0E36DA882F7C4F10076208 /* GlintPlugins */; };
 		4062AB589E4FFA4D5BB17A0E /* AppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */; };
@@ -83,6 +84,7 @@
 		26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDEventCoordinator.swift; sourceTree = "<group>"; };
 		32E9F8EB23E80E0A931F444E /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
 		3E2E78BBA22734DD486C760B /* Glint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glint.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C3633A26F82427921466A94 /* TranslationLanguageCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationLanguageCoordinator.swift; sourceTree = "<group>"; };
 		4D24D192806595FBAE16FA92 /* GlintPlugins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintPlugins; path = Packages/GlintPlugins; sourceTree = SOURCE_ROOT; };
 		514EBDE5CE7F0E74E3618FBB /* GlintRimeRelayCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintRimeRelayCore; path = Packages/GlintRimeRelayCore; sourceTree = SOURCE_ROOT; };
 		53183767502EEFE5D0989DD0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 				B25DB3A29CF7D59E6192BE4D /* LaunchAtLoginController.swift */,
 				A6CE2C298747A802E1589A8C /* main.swift */,
 				58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */,
+				4C3633A26F82427921466A94 /* TranslationLanguageCoordinator.swift */,
 			);
 			path = Glint;
 			sourceTree = "<group>";
@@ -458,6 +461,7 @@
 				509EF10E6771101ED85B0DAC /* HUDEventCoordinator.swift in Sources */,
 				C64B566FF643DC7F6F1257C8 /* LaunchAtLoginController.swift in Sources */,
 				B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */,
+				25AACEBE31340CFC4EA80873 /* TranslationLanguageCoordinator.swift in Sources */,
 				30DAD0060048EFC0AEDBC3F5 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

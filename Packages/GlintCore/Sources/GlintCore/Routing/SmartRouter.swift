@@ -27,7 +27,7 @@ public struct SmartRouter: Sendable {
         ).isEmpty else {
             return nil
         }
-        if request.direction.target == .japanese {
+        if !request.direction.target.supportsDictionaryRouting {
             return try await translation.translate(request)
         }
         let routed = try await routeWithoutPartOfSpeech(
@@ -132,7 +132,7 @@ public struct SmartRouter: Sendable {
         _ result: TranslationResult?,
         direction: TranslationDirection
     ) async -> TranslationResult? {
-        guard direction.target == .english,
+        guard direction.target.supportsPartsOfSpeech,
             let result,
             let partOfSpeechProvider
         else {
@@ -161,7 +161,7 @@ public struct SmartRouter: Sendable {
         _ request: TranslationRequest
     ) async -> TranslationResult? {
         guard !Task.isCancelled,
-            request.direction.target == .english
+            request.direction.target.supportsDictionaryRouting
         else {
             return nil
         }

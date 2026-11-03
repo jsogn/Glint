@@ -14,13 +14,16 @@
 
 ## 产品边界
 
-Glint 是面向中文母语者的 macOS 英文学习工具，不替换输入法。
+Glint 是面向中文母语者的 macOS 多语种学习工具，不替换输入法。
 
+- 目标语言全局单选，当前支持英语、日语、西班牙语、法语、德语和俄语；默认英语。
+- 英语保留词典路由；其他目标语言当前只使用模型翻译，不接入对应语言词典，不显示
+  词性或多释义。
 - 优先保证苹果拼音 `Pinyin - Simplified`；其他输入法只在提供可验证候选结构时
   做 best-effort 支持，不扫描普通 `AXList`，不接管键盘输入。
 - 只读取当前蓝色高亮的输入法候选，不读取输入框正文。
 - `AXSelectedTextRange` 非空且不位于 `AXTextInputMarkedRange` 内时，视为鼠标或键盘文字选区并跳过。
-- 仅对“选中”模式中的单词译项显示最多两个标准英文词性缩写，例如
+- 仅英语目标、且仅对“选中”模式中的单词译项显示最多两个标准英文词性缩写，例如
   `n.`、`v.`、`adj.`、`prep.`；默认开启，可在“显示与触发”关闭。
   不显示中文词性名称、解释、例句或音标。
 - 支持单词、短语和短句；短句应显示自然翻译。
@@ -40,7 +43,8 @@ Glint 是面向中文母语者的 macOS 英文学习工具，不替换输入法�
 - UI：系统 SwiftUI/AppKit 控件，不引入第三方 UI 组件库。
 - 候选读取：Accessibility `InputMethodCandidateList`。
 - 词典：SQLite 插件，当前包括 CC-CEDICT、ECDICT。
-- 翻译：Apple Translation、CTranslate2 / MLX 本地模型。
+- 翻译：Apple Translation、CTranslate2 / MLX 本地模型。源语言固定为简体中文，
+  方向由显式 `TranslationDirection` 传递。
 - 日志：OSLog，默认脱敏。
 
 ## 目录职责
@@ -144,6 +148,10 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
 
 - 翻译优先来源只允许“智能融合”“词典优先”和“模型优先”三种模式。
 - 两个来源必须互为失败回退，不因候选类型不同而阻断回退。
+- 目标语言的词典、词性、多释义和语音口音能力必须通过穷举能力声明读取；新增语言
+  不得依赖默认落入英语或日语的分支。
+- 语言、模型、启动准备和系统语言包等异步配置操作必须有请求代次；旧代次不得覆盖
+  当前语言的 readiness、可用性、模型选择、HUD 或播放状态。
 - HUD 由候选停留证据触发，不得在翻译完成后再追加固定等待。
 - 连续快速输入时不得启动大模型；只有停留候选可以进入词典/模型路由。
 - 精确翻译结果只允许使用有容量上限的内存 LRU，并必须按模型、prompt 和插件版本隔离。
@@ -154,6 +162,8 @@ Release 产物只用于命令行验证或性能测试，不应通过 Finder 或 
   OPUS-MT 是 Glint 托管的可选在线模型数据，由 `PluginManager` 安装和卸载。
 - Apple Translation 是默认翻译模型；旧版选中的内置 OPUS-MT 在升级后一次性
   迁移为 Apple Translation，用户之后仍可主动下载并重新选择 OPUS-MT。
+- Apple Translation 切换方向时必须使旧会话和旧请求失效，并以新配置重新挂载
+  `translationTask`；准备失败必须保留页面内重试入口。
 - 插件是数据包，不允许执行任意第三方代码。
 - 下载/本地导入插件只允许 MLX、SQLite 或经过限制的 `ctranslate2-data`
   runtime。`ctranslate2-data` 只允许固定 ID `mt-opus-zh-en`，且下载包

@@ -14,10 +14,6 @@ public protocol TranslationLanguageRuntimeProviding {
 public protocol SystemTranslationLanguageProviding {
     var availability: SystemTranslationAvailability? { get }
 
-    func setDirection(
-        _ direction: TranslationDirection
-    ) async
-
     func refreshAvailability(
         for direction: TranslationDirection
     ) async
@@ -61,8 +57,7 @@ public final class TranslationLanguageCoordinator {
 
         generation &+= 1
         let transaction = generation
-        let shouldResume = wasMonitoring()
-        pendingResume = shouldResume
+        pendingResume = pendingResume || wasMonitoring()
         store.selectedTarget = target
         await stopActiveOutput()
         await clearTranslationCache()
@@ -74,9 +69,9 @@ public final class TranslationLanguageCoordinator {
         guard transaction == generation else {
             return .superseded
         }
-        if readiness == .ready(target), shouldResume {
-            await resumeMonitoring()
+        if readiness == .ready(target), pendingResume {
             pendingResume = false
+            await resumeMonitoring()
         }
         return readiness
     }
@@ -91,8 +86,7 @@ public final class TranslationLanguageCoordinator {
 
         generation &+= 1
         let transaction = generation
-        let shouldResume = pendingResume || wasMonitoring()
-        pendingResume = shouldResume
+        pendingResume = pendingResume || wasMonitoring()
         await stopActiveOutput()
         await clearTranslationCache()
         store.selectModel(modelID, for: target)
@@ -104,9 +98,25 @@ public final class TranslationLanguageCoordinator {
         guard transaction == generation else {
             return .superseded
         }
-        if readiness == .ready(target), shouldResume {
-            await resumeMonitoring()
+        if readiness == .ready(target), pendingResume {
             pendingResume = false
+            await resumeMonitoring()
+        }
+        return readiness
+    }
+
+    public func prepareCurrentConfiguration()
+        async -> TranslationReadiness
+    {
+        generation &+= 1
+        let transaction = generation
+        let target = store.selectedTarget
+        let readiness = await prepare(
+            target: target,
+            modelID: store.selectedModelID(for: target)
+        )
+        guard transaction == generation else {
+            return .superseded
         }
         return readiness
     }
@@ -130,10 +140,17 @@ public final class TranslationLanguageCoordinator {
         modelID: String
     ) async -> TranslationReadiness {
         let direction = TranslationDirection(target: target)
-        guard modelID != SystemTranslationModel.appleTranslationID else {
-            await system.setDirection(direction)
-            await system.refreshAvailability(for: direction)
-            guard system.availability?.canSelect == true else {
+        await system.refreshAvailability(for: direction)
+
+        if modelID == SystemTranslationModel.appleTranslationID {
+            switch system.availability {
+            case .unsupported?:
+                return .unsupported(target)
+            case .failed(let message)?:
+                return .failed(target, message)
+            case .installed?:
+                break
+            case .available?, .installing?, nil:
                 return .needsSetup(
                     target,
                     "需要安装 Apple 翻译语言包"
@@ -147,7 +164,6 @@ public final class TranslationLanguageCoordinator {
                     "系统翻译会话不可用"
                 )
             }
-            return .ready(target)
         }
 
         if let error = await languageRuntime.prepare(

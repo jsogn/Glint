@@ -127,29 +127,51 @@ private extension SmartRouter {
 }
 
 final class SmartRouterTests: XCTestCase {
-    func testJapaneseBypassesDictionaryInEveryMode() async throws {
-        let dictionary = CountingDictionary(
-            result: TranslationResult(text: "english fallback")
-        )
-        let router = SmartRouter(
-            dictionary: dictionary,
-            translation: MockTranslator(
-                result: TranslationResult(text: "こんにちは")
-            )
-        )
-        let request = TranslationRequest(
-            candidate: Candidate(text: "你好", kind: .word),
-            direction: .simplifiedChineseToJapanese
-        )
+    func testNonEnglishTargetsBypassDictionaryInEveryMode()
+        async throws
+    {
+        for target in TranslationTarget.allCases
+            where target != .english
+        {
+            for mode in TranslationMode.allCases {
+                let dictionary = CountingDictionary(
+                    result: TranslationResult(
+                        text: "english fallback"
+                    )
+                )
+                let expected = "\(target.rawValue) translation"
+                let router = SmartRouter(
+                    dictionary: dictionary,
+                    translation: MockTranslator(
+                        result: TranslationResult(text: expected)
+                    )
+                )
+                let result = try await router.route(
+                    TranslationRequest(
+                        candidate: Candidate(
+                            text: "你好",
+                            kind: .word
+                        ),
+                        direction: TranslationDirection(
+                            target: target
+                        )
+                    ),
+                    mode: mode
+                )
 
-        let result = try await router.route(
-            request,
-            mode: .dictionaryFirst
-        )
-
-        XCTAssertEqual(result?.text, "こんにちは")
-        let lookupCount = await dictionary.lookupCount()
-        XCTAssertEqual(lookupCount, 0)
+                XCTAssertEqual(
+                    result?.text,
+                    expected,
+                    "\(target) / \(mode)"
+                )
+                let lookupCount = await dictionary.lookupCount()
+                XCTAssertEqual(
+                    lookupCount,
+                    0,
+                    "\(target) / \(mode)"
+                )
+            }
+        }
     }
 
     func testDictionaryFirstUsesDictionaryWhenAvailable() async throws {

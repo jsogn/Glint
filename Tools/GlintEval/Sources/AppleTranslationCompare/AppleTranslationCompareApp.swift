@@ -76,8 +76,12 @@ private final class AppleTranslationEvaluationModel:
         isRunning = true
         status = "正在请求系统翻译；如出现语言包下载提示，请确认。"
         configuration = TranslationSession.Configuration(
-            source: Locale.Language(identifier: "zh-Hans"),
-            target: Locale.Language(identifier: "en")
+            source: Locale.Language(
+                identifier: options.sourceLanguage
+            ),
+            target: Locale.Language(
+                identifier: options.targetLanguage
+            )
         )
     }
 
@@ -88,10 +92,13 @@ private final class AppleTranslationEvaluationModel:
     func finish(report: AppleTranslationBenchmarkReport) {
         isRunning = false
         isFinished = true
+        let opusSummary =
+            report.opusMT.map {
+                "，OPUS-MT \($0.top1)/\($0.total)"
+            } ?? ""
         status =
             "对比完成：苹果 \(report.appleTranslation.top1)/"
-            + "\(report.appleTranslation.total)，OPUS-MT "
-            + "\(report.opusMT.top1)/\(report.opusMT.total)。"
+            + "\(report.appleTranslation.total)\(opusSummary)。"
         Task {
             try? await Task.sleep(for: .seconds(3))
             NSApplication.shared.terminate(nil)
@@ -116,7 +123,11 @@ private struct AppleTranslationEvaluationView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("苹果系统翻译对比")
                         .font(.title2.weight(.semibold))
-                    Text("简体中文 → 英文 · 同一批本地评测用例")
+                    Text(
+                        "\(model.options.sourceLanguage) → "
+                            + "\(model.options.targetLanguage) · "
+                            + "同一批本地评测用例"
+                    )
                         .foregroundStyle(.secondary)
                 }
             }

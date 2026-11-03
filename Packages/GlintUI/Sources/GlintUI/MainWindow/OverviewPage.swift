@@ -82,7 +82,8 @@ struct OverviewPage: View {
                         ),
                         OverviewInfoRow(
                             label: "翻译方式",
-                            value: model.isEnglishTarget
+                            value: model.translationTarget
+                                .supportsDictionaryRouting
                                 ? "模型 + 英文词典"
                                 : "模型翻译"
                         ),
@@ -486,7 +487,7 @@ private struct OverviewPipeline: View {
                 symbol: "arrow.triangle.branch",
                 label: steps[2].title,
                 value: steps[2].value,
-                action: model.isEnglishTarget
+                action: model.translationTarget.supportsDictionaryRouting
                     ? openLanguageTranslation
                     : nil,
                 actionHint: "打开翻译方式设置"
@@ -770,7 +771,7 @@ private struct OverviewPagePreview: View {
 
 private enum OverviewPreviewManifests {
     static let translation = PluginManifest(
-        id: TranslationModelSelection.defaultModelID,
+        id: SystemTranslationModel.appleTranslationID,
         type: .translation,
         name: "OPUS-MT Chinese-English",
         version: "0.1.0",

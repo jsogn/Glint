@@ -68,6 +68,62 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.availability, .available)
     }
 
+    func testAvailabilityUsesEveryConfiguredTargetDirection() async {
+        for target in TranslationTarget.allCases
+            where target != .english
+        {
+            let direction = TranslationDirection(target: target)
+            let recorded = OSAllocatedUnfairLock<[TranslationDirection]>(
+                initialState: []
+            )
+            let coordinator = SystemTranslationCoordinator(
+                direction: direction,
+                availabilityProvider: { requested in
+                    recorded.withLock { $0.append(requested) }
+                    return .available
+                }
+            )
+
+            await coordinator.refreshAvailability(for: direction)
+
+            XCTAssertEqual(coordinator.currentDirection, direction)
+            XCTAssertEqual(
+                recorded.withLock { $0 },
+                [direction]
+            )
+            XCTAssertEqual(coordinator.availability, .available)
+        }
+    }
+
+    func testAvailabilityRefreshForDifferentDirectionAdoptsRequest()
+        async
+    {
+        let recorded = OSAllocatedUnfairLock<[TranslationDirection]>(
+            initialState: []
+        )
+        let coordinator = SystemTranslationCoordinator(
+            direction: .simplifiedChineseToEnglish,
+            availabilityProvider: { direction in
+                recorded.withLock { $0.append(direction) }
+                return .available
+            }
+        )
+
+        await coordinator.refreshAvailability(
+            for: .simplifiedChineseToJapanese
+        )
+
+        XCTAssertEqual(
+            coordinator.currentDirection,
+            .simplifiedChineseToJapanese
+        )
+        XCTAssertEqual(
+            recorded.withLock { $0 },
+            [.simplifiedChineseToJapanese]
+        )
+        XCTAssertEqual(coordinator.availability, .available)
+    }
+
     func testTranslationRejectsMismatchedDirection() async throws {
         let availability = LockedAvailability(.installed)
         let driver = FakeSystemTranslationDriver()
@@ -122,6 +178,155 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
         XCTAssertEqual(driver.prepareCalls, 1)
         XCTAssertEqual(coordinator.availability, .installed)
         XCTAssertNotNil(coordinator.configuration)
+
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testSupersededPreparationDoesNotPublishOldDirectionAvailability()
+        async throws
+    {
+        let gate = PrepareGate()
+        let driver = FakeSystemTranslationDriver()
+        driver.onPrepareStart = {
+            gate.markStarted()
+        }
+        driver.waitForPrepareRelease = {
+            await gate.waitForRelease()
+        }
+        let coordinator = SystemTranslationCoordinator(
+            direction: .simplifiedChineseToJapanese,
+            availabilityProvider: { _ in
+                .available
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+        await coordinator.refreshAvailability(
+            for: .simplifiedChineseToJapanese
+        )
+
+        let preparation = Task {
+            try await coordinator.prepareLanguagePack(
+                for: .simplifiedChineseToJapanese
+            )
+        }
+        await gate.waitUntilStarted()
+        await coordinator.setDirection(
+            .simplifiedChineseToFrench
+        )
+        gate.release()
+        try await preparation.value
+
+        XCTAssertEqual(
+            coordinator.currentDirection,
+            .simplifiedChineseToFrench
+        )
+        XCTAssertNil(coordinator.availability)
+
+        coordinator.shutdown()
+        await hostTask.value
+    }
+
+    func testNewDirectionPreparationCanStartWhileOldDirectionIsPreparing()
+        async throws
+    {
+        let oldGate = PrepareGate()
+        let newGate = PrepareGate()
+        let oldDriver = FakeSystemTranslationDriver()
+        oldDriver.onPrepareStart = {
+            oldGate.markStarted()
+        }
+        oldDriver.waitForPrepareRelease = {
+            await oldGate.waitForRelease()
+        }
+        let newDriver = FakeSystemTranslationDriver()
+        newDriver.onPrepareStart = {
+            newGate.markStarted()
+        }
+        newDriver.waitForPrepareRelease = {
+            await newGate.waitForRelease()
+        }
+        let coordinator = SystemTranslationCoordinator(
+            direction: .simplifiedChineseToJapanese,
+            availabilityProvider: { _ in
+                .available
+            }
+        )
+        let oldHost = Task {
+            await coordinator.run(driver: oldDriver)
+        }
+        await Task.yield()
+        let oldPreparation = Task {
+            try await coordinator.prepareLanguagePack(
+                for: .simplifiedChineseToJapanese
+            )
+        }
+        await oldGate.waitUntilStarted()
+
+        await coordinator.setDirection(
+            .simplifiedChineseToFrench
+        )
+        let newPreparation = Task {
+            try await coordinator.prepareLanguagePack(
+                for: .simplifiedChineseToFrench
+            )
+        }
+        try await Task.sleep(for: .milliseconds(30))
+        let newHost = Task {
+            await coordinator.run(driver: newDriver)
+        }
+        try await Task.sleep(for: .milliseconds(20))
+
+        XCTAssertEqual(newDriver.prepareCalls, 1)
+
+        oldGate.release()
+        newGate.release()
+        try await oldPreparation.value
+        try await newPreparation.value
+
+        coordinator.shutdown()
+        await oldHost.value
+        await newHost.value
+    }
+
+    func testSupersededInstalledSessionPreparationReturnsFailure()
+        async throws
+    {
+        let gate = PrepareGate()
+        let driver = FakeSystemTranslationDriver()
+        driver.onPrepareStart = {
+            gate.markStarted()
+        }
+        driver.waitForPrepareRelease = {
+            await gate.waitForRelease()
+        }
+        let coordinator = SystemTranslationCoordinator(
+            direction: .simplifiedChineseToJapanese,
+            availabilityProvider: { _ in
+                .installed
+            }
+        )
+        let hostTask = Task {
+            await coordinator.run(driver: driver)
+        }
+        await Task.yield()
+
+        let preparation = Task {
+            await coordinator.prepareInstalledSessionIfAvailable(
+                for: .simplifiedChineseToJapanese
+            )
+        }
+        await gate.waitUntilStarted()
+        await coordinator.setDirection(
+            .simplifiedChineseToFrench
+        )
+        gate.release()
+        let prepared = await preparation.value
+
+        XCTAssertFalse(prepared)
 
         coordinator.shutdown()
         await hostTask.value
@@ -276,9 +481,10 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
                 availability.value
             }
         )
-        var observedAvailability: [SystemTranslationAvailability] = []
-        coordinator.onAvailabilityChange = {
-            observedAvailability.append($0)
+        var observedAvailability:
+            [(TranslationDirection, SystemTranslationAvailability)] = []
+        coordinator.onAvailabilityChange = { direction, availability in
+            observedAvailability.append((direction, availability))
         }
         let hostTask = Task {
             await coordinator.run(driver: driver)
@@ -292,7 +498,11 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
         }
 
         XCTAssertEqual(coordinator.availability, .installed)
-        XCTAssertEqual(observedAvailability.last, .installed)
+        XCTAssertEqual(
+            observedAvailability.last?.0,
+            .simplifiedChineseToEnglish
+        )
+        XCTAssertEqual(observedAvailability.last?.1, .installed)
         coordinator.shutdown()
         await hostTask.value
     }
@@ -625,6 +835,8 @@ private final class FakeSystemTranslationDriver:
     SystemTranslationSessionDriving
 {
     let translationDelay: Duration
+    var onPrepareStart: (() -> Void)?
+    var waitForPrepareRelease: (() async -> Void)?
     var onPrepare: (() -> Void)?
     var prepareError: (any Error)?
     var translationError: (any Error)?
@@ -641,6 +853,8 @@ private final class FakeSystemTranslationDriver:
         if let prepareError {
             throw prepareError
         }
+        onPrepareStart?()
+        await waitForPrepareRelease?()
         onPrepare?()
     }
 
@@ -658,6 +872,42 @@ private final class FakeSystemTranslationDriver:
             try await Task.sleep(for: translationDelay)
         }
         return "EN:\(text)"
+    }
+}
+
+@MainActor
+private final class PrepareGate {
+    private var startedContinuation:
+        CheckedContinuation<Void, Never>?
+    private var releaseContinuation:
+        CheckedContinuation<Void, Never>?
+    private var isStarted = false
+    private var isReleased = false
+
+    func markStarted() {
+        isStarted = true
+        startedContinuation?.resume()
+        startedContinuation = nil
+    }
+
+    func waitUntilStarted() async {
+        guard !isStarted else { return }
+        await withCheckedContinuation {
+            startedContinuation = $0
+        }
+    }
+
+    func waitForRelease() async {
+        guard !isReleased else { return }
+        await withCheckedContinuation {
+            releaseContinuation = $0
+        }
+    }
+
+    func release() {
+        isReleased = true
+        releaseContinuation?.resume()
+        releaseContinuation = nil
     }
 }
 

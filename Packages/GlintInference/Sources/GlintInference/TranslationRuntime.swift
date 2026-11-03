@@ -1,5 +1,11 @@
 import Foundation
 import GlintCore
+import OSLog
+
+private let runtimeLogger = Logger(
+    subsystem: "com.local.glint",
+    category: "TranslationRuntime"
+)
 
 /// Resolves an explicitly selected model into a concrete local runtime.
 public actor TranslationRuntime: TranslationEngine {
@@ -41,6 +47,9 @@ public actor TranslationRuntime: TranslationEngine {
             activeSystemModelID = modelID
             activeModel = nil
             lastError = nil
+            runtimeLogger.notice(
+                "prepare system target=\(direction.target.rawValue, privacy: .public)"
+            )
             return nil
         }
 
@@ -52,6 +61,9 @@ public actor TranslationRuntime: TranslationEngine {
         guard descriptor.supportedDirections.contains(direction) else {
             clearActiveRuntime()
             lastError = "当前模型不支持目标语言"
+            runtimeLogger.error(
+                "prepare rejected model=\(modelID, privacy: .public) target=\(direction.target.rawValue, privacy: .public)"
+            )
             return lastError
         }
 
@@ -66,10 +78,16 @@ public actor TranslationRuntime: TranslationEngine {
             activeDirection = direction
             activeEngine = engine
             lastError = nil
+            runtimeLogger.notice(
+                "prepare model=\(modelID, privacy: .public) target=\(direction.target.rawValue, privacy: .public)"
+            )
             return nil
         } catch {
             clearActiveRuntime()
             lastError = error.localizedDescription
+            runtimeLogger.error(
+                "prepare failed model=\(modelID, privacy: .public) target=\(direction.target.rawValue, privacy: .public) error=\(error.localizedDescription, privacy: .public)"
+            )
             return lastError
         }
     }
@@ -116,10 +134,16 @@ public actor TranslationRuntime: TranslationEngine {
                 }
             } catch {
                 lastError = error.localizedDescription
+                runtimeLogger.error(
+                    "translate failed target=\(request.direction.target.rawValue, privacy: .public) error=\(error.localizedDescription, privacy: .public)"
+                )
             }
         }
 
         if let lastError {
+            runtimeLogger.error(
+                "translate returning stored failure target=\(request.direction.target.rawValue, privacy: .public)"
+            )
             throw NSError(
                 domain: "Glint.TranslationRuntime",
                 code: 1,
@@ -127,6 +151,9 @@ public actor TranslationRuntime: TranslationEngine {
             )
         }
         guard activeDirection == request.direction else {
+            runtimeLogger.error(
+                "translate direction mismatch request=\(request.direction.target.rawValue, privacy: .public) active=\(self.activeDirection?.target.rawValue ?? "none", privacy: .public)"
+            )
             throw GlintError.engineUnavailable
         }
         throw GlintError.engineUnavailable
@@ -148,7 +175,10 @@ public actor TranslationRuntime: TranslationEngine {
             return MLXTranslationEngine(
                 modelDirectory: directory,
                 modelID: model.modelID,
-                promptProfile: promptProfile
+                promptProfile: promptProfile,
+                supportedTargets: Set(
+                    model.supportedDirections.map(\.target)
+                )
             )
         case let .ctranslate2(directory):
             return try CTranslate2Engine(

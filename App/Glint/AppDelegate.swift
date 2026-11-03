@@ -130,11 +130,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             else {
                 return
             }
+            let preferences = self.windowModel.generalPreferences
+            let target = self.windowModel.translationTarget
             self.translationSpeechController.speak(
                 text,
-                target: self.windowModel.translationTarget,
-                accent: self.windowModel.generalPreferences.speechAccent,
-                rate: self.windowModel.generalPreferences.speechRate,
+                target: target,
+                accent: preferences.speechAccent,
+                voiceIdentifier:
+                    preferences.speechVoiceIdentifier(for: target),
+                rate: preferences.speechRate,
                 source: .automatic
             )
         }
@@ -166,11 +170,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 return false
             }
             self.translationAutoSpeechScheduler.manualSpeechStarted()
+            let preferences = self.windowModel.generalPreferences
+            let target = self.windowModel.translationTarget
             self.translationSpeechController.speak(
                 offer.choices[choiceIndex],
-                target: self.windowModel.translationTarget,
-                accent: self.windowModel.generalPreferences.speechAccent,
-                rate: self.windowModel.generalPreferences.speechRate,
+                target: target,
+                accent: preferences.speechAccent,
+                voiceIdentifier:
+                    preferences.speechVoiceIdentifier(for: target),
+                rate: preferences.speechRate,
                 source: .manual
             )
             return false
@@ -211,54 +219,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             await environment.repairInvalidCoreDictionaryInstallations()
             await environment.refreshDictionaryRoutes()
             await synchronizeInstalledInputMethodSupport()
-            let direction = TranslationDirection(
-                target: windowModel.translationTarget
-            )
-            await environment.systemTranslationCoordinator
-                .refreshAvailability(for: direction)
-            if let availability =
-                environment.systemTranslationCoordinator.availability
-            {
-                windowModel.updateSystemTranslationAvailability(
-                    availability
-                )
+            let readiness = await translationLanguageCoordinator
+                .prepareCurrentConfiguration()
+            if readiness != .superseded {
+                windowModel.updateTranslationReadiness(readiness)
             }
-            let readiness: TranslationReadiness
-            if windowModel.isActiveSystemTranslationModel {
-                if await environment.systemTranslationCoordinator
-                    .prepareInstalledSessionIfAvailable(for: direction)
-                {
-                    readiness = .ready(windowModel.translationTarget)
-                } else if environment.systemTranslationCoordinator
-                    .availability == .unsupported
-                {
-                    readiness = .unsupported(
-                        windowModel.translationTarget
-                    )
-                } else {
-                    readiness = .needsSetup(
-                        windowModel.translationTarget,
-                        "需要安装 Apple 翻译语言包"
-                    )
-                }
-            } else if let error =
-                await environment.translationRuntime.prepare(
-                    modelID: windowModel.activeModelID,
-                    direction: direction
-                )
-            {
-                readiness = .failed(
-                    windowModel.translationTarget,
-                    error
-                )
-            } else {
-                readiness = .ready(windowModel.translationTarget)
-            }
-            windowModel.updateTranslationReadiness(readiness)
             startupPreparationTask = nil
             windowModel.isPreparingMonitoring = false
             if shouldStartMonitoringAfterPreparation,
-                readiness == .ready(windowModel.translationTarget)
+                windowModel.translationReadiness
+                    == .ready(windowModel.translationTarget)
             {
                 shouldStartMonitoringAfterPreparation = false
                 let shouldRequestPermission =
@@ -456,8 +426,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             )
         }
         environment.systemTranslationCoordinator.onAvailabilityChange = {
-            [weak windowModel] availability in
-            windowModel?.updateSystemTranslationAvailability(availability)
+            [weak self] direction, availability in
+            guard let self else { return }
+            let currentDirection = TranslationDirection(
+                target: self.windowModel.translationTarget
+            )
+            guard direction == currentDirection else { return }
+            self.windowModel.updateSystemTranslationAvailability(
+                availability
+            )
         }
         windowModel.startMonitoringAction = { [weak self] in
             self?.startMonitoring()
@@ -538,36 +515,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             )
             try await self.environment.systemTranslationCoordinator
                 .prepareLanguagePack(for: direction)
-            let readiness =
-                await self.translationLanguageCoordinator
-                .retryCurrentConfiguration()
-            self.windowModel.updateTranslationReadiness(readiness)
             return self.environment.systemTranslationCoordinator
                 .availability ?? .failed("系统翻译状态未知")
-        }
-        windowModel.activateSystemTranslationAction = { [weak self] in
-            guard let self else {
-                return "系统翻译会话不可用"
-            }
-            let direction = TranslationDirection(
-                target: self.windowModel.translationTarget
-            )
-            guard
-                await self.environment.systemTranslationCoordinator
-                    .prepareInstalledSessionIfAvailable(for: direction)
-            else {
-                if case .failed(let message) =
-                    self.environment.systemTranslationCoordinator
-                    .availability
-                {
-                    return message
-                }
-                return "系统翻译会话不可用，请稍后重试"
-            }
-            return await self.environment.translationRuntime.prepare(
-                modelID: SystemTranslationModel.appleTranslationID,
-                direction: direction
-            )
         }
         windowModel.changeTranslationTargetAction = { [weak self] target in
             guard let self else {
@@ -694,8 +643,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.translationSpeechController.stopManual()
             }
         }
+        windowModel.previewTranslationSpeechAction = { [weak self] target in
+            guard let self else { return }
+            let preferences = self.windowModel.generalPreferences
+            self.translationSpeechController.speakPreview(
+                target: target,
+                accent: preferences.speechAccent,
+                voiceIdentifier:
+                    preferences.speechVoiceIdentifier(for: target),
+                rate: preferences.speechRate
+            )
+        }
         windowModel.generalPreferences.speechAccentDidChange = {
             [weak self] _ in
+            self?.translationSpeechController.stop()
+        }
+        windowModel.generalPreferences.speechVoiceDidChange = {
+            [weak self] in
             self?.translationSpeechController.stop()
         }
         windowModel.generalPreferences.speechRateDidChange = {
@@ -1163,8 +1127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 highlight: highlight,
                 inputCaretRect: inputCaretRect,
                 revision: revision,
-                isProgressive: isProgressive,
-                isMonitoring: windowModel.isMonitoring
+                isProgressive: isProgressive
             )
             if windowModel.generalPreferences.autoSpeechEnabled {
                 translationAutoSpeechScheduler.updateTranslations(

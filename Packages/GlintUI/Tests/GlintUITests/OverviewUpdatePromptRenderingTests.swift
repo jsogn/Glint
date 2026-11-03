@@ -164,7 +164,7 @@ final class OverviewUpdatePromptRenderingTests: XCTestCase {
     }
 
     private static let translationManifest = PluginManifest(
-        id: TranslationModelSelection.defaultModelID,
+        id: SystemTranslationModel.appleTranslationID,
         type: .translation,
         name: "OPUS-MT Chinese-English",
         version: "0.1.0",

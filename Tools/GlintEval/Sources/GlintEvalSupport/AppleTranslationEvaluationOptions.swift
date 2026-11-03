@@ -7,6 +7,8 @@ public struct AppleTranslationEvaluationOptions:
     public let ct2Path: String
     public let outputPath: String
     public let rounds: Int
+    public let sourceLanguage: String
+    public let targetLanguage: String
 
     public init(arguments: [String]) {
         let values = Array(arguments.dropFirst())
@@ -48,5 +50,21 @@ public struct AppleTranslationEvaluationOptions:
             2,
             Int(value(after: "--rounds") ?? "3") ?? 3
         )
+        let direction =
+            value(after: "--direction") ?? "zh-en"
+        let components = direction.split(
+            separator: "-",
+            maxSplits: 1
+        )
+        if components.count == 2 {
+            sourceLanguage =
+                components[0] == "zh"
+                ? "zh-Hans"
+                : String(components[0])
+            targetLanguage = String(components[1])
+        } else {
+            sourceLanguage = "zh-Hans"
+            targetLanguage = "en"
+        }
     }
 }

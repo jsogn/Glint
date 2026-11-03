@@ -9,7 +9,7 @@ enum CandidateTranslationPipeline {
         selectedIndex: Int,
         selectionIsExact: Bool = true,
         mode: TranslationMode,
-        target: TranslationTarget = .english,
+        target: TranslationTarget,
         configurationToken: String,
         router: SmartRouter,
         memo: TranslationMemo,
@@ -91,7 +91,7 @@ enum CandidateTranslationPipeline {
     static func displayOptionLimit(
         for scope: CandidateTranslationScope,
         maximumTranslationCount: Int,
-        target: TranslationTarget = .english
+        target: TranslationTarget
     ) -> Int {
         guard scope == .selected else { return 1 }
         guard target.supportsMultipleMeanings else { return 1 }

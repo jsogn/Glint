@@ -15,12 +15,12 @@ enum OverviewFormatting {
         [
             OverviewStatusStep(title: "输入", value: "中文拼音"),
             OverviewStatusStep(
-                title: "语言",
+                title: "目标语言",
                 value: target.chineseDisplayName
             ),
             OverviewStatusStep(
                 title: "策略",
-                value: target == .english
+                value: target.supportsDictionaryRouting
                     ? mode.title
                     : "模型翻译"
             ),

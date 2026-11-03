@@ -7,6 +7,20 @@ import XCTest
 
 final class MainWindowModelTests: XCTestCase {
     @MainActor
+    func testVoicePreviewUsesCurrentTranslationTarget() throws {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        var previewedTargets: [TranslationTarget] = []
+        context.model.previewTranslationSpeechAction = {
+            previewedTargets.append($0)
+        }
+
+        context.model.previewTranslationSpeech()
+
+        XCTAssertEqual(previewedTargets, [.english])
+    }
+
+    @MainActor
     func testLanguageSwitchUpdatesPerLanguageModelSelection() async throws {
         let context = try makeMultilingualContext()
         defer { context.cleanup() }
@@ -28,24 +42,214 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
-    func testJapaneseFiltersEnglishOnlyModels() {
+    func testLanguageSwitchFallsBackFromUnavailableStoredModel()
+        async throws
+    {
+        let context = try makeMultilingualContext()
+        defer { context.cleanup() }
+        let unavailableModelID = "missing-spanish-model"
+        context.store.selectModel(
+            unavailableModelID,
+            for: .spanish
+        )
+        var selectedModels: [String] = []
+        context.model.changeTranslationTargetAction = { target in
+            selectedModels.append(
+                context.store.selectedModelID(for: target)
+            )
+            return .ready(target)
+        }
+
+        await context.model.setTranslationTarget(.spanish)
+
+        XCTAssertEqual(
+            context.model.activeModelID,
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertEqual(
+            selectedModels,
+            [SystemTranslationModel.appleTranslationID]
+        )
+        XCTAssertEqual(
+            context.store.selectedModelID(for: .spanish),
+            SystemTranslationModel.appleTranslationID
+        )
+    }
+
+    @MainActor
+    func testRapidLanguageSwitchIgnoresStaleReadiness() async throws {
+        let context = try makeMultilingualContext()
+        defer { context.cleanup() }
+        context.model.changeTranslationTargetAction = { target in
+            if target == .japanese {
+                try? await Task.sleep(for: .milliseconds(30))
+            }
+            return .ready(target)
+        }
+
+        let firstSwitch = Task {
+            await context.model.setTranslationTarget(.japanese)
+        }
+        try await Task.sleep(for: .milliseconds(5))
+        await context.model.setTranslationTarget(.english)
+        await firstSwitch.value
+
+        XCTAssertEqual(context.model.translationTarget, .english)
+        XCTAssertEqual(
+            context.model.translationReadiness,
+            .ready(.english)
+        )
+        XCTAssertFalse(context.model.isChangingTranslationTarget)
+    }
+
+    @MainActor
+    func testRepeatedTargetSwitchIgnoresOlderSameTargetCompletion()
+        async throws
+    {
+        let context = try makeMultilingualContext()
+        defer { context.cleanup() }
+        let probe = TranslationTargetSwitchProbe()
+        context.model.changeTranslationTargetAction = { target in
+            await probe.respond(to: target)
+        }
+
+        let olderJapaneseSwitch = Task {
+            await context.model.setTranslationTarget(.japanese)
+        }
+        await probe.waitUntilFirstJapaneseSwitchStarts()
+        await context.model.setTranslationTarget(.english)
+        let latestJapaneseSwitch = Task {
+            await context.model.setTranslationTarget(.japanese)
+        }
+        await latestJapaneseSwitch.value
+
+        XCTAssertEqual(
+            context.model.translationReadiness,
+            .ready(.japanese)
+        )
+
+        probe.releaseFirstJapaneseSwitch()
+        await olderJapaneseSwitch.value
+
+        XCTAssertEqual(context.model.translationTarget, .japanese)
+        XCTAssertEqual(
+            context.model.translationReadiness,
+            .ready(.japanese)
+        )
+        XCTAssertFalse(context.model.isChangingTranslationTarget)
+    }
+
+    @MainActor
+    func testRepeatedModelSelectionIgnoresOlderSameModelCompletion()
+        async throws
+    {
+        let context = try makeMultilingualContext()
+        defer { context.cleanup() }
+        let probe = TranslationModelSelectionProbe()
+        context.model.selectTranslationModelAction = { modelID, target in
+            await probe.respond(modelID: modelID, target: target)
+        }
+
+        let olderModelSelection = Task {
+            await context.model.setTranslationModel(
+                "model-a",
+                for: .english
+            )
+        }
+        await probe.waitUntilFirstModelSelectionStarts()
+        await context.model.setTranslationModel(
+            "model-b",
+            for: .english
+        )
+        await context.model.setTranslationModel(
+            "model-a",
+            for: .english
+        )
+
+        XCTAssertEqual(context.model.activeModelID, "model-a")
+        XCTAssertEqual(
+            context.model.translationReadiness,
+            .ready(.english)
+        )
+
+        probe.releaseFirstModelSelection()
+        await olderModelSelection.value
+
+        XCTAssertEqual(context.model.activeModelID, "model-a")
+        XCTAssertEqual(
+            context.model.translationReadiness,
+            .ready(.english)
+        )
+        XCTAssertFalse(context.model.isChangingTranslationTarget)
+    }
+
+    @MainActor
+    func testRetryTranslationConfigurationUsesActiveModel()
+        async throws
+    {
+        let context = try makeMultilingualContext()
+        defer { context.cleanup() }
+        context.model.updateTranslationReadiness(
+            .failed(.english, "系统翻译会话不可用")
+        )
+        var attempts: [(String, TranslationTarget)] = []
+        context.model.selectTranslationModelAction = { modelID, target in
+            attempts.append((modelID, target))
+            return .ready(target)
+        }
+
+        await context.model.retryTranslationConfiguration()
+
+        XCTAssertEqual(attempts.count, 1)
+        XCTAssertEqual(attempts.first?.0, context.model.activeModelID)
+        XCTAssertEqual(attempts.first?.1, .english)
+        XCTAssertEqual(
+            context.model.translationReadiness,
+            .ready(.english)
+        )
+        XCTAssertFalse(context.model.isChangingTranslationTarget)
+    }
+
+    @MainActor
+    func testNonEnglishTargetsFilterEnglishOnlyModels() {
         let manifest = translationManifest(
             id: "english-only",
             targets: [.english]
         )
 
-        XCTAssertFalse(
-            MainWindowModel.supports(
-                manifest,
-                target: .japanese
+        for target in TranslationTarget.allCases
+            where target != .english
+        {
+            XCTAssertFalse(
+                MainWindowModel.supports(
+                    manifest,
+                    target: target
+                )
             )
-        )
+        }
         XCTAssertTrue(
             MainWindowModel.supports(
                 manifest,
                 target: .english
             )
         )
+    }
+
+    @MainActor
+    func testUndeclaredTargetsDoNotFilterModels() {
+        let manifest = translationManifest(
+            id: "unrestricted",
+            targets: nil
+        )
+
+        for target in TranslationTarget.allCases {
+            XCTAssertTrue(
+                MainWindowModel.supports(
+                    manifest,
+                    target: target
+                )
+            )
+        }
     }
 
     @MainActor
@@ -68,7 +272,7 @@ final class MainWindowModelTests: XCTestCase {
         )
         XCTAssertEqual(
             context.model.activeModelID,
-            TranslationModelSelection.defaultModelID
+            TranslationSelectionStore.defaultModelID
         )
 
         await context.model.prepareSystemTranslationSupport()
@@ -79,8 +283,26 @@ final class MainWindowModelTests: XCTestCase {
         )
         XCTAssertEqual(
             context.model.activeModelID,
-            TranslationModelSelection.defaultModelID
+            TranslationSelectionStore.defaultModelID
         )
+    }
+
+    @MainActor
+    func testLanguageSwitchClearsPreviousSystemTranslationAvailability()
+        async throws
+    {
+        let context = try makeMultilingualContext()
+        defer { context.cleanup() }
+        context.model.changeTranslationTargetAction = { target in
+            .needsSetup(target, "需要安装 Apple 翻译语言包")
+        }
+        context.model.updateSystemTranslationAvailability(.installed)
+
+        await context.model.setTranslationTarget(.spanish)
+
+        XCTAssertEqual(context.model.translationTarget, .spanish)
+        XCTAssertNil(context.model.systemTranslationAvailability)
+        XCTAssertNil(context.model.systemTranslationSetupState)
     }
 
     @MainActor
@@ -215,83 +437,113 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
-    func testInstalledSystemTranslationCanBeActivatedExplicitly()
+    func testLanguageSwitchDiscardsOlderSystemTranslationPreparation()
         async throws
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.refreshSystemTranslationAction = {
-            .installed
+        context.model.changeTranslationTargetAction = { target in
+            .ready(target)
         }
-        context.model.activateSystemTranslationAction = {
-            nil
+        let probe = SystemTranslationPreparationProbe()
+        context.model.prepareSystemTranslationAction = {
+            await probe.prepare()
         }
-        await context.model.refreshSystemTranslationSupport()
+        var presentationCount = 0
+        context.model.systemTranslationPresentationAction = {
+            presentationCount += 1
+        }
+        var retryCount = 0
+        context.model.selectTranslationModelAction = { _, _ in
+            retryCount += 1
+            return .ready(.english)
+        }
+        context.model.updateSystemTranslationAvailability(.available)
 
-        await context.model.activateSystemTranslationModel()
+        let preparation = Task {
+            await context.model.prepareSystemTranslationSupport()
+        }
+        await probe.waitUntilStarted()
+        await context.model.setTranslationTarget(.japanese)
+        context.model.updateSystemTranslationAvailability(.available)
+        probe.release()
+        await preparation.value
 
+        XCTAssertEqual(context.model.translationTarget, .japanese)
         XCTAssertEqual(
-            context.model.activeModelID,
-            SystemTranslationModel.appleTranslationID
-        )
-        XCTAssertEqual(
-            TranslationModelSelection.selected(in: context.defaults),
-            SystemTranslationModel.appleTranslationID
-        )
-        XCTAssertEqual(context.model.translationSummary, "Apple 翻译")
-    }
-
-    @MainActor
-    func testUnavailableSystemTranslationCannotBeActivated()
-        async throws
-    {
-        let context = try makeContext()
-        defer { context.cleanup() }
-        context.model.refreshSystemTranslationAction = {
+            context.model.systemTranslationAvailability,
             .available
-        }
-        await context.model.refreshSystemTranslationSupport()
-
-        await context.model.activateSystemTranslationModel()
-
-        XCTAssertEqual(
-            context.model.activeModelID,
-            TranslationModelSelection.defaultModelID
         )
-        XCTAssertEqual(
-            TranslationModelSelection.selected(in: context.defaults),
-            TranslationModelSelection.defaultModelID
-        )
+        XCTAssertNil(context.model.systemTranslationError)
+        XCTAssertEqual(presentationCount, 0)
+        XCTAssertEqual(retryCount, 0)
+        XCTAssertFalse(context.model.isPreparingSystemTranslation)
     }
 
     @MainActor
-    func testSystemActivationFailureRestoresPreviousModel()
+    func testSystemTranslationPreparationRefreshesRuntimeInSameTransaction()
         async throws
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.refreshSystemTranslationAction = {
+        context.model.prepareSystemTranslationAction = {
             .installed
         }
-        context.model.activateSystemTranslationAction = {
-            "系统翻译会话不可用"
+        var retried: [(String, TranslationTarget)] = []
+        context.model.selectTranslationModelAction = { modelID, target in
+            retried.append((modelID, target))
+            return .ready(target)
         }
-        await context.model.refreshSystemTranslationSupport()
+        context.model.updateSystemTranslationAvailability(.available)
 
-        await context.model.activateSystemTranslationModel()
+        await context.model.prepareSystemTranslationSupport()
 
         XCTAssertEqual(
-            context.model.activeModelID,
-            TranslationModelSelection.defaultModelID
+            context.model.systemTranslationAvailability,
+            .installed
         )
+        XCTAssertEqual(retried.count, 1)
         XCTAssertEqual(
-            TranslationModelSelection.selected(in: context.defaults),
-            TranslationModelSelection.defaultModelID
+            retried.first?.0,
+            SystemTranslationModel.appleTranslationID
         )
+        XCTAssertEqual(retried.first?.1, .english)
         XCTAssertEqual(
-            context.model.systemTranslationError,
-            "系统翻译会话不可用"
+            context.model.translationReadiness,
+            .ready(.english)
         )
+    }
+
+    @MainActor
+    func testLanguageSwitchDiscardsOlderSystemTranslationRefresh()
+        async throws
+    {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        context.model.changeTranslationTargetAction = { target in
+            .ready(target)
+        }
+        let probe = SystemTranslationPreparationProbe()
+        context.model.refreshSystemTranslationAction = {
+            await probe.prepare()
+        }
+        context.model.updateSystemTranslationAvailability(.available)
+
+        let refresh = Task {
+            await context.model.refreshSystemTranslationSupport()
+        }
+        await probe.waitUntilStarted()
+        await context.model.setTranslationTarget(.japanese)
+        context.model.updateSystemTranslationAvailability(.available)
+        probe.release()
+        await refresh.value
+
+        XCTAssertEqual(context.model.translationTarget, .japanese)
+        XCTAssertEqual(
+            context.model.systemTranslationAvailability,
+            .available
+        )
+        XCTAssertFalse(context.model.isRefreshingSystemTranslation)
     }
 
     @MainActor
@@ -300,21 +552,11 @@ final class MainWindowModelTests: XCTestCase {
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.refreshSystemTranslationAction = {
-            .installed
-        }
-        context.model.activateSystemTranslationAction = {
-            nil
-        }
-        await context.model.refreshSystemTranslationSupport()
-        await context.model.activateSystemTranslationModel()
+        context.model.updateSystemTranslationAvailability(.installed)
 
         XCTAssertTrue(context.model.isActiveSystemTranslationReady)
 
-        context.model.refreshSystemTranslationAction = {
-            .available
-        }
-        await context.model.refreshSystemTranslationSupport()
+        context.model.updateSystemTranslationAvailability(.available)
 
         XCTAssertFalse(context.model.isActiveSystemTranslationReady)
     }
@@ -374,12 +616,12 @@ final class MainWindowModelTests: XCTestCase {
         let store = TranslationSelectionStore(defaults: defaults)
         store.migrateIfNeeded()
         store.selectModel(
-            TranslationModelSelection.opusMTModelID,
+            ManagedTranslationModelIDs.opusMT,
             for: .english
         )
 
         let manifest = translationManifest(
-            id: TranslationModelSelection.opusMTModelID,
+            id: ManagedTranslationModelIDs.opusMT,
             runtime: "ctranslate2-data",
             source: .catalog,
             summary: "在线测试模型"
@@ -419,8 +661,13 @@ final class MainWindowModelTests: XCTestCase {
         )
         XCTAssertNil(model.update(for: manifest))
 
-        model.updateSystemTranslationAvailability(.installed)
-        await model.activateSystemTranslationModel()
+        model.selectTranslationModelAction = { _, target in
+            .ready(target)
+        }
+        await model.setTranslationModel(
+            SystemTranslationModel.appleTranslationID,
+            for: .english
+        )
         XCTAssertEqual(
             model.activeModelID,
             SystemTranslationModel.appleTranslationID
@@ -450,9 +697,9 @@ final class MainWindowModelTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let selectedModelID = "missing-selected-model"
-        TranslationModelSelection.select(selectedModelID, in: defaults)
+        selectTranslationModelForTests(selectedModelID, in: defaults)
         let bundled = translationManifest(
-            id: TranslationModelSelection.defaultModelID,
+            id: TranslationSelectionStore.defaultModelID,
             source: .bundled
         )
         let model = MainWindowModel(
@@ -466,7 +713,7 @@ final class MainWindowModelTests: XCTestCase {
 
         XCTAssertEqual(model.activeModelID, selectedModelID)
         XCTAssertEqual(
-            TranslationModelSelection.selected(in: defaults),
+            translationSelectionForTests(in: defaults),
             selectedModelID
         )
         XCTAssertFalse(model.isActiveTranslationModel(bundled))
@@ -494,7 +741,7 @@ final class MainWindowModelTests: XCTestCase {
             source: .catalog
         )
         let bundled = translationManifest(
-            id: TranslationModelSelection.defaultModelID,
+            id: TranslationSelectionStore.defaultModelID,
             source: .bundled
         )
         let model = MainWindowModel(
@@ -792,10 +1039,10 @@ final class MainWindowModelTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let bundled = translationManifest(
-            id: TranslationModelSelection.defaultModelID,
+            id: TranslationSelectionStore.defaultModelID,
             source: .bundled
         )
-        TranslationModelSelection.select(bundled.id, in: defaults)
+        selectTranslationModelForTests(bundled.id, in: defaults)
         let manager = PluginManager(baseDirectory: root)
         let model = MainWindowModel(
             pluginManager: manager,
@@ -824,6 +1071,55 @@ final class MainWindowModelTests: XCTestCase {
         )
         let managedPlugins = await manager.installedPlugins()
         XCTAssertTrue(managedPlugins.isEmpty)
+    }
+
+    @MainActor
+    func testSuccessfulLocalImportDoesNotChangeActiveModel() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintLocalImportSuccess-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("source")
+        try makeLocalModelDirectory(source)
+
+        let suiteName = "GlintLocalImportSuccess.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let model = MainWindowModel(
+            pluginManager: PluginManager(
+                baseDirectory: root.appendingPathComponent("support")
+            ),
+            catalogURL: nil,
+            defaults: defaults
+        )
+        var activationCalls: [String] = []
+        model.activateTranslationModelAction = { modelID in
+            activationCalls.append(modelID)
+            return nil
+        }
+
+        model.importLocalTranslationModel(from: source)
+        for _ in 0..<300 where model.isImportingLocalModel {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        XCTAssertFalse(model.isImportingLocalModel)
+        XCTAssertNil(model.localImportError)
+        XCTAssertEqual(
+            model.activeModelID,
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertEqual(activationCalls.count, 2)
+        XCTAssertEqual(model.localTranslationPlugins.count, 1)
+        XCTAssertNotEqual(
+            activationCalls.last,
+            model.localTranslationPlugins.first?.id
+        )
     }
 
     @MainActor
@@ -1062,7 +1358,7 @@ final class MainWindowModelTests: XCTestCase {
         let broken = translationManifest(id: "mt-broken")
         try await install(previous, using: manager, root: root)
         try await install(broken, using: manager, root: root)
-        TranslationModelSelection.select(previous.id, in: defaults)
+        selectTranslationModelForTests(previous.id, in: defaults)
 
         let model = MainWindowModel(
             pluginManager: manager,
@@ -1089,7 +1385,7 @@ final class MainWindowModelTests: XCTestCase {
 
         XCTAssertEqual(model.activeModelID, previous.id)
         XCTAssertEqual(
-            TranslationModelSelection.selected(in: defaults),
+            translationSelectionForTests(in: defaults),
             previous.id
         )
         XCTAssertEqual(model.translationModelStatusModelID, broken.id)
@@ -1134,7 +1430,7 @@ final class MainWindowModelTests: XCTestCase {
             version: "1.2.0"
         )
         try await install(installed, using: manager, root: root)
-        TranslationModelSelection.select(installed.id, in: defaults)
+        selectTranslationModelForTests(installed.id, in: defaults)
 
         let catalogURL = root.appendingPathComponent("catalog.json")
         try JSONEncoder().encode(
@@ -1182,7 +1478,7 @@ final class MainWindowModelTests: XCTestCase {
             runtime: "ctranslate2"
         )
         try await install(first, using: manager, root: root)
-        TranslationModelSelection.select(first.id, in: defaults)
+        selectTranslationModelForTests(first.id, in: defaults)
 
         let secondSource = root.appendingPathComponent(
             "second-source",
@@ -1960,7 +2256,7 @@ final class MainWindowModelTests: XCTestCase {
         runtime: String = "mlx",
         source: PluginSource = .catalog,
         summary: String? = nil,
-        targets: [TranslationTarget] = [.english]
+        targets: [TranslationTarget]? = [.english]
     ) -> PluginManifest {
         PluginManifest(
             id: id,
@@ -2144,12 +2440,12 @@ private struct SystemTranslationModelTestContext {
 @MainActor
 private func makeContext(
     selectedModelID: String =
-        TranslationModelSelection.defaultModelID
+        TranslationSelectionStore.defaultModelID
 ) throws -> SystemTranslationModelTestContext {
     let suiteName =
         "SystemTranslationModelTests.\(UUID().uuidString)"
     let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-    TranslationModelSelection.select(selectedModelID, in: defaults)
+    selectTranslationModelForTests(selectedModelID, in: defaults)
     let root = FileManager.default.temporaryDirectory
         .appendingPathComponent(
             "SystemTranslationModelTests-\(UUID().uuidString)",
@@ -2179,6 +2475,138 @@ private struct MultilingualContext {
         defaults.removePersistentDomain(forName: suiteName)
         try? FileManager.default.removeItem(at: root)
     }
+}
+
+@MainActor
+private final class TranslationTargetSwitchProbe {
+    private var japaneseSwitchCount = 0
+    private var firstJapaneseSwitchStarted:
+        CheckedContinuation<Void, Never>?
+    private var firstJapaneseSwitchRelease:
+        CheckedContinuation<Void, Never>?
+
+    func respond(
+        to target: TranslationTarget
+    ) async -> TranslationReadiness {
+        guard target == .japanese else {
+            return .ready(target)
+        }
+        japaneseSwitchCount += 1
+        guard japaneseSwitchCount == 1 else {
+            return .ready(target)
+        }
+        firstJapaneseSwitchStarted?.resume()
+        firstJapaneseSwitchStarted = nil
+        await withCheckedContinuation {
+            firstJapaneseSwitchRelease = $0
+        }
+        return .superseded
+    }
+
+    func waitUntilFirstJapaneseSwitchStarts() async {
+        guard japaneseSwitchCount == 0 else { return }
+        await withCheckedContinuation {
+            firstJapaneseSwitchStarted = $0
+        }
+    }
+
+    func releaseFirstJapaneseSwitch() {
+        firstJapaneseSwitchRelease?.resume()
+        firstJapaneseSwitchRelease = nil
+    }
+}
+
+@MainActor
+private final class TranslationModelSelectionProbe {
+    private var modelASelectionCount = 0
+    private var firstModelASelectionStarted:
+        CheckedContinuation<Void, Never>?
+    private var firstModelASelectionRelease:
+        CheckedContinuation<Void, Never>?
+
+    func respond(
+        modelID: String,
+        target: TranslationTarget
+    ) async -> TranslationReadiness {
+        guard modelID == "model-a" else {
+            return .ready(target)
+        }
+        modelASelectionCount += 1
+        guard modelASelectionCount == 1 else {
+            return .ready(target)
+        }
+        firstModelASelectionStarted?.resume()
+        firstModelASelectionStarted = nil
+        await withCheckedContinuation {
+            firstModelASelectionRelease = $0
+        }
+        return .superseded
+    }
+
+    func waitUntilFirstModelSelectionStarts() async {
+        guard modelASelectionCount == 0 else { return }
+        await withCheckedContinuation {
+            firstModelASelectionStarted = $0
+        }
+    }
+
+    func releaseFirstModelSelection() {
+        firstModelASelectionRelease?.resume()
+        firstModelASelectionRelease = nil
+    }
+}
+
+@MainActor
+private final class SystemTranslationPreparationProbe {
+    private var startedContinuation:
+        CheckedContinuation<Void, Never>?
+    private var releaseContinuation:
+        CheckedContinuation<Void, Never>?
+    private var isStarted = false
+    private var isReleased = false
+
+    func prepare() async -> SystemTranslationAvailability {
+        isStarted = true
+        startedContinuation?.resume()
+        startedContinuation = nil
+        if !isReleased {
+            await withCheckedContinuation {
+                releaseContinuation = $0
+            }
+        }
+        return .installed
+    }
+
+    func waitUntilStarted() async {
+        guard !isStarted else { return }
+        await withCheckedContinuation {
+            startedContinuation = $0
+        }
+    }
+
+    func release() {
+        isReleased = true
+        releaseContinuation?.resume()
+        releaseContinuation = nil
+    }
+}
+
+@MainActor
+private func selectTranslationModelForTests(
+    _ modelID: String,
+    in defaults: UserDefaults
+) {
+    let store = TranslationSelectionStore(defaults: defaults)
+    store.migrateIfNeeded()
+    store.selectModel(modelID, for: .english)
+}
+
+@MainActor
+private func translationSelectionForTests(
+    in defaults: UserDefaults
+) -> String {
+    TranslationSelectionStore(defaults: defaults)
+        .selectedModelID(for: .english)
 }
 
 @MainActor

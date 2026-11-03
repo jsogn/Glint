@@ -261,7 +261,7 @@ enum SelfCheck {
             } else {
                 mlxModel =
                     [
-                        TranslationModelSelection.selected(),
+                        SystemTranslationModel.appleTranslationID,
                         "mt-hy-mt2-1.8b",
                         "mt-index-translate-2b",
                         "llm-qwen3-1.7b",

@@ -1,5 +1,9 @@
 # 多语种支持 Implementation Plan
 
+> Historical implementation plan. Current model-language semantics are defined in the
+> expansion design spec: missing `translationTargets` means no restriction, and only
+> explicitly declared restrictions are shown to users.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让 Glint 支持中文候选到英语或日语的全局单目标翻译，同时保持英语现有体验，并为后续语言和模型能力扩展提供清晰的领域、运行时和 UI 边界。

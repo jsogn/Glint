@@ -90,10 +90,7 @@ public struct MainWindowView: View {
         case .plugins:
             PluginsPage(
                 model: model,
-                selectedTab: $pluginTab,
-                onOpenLanguageTranslation: {
-                    selection = .languageTranslation
-                }
+                selectedTab: $pluginTab
             )
         case .permissions:
             PermissionsPage(model: model)
@@ -121,8 +118,8 @@ private struct PageTitle: View {
 enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
     case overview
     case general
-    case inputMethods
     case languageTranslation
+    case inputMethods
     case display
     case plugins
     case permissions

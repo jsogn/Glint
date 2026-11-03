@@ -6,9 +6,9 @@ import SwiftUI
 struct PluginsPage: View {
     let model: MainWindowModel
     @Binding var selectedTab: PluginTab
-    let onOpenLanguageTranslation: () -> Void
     @State private var pluginToRemove: PluginManifest?
     @State private var marketQuery = ""
+    @State private var pendingTranslationModelID: String?
 
     var body: some View {
         PageContainer {
@@ -259,10 +259,20 @@ struct PluginsPage: View {
         } else {
             switch model.systemTranslationAvailability {
             case .installed:
-                Button("在语言与翻译中选择") {
-                    onOpenLanguageTranslation()
+                if pendingTranslationModelID
+                    == SystemTranslationModel.appleTranslationID
+                {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Button("使用") {
+                        useTranslationModel(
+                            SystemTranslationModel.appleTranslationID
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(model.isChangingTranslationTarget)
                 }
-                .buttonStyle(.borderedProminent)
             case .available:
                 Button(
                     model.systemTranslationSetupState
@@ -359,15 +369,18 @@ struct PluginsPage: View {
                 Text(modelMetadata(for: plugin))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if plugin.type == .translation {
-                    Text(supportedTargetLabel(for: plugin))
+                if plugin.type == .translation,
+                    let label = pluginLanguageCapabilityLabel(for: plugin)
+                {
+                    Text(label)
                         .font(.caption)
                         .foregroundStyle(
                             supportsCurrentTarget
                                 ? Color.secondary
                                 : Color.secondary.opacity(0.7)
                         )
-                } else if model.translationTarget == .japanese,
+                } else if !model.translationTarget
+                    .supportsDictionaryRouting,
                     plugin.type == .dictionary
                 {
                     Text("仅英语参与翻译路由")
@@ -486,12 +499,23 @@ struct PluginsPage: View {
                         .padding(.vertical, 3)
                         .background(.blue.opacity(0.16), in: Capsule())
                         .foregroundStyle(.blue)
-                } else {
-                    Button("在语言与翻译中选择") {
-                        onOpenLanguageTranslation()
+                } else if pendingTranslationModelID == plugin.id {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("正在使用…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.link)
-                    .disabled(!supportsCurrentTarget)
+                } else {
+                    Button("使用") {
+                        useTranslationModel(plugin.id)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(
+                        !supportsCurrentTarget
+                            || model.isChangingTranslationTarget
+                    )
                 }
             }
             if !isInUse && plugin.source != .bundled {
@@ -506,20 +530,16 @@ struct PluginsPage: View {
         .opacity(supportsCurrentTarget ? 1 : 0.62)
     }
 
-    private func supportedTargetLabel(
-        for plugin: PluginManifest
-    ) -> String {
-        let targets = Set(plugin.supportedTranslationTargets)
-        if targets == [.english] {
-            return "语言能力：仅英语"
+    private func useTranslationModel(_ modelID: String) {
+        guard pendingTranslationModelID == nil else { return }
+        let target = model.translationTarget
+        pendingTranslationModelID = modelID
+        Task {
+            await model.setTranslationModel(modelID, for: target)
+            if pendingTranslationModelID == modelID {
+                pendingTranslationModelID = nil
+            }
         }
-        if targets == [.japanese] {
-            return "语言能力：仅日语"
-        }
-        if targets == [.english, .japanese] {
-            return "语言能力：英语 / 日语"
-        }
-        return "语言能力：未验证"
     }
 
     private func catalogRow(_ plugin: PluginManifest) -> some View {
@@ -538,8 +558,10 @@ struct PluginsPage: View {
                 Text(modelMetadata(for: plugin))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if plugin.type == .translation {
-                    Text(supportedTargetLabel(for: plugin))
+                if plugin.type == .translation,
+                    let label = pluginLanguageCapabilityLabel(for: plugin)
+                {
+                    Text(label)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -815,6 +837,34 @@ struct PluginsPage: View {
     }
 }
 
+func pluginLanguageCapabilityLabel(
+    for plugin: PluginManifest
+) -> String? {
+    guard let names = declaredTranslationTargetNames(for: plugin)
+    else {
+        return nil
+    }
+    guard !names.isEmpty else {
+        return "不支持可用目标语言"
+    }
+    if names == [TranslationTarget.english.chineseDisplayName] {
+        return "仅支持英语"
+    }
+    return "语言能力：" + names.joined(separator: " / ")
+}
+
+private func declaredTranslationTargetNames(
+    for plugin: PluginManifest
+) -> [String]? {
+    guard let targets = plugin.translationTargets else {
+        return nil
+    }
+    let targetSet = Set(targets)
+    return TranslationTarget.allCases
+        .filter(targetSet.contains)
+        .map(\.chineseDisplayName)
+}
+
 enum PluginTab: String, CaseIterable, Hashable {
     case dictionary
     case translation
@@ -873,6 +923,14 @@ private struct ModelInstallConfirmationSheet: View {
                     "版本",
                     String(preparation.snapshot.revision.prefix(12))
                 )
+                if let names = declaredTranslationTargetNames(
+                    for: preparation.manifest
+                ), !names.isEmpty {
+                    detailRow(
+                        "目标语言",
+                        names.joined(separator: " / ")
+                    )
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Text("模型将在下载后执行加载验证。")

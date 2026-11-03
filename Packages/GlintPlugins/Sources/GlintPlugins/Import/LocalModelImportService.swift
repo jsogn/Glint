@@ -178,8 +178,7 @@ public actor LocalModelImportService {
             summary: "本地导入 · \(candidate.modelType)",
             revision: UUID().uuidString,
             source: .local,
-            promptProfile: .generic,
-            translationTargets: [.english]
+            promptProfile: .generic
         )
 
         let staging = try await manager.createStagingDirectory()

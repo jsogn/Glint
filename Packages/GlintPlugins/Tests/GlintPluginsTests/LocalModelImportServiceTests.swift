@@ -1,4 +1,5 @@
 import Foundation
+import GlintCore
 import XCTest
 @testable import GlintPlugins
 
@@ -39,6 +40,11 @@ final class LocalModelImportServiceTests: XCTestCase {
         XCTAssertEqual(manifest.runtime, "mlx")
         XCTAssertEqual(manifest.source, .local)
         XCTAssertEqual(manifest.promptProfile, .generic)
+        XCTAssertNil(manifest.translationTargets)
+        XCTAssertEqual(
+            manifest.availableTranslationTargets,
+            TranslationTarget.allCases
+        )
         XCTAssertTrue(manifest.id.hasPrefix("user-mlx-"))
 
         let installed = await manager.pluginDirectory(for: manifest.id)

@@ -3,13 +3,17 @@ import XCTest
 @testable import GlintCore
 
 final class TranslationTextPolicyTests: XCTestCase {
-    func testEnglishStillRejectsChineseEcho() {
-        XCTAssertFalse(
-            TranslationTextPolicy.isDisplayable(
-                "这是一个测试",
-                target: .english
+    func testNonJapaneseTargetsRejectChineseEcho() {
+        for target in TranslationTarget.allCases
+            where target != .japanese
+        {
+            XCTAssertFalse(
+                TranslationTextPolicy.isDisplayable(
+                    "这是一个测试",
+                    target: target
+                )
             )
-        )
+        }
     }
 
     func testJapaneseAllowsHanAndKana() {
@@ -27,7 +31,7 @@ final class TranslationTextPolicyTests: XCTestCase {
         )
     }
 
-    func testBothTargetsRejectNewlinesAndOverlongText() {
+    func testAllTargetsRejectNewlinesAndOverlongText() {
         for target in TranslationTarget.allCases {
             XCTAssertFalse(
                 TranslationTextPolicy.isDisplayable(
@@ -38,6 +42,24 @@ final class TranslationTextPolicyTests: XCTestCase {
             XCTAssertFalse(
                 TranslationTextPolicy.isDisplayable(
                     String(repeating: "a", count: 49),
+                    target: target
+                )
+            )
+        }
+    }
+
+    func testSpanishFrenchGermanAndRussianOutputIsDisplayable() {
+        let samples: [TranslationTarget: String] = [
+            .spanish: "Hola, ¿cómo estás?",
+            .french: "Bonjour, comment allez-vous ?",
+            .german: "Hallo, wie geht es dir?",
+            .russian: "Здравствуйте, как дела?",
+        ]
+
+        for (target, text) in samples {
+            XCTAssertTrue(
+                TranslationTextPolicy.isDisplayable(
+                    text,
                     target: target
                 )
             )

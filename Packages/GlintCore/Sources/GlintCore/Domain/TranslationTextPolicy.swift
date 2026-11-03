@@ -15,14 +15,12 @@ public enum TranslationTextPolicy {
             return false
         }
 
-        switch target {
-        case .english:
-            let hanCount = value.unicodeScalars.count {
-                (0x4E00...0x9FFF).contains($0.value)
-            }
-            return hanCount <= max(1, value.count / 5)
-        case .japanese:
+        if target.allowsHanOutput {
             return true
         }
+        let hanCount = value.unicodeScalars.count {
+            (0x4E00...0x9FFF).contains($0.value)
+        }
+        return hanCount <= max(1, value.count / 5)
     }
 }

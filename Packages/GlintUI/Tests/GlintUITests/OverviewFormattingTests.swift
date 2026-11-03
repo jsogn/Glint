@@ -4,7 +4,7 @@ import XCTest
 @testable import GlintUI
 
 final class OverviewFormattingTests: XCTestCase {
-    func testStatusFlowUsesLanguageInsteadOfRecognition() {
+    func testStatusFlowUsesTargetLanguageInsteadOfRecognition() {
         let japanese = OverviewFormatting.statusSteps(
             target: .japanese,
             mode: .dictionaryFirst,
@@ -12,7 +12,7 @@ final class OverviewFormattingTests: XCTestCase {
         )
         XCTAssertEqual(
             japanese.map(\.title),
-            ["输入", "语言", "策略", "翻译"]
+            ["输入", "目标语言", "策略", "翻译"]
         )
         XCTAssertEqual(japanese[1].value, "日语")
         XCTAssertEqual(japanese[2].value, "模型翻译")

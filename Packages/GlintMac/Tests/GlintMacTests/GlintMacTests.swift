@@ -860,6 +860,7 @@ final class GlintMacTests: XCTestCase {
             candidates,
             selectedIndex: 1,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -894,6 +895,7 @@ final class GlintMacTests: XCTestCase {
             ],
             selectedIndex: 0,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -902,7 +904,8 @@ final class GlintMacTests: XCTestCase {
             memo: TranslationMemo(),
             displayOptionLimit: CandidateTranslationPipeline.displayOptionLimit(
                 for: .row,
-                maximumTranslationCount: 4
+                maximumTranslationCount: 4,
+                target: .english
             )
         )
 
@@ -925,6 +928,7 @@ final class GlintMacTests: XCTestCase {
             selectedIndex: 0,
             selectionIsExact: false,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -942,36 +946,42 @@ final class GlintMacTests: XCTestCase {
     func testPrefetchDictionaryDependsOnModeAndScope() {
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .smartFusion,
                 scope: .row
             )
         )
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .smartFusion,
                 scope: .selected
             )
         )
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .dictionaryFirst,
                 scope: .row
             )
         )
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .dictionaryFirst,
                 scope: .selected
             )
         )
         XCTAssertTrue(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .modelFirst,
                 scope: .selected
             )
         )
         XCTAssertFalse(
             MonitoringController.shouldPrefetchDictionary(
+                target: .english,
                 mode: .modelFirst,
                 scope: .row
             )
@@ -991,6 +1001,7 @@ final class GlintMacTests: XCTestCase {
             ],
             selectedIndex: 0,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -1008,21 +1019,24 @@ final class GlintMacTests: XCTestCase {
         XCTAssertEqual(
             CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected,
-                maximumTranslationCount: 4
+                maximumTranslationCount: 4,
+                target: .english
             ),
             4
         )
         XCTAssertEqual(
             CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected,
-                maximumTranslationCount: 0
+                maximumTranslationCount: 0,
+                target: .english
             ),
             1
         )
         XCTAssertEqual(
             CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected,
-                maximumTranslationCount: 12
+                maximumTranslationCount: 12,
+                target: .english
             ),
             9
         )
@@ -1035,6 +1049,7 @@ final class GlintMacTests: XCTestCase {
             ],
             selectedIndex: 0,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -1043,7 +1058,8 @@ final class GlintMacTests: XCTestCase {
             memo: TranslationMemo(),
             displayOptionLimit: CandidateTranslationPipeline.displayOptionLimit(
                 for: .selected,
-                maximumTranslationCount: 4
+                maximumTranslationCount: 4,
+                target: .english
             )
         )
 
@@ -1067,6 +1083,7 @@ final class GlintMacTests: XCTestCase {
             [Candidate(text: "设计")],
             selectedIndex: 0,
             mode: .dictionaryFirst,
+            target: .english,
             configurationToken: "pos-test",
             router: SmartRouter(
                 dictionary: POSDictionary(),
@@ -1101,6 +1118,7 @@ final class GlintMacTests: XCTestCase {
             [Candidate(text: "设计")],
             selectedIndex: 0,
             mode: .dictionaryFirst,
+            target: .english,
             configurationToken: "pos-test",
             router: SmartRouter(
                 dictionary: POSDictionary(),
@@ -1123,6 +1141,7 @@ final class GlintMacTests: XCTestCase {
             [Candidate(text: "设计")],
             selectedIndex: 0,
             mode: .dictionaryFirst,
+            target: .english,
             configurationToken: "pos-test",
             router: SmartRouter(
                 dictionary: POSDictionary(),
@@ -1156,6 +1175,7 @@ final class GlintMacTests: XCTestCase {
             ],
             selectedIndex: 0,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -1193,6 +1213,7 @@ final class GlintMacTests: XCTestCase {
             candidates,
             selectedIndex: 1,
             mode: .modelFirst,
+            target: .english,
             configurationToken: "model-a",
             router: SmartRouter(
                 dictionary: EmptyDictionary(),
@@ -4413,6 +4434,7 @@ final class MonitoringSessionTests: XCTestCase {
         await session.start(
             MonitoringSettings(
                 mode: .modelFirst,
+                translationTarget: .english,
                 candidateDwellDuration: 0.3,
                 translationScope: .selected,
                 maximumTranslationCount: 7,
@@ -4463,6 +4485,7 @@ final class MonitoringSessionTests: XCTestCase {
 
         let settings = MonitoringSettings(
             mode: .modelFirst,
+            translationTarget: .english,
             candidateDwellDuration: 0.08,
             translationScope: .selected,
             configurationToken: "test"
@@ -4564,6 +4587,7 @@ final class MonitoringSessionTests: XCTestCase {
     private var testSettings: MonitoringSettings {
         MonitoringSettings(
             mode: .modelFirst,
+            translationTarget: .english,
             candidateDwellDuration: 0.08,
             translationScope: .selected,
             configurationToken: "test"

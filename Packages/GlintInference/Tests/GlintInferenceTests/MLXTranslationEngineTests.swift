@@ -1,4 +1,5 @@
 import Foundation
+import GlintCore
 import XCTest
 @testable import GlintInference
 
@@ -13,6 +14,82 @@ final class MLXTranslationEngineTests: XCTestCase {
 
         XCTAssertTrue(supportsQwen)
         XCTAssertFalse(supportsUnknown)
+    }
+
+    func testEngineCapabilitiesFollowDeclaredTargets() async {
+        let englishOnly = MLXTranslationEngine(
+            supportedTargets: [.english]
+        )
+        let multilingual = MLXTranslationEngine(
+            supportedTargets: [
+                .english,
+                .japanese,
+                .spanish,
+                .french,
+                .german,
+                .russian,
+            ]
+        )
+
+        let englishOnlySupportsJapanese =
+            await englishOnly.supports(
+                .simplifiedChineseToJapanese
+            )
+        let multilingualSupportsJapanese =
+            await multilingual.supports(
+                .simplifiedChineseToJapanese
+            )
+
+        XCTAssertFalse(englishOnlySupportsJapanese)
+        XCTAssertTrue(multilingualSupportsJapanese)
+        for target in TranslationTarget.allCases
+            where target != .english
+        {
+            let supported = await multilingual.supports(
+                TranslationDirection(target: target)
+            )
+            XCTAssertTrue(supported)
+        }
+    }
+
+    func testEngineDefaultsToEnglishWhenCapabilitiesAreNotDeclared()
+        async
+    {
+        let engine = MLXTranslationEngine()
+        let supportsEnglish = await engine.supports(
+            .simplifiedChineseToEnglish
+        )
+
+        XCTAssertTrue(supportsEnglish)
+        for target in TranslationTarget.allCases
+            where target != .english
+        {
+            let supported = await engine.supports(
+                TranslationDirection(target: target)
+            )
+            XCTAssertFalse(supported)
+        }
+    }
+
+    func testUndeclaredTargetCannotTranslate() async {
+        let engine = MLXTranslationEngine()
+
+        do {
+            _ = try await engine.translate(
+                TranslationRequest(
+                    candidate: Candidate(
+                        text: "你好",
+                        kind: .word
+                    ),
+                    direction: .simplifiedChineseToJapanese
+                )
+            )
+            XCTFail("Undeclared target must be rejected")
+        } catch MLXTranslationError.unsupportedTarget {
+            // Expected.
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
     }
 
     func testCleanRemovesLabelsAndQuotes() {
@@ -167,6 +244,40 @@ final class MLXTranslationEngineTests: XCTestCase {
         XCTAssertFalse(prompt.contains("翻译为英语"))
     }
 
+    func testNewTargetPromptsUseTargetLanguageNames() {
+        let qwen = MLXPromptProfile(modelID: "llm-qwen3-1.7b")
+
+        for target in TranslationTarget.allCases {
+            let prompt = qwen.prompt(
+                for: "你好",
+                target: target,
+                adapterMode: .translationInstruction
+            )
+            XCTAssertTrue(prompt.contains(target.chineseDisplayName))
+            XCTAssertFalse(
+                target == .english
+                    ? !prompt.contains("英语")
+                    : prompt.contains("翻译为英语")
+            )
+        }
+    }
+
+    func testNewTargetOutputLabelsAreCleaned() {
+        let samples: [(TranslationTarget, String, String)] = [
+            (.spanish, "Spanish: Hola.", "Hola."),
+            (.french, "French: Bonjour.", "Bonjour."),
+            (.german, "German: Hallo.", "Hallo."),
+            (.russian, "Russian: Привет.", "Привет."),
+        ]
+
+        for (target, input, expected) in samples {
+            XCTAssertEqual(
+                MLXTranslationEngine.clean(input, target: target),
+                expected
+            )
+        }
+    }
+
     func testCompatibilityProbeAcceptsShortTranslations() {
         XCTAssertTrue(
             MLXTranslationEngine.isAcceptedProbeOutput(
@@ -296,7 +407,8 @@ final class MLXTranslationEngineTests: XCTestCase {
         XCTAssertEqual(
             try MLXTranslationEngine.parseBatchTranslations(
                 "1. Study\n2. School\n3. Student",
-                expectedCount: 3
+                expectedCount: 3,
+                target: .english
             ),
             ["Study", "School", "Student"]
         )
@@ -306,7 +418,8 @@ final class MLXTranslationEngineTests: XCTestCase {
         XCTAssertEqual(
             try MLXTranslationEngine.parseBatchTranslations(
                 "Study\nSchool\nStudent",
-                expectedCount: 3
+                expectedCount: 3,
+                target: .english
             ),
             ["Study", "School", "Student"]
         )
@@ -316,7 +429,8 @@ final class MLXTranslationEngineTests: XCTestCase {
         XCTAssertThrowsError(
             try MLXTranslationEngine.parseBatchTranslations(
                 "1. Study\n2. School",
-                expectedCount: 3
+                expectedCount: 3,
+                target: .english
             )
         )
     }

@@ -3,7 +3,7 @@ import GlintInference
 import GlintMac
 
 extension SystemTranslationCoordinator:
-    SystemTranslationLanguageProviding {}
+    @retroactive SystemTranslationLanguageProviding {}
 
 @MainActor
 final class TranslationLanguageRuntimeAdapter:

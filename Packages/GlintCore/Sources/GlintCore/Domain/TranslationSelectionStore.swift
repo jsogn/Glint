@@ -1,15 +1,18 @@
 import Foundation
 
+public enum ManagedTranslationModelIDs {
+    public static let opusMT = "mt-opus-zh-en"
+}
+
 @MainActor
 public final class TranslationSelectionStore {
-    public static let defaultModelID =
+    public nonisolated static let defaultModelID =
         SystemTranslationModel.appleTranslationID
 
     private enum Key {
         static let legacyModelID = "translation.modelID"
         static let target = "translation.targetLanguage"
-        static let modelEnglish = "translation.modelID.en"
-        static let modelJapanese = "translation.modelID.ja"
+        static let modelPrefix = "translation.modelID."
         static let migration = "translation.multilingualMigration.v1"
     }
 
@@ -60,18 +63,20 @@ public final class TranslationSelectionStore {
         let legacy = defaults.string(forKey: Key.legacyModelID)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let migratedEnglishModel =
-            legacy == TranslationModelSelection.opusMTModelID
+            legacy == ManagedTranslationModelIDs.opusMT
             ? Self.defaultModelID
             : legacy
 
-        if defaults.object(forKey: Key.modelEnglish) == nil {
-            selectModel(
-                migratedEnglishModel ?? Self.defaultModelID,
-                for: .english
-            )
-        }
-        if defaults.object(forKey: Key.modelJapanese) == nil {
-            selectModel(Self.defaultModelID, for: .japanese)
+        for target in TranslationTarget.allCases {
+            guard defaults.object(forKey: modelKey(for: target)) == nil
+            else {
+                continue
+            }
+            let modelID =
+                target == .english
+                ? migratedEnglishModel ?? Self.defaultModelID
+                : Self.defaultModelID
+            selectModel(modelID, for: target)
         }
         if defaults.object(forKey: Key.target) == nil {
             selectedTarget = .english
@@ -82,9 +87,6 @@ public final class TranslationSelectionStore {
     private func modelKey(
         for target: TranslationTarget
     ) -> String {
-        switch target {
-        case .english: Key.modelEnglish
-        case .japanese: Key.modelJapanese
-        }
+        Key.modelPrefix + target.rawValue
     }
 }

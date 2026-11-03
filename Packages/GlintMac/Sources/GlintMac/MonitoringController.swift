@@ -1059,11 +1059,11 @@ public actor MonitoringController {
     }
 
     static func shouldPrefetchDictionary(
-        target: TranslationTarget = .english,
+        target: TranslationTarget,
         mode: TranslationMode,
         scope: CandidateTranslationScope
     ) -> Bool {
-        guard target == .english else { return false }
+        guard target.supportsDictionaryRouting else { return false }
         switch mode {
         case .smartFusion, .dictionaryFirst:
             return true

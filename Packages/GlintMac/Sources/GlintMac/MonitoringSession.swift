@@ -24,7 +24,7 @@ public struct MonitoringSettings: Sendable, Equatable {
 
     public init(
         mode: TranslationMode,
-        translationTarget: TranslationTarget = .english,
+        translationTarget: TranslationTarget,
         candidateDwellDuration: Double,
         translationScope: CandidateTranslationScope,
         maximumTranslationCount: Int = 4,

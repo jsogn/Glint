@@ -14,10 +14,15 @@ struct LanguageTranslationPage: View {
             ) {
                 LanguageTargetSection(model: model)
             }
-            SettingsCard("翻译方式", systemImage: "arrow.triangle.branch") {
-                TranslationStrategySection(model: model)
+            if model.translationTarget.supportsDictionaryRouting {
+                SettingsCard(
+                    "翻译方式",
+                    systemImage: "arrow.triangle.branch"
+                ) {
+                    TranslationStrategySection(model: model)
+                }
             }
-            SettingsCard("当前翻译模型", systemImage: "cpu") {
+            SettingsCard("翻译模型", systemImage: "cpu") {
                 ActiveTranslationModelSection(
                     model: model,
                     onManageModels: onManageModels
@@ -35,14 +40,103 @@ private struct LanguageTargetSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 20) {
-                Text("当前目标语言")
-                Spacer(minLength: 24)
+            HStack(spacing: 10) {
+                inputDirectionBox
+                Image(systemName: "arrow.right")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                targetDirectionBox
+            }
+
+            languagePackGuidance
+        }
+    }
+
+    @ViewBuilder
+    private var languagePackGuidance: some View {
+        if let state = model.systemTranslationSetupState {
+            switch state {
+            case .installationRequired:
+                languagePackNotice(
+                    "\(model.translationTarget.chineseDisplayName)需要安装 Apple 翻译语言包",
+                    actionTitle: "安装语言包",
+                    action: prepareLanguagePack
+                )
+            case .installationIncomplete:
+                languagePackNotice(
+                    "\(model.translationTarget.chineseDisplayName)语言包安装未完成",
+                    actionTitle: "继续安装",
+                    action: prepareLanguagePack
+                )
+            case .installing:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(
+                        "正在安装\(model.translationTarget.chineseDisplayName)语言包…"
+                    )
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                }
+            case .failed:
+                languagePackNotice(
+                    "\(model.translationTarget.chineseDisplayName)语言包安装失败",
+                    actionTitle: "重试",
+                    action: prepareLanguagePack
+                )
+            case .unsupported:
+                Label(
+                    "当前 Mac 不支持中文到\(model.translationTarget.chineseDisplayName)翻译",
+                    systemImage: "exclamationmark.triangle"
+                )
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            }
+        } else {
+            Text("切换语言时会恢复该语言上次使用的翻译模型和朗读音色。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func languagePackNotice(
+        _ text: String,
+        actionTitle: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
+            Text(text)
+                .font(.callout)
+            Spacer(minLength: 12)
+            Button(actionTitle, action: action)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+        }
+    }
+
+    private func prepareLanguagePack() {
+        Task {
+            await model.prepareSystemTranslationSupport()
+        }
+    }
+
+    private var targetDirectionBox: some View {
+        LanguageDirectionCard {
+            VStack(spacing: 5) {
+                Text("目标语言")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Picker(
-                    "当前目标语言",
+                    "目标语言",
                     selection: Binding(
                         get: { model.translationTarget },
                         set: { target in
+                            guard target != model.translationTarget else {
+                                return
+                            }
                             Task {
                                 await model.setTranslationTarget(target)
                             }
@@ -55,49 +149,38 @@ private struct LanguageTargetSection: View {
                     }
                 }
                 .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 220, alignment: .trailing)
-                .disabled(model.isChangingTranslationTarget)
+                .frame(width: 118)
             }
-
-            HStack(spacing: 10) {
-                directionBox(title: "输入", value: "中文")
-                Image(systemName: "arrow.right")
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                directionBox(
-                    title: "输出",
-                    value: model.translationTarget.chineseDisplayName
-                )
-            }
-
-            Text("切换后会影响 HUD 译文、可用模型、词性和朗读。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            TranslationReadinessStatus(
-                readiness: model.translationReadiness
-            )
         }
     }
 
-    private func directionBox(
-        title: String,
-        value: String
-    ) -> some View {
-        VStack(spacing: 3) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.headline)
+    private var inputDirectionBox: some View {
+        LanguageDirectionCard {
+            VStack(spacing: 5) {
+                Text("原文语言")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("中文")
+                    .font(.headline)
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(
-            Color(nsColor: .controlBackgroundColor),
-            in: RoundedRectangle(cornerRadius: 8)
-        )
+    }
+}
+
+private struct LanguageDirectionCard<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .frame(maxWidth: .infinity, minHeight: 68)
+            .background(
+                Color(nsColor: .controlBackgroundColor),
+                in: RoundedRectangle(cornerRadius: 8)
+            )
     }
 }
 
@@ -106,41 +189,29 @@ private struct TranslationStrategySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if model.isEnglishTarget {
-                HStack(spacing: 20) {
-                    Text("优先来源")
-                    Spacer(minLength: 24)
-                    Picker(
-                        "优先来源",
-                        selection: Binding(
-                            get: { model.translationMode },
-                            set: { model.setTranslationMode($0) }
-                        )
-                    ) {
-                        ForEach(TranslationMode.allCases, id: \.self) {
-                            mode in
-                            Text(mode.title).tag(mode)
-                        }
+            HStack(spacing: 20) {
+                Text("优先来源")
+                Spacer(minLength: 24)
+                Picker(
+                    "优先来源",
+                    selection: Binding(
+                        get: { model.translationMode },
+                        set: { model.setTranslationMode($0) }
+                    )
+                ) {
+                    ForEach(TranslationMode.allCases, id: \.self) {
+                        mode in
+                        Text(mode.title).tag(mode)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: 300, alignment: .trailing)
                 }
-
-                Text(model.translationMode.explanation)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                HStack {
-                    Text("当前能力")
-                    Spacer()
-                    Label("模型翻译", systemImage: "sparkles")
-                        .foregroundStyle(.secondary)
-                }
-                Text("日语初期不接入词典，当前只使用所选模型返回单条译文。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 300, alignment: .trailing)
             }
+
+            Text(model.translationMode.explanation)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -171,7 +242,7 @@ private struct ActiveTranslationModelSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 20) {
-                Text("翻译模型")
+                Text("使用模型")
                 Spacer(minLength: 24)
                 Picker(
                     "翻译模型",
@@ -196,74 +267,227 @@ private struct ActiveTranslationModelSection: View {
                 .disabled(model.isChangingTranslationTarget)
             }
 
-            if let choice = choices.first(where: {
-                $0.id == model.activeModelID
-            }) {
+            if let choice = activeChoice {
                 Text(choice.detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            if model.isActiveSystemTranslationModel {
-                Divider()
-                systemTranslationStatus
-            }
+            Divider()
+            translationStatus
+        }
+    }
 
-            if let message = model.translationModelStatusText,
-                model.translationModelStatusIsError
-            {
-                Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
+    private var activeChoice: TranslationPluginChoice? {
+        choices.first { $0.id == model.activeModelID }
+    }
 
-            Button("管理模型", action: onManageModels)
-            .buttonStyle(.link)
+    private var activeModelStatusText: String? {
+        guard model.translationModelStatusModelID == model.activeModelID
+        else {
+            return nil
+        }
+        return model.translationModelStatusText
+    }
+
+    @ViewBuilder
+    private var translationStatus: some View {
+        if let activeModelStatusText {
+            if model.translationModelStatusIsError {
+                translationStatusRow(
+                    title: "当前翻译模型不可用",
+                    detail: activeModelStatusText,
+                    systemImage: "xmark.circle.fill",
+                    tint: .red,
+                    actionTitle: "重试",
+                    action: {
+                        Task {
+                            await model.retryTranslationConfiguration()
+                        }
+                    }
+                )
+            } else {
+                progressStatus(activeModelStatusText)
+            }
+        } else if model.isActiveSystemTranslationModel {
+            systemTranslationStatus
+        } else {
+            localTranslationStatus
         }
     }
 
     @ViewBuilder
     private var systemTranslationStatus: some View {
-        HStack(spacing: 12) {
-            switch model.systemTranslationSetupState {
-            case .installationRequired, .installationIncomplete:
-                Text(
-                    "需要安装中文到\(model.translationTarget.chineseDisplayName)语言包"
+        if let state = model.systemTranslationSetupState {
+            switch state {
+            case .installationRequired:
+                translationStatusRow(
+                    title:
+                        "需要安装中文到\(model.translationTarget.chineseDisplayName)语言包",
+                    detail: "安装后可使用 Apple 翻译处理短语和短句。",
+                    systemImage: "translate",
+                    tint: .orange,
+                    actionTitle: "安装语言包",
+                    action: {
+                        Task {
+                            await model.prepareSystemTranslationSupport()
+                        }
+                    }
                 )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                Spacer()
-                Button("安装语言包") {
-                    Task {
-                        await model.prepareSystemTranslationSupport()
+            case .installationIncomplete:
+                translationStatusRow(
+                    title:
+                        "中文到\(model.translationTarget.chineseDisplayName)语言包安装未完成",
+                    detail: "继续安装后即可使用 Apple 翻译。",
+                    systemImage: "arrow.down.circle",
+                    tint: .orange,
+                    actionTitle: "继续安装",
+                    action: {
+                        Task {
+                            await model.prepareSystemTranslationSupport()
+                        }
                     }
-                }
-                .buttonStyle(.borderedProminent)
+                )
             case .installing:
-                ProgressView()
-                    .controlSize(.small)
-                Text("正在准备…")
-                    .foregroundStyle(.secondary)
+                progressStatus(
+                    "正在准备中文到\(model.translationTarget.chineseDisplayName)翻译…"
+                )
             case .failed(let message):
-                Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                Spacer()
-                Button("重试") {
+                translationStatusRow(
+                    title:
+                        "中文到\(model.translationTarget.chineseDisplayName)翻译设置未完成",
+                    detail: message,
+                    systemImage: "exclamationmark.triangle.fill",
+                    tint: .red,
+                    actionTitle: "重试",
+                    action: {
+                        Task {
+                            await model.prepareSystemTranslationSupport()
+                        }
+                    }
+                )
+            case .unsupported:
+                translationStatusRow(
+                    title:
+                        "当前 Mac 不支持中文到\(model.translationTarget.chineseDisplayName)翻译",
+                    detail: "请选择已安装的本地翻译模型。",
+                    systemImage: "exclamationmark.triangle",
+                    tint: Color(nsColor: .secondaryLabelColor)
+                )
+            }
+        } else if model.isActiveSystemTranslationReady {
+            readyStatus
+        } else {
+            progressStatus("正在检查 Apple 翻译语言包…")
+        }
+    }
+
+    @ViewBuilder
+    private var localTranslationStatus: some View {
+        switch model.translationReadiness {
+        case .preparing:
+            progressStatus(
+                "正在准备中文到\(model.translationTarget.chineseDisplayName)翻译…"
+            )
+        case .ready:
+            readyStatus
+        case .needsSetup(_, let message):
+            translationStatusRow(
+                title: "翻译模型还需要准备",
+                detail: message,
+                systemImage: "exclamationmark.triangle",
+                tint: .orange
+            )
+        case .failed(_, let message):
+            translationStatusRow(
+                title: "当前翻译模型不可用",
+                detail: message,
+                systemImage: "xmark.circle.fill",
+                tint: .red,
+                actionTitle: "重试",
+                action: {
                     Task {
-                        await model.prepareSystemTranslationSupport()
+                        await model.retryTranslationConfiguration()
                     }
                 }
-            case .unsupported:
-                Text("当前 Mac 不支持该翻译方向")
+            )
+        case .unsupported:
+            translationStatusRow(
+                title:
+                    "当前 Mac 不支持中文到\(model.translationTarget.chineseDisplayName)翻译",
+                detail: "请选择其他已安装的翻译模型。",
+                systemImage: "exclamationmark.triangle",
+                tint: Color(nsColor: .secondaryLabelColor)
+            )
+        case .idle, .superseded:
+            progressStatus("正在检查翻译模型…")
+        }
+    }
+
+    private func translationStatusRow(
+        title: String,
+        detail: String,
+        systemImage: String,
+        tint: Color,
+        actionTitle: String? = nil,
+        action: (() -> Void)? = nil
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(tint)
+                .frame(width: 16)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.callout.weight(.medium))
+                Text(detail)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-            case nil:
-                Label("可用", systemImage: "checkmark.circle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.green)
-                Spacer()
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 16)
+
+            HStack(spacing: 8) {
+                if let actionTitle, let action {
+                    Button(actionTitle, action: action)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                }
+                manageModelsButton
             }
         }
+    }
+
+    private func progressStatus(_ text: String) -> some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: 16)
+            Text(text)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Spacer()
+            manageModelsButton
+        }
+    }
+
+    private var readyStatus: some View {
+        HStack(spacing: 10) {
+            Label("已就绪", systemImage: "checkmark.circle.fill")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.green)
+            Spacer()
+            manageModelsButton
+        }
+    }
+
+    private var manageModelsButton: some View {
+        Button("管理模型", action: onManageModels)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
     }
 }
 
@@ -272,19 +496,27 @@ private struct TranslationVoiceSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if model.isEnglishTarget {
+            if model.translationTarget.supportsSpeechAccents {
                 HStack(spacing: 20) {
-                    Text("英语口音")
+                    Text("口音")
                     Spacer(minLength: 24)
                     Picker(
-                        "英语口音",
+                        "口音",
                         selection: Binding(
                             get: {
                                 model.generalPreferences.speechAccent
                             },
-                            set: {
-                                model.generalPreferences
-                                    .setSpeechAccent($0)
+                            set: { accent in
+                                guard
+                                    model.generalPreferences.speechAccent
+                                        != accent
+                                else {
+                                    return
+                                }
+                                model.generalPreferences.setSpeechAccent(
+                                    accent
+                                )
+                                model.previewTranslationSpeech()
                             }
                         )
                     ) {
@@ -303,45 +535,78 @@ private struct TranslationVoiceSection: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                HStack {
-                    Text("日语语音")
-                    Spacer()
-                    Text("系统日语")
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 20) {
+                    Text("音色")
+                    Spacer(minLength: 24)
+                    Picker(
+                        "音色",
+                        selection: Binding(
+                            get: {
+                                model.generalPreferences
+                                    .speechVoiceIdentifier(
+                                        for: model.translationTarget
+                                    )
+                            },
+                            set: { voiceIdentifier in
+                                guard
+                                    model.generalPreferences
+                                        .speechVoiceIdentifier(
+                                            for: model.translationTarget
+                                        )
+                                        != voiceIdentifier
+                                else {
+                                    return
+                                }
+                                model.generalPreferences
+                                    .setSpeechVoiceIdentifier(
+                                        voiceIdentifier,
+                                        for: model.translationTarget
+                                    )
+                                model.previewTranslationSpeech()
+                            }
+                        )
+                    ) {
+                        Text("系统默认")
+                            .tag(String?.none)
+                        ForEach(speechVoices) { voice in
+                            Text(voice.name)
+                                .tag(Optional(voice.id))
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 220, alignment: .trailing)
                 }
-                Text("使用系统可用的日语语音，不回退英语音色。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
+        }
+        .onChange(of: model.translationTarget, initial: true) {
+            normalizeSpeechVoiceSelection()
         }
     }
-}
 
-private struct TranslationReadinessStatus: View {
-    let readiness: TranslationReadiness
+    private var speechVoices: [TranslationSpeechVoiceOption] {
+        TranslationSpeechVoiceCatalog.voices(
+            for: model.translationTarget
+        )
+    }
 
-    @ViewBuilder
-    var body: some View {
-        switch readiness {
-        case .preparing:
-            HStack(spacing: 8) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("正在准备翻译…")
-                    .foregroundStyle(.secondary)
-            }
-        case .needsSetup(_, let message):
-            Label(message, systemImage: "exclamationmark.circle")
-                .foregroundStyle(.orange)
-        case .failed(_, let message):
-            Label(message, systemImage: "xmark.circle")
-                .foregroundStyle(.red)
-        case .unsupported:
-            Label("当前 Mac 不支持该方向", systemImage: "xmark.circle")
-                .foregroundStyle(.secondary)
-        case .idle, .ready, .superseded:
-            EmptyView()
+    private func normalizeSpeechVoiceSelection() {
+        guard !model.translationTarget.supportsSpeechAccents else {
+            return
         }
+        let target = model.translationTarget
+        guard
+            let selected =
+                model.generalPreferences.speechVoiceIdentifier(
+                    for: target
+                ),
+            !speechVoices.contains(where: { $0.id == selected })
+        else {
+            return
+        }
+        model.generalPreferences.setSpeechVoiceIdentifier(
+            nil,
+            for: target
+        )
     }
 }
 

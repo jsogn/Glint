@@ -1,26 +1,44 @@
+import GlintCore
 import XCTest
 @testable import GlintPlugins
 
 final class PluginManifestTests: XCTestCase {
-    func testLegacyTranslationManifestDefaultsToEnglish() throws {
+    func testMissingTranslationTargetsAllowsEveryTarget() throws {
         let manifest = try decodeTranslationManifest(
             translationTargetsJSON: nil
         )
 
         XCTAssertEqual(
-            manifest.supportedTranslationTargets,
-            [.english]
+            manifest.availableTranslationTargets,
+            TranslationTarget.allCases
         )
+    }
+
+    func testExplicitEnglishTargetRemainsRestricted() throws {
+        let manifest = try decodeTranslationManifest(
+            translationTargetsJSON: #"["en"]"#
+        )
+
+        XCTAssertEqual(manifest.translationTargets, [.english])
+        XCTAssertEqual(manifest.availableTranslationTargets, [.english])
     }
 
     func testTranslationTargetsRoundTrip() throws {
         let manifest = try decodeTranslationManifest(
-            translationTargetsJSON: #"["en", "ja"]"#
+            translationTargetsJSON:
+                #"["en", "ja", "es", "fr", "de", "ru"]"#
         )
 
         XCTAssertEqual(
-            manifest.supportedTranslationTargets,
-            [.english, .japanese]
+            manifest.availableTranslationTargets,
+            [
+                .english,
+                .japanese,
+                .spanish,
+                .french,
+                .german,
+                .russian,
+            ]
         )
     }
 

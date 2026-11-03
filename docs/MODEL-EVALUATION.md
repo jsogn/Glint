@@ -4,6 +4,8 @@
 - 用例：`Resources/Evaluation/dictionary-benchmark.json` 中 `phrase` 与 `model`
   类别，共 13 条
 - 工具：`Tools/GlintEval` 的 `TranslationCompare`
+- 已评测方向：`zh-Hans → en`、`zh-Hans → ja`；西班牙语、法语、德语和俄语当前由
+  Apple Translation 提供默认模型路径，发布前需补充对应质量评测
 
 ## 本次结果
 
@@ -95,6 +97,69 @@ OPUS-MT 在部分技术词和常见词上更准确，例如“用户”输出 `U
   只有通过固定短词探测的协议才会被保存并用于后续请求。
 - 2–4 字短语在词典优先级高时保留词典结果；需要更高质量时由用户选择“模型优先”。
 - 模型只在候选停留后执行，快速连续输入不会启动模型。
+
+### 多语种方向
+
+Apple Translation 的系统语言包状态必须按方向独立检查。当前开发主机
+（macOS 26.6.2 arm64）实测：
+
+```text
+zh-Hans → en: installed
+zh-Hans → ja: installed
+```
+
+macOS 26.6.2 已完成中文与日语语言资源下载。安装完成后：
+
+- 165 条用例 × 3 轮
+- 失败轮次 0、缺失结果 0、禁用输出 0
+- p50 31.146ms、p95 36.523ms
+- 精确命中 105/165；其中高频词 54/64、短句 36/83、技术词 15/18
+- 165 条输出均为单行、非空、最长 23 个字符，不含英文回退、模型控制标记或换行，
+  全部满足现有 HUD 显示门控
+
+精确命中率低估了同义表达覆盖，但单词仍存在上下文歧义。例如“来”会输出
+`来てください`，“注意”会输出 `ご注意ください`；这是模型对命令语气的选择，
+不是错语言或空结果。非英语目标当前均坚持模型-only，不通过内置词典强行覆盖这类表达。
+高保真策略与默认策略在同一批用例上输出完全一致，因此不增加策略分支。
+
+中日评测集位于 `Resources/Evaluation/japanese-translation-benchmark.json`，
+共 165 条，其中 64 条高频词，覆盖单词、短语、短句、技术表达和日常表达。运行：
+
+```bash
+GLINT_APPLE_TRANSLATION_DIRECTION=zh-ja \
+GLINT_APPLE_TRANSLATION_CASES="$PWD/Resources/Evaluation/japanese-translation-benchmark.json" \
+./scripts/run_apple_translation_compare.sh
+```
+
+日语方向不加载中英 OPUS-MT 作为对照。评测报告按实际输出、语义可接受度和禁用
+输出命中率判断质量，不能只看精确字符串 Top-1。发布前仍需由具备日语能力的中文
+母语者复核单词语境，并在 macOS 15 真机完成语言包安装与切换矩阵。
+
+西班牙语、法语、德语和俄语各准备了 30 条冒烟语料，覆盖常用词、技术词和完整
+短句。它们用于语言包安装后的方向、单行输出和基本语义校验，不等同于发布级质量
+评测。安装对应 Apple 语言包后逐项运行：
+
+```bash
+GLINT_APPLE_TRANSLATION_DIRECTION=zh-es \
+GLINT_APPLE_TRANSLATION_CASES="$PWD/Resources/Evaluation/spanish-translation-smoke.json" \
+GLINT_APPLE_TRANSLATION_OUTPUT="$PWD/build/apple-translation-es.json" \
+./scripts/run_apple_translation_compare.sh
+
+GLINT_APPLE_TRANSLATION_DIRECTION=zh-fr \
+GLINT_APPLE_TRANSLATION_CASES="$PWD/Resources/Evaluation/french-translation-smoke.json" \
+GLINT_APPLE_TRANSLATION_OUTPUT="$PWD/build/apple-translation-fr.json" \
+./scripts/run_apple_translation_compare.sh
+
+GLINT_APPLE_TRANSLATION_DIRECTION=zh-de \
+GLINT_APPLE_TRANSLATION_CASES="$PWD/Resources/Evaluation/german-translation-smoke.json" \
+GLINT_APPLE_TRANSLATION_OUTPUT="$PWD/build/apple-translation-de.json" \
+./scripts/run_apple_translation_compare.sh
+
+GLINT_APPLE_TRANSLATION_DIRECTION=zh-ru \
+GLINT_APPLE_TRANSLATION_CASES="$PWD/Resources/Evaluation/russian-translation-smoke.json" \
+GLINT_APPLE_TRANSLATION_OUTPUT="$PWD/build/apple-translation-ru.json" \
+./scripts/run_apple_translation_compare.sh
+```
 
 ## 模式对照
 

@@ -70,6 +70,139 @@ final class TranslationLanguageCoordinatorTests: XCTestCase {
 
         XCTAssertEqual(harness.resumeCalls, 0)
     }
+
+    func testManualStopDuringPreparationPreventsAutomaticResume()
+        async throws
+    {
+        let harness = CoordinatorHarness()
+        harness.system.availabilityValue = .installed
+        harness.system.prepareDelay = .milliseconds(30)
+        harness.wasMonitoring = true
+
+        let switchTask = Task {
+            await harness.coordinator.switchTarget(to: .japanese)
+        }
+        try await Task.sleep(for: .milliseconds(5))
+        harness.coordinator.cancelPendingResume()
+
+        let readiness = await switchTask.value
+
+        XCTAssertEqual(readiness, .ready(.japanese))
+        XCTAssertEqual(harness.resumeCalls, 0)
+    }
+
+    func testRapidSwitchPreservesResumeIntentFromFirstTarget()
+        async throws
+    {
+        let harness = CoordinatorHarness()
+        harness.system.availabilityValue = .installed
+        harness.system.prepareDelay = .milliseconds(30)
+        harness.wasMonitoring = true
+
+        let firstSwitch = Task {
+            await harness.coordinator.switchTarget(to: .japanese)
+        }
+        try await Task.sleep(for: .milliseconds(5))
+        let secondSwitch = Task {
+            await harness.coordinator.switchTarget(to: .english)
+        }
+
+        let firstReadiness = await firstSwitch.value
+        let secondReadiness = await secondSwitch.value
+
+        XCTAssertEqual(firstReadiness, .superseded)
+        XCTAssertEqual(secondReadiness, .ready(.english))
+        XCTAssertEqual(harness.store.selectedTarget, .english)
+        XCTAssertEqual(harness.resumeCalls, 1)
+    }
+
+    func testPrepareCurrentConfigurationUsesDeclaredLocalDirection()
+        async
+    {
+        let harness = CoordinatorHarness()
+        harness.store.selectModel("local-japanese", for: .japanese)
+        harness.store.selectedTarget = .japanese
+        harness.system.availabilityValue = .unsupported
+
+        let readiness =
+            await harness.coordinator.prepareCurrentConfiguration()
+
+        XCTAssertEqual(readiness, .ready(.japanese))
+        XCTAssertEqual(
+            harness.system.refreshDirections,
+            [.simplifiedChineseToJapanese]
+        )
+    }
+
+    func testPrepareCurrentConfigurationReportsUnsupportedAppleDirection()
+        async
+    {
+        let harness = CoordinatorHarness()
+        harness.store.selectedTarget = .japanese
+        harness.system.availabilityValue = .unsupported
+
+        let readiness =
+            await harness.coordinator.prepareCurrentConfiguration()
+
+        XCTAssertEqual(readiness, .unsupported(.japanese))
+    }
+
+    func testTargetSwitchSupersedesEarlierCurrentConfigurationPreparation()
+        async throws
+    {
+        let harness = CoordinatorHarness()
+        harness.system.availabilityValue = .installed
+        harness.system.prepareDelay = .milliseconds(30)
+
+        let startupPreparation = Task {
+            await harness.coordinator.prepareCurrentConfiguration()
+        }
+        try await Task.sleep(for: .milliseconds(5))
+        let targetSwitch = Task {
+            await harness.coordinator.switchTarget(to: .japanese)
+        }
+
+        let startupReadiness = await startupPreparation.value
+        let switchReadiness = await targetSwitch.value
+
+        XCTAssertEqual(startupReadiness, .superseded)
+        XCTAssertEqual(switchReadiness, .ready(.japanese))
+        XCTAssertEqual(harness.store.selectedTarget, .japanese)
+    }
+
+    func testApplePreparationActivatesTranslationRuntime()
+        async
+    {
+        let harness = CoordinatorHarness()
+        harness.store.selectedTarget = .japanese
+        harness.system.availabilityValue = .installed
+
+        let readiness =
+            await harness.coordinator.prepareCurrentConfiguration()
+
+        XCTAssertEqual(readiness, .ready(.japanese))
+        XCTAssertEqual(
+            harness.languageRuntime.prepareDirections,
+            [.simplifiedChineseToJapanese]
+        )
+    }
+
+    func testApplePreparationSupportsEveryTarget() async {
+        for target in TranslationTarget.allCases {
+            let harness = CoordinatorHarness()
+            harness.store.selectedTarget = target
+            harness.system.availabilityValue = .installed
+
+            let readiness =
+                await harness.coordinator.prepareCurrentConfiguration()
+
+            XCTAssertEqual(readiness, .ready(target))
+            XCTAssertEqual(
+                harness.languageRuntime.prepareDirections,
+                [TranslationDirection(target: target)]
+            )
+        }
+    }
 }
 
 @MainActor
@@ -97,6 +230,7 @@ private final class CoordinatorHarness {
         }
         coordinator.stopActiveOutput = { [weak self] in
             self?.stopCalls += 1
+            self?.wasMonitoring = false
         }
         coordinator.resumeMonitoring = { [weak self] in
             self?.resumeCalls += 1
@@ -109,12 +243,14 @@ private final class StubLanguageRuntime:
     TranslationLanguageRuntimeProviding
 {
     var prepareResult: String?
+    var prepareDirections: [TranslationDirection] = []
 
     func prepare(
         modelID: String,
         direction: TranslationDirection
     ) async -> String? {
-        prepareResult
+        prepareDirections.append(direction)
+        return prepareResult
     }
 
     func releaseResources(for modelID: String) async {}
@@ -125,20 +261,25 @@ private final class StubSystemTranslationProvider:
     SystemTranslationLanguageProviding
 {
     var availabilityValue: SystemTranslationAvailability?
+    var prepareDelay: Duration = .zero
+    var refreshDirections: [TranslationDirection] = []
 
     var availability: SystemTranslationAvailability? {
         availabilityValue
     }
 
-    func setDirection(_ direction: TranslationDirection) async {}
-
     func refreshAvailability(
         for direction: TranslationDirection
-    ) async {}
+    ) async {
+        refreshDirections.append(direction)
+    }
 
     func prepareInstalledSessionIfAvailable(
         for direction: TranslationDirection
     ) async -> Bool {
-        availabilityValue?.canSelect == true
+        if prepareDelay > .zero {
+            try? await Task.sleep(for: prepareDelay)
+        }
+        return availabilityValue?.canSelect == true
     }
 }
