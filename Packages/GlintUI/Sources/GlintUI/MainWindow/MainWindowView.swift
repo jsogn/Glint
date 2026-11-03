@@ -65,6 +65,9 @@ public struct MainWindowView: View {
                 model: model,
                 appUpdateModel: appUpdateModel,
                 selection: $selection,
+                openLanguageTranslation: {
+                    selection = .languageTranslation
+                },
                 openTranslationModels: {
                     pluginTab = .translation
                     selection = .plugins
@@ -85,7 +88,13 @@ public struct MainWindowView: View {
         case .display:
             DisplayPage(model: model)
         case .plugins:
-            PluginsPage(model: model, selectedTab: $pluginTab)
+            PluginsPage(
+                model: model,
+                selectedTab: $pluginTab,
+                onOpenLanguageTranslation: {
+                    selection = .languageTranslation
+                }
+            )
         case .permissions:
             PermissionsPage(model: model)
         case .about:

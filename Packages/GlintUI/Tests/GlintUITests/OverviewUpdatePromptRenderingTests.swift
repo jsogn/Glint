@@ -130,6 +130,7 @@ final class OverviewUpdatePromptRenderingTests: XCTestCase {
                 model: model,
                 appUpdateModel: updateModel,
                 selection: .constant(.overview),
+                openLanguageTranslation: {},
                 openTranslationModels: {}
             )
             .environment(\.colorScheme, colorScheme)

@@ -6,6 +6,7 @@ import SwiftUI
 struct PluginsPage: View {
     let model: MainWindowModel
     @Binding var selectedTab: PluginTab
+    let onOpenLanguageTranslation: () -> Void
     @State private var pluginToRemove: PluginManifest?
     @State private var marketQuery = ""
 
@@ -14,6 +15,11 @@ struct PluginsPage: View {
             HStack(spacing: 12) {
                 pluginTabControl
                 Spacer()
+                Text(
+                    "当前语言：\(model.translationTarget.chineseDisplayName)"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 if model.isLoadingPlugins
                     || model.isLoadingCatalog
                     || model.isInstalling != nil
@@ -253,10 +259,8 @@ struct PluginsPage: View {
         } else {
             switch model.systemTranslationAvailability {
             case .installed:
-                Button("使用") {
-                    Task {
-                        await model.activateSystemTranslationModel()
-                    }
+                Button("在语言与翻译中选择") {
+                    onOpenLanguageTranslation()
                 }
                 .buttonStyle(.borderedProminent)
             case .available:
@@ -338,6 +342,12 @@ struct PluginsPage: View {
 
     private func installedRow(_ plugin: PluginManifest) -> some View {
         let isInUse = model.isActiveTranslationModel(plugin)
+        let supportsCurrentTarget =
+            plugin.type != .translation
+            || MainWindowModel.supports(
+                plugin,
+                target: model.translationTarget
+            )
         return HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text(plugin.name)
@@ -347,6 +357,21 @@ struct PluginsPage: View {
                 Text(modelMetadata(for: plugin))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if plugin.type == .translation {
+                    Text(supportedTargetLabel(for: plugin))
+                        .font(.caption)
+                        .foregroundStyle(
+                            supportsCurrentTarget
+                                ? Color.secondary
+                                : Color.secondary.opacity(0.7)
+                        )
+                } else if model.translationTarget == .japanese,
+                    plugin.type == .dictionary
+                {
+                    Text("仅英语参与翻译路由")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if model.translationModelStatusModelID == plugin.id,
                     let status = model.translationModelStatusText
                 {
@@ -460,12 +485,11 @@ struct PluginsPage: View {
                         .background(.blue.opacity(0.16), in: Capsule())
                         .foregroundStyle(.blue)
                 } else {
-                    Button("使用") {
-                        model.activateTranslationModel(plugin)
+                    Button("在语言与翻译中选择") {
+                        onOpenLanguageTranslation()
                     }
-                    .disabled(
-                        model.isInstalling != nil || model.isImportingLocalModel
-                    )
+                    .buttonStyle(.link)
+                    .disabled(!supportsCurrentTarget)
                 }
             }
             if !isInUse && plugin.source != .bundled {
@@ -477,6 +501,23 @@ struct PluginsPage: View {
                 )
             }
         }
+        .opacity(supportsCurrentTarget ? 1 : 0.62)
+    }
+
+    private func supportedTargetLabel(
+        for plugin: PluginManifest
+    ) -> String {
+        let targets = Set(plugin.supportedTranslationTargets)
+        if targets == [.english] {
+            return "语言能力：仅英语"
+        }
+        if targets == [.japanese] {
+            return "语言能力：仅日语"
+        }
+        if targets == [.english, .japanese] {
+            return "语言能力：英语 / 日语"
+        }
+        return "语言能力：未验证"
     }
 
     private func catalogRow(_ plugin: PluginManifest) -> some View {
@@ -495,6 +536,11 @@ struct PluginsPage: View {
                 Text(modelMetadata(for: plugin))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if plugin.type == .translation {
+                    Text(supportedTargetLabel(for: plugin))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if let update {
                     Text(
                         "当前 \(update.currentVersion) → 新版本 \(update.availableVersion)"

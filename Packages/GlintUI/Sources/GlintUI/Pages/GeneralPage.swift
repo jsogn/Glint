@@ -9,35 +9,6 @@ struct GeneralPage: View {
 
     var body: some View {
         PageContainer {
-            SettingsCard("翻译") {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 24) {
-                        Text("优先来源")
-                        Spacer(minLength: 24)
-                        Picker(
-                            "优先来源",
-                            selection: Binding(
-                                get: { model.translationMode },
-                                set: { model.setTranslationMode($0) }
-                            )
-                        ) {
-                            ForEach(TranslationMode.allCases, id: \.self) {
-                                mode in
-                                Text(mode.title).tag(mode)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .frame(width: 300, alignment: .trailing)
-                        .accessibilityHint(model.translationMode.explanation)
-                    }
-
-                    Text(model.translationMode.explanation)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
             SettingsCard("释义插入") {
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -131,46 +102,6 @@ struct GeneralPage: View {
                                 .font(.caption)
                                 .foregroundStyle(.red)
                         }
-                    }
-                    .padding(.vertical, 10)
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 20) {
-                            Text("英语口音")
-                            Spacer(minLength: 24)
-                            Picker(
-                                "英语口音",
-                                selection: Binding(
-                                    get: {
-                                        model.generalPreferences
-                                            .speechAccent
-                                    },
-                                    set: {
-                                        model.generalPreferences
-                                            .setSpeechAccent($0)
-                                    }
-                                )
-                            ) {
-                                ForEach(
-                                    TranslationSpeechAccent.allCases,
-                                    id: \.self
-                                ) { accent in
-                                    Text(accent.title).tag(accent)
-                                }
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
-                            .frame(
-                                width: 300,
-                                alignment: .trailing
-                            )
-                        }
-
-                        Text("具体音色由系统英文语音决定。")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 10)
 

@@ -1,7 +1,36 @@
 import Foundation
 import GlintCore
 
+struct OverviewStatusStep: Equatable {
+    let title: String
+    let value: String
+}
+
 enum OverviewFormatting {
+    static func statusSteps(
+        target: TranslationTarget,
+        mode: TranslationMode,
+        modelName: String
+    ) -> [OverviewStatusStep] {
+        [
+            OverviewStatusStep(title: "输入", value: "中文拼音"),
+            OverviewStatusStep(
+                title: "语言",
+                value: target.chineseDisplayName
+            ),
+            OverviewStatusStep(
+                title: "策略",
+                value: target == .english
+                    ? mode.title
+                    : "模型翻译"
+            ),
+            OverviewStatusStep(
+                title: "翻译",
+                value: compactModelName(modelName)
+            ),
+        ]
+    }
+
     static func dwellDuration(_ seconds: Double) -> String {
         String(format: "%.0f ms", seconds * 1_000)
     }

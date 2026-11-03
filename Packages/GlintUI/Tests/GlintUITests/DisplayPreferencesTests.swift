@@ -4,6 +4,13 @@ import XCTest
 @testable import GlintUI
 
 final class DisplayPreferencesTests: XCTestCase {
+    func testTargetCapabilitiesHideEnglishOnlyControlsInJapanese() {
+        XCTAssertTrue(TranslationTarget.english.supportsPartsOfSpeech)
+        XCTAssertTrue(TranslationTarget.english.supportsMultipleMeanings)
+        XCTAssertFalse(TranslationTarget.japanese.supportsPartsOfSpeech)
+        XCTAssertFalse(TranslationTarget.japanese.supportsMultipleMeanings)
+    }
+
     @MainActor
     func testPreferencesPersistAcrossInstances() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"

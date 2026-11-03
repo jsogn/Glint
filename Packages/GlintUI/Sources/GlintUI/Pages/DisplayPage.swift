@@ -4,13 +4,20 @@ import SwiftUI
 
 struct DisplayPage: View {
     @Bindable private var preferences: DisplayPreferences
+    private let model: MainWindowModel?
 
     init(model: MainWindowModel) {
         self._preferences = Bindable(model.displayPreferences)
+        self.model = model
     }
 
     init(preferences: DisplayPreferences) {
         self._preferences = Bindable(preferences)
+        self.model = nil
+    }
+
+    private var translationTarget: TranslationTarget {
+        model?.translationTarget ?? .english
     }
 
     var body: some View {
@@ -20,7 +27,9 @@ struct DisplayPage: View {
                     segmentedSetting(
                         title: "翻译",
                         selection: $preferences.translationScope,
-                        caption: preferences.translationScope.explanation
+                        caption: preferences.translationScope.explanation(
+                            for: translationTarget
+                        )
                     ) {
                         ForEach(
                             CandidateTranslationScope.allCases,
@@ -30,54 +39,60 @@ struct DisplayPage: View {
                         }
                     }
 
-                    Divider()
+                    if translationTarget.supportsPartsOfSpeech {
+                        Divider()
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 20) {
-                            Text("显示词性")
-                            Spacer()
-                            Toggle(
-                                "显示词性",
-                                isOn: $preferences.showsPartsOfSpeech
-                            )
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
-                        }
-                        Text("仅对选中模式中的单个英文词显示词性缩写。")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 10)
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text(
-                                preferences.translationScope == .selected
-                                    ? "释义数量"
-                                    : "候选翻译数量"
-                            )
-                            Spacer()
-                            Stepper(
-                                value:
-                                    $preferences.maximumTranslationCount,
-                                in: DisplayPreferences
-                                    .maximumTranslationCountRange
-                            ) {
-                                Text(
-                                    "\(preferences.maximumTranslationCount) 个"
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 20) {
+                                Text("显示词性")
+                                Spacer()
+                                Toggle(
+                                    "显示词性",
+                                    isOn: $preferences.showsPartsOfSpeech
                                 )
-                                .monospacedDigit()
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .controlSize(.small)
                             }
-                            .fixedSize()
+                            Text("仅对选中模式中的单个英文词显示词性缩写。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        Text("控制最多显示几项释义。")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        .padding(.vertical, 10)
                     }
-                    .padding(.vertical, 10)
+
+                    if translationTarget.supportsMultipleMeanings
+                        || preferences.translationScope == .row
+                    {
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(
+                                    preferences.translationScope == .selected
+                                        ? "释义数量"
+                                        : "候选翻译数量"
+                                )
+                                Spacer()
+                                Stepper(
+                                    value:
+                                        $preferences.maximumTranslationCount,
+                                    in: DisplayPreferences
+                                        .maximumTranslationCountRange
+                                ) {
+                                    Text(
+                                        "\(preferences.maximumTranslationCount) 个"
+                                    )
+                                    .monospacedDigit()
+                                }
+                                .fixedSize()
+                            }
+                            Text("控制最多显示几项释义。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 10)
+                    }
 
                     Divider()
 
@@ -201,7 +216,10 @@ struct DisplayPage: View {
                 }
             }
             SettingsCard("预览") {
-                HUDPreview(preferences: preferences)
+                HUDPreview(
+                    preferences: preferences,
+                    target: translationTarget
+                )
             }
         }
     }
@@ -354,6 +372,7 @@ struct HUDPreview: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let preferences: DisplayPreferences
+    var target: TranslationTarget = .english
 
     private struct Candidate: Identifiable {
         let id: Int
@@ -374,6 +393,9 @@ struct HUDPreview: View {
     }
 
     var previewItems: [HUDItem] {
+        if target == .japanese {
+            return japanesePreviewItems
+        }
         switch preferences.translationScope {
         case .selected:
             let showsPartsOfSpeech = preferences.showsPartsOfSpeech
@@ -441,6 +463,35 @@ struct HUDPreview: View {
             return Array(
                 items.prefix(preferences.maximumTranslationCount)
             )
+        }
+    }
+
+    private var japanesePreviewItems: [HUDItem] {
+        switch preferences.translationScope {
+        case .selected:
+            [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "こんにちは"
+                )
+            ]
+        case .row:
+            [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "こんにちは",
+                    isSelected: true
+                ),
+                HUDItem(id: 1, number: 2, text: "手を振る"),
+                HUDItem(id: 2, number: 3, text: "元気ですか？"),
+                HUDItem(id: 3, number: 4, text: "こんにちは"),
+                HUDItem(id: 4, number: 5, text: "あなたの番号"),
+                HUDItem(id: 5, number: 6, text: "あなた"),
+            ]
+            .prefix(preferences.maximumTranslationCount)
+            .map { $0 }
         }
     }
 
