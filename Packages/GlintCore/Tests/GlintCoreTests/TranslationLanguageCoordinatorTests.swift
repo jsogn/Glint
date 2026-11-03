@@ -116,6 +116,36 @@ final class TranslationLanguageCoordinatorTests: XCTestCase {
         XCTAssertEqual(harness.resumeCalls, 1)
     }
 
+    func testRapidSwitchLeavesRuntimeOnLatestTarget() async throws {
+        let harness = CoordinatorHarness()
+        harness.system.availabilityValue = .installed
+        harness.system.delayedRefreshDirection =
+            .simplifiedChineseToJapanese
+
+        let firstSwitch = Task {
+            await harness.coordinator.switchTarget(to: .japanese)
+        }
+        await harness.system.waitUntilDelayedRefreshStarts()
+        let secondSwitch = Task {
+            await harness.coordinator.switchTarget(to: .spanish)
+        }
+
+        let secondReadiness = await secondSwitch.value
+        harness.system.releaseDelayedRefresh()
+        let firstReadiness = await firstSwitch.value
+
+        XCTAssertEqual(firstReadiness, .superseded)
+        XCTAssertEqual(secondReadiness, .ready(.spanish))
+        XCTAssertEqual(
+            harness.languageRuntime.activeDirection,
+            .simplifiedChineseToSpanish
+        )
+        XCTAssertEqual(
+            harness.system.activeDirection,
+            .simplifiedChineseToSpanish
+        )
+    }
+
     func testPrepareCurrentConfigurationUsesDeclaredLocalDirection()
         async
     {
@@ -244,12 +274,14 @@ private final class StubLanguageRuntime:
 {
     var prepareResult: String?
     var prepareDirections: [TranslationDirection] = []
+    var activeDirection: TranslationDirection?
 
     func prepare(
         modelID: String,
         direction: TranslationDirection
     ) async -> String? {
         prepareDirections.append(direction)
+        activeDirection = direction
         return prepareResult
     }
 
@@ -263,6 +295,10 @@ private final class StubSystemTranslationProvider:
     var availabilityValue: SystemTranslationAvailability?
     var prepareDelay: Duration = .zero
     var refreshDirections: [TranslationDirection] = []
+    var activeDirection: TranslationDirection?
+    var delayedRefreshDirection: TranslationDirection?
+    private var delayedRefreshStarted: CheckedContinuation<Void, Never>?
+    private var delayedRefreshRelease: CheckedContinuation<Void, Never>?
 
     var availability: SystemTranslationAvailability? {
         availabilityValue
@@ -272,14 +308,36 @@ private final class StubSystemTranslationProvider:
         for direction: TranslationDirection
     ) async {
         refreshDirections.append(direction)
+        activeDirection = direction
+        if direction == delayedRefreshDirection {
+            delayedRefreshDirection = nil
+            delayedRefreshStarted?.resume()
+            delayedRefreshStarted = nil
+            await withCheckedContinuation {
+                delayedRefreshRelease = $0
+            }
+        }
     }
 
     func prepareInstalledSessionIfAvailable(
         for direction: TranslationDirection
     ) async -> Bool {
+        activeDirection = direction
         if prepareDelay > .zero {
             try? await Task.sleep(for: prepareDelay)
         }
         return availabilityValue?.canSelect == true
+    }
+
+    func waitUntilDelayedRefreshStarts() async {
+        guard delayedRefreshDirection != nil else { return }
+        await withCheckedContinuation {
+            delayedRefreshStarted = $0
+        }
+    }
+
+    func releaseDelayedRefresh() {
+        delayedRefreshRelease?.resume()
+        delayedRefreshRelease = nil
     }
 }

@@ -22,9 +22,11 @@ public struct SmartRouter: Sendable {
         dictionaryPrefetch: Task<TranslationResult?, Never>? = nil
     ) async throws -> TranslationResult? {
         try Task.checkCancellation()
-        guard !request.candidate.text.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        ).isEmpty else {
+        guard
+            !request.candidate.text.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ).isEmpty
+        else {
             return nil
         }
         if !request.direction.target.supportsDictionaryRouting {

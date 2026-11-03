@@ -306,8 +306,7 @@ final class LanguageTranslationPageTests: XCTestCase {
         try assertRendersAcrossAppearanceAndWidths(hostingView)
 
         for target in TranslationTarget.allCases
-            where target != .english
-        {
+        where target != .english {
             await model.setTranslationTarget(target)
             hostingView.layoutSubtreeIfNeeded()
 

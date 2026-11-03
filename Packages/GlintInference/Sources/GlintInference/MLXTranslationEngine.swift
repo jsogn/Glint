@@ -648,8 +648,9 @@ public actor MLXTranslationEngine: TranslationEngine {
         else {
             return nil
         }
-        guard cached.target == target
-            || (cached.target == nil && target == .english)
+        guard
+            cached.target == target
+                || (cached.target == nil && target == .english)
         else {
             return nil
         }
@@ -766,14 +767,16 @@ public actor MLXTranslationEngine: TranslationEngine {
             $0.unicodeScalars.contains { $0.value > 127 }
         }
         if usesNonLatinScript {
-            let normalized = output
+            let normalized =
+                output
                 .lowercased()
                 .unicodeScalars
                 .filter(CharacterSet.alphanumerics.contains)
                 .map(String.init)
                 .joined()
             return expected.contains {
-                let value = $0
+                let value =
+                    $0
                     .lowercased()
                     .unicodeScalars
                     .filter(CharacterSet.alphanumerics.contains)
@@ -911,10 +914,12 @@ public actor MLXTranslationEngine: TranslationEngine {
         )
         output = output.replacingOccurrences(of: "**", with: "")
 
-        guard TranslationTextPolicy.isDisplayable(
-            output,
-            target: target
-        ) else {
+        guard
+            TranslationTextPolicy.isDisplayable(
+                output,
+                target: target
+            )
+        else {
             return nil
         }
         return output

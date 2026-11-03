@@ -86,8 +86,7 @@ public final class GeneralPreferences {
     public private(set) var insertionShortcut: TranslationInsertionShortcut?
     public private(set) var speechShortcut: TranslationInsertionShortcut?
     public private(set) var speechAccent: TranslationSpeechAccent
-    public private(set) var speechVoiceIdentifiers:
-        [TranslationTarget: String]
+    public private(set) var speechVoiceIdentifiers: [TranslationTarget: String]
     public private(set) var speechRate: TranslationSpeechRate
     public private(set) var autoSpeechEnabled: Bool
     public private(set) var autoSpeechDelay: Double
@@ -379,9 +378,8 @@ public final class GeneralPreferences {
             if let voice = defaults.string(
                 forKey: speechVoiceKey(for: target)
             )?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .nonEmpty
-            {
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .nonEmpty {
                 voices[target] = voice
             }
         }

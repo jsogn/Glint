@@ -5,8 +5,7 @@ import XCTest
 final class TranslationTextPolicyTests: XCTestCase {
     func testNonJapaneseTargetsRejectChineseEcho() {
         for target in TranslationTarget.allCases
-            where target != .japanese
-        {
+        where target != .japanese {
             XCTAssertFalse(
                 TranslationTextPolicy.isDisplayable(
                     "这是一个测试",

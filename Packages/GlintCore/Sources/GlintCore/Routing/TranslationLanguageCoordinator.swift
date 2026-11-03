@@ -26,8 +26,7 @@ public protocol SystemTranslationLanguageProviding {
 @MainActor
 public final class TranslationLanguageCoordinator {
     private let store: TranslationSelectionStore
-    private let languageRuntime:
-        any TranslationLanguageRuntimeProviding
+    private let languageRuntime: any TranslationLanguageRuntimeProviding
     private let system: any SystemTranslationLanguageProviding
     private var generation: UInt64 = 0
     private var pendingResume = false
@@ -64,7 +63,8 @@ public final class TranslationLanguageCoordinator {
 
         let readiness = await prepare(
             target: target,
-            modelID: store.selectedModelID(for: target)
+            modelID: store.selectedModelID(for: target),
+            transaction: transaction
         )
         guard transaction == generation else {
             return .superseded
@@ -93,7 +93,8 @@ public final class TranslationLanguageCoordinator {
 
         let readiness = await prepare(
             target: target,
-            modelID: modelID
+            modelID: modelID,
+            transaction: transaction
         )
         guard transaction == generation else {
             return .superseded
@@ -113,7 +114,8 @@ public final class TranslationLanguageCoordinator {
         let target = store.selectedTarget
         let readiness = await prepare(
             target: target,
-            modelID: store.selectedModelID(for: target)
+            modelID: store.selectedModelID(for: target),
+            transaction: transaction
         )
         guard transaction == generation else {
             return .superseded
@@ -137,10 +139,17 @@ public final class TranslationLanguageCoordinator {
 
     private func prepare(
         target: TranslationTarget,
-        modelID: String
+        modelID: String,
+        transaction: UInt64
     ) async -> TranslationReadiness {
+        guard transaction == generation else {
+            return .superseded
+        }
         let direction = TranslationDirection(target: target)
         await system.refreshAvailability(for: direction)
+        guard transaction == generation else {
+            return .superseded
+        }
 
         if modelID == SystemTranslationModel.appleTranslationID {
             switch system.availability {
@@ -156,13 +165,18 @@ public final class TranslationLanguageCoordinator {
                     "需要安装 Apple 翻译语言包"
                 )
             }
-            guard await system.prepareInstalledSessionIfAvailable(
-                for: direction
-            ) else {
+            guard
+                await system.prepareInstalledSessionIfAvailable(
+                    for: direction
+                )
+            else {
                 return .failed(
                     target,
                     "系统翻译会话不可用"
                 )
+            }
+            guard transaction == generation else {
+                return .superseded
             }
         }
 
@@ -171,6 +185,9 @@ public final class TranslationLanguageCoordinator {
             direction: direction
         ) {
             return .failed(target, error)
+        }
+        guard transaction == generation else {
+            return .superseded
         }
         return .ready(target)
     }

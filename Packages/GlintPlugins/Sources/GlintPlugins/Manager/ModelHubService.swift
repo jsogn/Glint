@@ -490,7 +490,8 @@ public actor ModelHubService {
                     baseModels: snapshot.baseModels
                 ),
                 installed: identifier.promptProfile
-            )
+            ),
+            translationTargets: identifier.translationTargets
         )
     }
 

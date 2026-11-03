@@ -128,7 +128,7 @@ private struct AppleTranslationEvaluationView: View {
                             + "\(model.options.targetLanguage) · "
                             + "同一批本地评测用例"
                     )
-                        .foregroundStyle(.secondary)
+                    .foregroundStyle(.secondary)
                 }
             }
 

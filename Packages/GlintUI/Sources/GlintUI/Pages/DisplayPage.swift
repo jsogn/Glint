@@ -92,8 +92,8 @@ struct DisplayPage: View {
                                     ? "控制最多显示几项释义。"
                                     : "控制一栏模式最多翻译几个候选。"
                             )
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 10)
                     }

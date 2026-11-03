@@ -131,8 +131,7 @@ final class SmartRouterTests: XCTestCase {
         async throws
     {
         for target in TranslationTarget.allCases
-            where target != .english
-        {
+        where target != .english {
             for mode in TranslationMode.allCases {
                 let dictionary = CountingDictionary(
                     result: TranslationResult(

@@ -197,6 +197,50 @@ final class TranslationRuntimeTests: XCTestCase {
         )
     }
 
+    func testLatestPreparationWinsWhenEarlierPreparationFinishesLast()
+        async throws
+    {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("runtime-switch-\(UUID().uuidString)")
+        let gate = PreparationGate()
+        let runtime = TranslationRuntime { modelID in
+            if modelID == "slow-japanese" {
+                await gate.waitForRelease()
+            }
+            return ResolvedTranslationModel(
+                modelID: modelID,
+                storage: .mlx(
+                    directory: directory,
+                    promptProfile: .generic
+                ),
+                supportedDirections: [
+                    .simplifiedChineseToJapanese,
+                    .simplifiedChineseToSpanish,
+                ]
+            )
+        }
+
+        async let slowerPreparation = runtime.prepare(
+            modelID: "slow-japanese",
+            direction: .simplifiedChineseToJapanese
+        )
+        await gate.waitUntilStarted()
+        let latestPreparation = await runtime.prepare(
+            modelID: "fast-spanish",
+            direction: .simplifiedChineseToSpanish
+        )
+        await gate.release()
+        let supersededPreparation = await slowerPreparation
+
+        XCTAssertNil(latestPreparation)
+        XCTAssertNil(supersededPreparation)
+        let activeDirection = await runtime.activeDirection
+        XCTAssertEqual(
+            activeDirection,
+            .simplifiedChineseToSpanish
+        )
+    }
+
     private func repositoryRoot() -> URL {
         var root = URL(fileURLWithPath: #filePath)
         for _ in 0..<5 {
@@ -245,5 +289,32 @@ private enum TranslationRuntimeTestError: LocalizedError {
 
     var errorDescription: String? {
         "System translation failed"
+    }
+}
+
+private actor PreparationGate {
+    private var started = false
+    private var startWaiter: CheckedContinuation<Void, Never>?
+    private var releaseWaiter: CheckedContinuation<Void, Never>?
+
+    func waitForRelease() async {
+        started = true
+        startWaiter?.resume()
+        startWaiter = nil
+        await withCheckedContinuation {
+            releaseWaiter = $0
+        }
+    }
+
+    func waitUntilStarted() async {
+        guard !started else { return }
+        await withCheckedContinuation {
+            startWaiter = $0
+        }
+    }
+
+    func release() {
+        releaseWaiter?.resume()
+        releaseWaiter = nil
     }
 }

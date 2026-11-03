@@ -486,8 +486,8 @@ private struct ActiveTranslationModelSection: View {
 
     private var manageModelsButton: some View {
         Button("管理模型", action: onManageModels)
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
     }
 }
 

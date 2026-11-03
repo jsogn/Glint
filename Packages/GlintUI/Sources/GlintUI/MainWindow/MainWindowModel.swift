@@ -254,18 +254,15 @@ public final class MainWindowModel {
     @ObservationIgnored
     public var releaseTranslationModelAction: @MainActor (String) async -> Void = { _ in }
     @ObservationIgnored
-    public var previewTranslationSpeechAction:
-        @MainActor (TranslationTarget) -> Void = { _ in }
+    public var previewTranslationSpeechAction: @MainActor (TranslationTarget) -> Void = { _ in }
     @ObservationIgnored
-    public var changeTranslationTargetAction:
-        @MainActor (TranslationTarget) async -> TranslationReadiness = {
-            target in .failed(target, "翻译语言切换不可用")
-        }
+    public var changeTranslationTargetAction: @MainActor (TranslationTarget) async -> TranslationReadiness = {
+        target in .failed(target, "翻译语言切换不可用")
+    }
     @ObservationIgnored
-    public var selectTranslationModelAction:
-        @MainActor (String, TranslationTarget) async -> TranslationReadiness = {
-            _, target in .failed(target, "翻译模型切换不可用")
-        }
+    public var selectTranslationModelAction: @MainActor (String, TranslationTarget) async -> TranslationReadiness = {
+        _, target in .failed(target, "翻译模型切换不可用")
+    }
     @ObservationIgnored
     public var translationModeAction: @MainActor (TranslationMode) -> Void = { _ in }
     @ObservationIgnored
@@ -597,7 +594,7 @@ public final class MainWindowModel {
 
     public func refreshSystemTranslationSupport() async {
         guard !isRefreshingSystemTranslation else { return }
-        let requestGeneration = translationRequestGeneration
+        let requestGeneration = systemTranslationRequestGeneration
         isRefreshingSystemTranslation = true
         systemTranslationError = nil
         defer {
@@ -606,7 +603,7 @@ public final class MainWindowModel {
             }
         }
         let availability = await refreshSystemTranslationAction()
-        guard requestGeneration == translationRequestGeneration else {
+        guard requestGeneration == systemTranslationRequestGeneration else {
             return
         }
         updateSystemTranslationAvailability(availability)

@@ -218,8 +218,7 @@ final class MainWindowModelTests: XCTestCase {
         )
 
         for target in TranslationTarget.allCases
-            where target != .english
-        {
+        where target != .english {
             XCTAssertFalse(
                 MainWindowModel.supports(
                     manifest,
@@ -542,6 +541,36 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(
             context.model.systemTranslationAvailability,
             .available
+        )
+        XCTAssertFalse(context.model.isRefreshingSystemTranslation)
+    }
+
+    @MainActor
+    func testSystemTranslationRefreshFinishesAfterModelSelection()
+        async throws
+    {
+        let context = try makeContext()
+        defer { context.cleanup() }
+        context.model.changeTranslationTargetAction = { target in
+            .ready(target)
+        }
+        context.model.selectTranslationModelAction = { _, target in
+            .ready(target)
+        }
+        await context.model.setTranslationTarget(.japanese)
+        await context.model.setTranslationModel(
+            SystemTranslationModel.appleTranslationID,
+            for: .japanese
+        )
+        context.model.refreshSystemTranslationAction = {
+            .installed
+        }
+
+        await context.model.refreshSystemTranslationSupport()
+
+        XCTAssertEqual(
+            context.model.systemTranslationAvailability,
+            .installed
         )
         XCTAssertFalse(context.model.isRefreshingSystemTranslation)
     }
@@ -2480,10 +2509,8 @@ private struct MultilingualContext {
 @MainActor
 private final class TranslationTargetSwitchProbe {
     private var japaneseSwitchCount = 0
-    private var firstJapaneseSwitchStarted:
-        CheckedContinuation<Void, Never>?
-    private var firstJapaneseSwitchRelease:
-        CheckedContinuation<Void, Never>?
+    private var firstJapaneseSwitchStarted: CheckedContinuation<Void, Never>?
+    private var firstJapaneseSwitchRelease: CheckedContinuation<Void, Never>?
 
     func respond(
         to target: TranslationTarget
@@ -2519,10 +2546,8 @@ private final class TranslationTargetSwitchProbe {
 @MainActor
 private final class TranslationModelSelectionProbe {
     private var modelASelectionCount = 0
-    private var firstModelASelectionStarted:
-        CheckedContinuation<Void, Never>?
-    private var firstModelASelectionRelease:
-        CheckedContinuation<Void, Never>?
+    private var firstModelASelectionStarted: CheckedContinuation<Void, Never>?
+    private var firstModelASelectionRelease: CheckedContinuation<Void, Never>?
 
     func respond(
         modelID: String,
@@ -2558,10 +2583,8 @@ private final class TranslationModelSelectionProbe {
 
 @MainActor
 private final class SystemTranslationPreparationProbe {
-    private var startedContinuation:
-        CheckedContinuation<Void, Never>?
-    private var releaseContinuation:
-        CheckedContinuation<Void, Never>?
+    private var startedContinuation: CheckedContinuation<Void, Never>?
+    private var releaseContinuation: CheckedContinuation<Void, Never>?
     private var isStarted = false
     private var isReleased = false
 

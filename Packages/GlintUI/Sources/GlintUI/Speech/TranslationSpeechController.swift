@@ -43,7 +43,8 @@ public final class TranslationSpeechController {
     init(
         synthesizer: any TranslationSpeechSynthesizing,
         voiceForLanguage: @escaping (String) -> AVSpeechSynthesisVoice?,
-        voiceForIdentifier: @escaping (String) ->
+        voiceForIdentifier:
+            @escaping (String) ->
             AVSpeechSynthesisVoice? = { identifier in
                 AVSpeechSynthesisVoice(identifier: identifier)
             },

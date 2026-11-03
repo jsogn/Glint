@@ -43,8 +43,7 @@ final class MLXTranslationEngineTests: XCTestCase {
         XCTAssertFalse(englishOnlySupportsJapanese)
         XCTAssertTrue(multilingualSupportsJapanese)
         for target in TranslationTarget.allCases
-            where target != .english
-        {
+        where target != .english {
             let supported = await multilingual.supports(
                 TranslationDirection(target: target)
             )
@@ -62,8 +61,7 @@ final class MLXTranslationEngineTests: XCTestCase {
 
         XCTAssertTrue(supportsEnglish)
         for target in TranslationTarget.allCases
-            where target != .english
-        {
+        where target != .english {
             let supported = await engine.supports(
                 TranslationDirection(target: target)
             )

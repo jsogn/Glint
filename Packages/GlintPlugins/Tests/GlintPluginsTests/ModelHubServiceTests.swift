@@ -130,6 +130,43 @@ final class ModelHubServiceTests: XCTestCase {
         )
     }
 
+    func testManifestUpdatePreservesExplicitTranslationTargets() throws {
+        let snapshot = UpstreamModelSnapshot(
+            repository: "example/english-only",
+            revision: "revision",
+            lastModified: nil,
+            modelType: "qwen3",
+            sizeBytes: 1_000,
+            license: "apache-2.0",
+            hasChatTemplate: true,
+            parameterCount: nil,
+            quantizationBits: 4,
+            pipelineTag: "translation",
+            baseModels: []
+        )
+        let installed = PluginManifest(
+            id: "english-only",
+            type: .translation,
+            name: "English Only",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 1_000,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(string: "https://huggingface.co/example/english-only")!,
+            license: "apache-2.0",
+            minRAMBytes: 0,
+            promptProfile: .qwenGeneral,
+            translationTargets: [.english]
+        )
+
+        let manifest = ModelHubService.manifest(
+            for: snapshot,
+            matching: installed
+        )
+
+        XCTAssertEqual(manifest.translationTargets, [.english])
+    }
+
     func testInspectRejectsOverflowingSnapshotSize() async {
         let repository = "example/overflowing-size"
         ModelHubStubURLProtocol.handler = { request in

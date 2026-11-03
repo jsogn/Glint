@@ -11,7 +11,7 @@ private let runtimeLogger = Logger(
 public actor TranslationRuntime: TranslationEngine {
     public typealias ModelResolver =
         @Sendable (_ modelID: String) async ->
-            ResolvedTranslationModel?
+        ResolvedTranslationModel?
 
     private let systemEngine: (any TranslationEngine)?
     private let modelResolver: ModelResolver
@@ -20,6 +20,7 @@ public actor TranslationRuntime: TranslationEngine {
     private var activeEngine: (any TranslationEngine)?
     private(set) var activeDirection: TranslationDirection?
     private(set) var lastError: String?
+    private var preparationGeneration: UInt64 = 0
 
     public init(
         systemEngine: (any TranslationEngine)? = nil,
@@ -34,10 +35,22 @@ public actor TranslationRuntime: TranslationEngine {
         modelID: String,
         direction: TranslationDirection
     ) async -> String? {
+        preparationGeneration &+= 1
+        let generation = preparationGeneration
+
         if modelID == SystemTranslationModel.appleTranslationID {
-            guard let systemEngine,
-                await systemEngine.supports(direction)
-            else {
+            guard let systemEngine else {
+                clearActiveRuntime()
+                lastError = "系统翻译不支持当前方向"
+                return lastError
+            }
+            let supportsDirection = await systemEngine.supports(
+                direction
+            )
+            guard generation == preparationGeneration else {
+                return nil
+            }
+            guard supportsDirection else {
                 clearActiveRuntime()
                 lastError = "系统翻译不支持当前方向"
                 return lastError
@@ -54,9 +67,15 @@ public actor TranslationRuntime: TranslationEngine {
         }
 
         guard let descriptor = await modelResolver(modelID) else {
+            guard generation == preparationGeneration else {
+                return nil
+            }
             clearActiveRuntime()
             lastError = "未找到所选翻译模型"
             return lastError
+        }
+        guard generation == preparationGeneration else {
+            return nil
         }
         guard descriptor.supportedDirections.contains(direction) else {
             clearActiveRuntime()
@@ -67,22 +86,16 @@ public actor TranslationRuntime: TranslationEngine {
             return lastError
         }
 
-        // Release the previous multi-gigabyte container before loading a new one.
-        clearActiveRuntime()
+        let engine: any TranslationEngine
         do {
-            let engine = try makeEngine(
+            engine = try makeEngine(
                 for: descriptor,
                 direction: direction
             )
-            activeModel = descriptor
-            activeDirection = direction
-            activeEngine = engine
-            lastError = nil
-            runtimeLogger.notice(
-                "prepare model=\(modelID, privacy: .public) target=\(direction.target.rawValue, privacy: .public)"
-            )
-            return nil
         } catch {
+            guard generation == preparationGeneration else {
+                return nil
+            }
             clearActiveRuntime()
             lastError = error.localizedDescription
             runtimeLogger.error(
@@ -90,6 +103,21 @@ public actor TranslationRuntime: TranslationEngine {
             )
             return lastError
         }
+        guard generation == preparationGeneration else {
+            return nil
+        }
+
+        // Release the previous multi-gigabyte container before committing
+        // the latest successfully prepared runtime.
+        clearActiveRuntime()
+        activeModel = descriptor
+        activeDirection = direction
+        activeEngine = engine
+        lastError = nil
+        runtimeLogger.notice(
+            "prepare model=\(modelID, privacy: .public) target=\(direction.target.rawValue, privacy: .public)"
+        )
+        return nil
     }
 
     public func supports(

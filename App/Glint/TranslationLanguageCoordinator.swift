@@ -3,7 +3,8 @@ import GlintInference
 import GlintMac
 
 extension SystemTranslationCoordinator:
-    @retroactive SystemTranslationLanguageProviding {}
+    @retroactive SystemTranslationLanguageProviding
+{}
 
 @MainActor
 final class TranslationLanguageRuntimeAdapter:
@@ -29,4 +30,3 @@ final class TranslationLanguageRuntimeAdapter:
         await runtime.releaseResources(for: modelID)
     }
 }
-

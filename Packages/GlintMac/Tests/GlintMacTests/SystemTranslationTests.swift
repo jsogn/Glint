@@ -1,4 +1,5 @@
 import GlintCore
+import Foundation
 import Translation
 import XCTest
 import os
@@ -70,8 +71,7 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
 
     func testAvailabilityUsesEveryConfiguredTargetDirection() async {
         for target in TranslationTarget.allCases
-            where target != .english
-        {
+        where target != .english {
             let direction = TranslationDirection(target: target)
             let recorded = OSAllocatedUnfairLock<[TranslationDirection]>(
                 initialState: []
@@ -122,6 +122,84 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
             [.simplifiedChineseToJapanese]
         )
         XCTAssertEqual(coordinator.availability, .available)
+    }
+
+    func testPreparedConfigurationUsesNewTargetAfterDirectionChange()
+        async
+    {
+        let cases: [(TranslationDirection, TranslationDirection)] = [
+            (
+                .simplifiedChineseToEnglish,
+                .simplifiedChineseToJapanese
+            ),
+            (
+                .simplifiedChineseToJapanese,
+                .simplifiedChineseToEnglish
+            ),
+        ]
+
+        for (initialDirection, changedDirection) in cases {
+            let availability = LockedAvailability(.installed)
+            let coordinator = SystemTranslationCoordinator(
+                direction: initialDirection,
+                availabilityProvider: { _ in
+                    availability.value
+                }
+            )
+            let initialDriver = FakeSystemTranslationDriver()
+            let initialHostTask = Task {
+                await coordinator.run(driver: initialDriver)
+            }
+            await Task.yield()
+            let initialPrepared =
+                await coordinator
+                .prepareInstalledSessionIfAvailable(
+                    for: initialDirection
+                )
+            XCTAssertTrue(initialPrepared)
+            XCTAssertEqual(
+                coordinator.configuration?.target,
+                Locale.Language(
+                    identifier: initialDirection.target.rawValue
+                )
+            )
+
+            await coordinator.setDirection(changedDirection)
+            let changedDriver = FakeSystemTranslationDriver()
+            let generationBeforeChange =
+                coordinator.currentSessionGeneration
+            let changedPreparation = Task {
+                await coordinator.prepareInstalledSessionIfAvailable(
+                    for: changedDirection
+                )
+            }
+            await waitUntil {
+                coordinator.currentSessionGeneration
+                    != generationBeforeChange
+            }
+            let changedHostTask = Task {
+                await coordinator.run(driver: changedDriver)
+            }
+            let changedPrepared = await changedPreparation.value
+
+            XCTAssertTrue(changedPrepared)
+            XCTAssertEqual(
+                coordinator.configuration?.source,
+                Locale.Language(
+                    identifier: changedDirection.source.rawValue
+                )
+            )
+            XCTAssertEqual(
+                coordinator.configuration?.target,
+                Locale.Language(
+                    identifier: changedDirection.target.rawValue
+                )
+            )
+
+            coordinator.shutdown()
+            await changedHostTask.value
+            await initialHostTask.value
+        }
     }
 
     func testTranslationRejectsMismatchedDirection() async throws {
@@ -481,8 +559,7 @@ final class SystemTranslationCoordinatorTests: XCTestCase {
                 availability.value
             }
         )
-        var observedAvailability:
-            [(TranslationDirection, SystemTranslationAvailability)] = []
+        var observedAvailability: [(TranslationDirection, SystemTranslationAvailability)] = []
         coordinator.onAvailabilityChange = { direction, availability in
             observedAvailability.append((direction, availability))
         }
@@ -877,10 +954,8 @@ private final class FakeSystemTranslationDriver:
 
 @MainActor
 private final class PrepareGate {
-    private var startedContinuation:
-        CheckedContinuation<Void, Never>?
-    private var releaseContinuation:
-        CheckedContinuation<Void, Never>?
+    private var startedContinuation: CheckedContinuation<Void, Never>?
+    private var releaseContinuation: CheckedContinuation<Void, Never>?
     private var isStarted = false
     private var isReleased = false
 

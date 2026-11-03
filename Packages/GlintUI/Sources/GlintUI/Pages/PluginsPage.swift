@@ -305,7 +305,7 @@ struct PluginsPage: View {
                 Text(
                     "当前 Mac 不支持中文到\(model.translationTarget.chineseDisplayName)翻译"
                 )
-                    .foregroundStyle(.secondary)
+                .foregroundStyle(.secondary)
             case nil:
                 Button("检查支持") {
                     Task {

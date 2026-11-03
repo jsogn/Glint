@@ -35,8 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let translationAutoSpeechScheduler: TranslationAutoSpeechScheduler
     private let translationSpeechShortcutCoordinator: TranslationChoiceShortcutCoordinator
     private let environment: AppEnvironment
-    private let translationLanguageCoordinator:
-        TranslationLanguageCoordinator
+    private let translationLanguageCoordinator: TranslationLanguageCoordinator
     private let launchAtLoginController: LaunchAtLoginController
     private let windowModel: MainWindowModel
     private let appUpdateModel: AppUpdateModel
@@ -219,7 +218,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             await environment.repairInvalidCoreDictionaryInstallations()
             await environment.refreshDictionaryRoutes()
             await synchronizeInstalledInputMethodSupport()
-            let readiness = await translationLanguageCoordinator
+            let readiness =
+                await translationLanguageCoordinator
                 .prepareCurrentConfiguration()
             if readiness != .superseded {
                 windowModel.updateTranslationReadiness(readiness)

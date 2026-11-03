@@ -31,7 +31,8 @@ public enum TranslationSpeechVoiceCatalog {
             by: \.name
         )
         .mapValues(\.count)
-        return voices
+        return
+            voices
             .map {
                 TranslationSpeechVoiceOption(
                     id: $0.identifier,

@@ -88,9 +88,14 @@ struct BenchmarkMain {
         for benchmarkCase in cases {
             let start = Date()
             let result = await router.lookup(
-                Candidate(
-                    text: benchmarkCase.text,
-                    kind: CandidateClassifier.classify(benchmarkCase.text)
+                TranslationRequest(
+                    candidate: Candidate(
+                        text: benchmarkCase.text,
+                        kind: CandidateClassifier.classify(
+                            benchmarkCase.text
+                        )
+                    ),
+                    direction: .simplifiedChineseToEnglish
                 )
             )
             let milliseconds = Date().timeIntervalSince(start) * 1_000

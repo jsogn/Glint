@@ -63,10 +63,12 @@ public final class SystemTranslationCoordinator: ObservableObject {
     @Published public private(set) var configuration: TranslationSession.Configuration?
     @Published public private(set) var isPreparing = false
     public var onAvailabilityChange:
-        (@MainActor (
-            TranslationDirection,
-            SystemTranslationAvailability
-        ) -> Void)?
+        (
+            @MainActor (
+                TranslationDirection,
+                SystemTranslationAvailability
+            ) -> Void
+        )?
     var currentSessionGeneration: UInt64 { sessionGeneration }
     public private(set) var currentDirection: TranslationDirection
 
@@ -127,6 +129,8 @@ public final class SystemTranslationCoordinator: ObservableObject {
         if var nextConfiguration = configuration {
             nextConfiguration.invalidate()
             configuration = nextConfiguration
+            await Task.yield()
+            makeConfiguration()
         }
         availability = nil
         signalIdleLoop()
@@ -146,10 +150,12 @@ public final class SystemTranslationCoordinator: ObservableObject {
         guard !isPreparing else { return }
         let operationGeneration = directionGeneration
         let current = await availabilityProvider(direction)
-        guard isCurrentDirection(
-            direction,
-            generation: operationGeneration
-        ), !isPreparing else {
+        guard
+            isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            ), !isPreparing
+        else {
             return
         }
         availability = current
@@ -186,10 +192,12 @@ public final class SystemTranslationCoordinator: ObservableObject {
         }
 
         let current = await availabilityProvider(direction)
-        guard isCurrentDirection(
-            direction,
-            generation: operationGeneration
-        ) else {
+        guard
+            isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            )
+        else {
             return
         }
         systemTranslationLogger.notice(
@@ -204,27 +212,33 @@ public final class SystemTranslationCoordinator: ObservableObject {
         availability = .installing
         do {
             try await startConfiguration(forceNewSession: true)
-            guard isCurrentDirection(
-                direction,
-                generation: operationGeneration
-            ) else {
+            guard
+                isCurrentDirection(
+                    direction,
+                    generation: operationGeneration
+                )
+            else {
                 return
             }
             guard let driver else {
                 throw SystemTranslationError.sessionUnavailable
             }
             try await driver.prepareTranslation()
-            guard isCurrentDirection(
-                direction,
-                generation: operationGeneration
-            ) else {
+            guard
+                isCurrentDirection(
+                    direction,
+                    generation: operationGeneration
+                )
+            else {
                 return
             }
             let updated = await availabilityProvider(direction)
-            guard isCurrentDirection(
-                direction,
-                generation: operationGeneration
-            ) else {
+            guard
+                isCurrentDirection(
+                    direction,
+                    generation: operationGeneration
+                )
+            else {
                 return
             }
             availability = updated
@@ -239,10 +253,12 @@ public final class SystemTranslationCoordinator: ObservableObject {
                 throw SystemTranslationError.languagePackUnavailable
             }
         } catch SystemTranslationError.sessionUnavailable {
-            guard isCurrentDirection(
-                direction,
-                generation: operationGeneration
-            ) else {
+            guard
+                isCurrentDirection(
+                    direction,
+                    generation: operationGeneration
+                )
+            else {
                 return
             }
             availability = .failed(
@@ -251,10 +267,12 @@ public final class SystemTranslationCoordinator: ObservableObject {
             throw SystemTranslationError.sessionUnavailable
         } catch {
             let updated = await availabilityProvider(direction)
-            guard isCurrentDirection(
-                direction,
-                generation: operationGeneration
-            ) else {
+            guard
+                isCurrentDirection(
+                    direction,
+                    generation: operationGeneration
+                )
+            else {
                 return
             }
             availability = updated
@@ -291,10 +309,12 @@ public final class SystemTranslationCoordinator: ObservableObject {
         }
         let operationGeneration = directionGeneration
         let current = await availabilityProvider(direction)
-        guard isCurrentDirection(
-            direction,
-            generation: operationGeneration
-        ) else {
+        guard
+            isCurrentDirection(
+                direction,
+                generation: operationGeneration
+            )
+        else {
             return false
         }
         availability = current
@@ -304,27 +324,33 @@ public final class SystemTranslationCoordinator: ObservableObject {
         guard current.canSelect else { return false }
         do {
             try await startConfiguration(forceNewSession: true)
-            guard isCurrentDirection(
-                direction,
-                generation: operationGeneration
-            ) else {
+            guard
+                isCurrentDirection(
+                    direction,
+                    generation: operationGeneration
+                )
+            else {
                 return false
             }
             try await driver?.prepareTranslation()
-            guard isCurrentDirection(
-                direction,
-                generation: operationGeneration
-            ) else {
+            guard
+                isCurrentDirection(
+                    direction,
+                    generation: operationGeneration
+                )
+            else {
                 return false
             }
             return true
         } catch SystemTranslationError.sessionUnavailable {
             return false
         } catch {
-            guard isCurrentDirection(
-                direction,
-                generation: operationGeneration
-            ) else {
+            guard
+                isCurrentDirection(
+                    direction,
+                    generation: operationGeneration
+                )
+            else {
                 return false
             }
             availability = .failed(error.localizedDescription)

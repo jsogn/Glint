@@ -31,7 +31,7 @@ struct GlintMLXProbe {
             ?? "llm-qwen3-1.7b"
         let target =
             ProcessInfo.processInfo.environment["GLINT_MLX_TARGET"]
-                .flatMap(TranslationTarget.init(rawValue:))
+            .flatMap(TranslationTarget.init(rawValue:))
             ?? .english
         let engine = MLXTranslationEngine(
             modelDirectory: directory,
