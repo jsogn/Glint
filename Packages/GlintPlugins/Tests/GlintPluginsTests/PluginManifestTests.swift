@@ -2,6 +2,28 @@ import XCTest
 @testable import GlintPlugins
 
 final class PluginManifestTests: XCTestCase {
+    func testLegacyTranslationManifestDefaultsToEnglish() throws {
+        let manifest = try decodeTranslationManifest(
+            translationTargetsJSON: nil
+        )
+
+        XCTAssertEqual(
+            manifest.supportedTranslationTargets,
+            [.english]
+        )
+    }
+
+    func testTranslationTargetsRoundTrip() throws {
+        let manifest = try decodeTranslationManifest(
+            translationTargetsJSON: #"["en", "ja"]"#
+        )
+
+        XCTAssertEqual(
+            manifest.supportedTranslationTargets,
+            [.english, .japanese]
+        )
+    }
+
     func testManifestDecoding() throws {
         let json = """
             {
@@ -50,5 +72,33 @@ final class PluginManifestTests: XCTestCase {
         )
         XCTAssertFalse(PluginVersion.isNewer("2.0.0-beta.2", than: "2.0.0"))
         XCTAssertTrue(PluginVersion.isNewer("2026.10", than: "2026.9"))
+    }
+
+    private func decodeTranslationManifest(
+        translationTargetsJSON: String?
+    ) throws -> PluginManifest {
+        let targets =
+            translationTargetsJSON.map {
+                #","translationTargets":\#($0)"#
+            } ?? ""
+        let json = """
+            {
+              "id": "llm-test",
+              "type": "translation",
+              "name": "Test Model",
+              "version": "1.0",
+              "runtime": "mlx",
+              "sizeBytes": 1,
+              "sha256": "test",
+              "url": "https://example.invalid/model",
+              "license": "MIT",
+              "minRAMBytes": 0,
+              "source": "catalog"\(targets)
+            }
+            """
+        return try JSONDecoder().decode(
+            PluginManifest.self,
+            from: Data(json.utf8)
+        )
     }
 }

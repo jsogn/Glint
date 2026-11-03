@@ -512,13 +512,23 @@ final class CedictDictionaryTests: XCTestCase {
 }
 
 private struct NoTranslation: TranslationEngine {
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }
 
 private struct NoDictionary: DictionaryEngine {
-    func lookup(_ candidate: Candidate) async throws -> TranslationResult? {
+    func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         nil
     }
 }
@@ -526,7 +536,15 @@ private struct NoDictionary: DictionaryEngine {
 private struct FixedTranslation: TranslationEngine {
     let text: String
 
-    func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         TranslationResult(text: text)
     }
 }

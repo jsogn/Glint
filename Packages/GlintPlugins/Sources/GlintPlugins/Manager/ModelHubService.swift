@@ -464,7 +464,8 @@ public actor ModelHubService {
                 promptProfile: inferredPromptProfile(
                     for: snapshot.repository,
                     baseModels: snapshot.baseModels
-                )
+                ),
+                translationTargets: [.english]
             )
         return PluginManifest(
             id: identifier.id,
@@ -490,7 +491,8 @@ public actor ModelHubService {
                     baseModels: snapshot.baseModels
                 ),
                 installed: identifier.promptProfile
-            )
+            ),
+            translationTargets: [.english]
         )
     }
 

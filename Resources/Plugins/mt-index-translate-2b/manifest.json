@@ -11,5 +11,6 @@
   "minRAMBytes": 6442450944,
   "summary": "速度较快、表达自然，适合更看重翻译质量的场景。",
   "revision": "b69878e8e8de7a0010e4bd00bca9ad4e8e6280da",
+  "translationTargets": ["en"],
   "source": "catalog"
 }
