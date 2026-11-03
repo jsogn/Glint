@@ -46,19 +46,28 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
     private var translateFn: TranslateFn?
     private var freeString: FreeStringFn?
     private var destroy: DestroyFn?
+    private let direction: TranslationDirection
     private(set) var lastError: String?
 
-    public convenience init?() {
+    public convenience init?(
+        direction: TranslationDirection =
+            .simplifiedChineseToEnglish
+    ) {
         guard let modelURL = Self.locateInstalledModel() else {
             return nil
         }
-        try? self.init(modelDirectory: modelURL)
+        try? self.init(
+            direction: direction,
+            modelDirectory: modelURL
+        )
     }
 
     public init(
+        direction: TranslationDirection,
         modelDirectory: URL,
         libraryURL: URL? = nil
     ) throws {
+        self.direction = direction
         guard FileManager.default.fileExists(atPath: modelDirectory.path) else {
             throw CTranslate2EngineError.modelNotFound(modelDirectory.path)
         }
@@ -125,9 +134,22 @@ public final class CTranslate2Engine: TranslationEngine, @unchecked Sendable {
         }
     }
 
-    public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    public func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        self.direction == direction
+    }
+
+    public func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         try Task.checkCancellation()
-        let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard request.direction == direction else {
+            throw GlintError.engineUnavailable
+        }
+        let text = request.candidate.text.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
         guard !text.isEmpty else { return nil }
 
         return lock.withLock {

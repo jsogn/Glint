@@ -26,20 +26,28 @@ public enum TranslationAdapterMode: String, Codable, Sendable {
     case systemInstruction = "system-instruction"
 }
 
-public enum ResolvedTranslationModel: Sendable, Equatable {
-    case mlx(
-        modelID: String,
-        directory: URL,
-        promptProfile: TranslationPromptProfile
-    )
-    case ctranslate2(modelID: String, directory: URL)
+public struct ResolvedTranslationModel:
+    Sendable, Equatable
+{
+    public enum Storage: Sendable, Equatable {
+        case mlx(
+            directory: URL,
+            promptProfile: TranslationPromptProfile
+        )
+        case ctranslate2(directory: URL)
+    }
 
-    public var modelID: String {
-        switch self {
-        case let .mlx(modelID, _, _):
-            modelID
-        case let .ctranslate2(modelID, _):
-            modelID
-        }
+    public let modelID: String
+    public let storage: Storage
+    public let supportedDirections: Set<TranslationDirection>
+
+    public init(
+        modelID: String,
+        storage: Storage,
+        supportedDirections: Set<TranslationDirection>
+    ) {
+        self.modelID = modelID
+        self.storage = storage
+        self.supportedDirections = supportedDirections
     }
 }

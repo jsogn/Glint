@@ -1,118 +1,116 @@
 import Foundation
 import GlintCore
 
-/// Resolves the selected model into a concrete local runtime.
+/// Resolves an explicitly selected model into a concrete local runtime.
 public actor TranslationRuntime: TranslationEngine {
     public typealias ModelResolver =
-        @Sendable (_ modelID: String) async -> ResolvedTranslationModel?
+        @Sendable (_ modelID: String) async ->
+            ResolvedTranslationModel?
 
-    private let defaults: UserDefaults
-    private let modelResolver: ModelResolver
     private let systemEngine: (any TranslationEngine)?
+    private let modelResolver: ModelResolver
     private var activeModel: ResolvedTranslationModel?
     private var activeSystemModelID: String?
     private var activeEngine: (any TranslationEngine)?
-    private var failedSelectedModelID: String?
+    private(set) var activeDirection: TranslationDirection?
     private(set) var lastError: String?
 
     public init(
-        defaults: UserDefaults = .standard,
         systemEngine: (any TranslationEngine)? = nil,
         modelResolver: @escaping ModelResolver
     ) {
-        self.defaults = defaults
         self.systemEngine = systemEngine
         self.modelResolver = modelResolver
     }
 
-    public var selectedModelID: String {
-        TranslationModelSelection.selected(in: defaults)
-    }
-
-    public func prepareSelectedModel() async {
-        _ = await prepare(modelID: selectedModelID)
-    }
-
     @discardableResult
-    public func prepare(modelID: String) async -> String? {
-        let error = await load(modelID: modelID)
-        if error != nil {
-            failedSelectedModelID = modelID
-        } else {
-            failedSelectedModelID = nil
-        }
-        return error
-    }
-
-    private func load(modelID: String) async -> String? {
-        if TranslationModelSelection.isSystemTranslation(modelID) {
-            activeModel = nil
-            activeSystemModelID = nil
-            activeEngine = nil
-            guard let systemEngine else {
-                lastError = "系统翻译不可用"
+    public func prepare(
+        modelID: String,
+        direction: TranslationDirection
+    ) async -> String? {
+        if modelID == SystemTranslationModel.appleTranslationID {
+            guard let systemEngine,
+                await systemEngine.supports(direction)
+            else {
+                clearActiveRuntime()
+                lastError = "系统翻译不支持当前方向"
                 return lastError
             }
-            activeSystemModelID = modelID
             activeEngine = systemEngine
+            activeDirection = direction
+            activeSystemModelID = modelID
+            activeModel = nil
             lastError = nil
             return nil
         }
+
         guard let descriptor = await modelResolver(modelID) else {
-            activeModel = nil
-            activeSystemModelID = nil
-            activeEngine = nil
+            clearActiveRuntime()
             lastError = "未找到所选翻译模型"
+            return lastError
+        }
+        guard descriptor.supportedDirections.contains(direction) else {
+            clearActiveRuntime()
+            lastError = "当前模型不支持目标语言"
             return lastError
         }
 
         // Release the previous multi-gigabyte container before loading a new one.
-        activeEngine = nil
-        activeModel = nil
-        activeSystemModelID = nil
+        clearActiveRuntime()
         do {
-            let engine = try makeEngine(for: descriptor)
-            if let mlx = engine as? MLXTranslationEngine {
-                try await mlx.prepareForTranslation()
-                try? await mlx.warmUp()
-            }
+            let engine = try makeEngine(
+                for: descriptor,
+                direction: direction
+            )
             activeModel = descriptor
+            activeDirection = direction
             activeEngine = engine
             lastError = nil
+            return nil
         } catch {
-            activeModel = nil
-            activeEngine = nil
+            clearActiveRuntime()
             lastError = error.localizedDescription
+            return lastError
         }
-        return lastError
+    }
+
+    public func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        if let activeEngine,
+            activeDirection == direction
+        {
+            return await activeEngine.supports(direction)
+        }
+        if let systemEngine,
+            await systemEngine.supports(direction)
+        {
+            return true
+        }
+        return false
     }
 
     public func releaseResources(for modelID: String) {
         if activeSystemModelID == modelID {
-            activeEngine = nil
-            activeSystemModelID = nil
+            clearActiveRuntime()
             lastError = nil
             return
         }
         guard activeModel?.modelID == modelID else { return }
-        activeEngine = nil
-        activeModel = nil
+        clearActiveRuntime()
         lastError = nil
     }
 
-    public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    public func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
         try Task.checkCancellation()
-        let activeModelID =
-            activeSystemModelID ?? activeModel?.modelID
-        if activeModelID != selectedModelID,
-            failedSelectedModelID != selectedModelID
-        {
-            await prepareSelectedModel()
-        }
 
-        if let activeEngine {
+        if activeDirection == request.direction,
+            let activeEngine
+        {
             do {
-                if let result = try await activeEngine.translate(candidate) {
+                if let result = try await activeEngine.translate(request) {
                     lastError = nil
                     return result
                 }
@@ -128,21 +126,35 @@ public actor TranslationRuntime: TranslationEngine {
                 userInfo: [NSLocalizedDescriptionKey: lastError]
             )
         }
+        guard activeDirection == request.direction else {
+            throw GlintError.engineUnavailable
+        }
         throw GlintError.engineUnavailable
     }
 
+    private func clearActiveRuntime() {
+        activeEngine = nil
+        activeModel = nil
+        activeSystemModelID = nil
+        activeDirection = nil
+    }
+
     private func makeEngine(
-        for model: ResolvedTranslationModel
+        for model: ResolvedTranslationModel,
+        direction: TranslationDirection
     ) throws -> any TranslationEngine {
-        switch model {
-        case let .mlx(modelID, directory, promptProfile):
+        switch model.storage {
+        case let .mlx(directory, promptProfile):
             return MLXTranslationEngine(
                 modelDirectory: directory,
-                modelID: modelID,
+                modelID: model.modelID,
                 promptProfile: promptProfile
             )
-        case let .ctranslate2(_, directory):
-            return try CTranslate2Engine(modelDirectory: directory)
+        case let .ctranslate2(directory):
+            return try CTranslate2Engine(
+                direction: direction,
+                modelDirectory: directory
+            )
         }
     }
 }

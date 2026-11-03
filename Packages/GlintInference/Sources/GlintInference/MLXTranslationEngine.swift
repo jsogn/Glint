@@ -276,7 +276,24 @@ public actor MLXTranslationEngine: TranslationEngine {
         return container
     }
 
-    public func translate(_ candidate: Candidate) async throws -> TranslationResult? {
+    public func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        direction.target == .english
+    }
+
+    public func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        guard request.direction.target == .english else {
+            return nil
+        }
+        return try await translateCandidate(request.candidate)
+    }
+
+    private func translateCandidate(
+        _ candidate: Candidate
+    ) async throws -> TranslationResult? {
         try Task.checkCancellation()
         let input = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty else { return nil }
@@ -312,7 +329,7 @@ public actor MLXTranslationEngine: TranslationEngine {
         try Task.checkCancellation()
         guard !candidates.isEmpty else { return [] }
         guard candidates.count > 1 else {
-            return [try await translate(candidates[0])]
+            return [try await translateCandidate(candidates[0])]
         }
         let inputs = candidates.compactMap {
             let text = $0.text.trimmingCharacters(
