@@ -1,4 +1,5 @@
 import AVFAudio
+import GlintCore
 
 @MainActor
 protocol TranslationSpeechSynthesizing: AnyObject {
@@ -49,6 +50,7 @@ public final class TranslationSpeechController {
 
     public func speak(
         _ text: String,
+        target: TranslationTarget = .english,
         accent: TranslationSpeechAccent,
         rate: TranslationSpeechRate = .standard,
         source: TranslationSpeechSource = .manual
@@ -60,12 +62,17 @@ public final class TranslationSpeechController {
         }
         activeSource = nil
         let utterance = AVSpeechUtterance(string: trimmed)
-        let languageCode = accent.languageCode(
-            preferredLanguages: preferredLanguages()
-        )
+        let languageCode =
+            target == .english
+            ? accent.languageCode(
+                preferredLanguages: preferredLanguages()
+            )
+            : "ja-JP"
         let voice =
             voiceForLanguage(languageCode)
-            ?? (accent == .system && languageCode != "en-US"
+            ?? (target == .english
+                && accent == .system
+                && languageCode != "en-US"
                 ? voiceForLanguage("en-US")
                 : nil)
         guard let voice else {

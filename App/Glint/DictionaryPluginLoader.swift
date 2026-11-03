@@ -25,8 +25,10 @@ actor PluginDictionaryRouter: DictionaryEngine, PartOfSpeechProviding {
         ecdictRanker = configuration.ecdictRanker
     }
 
-    func lookup(_ candidate: Candidate) async -> TranslationResult? {
-        await router.lookup(candidate)
+    func lookup(
+        _ request: TranslationRequest
+    ) async -> TranslationResult? {
+        await router.lookup(request)
     }
 
     func partsOfSpeech(forEnglish word: String) async -> [PartOfSpeech] {

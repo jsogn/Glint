@@ -90,6 +90,45 @@ final class TranslationSpeechTests: XCTestCase {
         )
     }
 
+    func testJapaneseUsesJapaneseVoiceAndDoesNotFallBackToEnglish() {
+        let synthesizer = FakeTranslationSpeechSynthesizer()
+        var requestedLanguages: [String] = []
+        let controller = TranslationSpeechController(
+            synthesizer: synthesizer,
+            voiceForLanguage: { language in
+                requestedLanguages.append(language)
+                return language == "ja-JP"
+                    ? AVSpeechSynthesisVoice(language: "ja-JP")
+                    : nil
+            }
+        )
+
+        controller.speak(
+            "学生",
+            target: .japanese,
+            accent: .british
+        )
+
+        XCTAssertEqual(requestedLanguages, ["ja-JP"])
+        XCTAssertEqual(synthesizer.utterances.count, 1)
+    }
+
+    func testMissingJapaneseVoiceDoesNotUseEnglishFallback() {
+        let synthesizer = FakeTranslationSpeechSynthesizer()
+        let controller = TranslationSpeechController(
+            synthesizer: synthesizer,
+            voiceForLanguage: { _ in nil }
+        )
+
+        controller.speak(
+            "学生",
+            target: .japanese,
+            accent: .system
+        )
+
+        XCTAssertTrue(synthesizer.utterances.isEmpty)
+    }
+
     func testBritishAccentUsesGBVoice() {
         let synthesizer = FakeTranslationSpeechSynthesizer()
         var requestedLanguages: [String] = []

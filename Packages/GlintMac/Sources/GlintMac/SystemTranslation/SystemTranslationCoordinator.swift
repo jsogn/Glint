@@ -83,6 +83,17 @@ public final class SystemTranslationCoordinator: ObservableObject {
         )
     }
 
+    public convenience init(
+        direction: TranslationDirection
+    ) {
+        self.init(
+            direction: direction,
+            availabilityProvider: { direction in
+                await Self.queryAvailability(for: direction)
+            }
+        )
+    }
+
     init(
         direction: TranslationDirection =
             .simplifiedChineseToEnglish,

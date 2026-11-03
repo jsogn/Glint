@@ -284,7 +284,7 @@ private extension SystemTranslationSetupState {
     var detail: String {
         switch self {
         case .installationRequired:
-            "安装中文到英文语言包后，Apple 翻译才能处理短句。"
+            "安装当前目标语言的 Apple 翻译语言包后，才能处理短句。"
         case .installationIncomplete:
             "你可以继续安装；如果系统仍在下载，完成后会自动更新。"
         case .installing:
@@ -292,7 +292,7 @@ private extension SystemTranslationSetupState {
         case .failed(let message):
             message
         case .unsupported:
-            "仍可使用词典或其他本地翻译模型。"
+            "仍可选择其他已安装的本地翻译模型。"
         }
     }
 

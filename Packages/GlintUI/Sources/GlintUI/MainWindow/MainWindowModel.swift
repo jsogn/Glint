@@ -364,13 +364,16 @@ public final class MainWindowModel {
         }
         isChangingTranslationTarget = true
         translationReadiness = .preparing(target)
+        translationTarget = target
+        activeModelID = translationSelectionStore.selectedModelID(
+            for: target
+        )
         defer { isChangingTranslationTarget = false }
 
         let readiness = await changeTranslationTargetAction(target)
         translationReadiness = readiness
         switch readiness {
         case .preparing, .ready, .needsSetup, .failed, .unsupported:
-            translationTarget = target
             activeModelID = translationSelectionStore.selectedModelID(
                 for: target
             )
@@ -378,6 +381,12 @@ public final class MainWindowModel {
         case .idle, .superseded:
             break
         }
+    }
+
+    public func updateTranslationReadiness(
+        _ readiness: TranslationReadiness
+    ) {
+        translationReadiness = readiness
     }
 
     public func setTranslationModel(
@@ -1187,35 +1196,47 @@ public final class MainWindowModel {
                     )
                     return
                 }
-                activeModelID = manifest.id
-                persistActiveModelID()
-                translationModelStatusText = "正在加载本地模型…"
-                translationModelStatusIsError = false
-                translationModelStatusModelID = manifest.id
+                if Self.supports(
+                    manifest,
+                    target: translationTarget
+                ) {
+                    translationModelStatusText = "正在验证本地模型…"
+                    translationModelStatusIsError = false
+                    translationModelStatusModelID = manifest.id
 
-                let activationError =
-                    await activateTranslationModelAction(manifest.id)
-                if Task.isCancelled {
-                    _ = await recoverFromLocalModelFailure(
-                        manifest: manifest,
-                        previousModelID: previousModelID,
-                        hadPendingUpgrade: hadPendingUpgrade,
-                        error: "导入已取消"
-                    )
-                    return
-                }
-                if let activationError {
-                    let message = await recoverFromLocalModelFailure(
-                        manifest: manifest,
-                        previousModelID: previousModelID,
-                        hadPendingUpgrade: hadPendingUpgrade,
-                        error: activationError
-                    )
-                    localImportError = message
-                    translationModelStatusText = message
-                    translationModelStatusIsError = true
-                    translationModelStatusModelID = previousModelID
-                    return
+                    let activationError =
+                        await activateTranslationModelAction(manifest.id)
+                    if Task.isCancelled {
+                        _ = await recoverFromLocalModelFailure(
+                            manifest: manifest,
+                            previousModelID: previousModelID,
+                            hadPendingUpgrade: hadPendingUpgrade,
+                            error: "导入已取消"
+                        )
+                        return
+                    }
+                    if let activationError {
+                        let message = await recoverFromLocalModelFailure(
+                            manifest: manifest,
+                            previousModelID: previousModelID,
+                            hadPendingUpgrade: hadPendingUpgrade,
+                            error: activationError
+                        )
+                        localImportError = message
+                        translationModelStatusText = message
+                        translationModelStatusIsError = true
+                        translationModelStatusModelID = previousModelID
+                        return
+                    }
+                    await releaseTranslationModelAction(manifest.id)
+                    if let restoreError =
+                        await activateTranslationModelAction(
+                            previousModelID
+                        )
+                    {
+                        catalogError =
+                            "模型已安装，但恢复原模型失败：\(restoreError)"
+                    }
                 }
 
                 do {
@@ -1342,6 +1363,10 @@ public final class MainWindowModel {
                 && activeModelID == plugin.id,
             shouldValidateTranslation:
                 plugin.type == .translation
+                && Self.supports(
+                    plugin,
+                    target: translationTarget
+                )
                 && (activeModelID == plugin.id
                     || modelMarketInstallPluginID == plugin.id)
         )

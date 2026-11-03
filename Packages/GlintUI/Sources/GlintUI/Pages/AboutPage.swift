@@ -37,7 +37,7 @@ struct AboutPage: View {
                         Text("Glint")
                             .font(.title2.weight(.semibold))
 
-                        Text("输入中文时，在候选旁查看对应的英文翻译。")
+                        Text("输入中文时，在候选旁查看对应的译文。")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
