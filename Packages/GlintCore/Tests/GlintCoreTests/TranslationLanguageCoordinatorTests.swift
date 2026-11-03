@@ -76,14 +76,16 @@ final class TranslationLanguageCoordinatorTests: XCTestCase {
     {
         let harness = CoordinatorHarness()
         harness.system.availabilityValue = .installed
-        harness.system.prepareDelay = .milliseconds(30)
+        harness.system.delayedPrepareDirection =
+            .simplifiedChineseToJapanese
         harness.wasMonitoring = true
 
         let switchTask = Task {
             await harness.coordinator.switchTarget(to: .japanese)
         }
-        try await Task.sleep(for: .milliseconds(5))
+        await harness.system.waitUntilDelayedPrepareStarts()
         harness.coordinator.cancelPendingResume()
+        harness.system.releaseDelayedPrepare()
 
         let readiness = await switchTask.value
 
@@ -96,19 +98,21 @@ final class TranslationLanguageCoordinatorTests: XCTestCase {
     {
         let harness = CoordinatorHarness()
         harness.system.availabilityValue = .installed
-        harness.system.prepareDelay = .milliseconds(30)
+        harness.system.delayedPrepareDirection =
+            .simplifiedChineseToJapanese
         harness.wasMonitoring = true
 
         let firstSwitch = Task {
             await harness.coordinator.switchTarget(to: .japanese)
         }
-        try await Task.sleep(for: .milliseconds(5))
+        await harness.system.waitUntilDelayedPrepareStarts()
         let secondSwitch = Task {
             await harness.coordinator.switchTarget(to: .english)
         }
 
-        let firstReadiness = await firstSwitch.value
         let secondReadiness = await secondSwitch.value
+        harness.system.releaseDelayedPrepare()
+        let firstReadiness = await firstSwitch.value
 
         XCTAssertEqual(firstReadiness, .superseded)
         XCTAssertEqual(secondReadiness, .ready(.english))
@@ -182,18 +186,20 @@ final class TranslationLanguageCoordinatorTests: XCTestCase {
     {
         let harness = CoordinatorHarness()
         harness.system.availabilityValue = .installed
-        harness.system.prepareDelay = .milliseconds(30)
+        harness.system.delayedPrepareDirection =
+            .simplifiedChineseToEnglish
 
         let startupPreparation = Task {
             await harness.coordinator.prepareCurrentConfiguration()
         }
-        try await Task.sleep(for: .milliseconds(5))
+        await harness.system.waitUntilDelayedPrepareStarts()
         let targetSwitch = Task {
             await harness.coordinator.switchTarget(to: .japanese)
         }
 
-        let startupReadiness = await startupPreparation.value
         let switchReadiness = await targetSwitch.value
+        harness.system.releaseDelayedPrepare()
+        let startupReadiness = await startupPreparation.value
 
         XCTAssertEqual(startupReadiness, .superseded)
         XCTAssertEqual(switchReadiness, .ready(.japanese))
@@ -293,10 +299,12 @@ private final class StubSystemTranslationProvider:
     SystemTranslationLanguageProviding
 {
     var availabilityValue: SystemTranslationAvailability?
-    var prepareDelay: Duration = .zero
+    var delayedPrepareDirection: TranslationDirection?
     var refreshDirections: [TranslationDirection] = []
     var activeDirection: TranslationDirection?
     var delayedRefreshDirection: TranslationDirection?
+    private var delayedPrepareStarted: CheckedContinuation<Void, Never>?
+    private var delayedPrepareRelease: CheckedContinuation<Void, Never>?
     private var delayedRefreshStarted: CheckedContinuation<Void, Never>?
     private var delayedRefreshRelease: CheckedContinuation<Void, Never>?
 
@@ -323,10 +331,27 @@ private final class StubSystemTranslationProvider:
         for direction: TranslationDirection
     ) async -> Bool {
         activeDirection = direction
-        if prepareDelay > .zero {
-            try? await Task.sleep(for: prepareDelay)
+        if direction == delayedPrepareDirection {
+            delayedPrepareDirection = nil
+            delayedPrepareStarted?.resume()
+            delayedPrepareStarted = nil
+            await withCheckedContinuation {
+                delayedPrepareRelease = $0
+            }
         }
         return availabilityValue?.canSelect == true
+    }
+
+    func waitUntilDelayedPrepareStarts() async {
+        guard delayedPrepareDirection != nil else { return }
+        await withCheckedContinuation {
+            delayedPrepareStarted = $0
+        }
+    }
+
+    func releaseDelayedPrepare() {
+        delayedPrepareRelease?.resume()
+        delayedPrepareRelease = nil
     }
 
     func waitUntilDelayedRefreshStarts() async {
