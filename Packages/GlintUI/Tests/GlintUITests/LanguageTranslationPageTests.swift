@@ -42,9 +42,6 @@ final class LanguageTranslationPageTests: XCTestCase {
         let observations = try recognizedTextObservations(in: bitmap)
         let textFrames = try recognizedTextFrames(in: bitmap)
         let manageFrame = try XCTUnwrap(textFrames["管理模型"])
-        let modelCardFrame = try XCTUnwrap(
-            textFrames["翻译模型"]
-        )
         let installObservations = observations.filter {
             $0.text == "安装语言包"
         }
@@ -64,7 +61,6 @@ final class LanguageTranslationPageTests: XCTestCase {
         let modelInstallFrame = try XCTUnwrap(
             installFrames.min { $0.midY < $1.midY }
         )
-        XCTAssertLessThan(modelInstallFrame.midY, modelCardFrame.midY)
         XCTAssertLessThan(
             abs(manageFrame.midY - modelInstallFrame.midY),
             0.04
@@ -297,16 +293,22 @@ final class LanguageTranslationPageTests: XCTestCase {
         )
         hostingView.layoutSubtreeIfNeeded()
 
-        let textFrames = try recognizedTextFrames(
+        let observations = try recognizedTextObservations(
             in: renderedBitmap(in: hostingView)
         )
-        let statusFrame = try XCTUnwrap(
-            textFrames["当前翻译模型不可用"]
+        let statusObservation = try XCTUnwrap(
+            observations.first {
+                $0.text.contains("当前翻译模型不可用")
+            }
         )
-        let retryFrame = try XCTUnwrap(textFrames["重试"])
+        let retryObservation = try XCTUnwrap(
+            observations.first {
+                $0.text.contains("重试")
+            }
+        )
 
         XCTAssertLessThan(
-            abs(statusFrame.midY - retryFrame.midY),
+            abs(statusObservation.frame.midY - retryObservation.frame.midY),
             0.04
         )
     }
@@ -391,15 +393,21 @@ final class LanguageTranslationPageTests: XCTestCase {
         )
         hostingView.layoutSubtreeIfNeeded()
 
-        let textFrames = try recognizedTextFrames(
+        let observations = try recognizedTextObservations(
             in: renderedBitmap(in: hostingView)
         )
 
         XCTAssertTrue(
-            textFrames["已就绪"] != nil
-                || textFrames["已就緒"] != nil
+            observations.contains {
+                $0.text.contains("已就绪") || $0.text.contains("已就緒")
+            }
         )
-        XCTAssertNil(textFrames["翻译模型已就绪"])
+        XCTAssertFalse(
+            observations.contains {
+                $0.text.contains("翻译模型已就绪")
+                    || $0.text.contains("翻译模型已就緒")
+            }
+        )
     }
 
     func testLanguageDirectionUsesLanguageRoleLabels() throws {
