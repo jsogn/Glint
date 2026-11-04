@@ -11,11 +11,12 @@ final class HUDControllerTests: XCTestCase {
         let (hud, panel, screen) = try makeHUDFixture()
         defer { hud.hide(animated: false) }
 
+        let expectedPanelMinY = screen.visibleFrame.minY + 30 + 32 + 7
         hud.show(
             items: [HUDItem(id: 0, number: 1, text: "Dinner")],
-            near: CGRect(
-                x: screen.visibleFrame.minX + 300,
-                y: screen.frame.maxY - 62,
+            near: quartzRect(
+                screen: screen,
+                minY: screen.visibleFrame.minY + 30,
                 width: 180,
                 height: 32
             ),
@@ -27,12 +28,12 @@ final class HUDControllerTests: XCTestCase {
         )
         await waitUntil {
             panel.isVisible
-                && abs(panel.frame.minY - (62 + 7)) < 0.5
+                && abs(panel.frame.minY - expectedPanelMinY) < 0.5
         }
 
         XCTAssertEqual(
             panel.frame.minY,
-            62 + 7,
+            expectedPanelMinY,
             accuracy: 0.5
         )
     }
@@ -46,9 +47,9 @@ final class HUDControllerTests: XCTestCase {
 
         hud.show(
             items: [HUDItem(id: 0, number: 1, text: "Dinner")],
-            near: CGRect(
-                x: screen.visibleFrame.minX + 300,
-                y: screen.frame.maxY - 52,
+            near: quartzRect(
+                screen: screen,
+                minY: screen.visibleFrame.minY + 20,
                 width: 180,
                 height: 32
             ),
@@ -70,20 +71,20 @@ final class HUDControllerTests: XCTestCase {
         let (hud, panel, screen) = try makeHUDFixture()
         defer { hud.hide(animated: false) }
 
-        let candidateX = screen.visibleFrame.minX + 300
         hud.show(
             items: [HUDItem(id: 0, number: 1, text: "Dinner")],
-            near: CGRect(
-                x: candidateX,
-                y: screen.frame.maxY - 52,
+            near: quartzRect(
+                screen: screen,
+                minY: screen.visibleFrame.minY + 20,
                 width: 180,
                 height: 32
             ),
-            inputCaretRect: CGRect(
-                x: candidateX + 50,
-                y: screen.frame.maxY - 84,
+            inputCaretRect: quartzRect(
+                screen: screen,
+                minY: screen.visibleFrame.minY + 60,
                 width: 0,
-                height: 24
+                height: 24,
+                xOffset: 350
             ),
             position: .automatic,
             spacing: 7,
@@ -100,30 +101,31 @@ final class HUDControllerTests: XCTestCase {
         let (hud, panel, screen) = try makeHUDFixture()
         defer { hud.hide(animated: false) }
 
-        let candidateX = screen.visibleFrame.minX + 300
-        let safeCandidate = CGRect(
-            x: candidateX,
-            y: screen.frame.maxY - 432,
+        let safeCandidate = quartzRect(
+            screen: screen,
+            minY: screen.visibleFrame.minY + 400,
             width: 180,
             height: 32
         )
-        let safeCaret = CGRect(
-            x: candidateX + 50,
-            y: screen.frame.maxY - 324,
+        let safeCaret = quartzRect(
+            screen: screen,
+            minY: screen.visibleFrame.minY + 300,
             width: 0,
-            height: 24
+            height: 24,
+            xOffset: 350
         )
-        let flippedCandidate = CGRect(
-            x: candidateX,
-            y: screen.frame.maxY - 52,
+        let flippedCandidate = quartzRect(
+            screen: screen,
+            minY: screen.visibleFrame.minY + 20,
             width: 180,
             height: 32
         )
-        let flippedCaret = CGRect(
-            x: candidateX + 50,
-            y: screen.frame.maxY - 84,
+        let flippedCaret = quartzRect(
+            screen: screen,
+            minY: screen.visibleFrame.minY + 60,
             width: 0,
-            height: 24
+            height: 24,
+            xOffset: 350
         )
 
         hud.show(
@@ -151,6 +153,21 @@ final class HUDControllerTests: XCTestCase {
         )
         await waitUntil { panel.isVisible }
         XCTAssertTrue(panel.isVisible)
+    }
+
+    private func quartzRect(
+        screen: NSScreen,
+        minY: CGFloat,
+        width: CGFloat,
+        height: CGFloat,
+        xOffset: CGFloat = 300
+    ) -> CGRect {
+        CGRect(
+            x: screen.visibleFrame.minX + xOffset,
+            y: screen.frame.maxY - minY - height,
+            width: width,
+            height: height
+        )
     }
 
     @MainActor

@@ -668,7 +668,9 @@ final class HUDLayoutTests: XCTestCase {
             appearance: .default,
             screenRect: CGRect(
                 x: candidateX,
-                y: screen.frame.maxY - 62,
+                y: screen.frame.maxY
+                    - screen.visibleFrame.minY
+                    - 62,
                 width: 180,
                 height: 32
             ),
@@ -680,7 +682,9 @@ final class HUDLayoutTests: XCTestCase {
         let jitterRequest = roomRequest.updatingLayout(
             screenRect: CGRect(
                 x: candidateX,
-                y: screen.frame.maxY - 54,
+                y: screen.frame.maxY
+                    - screen.visibleFrame.minY
+                    - 54,
                 width: 180,
                 height: 32
             ),
@@ -846,6 +850,29 @@ final class HUDLayoutTests: XCTestCase {
         )
 
         XCTAssertTrue(placement.hidesHUD)
+    }
+
+    func testFallbackClearanceIsRelativeToVisibleFrameBottom() {
+        let visibleFrame = CGRect(
+            x: 0,
+            y: 50,
+            width: 1_440,
+            height: 850
+        )
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 80,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            hidesOnAutomaticFlip: true
+        )
+
+        XCTAssertFalse(placement.hidesHUD)
     }
 
     func testFallbackClearanceKeepsHUDAfterRoomBelowWasStable() {
