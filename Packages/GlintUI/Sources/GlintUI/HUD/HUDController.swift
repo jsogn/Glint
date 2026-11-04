@@ -26,6 +26,9 @@ public final class HUDController {
     private var displayedRevision: UInt64?
     private var currentRequest: HUDPresentationRequest?
     private var pendingLayoutRequest: HUDPresentationRequest?
+    // Keep the active request while hidden so this candidate revision can
+    // reappear if layout changes without waiting for another translation.
+    private var inputProtectionHidden = false
     private var contentPresentationPending = false
     private var entryAnimationIsActive = false
     private var entryAnimationGeneration = 0
@@ -115,7 +118,8 @@ public final class HUDController {
         spacing: Double = 8,
         opacity: Double = 0.8,
         appearance: HUDAppearance = .default,
-        revision: UInt64? = nil
+        revision: UInt64? = nil,
+        hidesOnAutomaticFlip: Bool = false
     ) {
         let request = HUDPresentationRequest(
             revision: revision,
@@ -126,7 +130,8 @@ public final class HUDController {
             inputCaretRect: inputCaretRect,
             position: position,
             spacing: spacing,
-            opacity: opacity
+            opacity: opacity,
+            hidesOnAutomaticFlip: hidesOnAutomaticFlip
         )
         currentRequest = request
         pendingLayoutRequest = nil
@@ -157,7 +162,7 @@ public final class HUDController {
             scheduler.enqueue(updated)
             return
         }
-        guard panel.isVisible else { return }
+        guard panel.isVisible || inputProtectionHidden else { return }
         guard !entryAnimationIsActive else {
             pendingLayoutRequest = updated
             return
@@ -178,6 +183,7 @@ public final class HUDController {
         }
 
         guard let layout = geometryResolver.resolve(request) else {
+            inputProtectionHidden = false
             applyContent(
                 request,
                 textOpacity: 1,
@@ -189,11 +195,20 @@ public final class HUDController {
             displayedRevision = request.revision
             return
         }
-        let update = HUDPresentationScheduler.contentUpdate(
-            displayedRevision: displayedRevision,
-            incomingRevision: request.revision,
-            isVisible: panel.isVisible
-        )
+        guard !layout.hidesHUD else {
+            hideForInputProtection(layout)
+            return
+        }
+        let wasInputProtectionHidden = inputProtectionHidden
+        inputProtectionHidden = false
+        let update =
+            wasInputProtectionHidden
+            ? .entry
+            : HUDPresentationScheduler.contentUpdate(
+                displayedRevision: displayedRevision,
+                incomingRevision: request.revision,
+                isVisible: panel.isVisible
+            )
         if update == .entry {
             presentEntry(layout, reduceMotion: reduceMotion)
         } else {
@@ -203,6 +218,54 @@ public final class HUDController {
                 reduceMotion: reduceMotion
             )
         }
+    }
+
+    private func hideForInputProtection(
+        _ layout: HUDPresentationLayout
+    ) {
+        scheduler.cancelStaleDimming()
+        inputProtectionHidden = true
+        contentPresentationPending = false
+        pendingLayoutRequest = nil
+        displayedRevision = nil
+        panelSize = layout.panelSize
+        applyContent(
+            layout.request,
+            showsOnlySelectedItem: layout.showsOnlySelectedItem,
+            textOpacity: 1,
+            animatesText: false
+        )
+        let reduceMotion =
+            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        guard panel.isVisible, !reduceMotion else {
+            panel.orderOut(nil)
+            panel.alphaValue = 0
+            return
+        }
+        let generation = transitionGeneration
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = Timing.leave
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                self.finishInputProtectionHide(
+                    generation: generation
+                )
+            }
+        }
+    }
+
+    private func finishInputProtectionHide(generation: Int) {
+        guard
+            transitionGeneration == generation,
+            inputProtectionHidden
+        else {
+            return
+        }
+        panel.orderOut(nil)
+        panel.alphaValue = 0
     }
 
     private func presentEntry(
@@ -301,7 +364,11 @@ public final class HUDController {
     private func applyLayoutOnly(
         _ request: HUDPresentationRequest
     ) {
-        guard panel.isVisible else { return }
+        guard panel.isVisible || inputProtectionHidden else { return }
+        if inputProtectionHidden {
+            present(request)
+            return
+        }
         if let targetFrame = geometryResolver.resolveLayoutOnly(
             request,
             panelSize: panelSize
@@ -312,6 +379,10 @@ public final class HUDController {
             return
         }
         guard let layout = geometryResolver.resolve(request) else {
+            return
+        }
+        guard !layout.hidesHUD else {
+            hideForInputProtection(layout)
             return
         }
         panelSize = layout.panelSize
@@ -331,6 +402,7 @@ public final class HUDController {
         scheduler.reset()
         currentRequest = nil
         pendingLayoutRequest = nil
+        inputProtectionHidden = false
         contentPresentationPending = false
         entryAnimationGeneration &+= 1
         entryAnimationIsActive = false
@@ -381,6 +453,7 @@ public final class HUDController {
         displayedRevision = nil
         currentRequest = nil
         pendingLayoutRequest = nil
+        inputProtectionHidden = false
         contentPresentationPending = false
         geometryResolver.reset()
     }

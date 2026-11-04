@@ -60,71 +60,6 @@ struct CandidateScanGate: Sendable {
     }
 }
 
-enum CaretGeometryPolicy {
-    private static let maximumMarkerWidth: CGFloat = 4
-    private static let frameTolerance: CGFloat = 2
-
-    static func shouldReadMarker(
-        rangeBounds: CGRect?,
-        rangeLength: Int
-    ) -> Bool {
-        guard rangeLength == 0 else { return false }
-        guard let rangeBounds else { return true }
-        return !isFinite(rangeBounds) || rangeBounds.height <= 0
-    }
-
-    static func preferred(
-        rangeBounds: CGRect?,
-        markerBounds: CGRect?,
-        elementFrame: CGRect?
-    ) -> CGRect? {
-        if let rangeBounds, isFinite(rangeBounds),
-            rangeBounds.height > 0
-        {
-            return rangeBounds
-        }
-        guard
-            let markerBounds,
-            let elementFrame,
-            isFinite(markerBounds),
-            isFinite(elementFrame),
-            markerBounds.width >= 0,
-            markerBounds.width <= maximumMarkerWidth,
-            markerBounds.height > 0
-        else {
-            return nil
-        }
-        let allowed = elementFrame.insetBy(
-            dx: -frameTolerance,
-            dy: -frameTolerance
-        )
-        guard
-            allowed.contains(
-                CGPoint(
-                    x: markerBounds.minX,
-                    y: markerBounds.midY
-                )
-            ),
-            allowed.contains(
-                CGPoint(
-                    x: markerBounds.maxX,
-                    y: markerBounds.midY
-                )
-            )
-        else {
-            return nil
-        }
-        return markerBounds
-    }
-
-    private static func isFinite(_ rect: CGRect) -> Bool {
-        rect.minX.isFinite
-            && rect.minY.isFinite
-            && rect.width.isFinite
-            && rect.height.isFinite
-    }
-}
-
 enum FocusResolutionPolicy {
     static func resolve(
         direct directSnapshot: FocusSnapshot?,
@@ -202,9 +137,13 @@ public struct FocusMonitor: Sendable {
         let caret =
             hasTextSelection
             ? nil
-            : selectedRange.flatMap {
+            : CaretGeometryPolicy.preferredRange(
+                selectedRange: selectedRange,
+                markedRange: markedRange
+            ).flatMap {
                 Self.caretRect(
                     for: $0,
+                    markedRange: markedRange,
                     in: element,
                     elementFrame: frame
                 )
@@ -349,22 +288,11 @@ public struct FocusMonitor: Sendable {
 
     private static func caretRect(
         for range: NSRange,
+        markedRange: NSRange?,
         in element: AXUIElement,
         elementFrame: CGRect?
     ) -> CGRect? {
-        var cfRange = CFRange(location: range.location, length: range.length)
-        guard let axRange = AXValueCreate(.cfRange, &cfRange) else { return nil }
-        var value: CFTypeRef?
-        let result = AXUIElementCopyParameterizedAttributeValue(
-            element,
-            kAXBoundsForRangeParameterizedAttribute as CFString,
-            axRange,
-            &value
-        )
-        let rangeBounds =
-            result == .success
-            ? AXValueReader.rect(value)
-            : nil
+        let rangeBounds = bounds(for: range, in: element)
         let markerBounds =
             CaretGeometryPolicy.shouldReadMarker(
                 rangeBounds: rangeBounds,
@@ -372,11 +300,51 @@ public struct FocusMonitor: Sendable {
             )
             ? textMarkerBounds(in: element)
             : nil
-        return CaretGeometryPolicy.preferred(
+        if let caret = CaretGeometryPolicy.preferred(
             rangeBounds: rangeBounds,
             markerBounds: markerBounds,
             elementFrame: elementFrame
+        ) {
+            return caret
+        }
+        // Some web and Electron hosts expose marked text but no caret range.
+        // A single-character rectangle provides the input line geometry
+        // without reading or retaining any text content.
+        guard
+            let lastCharacterRange =
+                CaretGeometryPolicy.lastMarkedCharacterRange(
+                    markedRange
+                )
+        else {
+            return nil
+        }
+        return CaretGeometryPolicy.caretFromTextBounds(
+            bounds(for: lastCharacterRange, in: element),
+            elementFrame: elementFrame
         )
+    }
+
+    private static func bounds(
+        for range: NSRange,
+        in element: AXUIElement
+    ) -> CGRect? {
+        var cfRange = CFRange(
+            location: range.location,
+            length: range.length
+        )
+        guard let axRange = AXValueCreate(.cfRange, &cfRange) else {
+            return nil
+        }
+        var value: CFTypeRef?
+        let result = AXUIElementCopyParameterizedAttributeValue(
+            element,
+            kAXBoundsForRangeParameterizedAttribute as CFString,
+            axRange,
+            &value
+        )
+        return result == .success
+            ? AXValueReader.rect(value)
+            : nil
     }
 
     private static func textMarkerBounds(

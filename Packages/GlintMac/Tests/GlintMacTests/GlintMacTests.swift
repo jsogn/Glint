@@ -1683,6 +1683,124 @@ final class GlintMacTests: XCTestCase {
         )
     }
 
+    func testCaretRangeFallsBackToEndOfMarkedText() {
+        XCTAssertEqual(
+            CaretGeometryPolicy.preferredRange(
+                selectedRange: nil,
+                markedRange: NSRange(location: 4, length: 3)
+            ),
+            NSRange(location: 7, length: 0)
+        )
+    }
+
+    func testCaretRangePrefersSelectedRangeOverMarkedText() {
+        XCTAssertEqual(
+            CaretGeometryPolicy.preferredRange(
+                selectedRange: NSRange(location: 5, length: 0),
+                markedRange: NSRange(location: 4, length: 3)
+            ),
+            NSRange(location: 5, length: 0)
+        )
+    }
+
+    func testCaretGeometryFallsBackToLastMarkedCharacter() {
+        XCTAssertEqual(
+            CaretGeometryPolicy.lastMarkedCharacterRange(
+                NSRange(location: 4, length: 3)
+            ),
+            NSRange(location: 6, length: 1)
+        )
+    }
+
+    func testCaretGeometryUsesLastMarkedCharacterBounds() {
+        let elementFrame = CGRect(
+            x: 80,
+            y: 180,
+            width: 300,
+            height: 60
+        )
+
+        XCTAssertEqual(
+            CaretGeometryPolicy.caretFromTextBounds(
+                CGRect(x: 100, y: 200, width: 8, height: 18),
+                elementFrame: elementFrame
+            ),
+            CGRect(x: 108, y: 200, width: 0, height: 18)
+        )
+    }
+
+    func testCaretGeometryRejectsEmptyMarkedCharacterBounds() {
+        XCTAssertNil(
+            CaretGeometryPolicy.caretFromTextBounds(
+                CGRect(x: 100, y: 200, width: 8, height: 0),
+                elementFrame: CGRect(
+                    x: 80,
+                    y: 180,
+                    width: 300,
+                    height: 60
+                )
+            )
+        )
+    }
+
+    func testCaretGeometryRejectsMarkedBoundsCoveringWholeElement() {
+        let elementFrame = CGRect(
+            x: 80,
+            y: 180,
+            width: 300,
+            height: 60
+        )
+
+        XCTAssertNil(
+            CaretGeometryPolicy.caretFromTextBounds(
+                elementFrame,
+                elementFrame: elementFrame
+            )
+        )
+    }
+
+    func testCaretGeometryRejectsMarkedBoundsThatAreTooTall() {
+        XCTAssertNil(
+            CaretGeometryPolicy.caretFromTextBounds(
+                CGRect(x: 100, y: 180, width: 8, height: 50),
+                elementFrame: CGRect(
+                    x: 80,
+                    y: 180,
+                    width: 300,
+                    height: 60
+                )
+            )
+        )
+    }
+
+    func testCaretGeometryRejectsMarkedBoundsThatAreTooWide() {
+        XCTAssertNil(
+            CaretGeometryPolicy.caretFromTextBounds(
+                CGRect(x: 100, y: 200, width: 200, height: 18),
+                elementFrame: CGRect(
+                    x: 80,
+                    y: 180,
+                    width: 300,
+                    height: 60
+                )
+            )
+        )
+    }
+
+    func testCaretGeometryRejectsMarkedBoundsOutsideElement() {
+        XCTAssertNil(
+            CaretGeometryPolicy.caretFromTextBounds(
+                CGRect(x: 20, y: 200, width: 8, height: 18),
+                elementFrame: CGRect(
+                    x: 80,
+                    y: 180,
+                    width: 300,
+                    height: 60
+                )
+            )
+        )
+    }
+
     func testCaretGeometryReadsMarkerWhenRangeBoundsCollapseToOrigin() {
         XCTAssertTrue(
             CaretGeometryPolicy.shouldReadMarker(

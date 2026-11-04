@@ -10,10 +10,15 @@ struct HUDLayoutResult: Equatable {
     let frame: CGRect
     let placesBelow: Bool
     let placementMode: HUDPlacementMode
+    let hidesHUD: Bool
+    let fallbackCandidateHasInputRoomBelow: Bool?
 }
 
 enum HUDLayout {
     private static let directionHysteresis: CGFloat = 3
+    private static let fallbackClearanceHysteresis: CGFloat = 3
+    private static let minimumFallbackInputRowClearance: CGFloat = 24
+    private static let fallbackInputRowClearanceRatio: CGFloat = 0.75
 
     static func placement(
         near candidateRect: CGRect,
@@ -23,7 +28,9 @@ enum HUDLayout {
         spacing: Double,
         horizontalOrigin: CGFloat? = nil,
         inputCaretRect: CGRect? = nil,
-        stablePlacesBelow: Bool? = nil
+        stablePlacesBelow: Bool? = nil,
+        hidesOnAutomaticFlip: Bool = false,
+        stableFallbackCandidateHasInputRoomBelow: Bool? = nil
     ) -> HUDLayoutResult {
         let gap = CGFloat(max(0, spacing))
         let minimumX = visibleFrame.minX
@@ -45,6 +52,17 @@ enum HUDLayout {
         let aboveFits =
             above + panelSize.height
             <= visibleFrame.maxY
+        let automaticFlipProtectionEnabled =
+            hidesOnAutomaticFlip && position == .automatic
+        let fallbackCandidateHasInputRoomBelow =
+            automaticFlipProtectionEnabled && inputCaretRect == nil
+            ? Self.fallbackCandidateHasInputRoomBelow(
+                candidateRect: candidateRect,
+                visibleFrame: visibleFrame,
+                stableValue:
+                    stableFallbackCandidateHasInputRoomBelow
+            )
+            : nil
 
         let desiredPlacesBelow: Bool
         if position == .above {
@@ -125,7 +143,19 @@ enum HUDLayout {
                 height: panelSize.height
             ),
             placesBelow: placesBelow,
-            placementMode: mode
+            placementMode: mode,
+            // Only protect a forced upward flip. When the candidate bar is
+            // already above the input row, its upper side is the safe side.
+            hidesHUD:
+                automaticFlipProtectionEnabled
+                && desiredPlacesBelow
+                && !placesBelow
+                && (
+                    inputCaretRect != nil
+                    || fallbackCandidateHasInputRoomBelow == false
+                ),
+            fallbackCandidateHasInputRoomBelow:
+                fallbackCandidateHasInputRoomBelow
         )
     }
 
@@ -135,5 +165,32 @@ enum HUDLayout {
     ) -> Bool {
         frame.minY < caret.maxY
             && frame.maxY > caret.minY
+    }
+
+    /// Web and accessibility hosts often omit caret geometry. When the
+    /// candidate bar has visible room below it, the bar likely already
+    /// flipped above the input row; when it is against the screen bottom,
+    /// an upward HUD flip would have no safe input row to clear.
+    private static func fallbackCandidateHasInputRoomBelow(
+        candidateRect: CGRect,
+        visibleFrame: CGRect,
+        stableValue: Bool?
+    ) -> Bool {
+        let threshold = max(
+            minimumFallbackInputRowClearance,
+            candidateRect.height
+                * fallbackInputRowClearanceRatio
+        )
+        let clearance = candidateRect.minY - visibleFrame.minY
+        switch stableValue {
+        case true:
+            return clearance
+                >= threshold - fallbackClearanceHysteresis
+        case false:
+            return clearance
+                > threshold + fallbackClearanceHysteresis
+        case nil:
+            return clearance >= threshold
+        }
     }
 }

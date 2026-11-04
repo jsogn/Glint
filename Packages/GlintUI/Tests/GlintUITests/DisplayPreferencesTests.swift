@@ -91,6 +91,21 @@ final class DisplayPreferencesTests: XCTestCase {
     }
 
     @MainActor
+    func testAutomaticFlipProtectionDefaultsOffAndPersists() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = DisplayPreferences(defaults: defaults)
+        XCTAssertFalse(preferences.hidesHUDOnAutomaticFlip)
+
+        preferences.hidesHUDOnAutomaticFlip = true
+
+        let reloaded = DisplayPreferences(defaults: defaults)
+        XCTAssertTrue(reloaded.hidesHUDOnAutomaticFlip)
+    }
+
+    @MainActor
     func testLegacyBelowDisplayPositionFallsBackToAutomatic() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

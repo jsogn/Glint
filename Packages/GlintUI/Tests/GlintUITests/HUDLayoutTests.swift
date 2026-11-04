@@ -423,7 +423,8 @@ final class HUDLayoutTests: XCTestCase {
             inputCaretRect: CGRect(x: 350, y: 60, width: 0, height: 24),
             position: .above,
             spacing: 7,
-            opacity: 0.8
+            opacity: 0.8,
+            hidesOnAutomaticFlip: true
         )
         let updated = original.updatingLayout(
             screenRect: CGRect(x: 500, y: 20, width: 200, height: 32),
@@ -437,6 +438,10 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(updated.position, .above)
         XCTAssertEqual(updated.spacing, original.spacing)
         XCTAssertEqual(updated.opacity, original.opacity)
+        XCTAssertEqual(
+            updated.hidesOnAutomaticFlip,
+            original.hidesOnAutomaticFlip
+        )
         XCTAssertEqual(
             updated.screenRect,
             CGRect(x: 500, y: 20, width: 200, height: 32)
@@ -603,6 +608,97 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(layout.targetFrame.minX, candidateX, accuracy: 0.001)
     }
 
+    @MainActor
+    func testResolverPropagatesAutomaticFlipProtection() throws {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let candidateX = screen.visibleFrame.minX + 300
+        let request = HUDPresentationRequest(
+            revision: 1,
+            items: [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "Dinner",
+                    isSelected: true
+                )
+            ],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: CGRect(
+                x: candidateX,
+                y: screen.frame.maxY - 52,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: CGRect(
+                x: candidateX + 50,
+                y: screen.frame.maxY - 84,
+                width: 0,
+                height: 24
+            ),
+            spacing: 7,
+            opacity: 0.8,
+            hidesOnAutomaticFlip: true
+        )
+        var resolver = HUDGeometryResolver()
+
+        let layout = try XCTUnwrap(resolver.resolve(request))
+
+        XCTAssertTrue(layout.hidesHUD)
+    }
+
+    @MainActor
+    func testResolverKeepsFallbackInputRoomAcrossSmallMovement() throws {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let candidateX = screen.visibleFrame.minX + 300
+        let item = HUDItem(id: 0, number: 1, text: "Dinner")
+        var resolver = HUDGeometryResolver()
+        let roomRequest = HUDPresentationRequest(
+            revision: 1,
+            items: [item],
+            layoutStyle: .candidateRow,
+            appearance: .default,
+            screenRect: CGRect(
+                x: candidateX,
+                y: screen.frame.maxY - 62,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: nil,
+            spacing: 7,
+            opacity: 0.8,
+            hidesOnAutomaticFlip: true
+        )
+        let jitterRequest = roomRequest.updatingLayout(
+            screenRect: CGRect(
+                x: candidateX,
+                y: screen.frame.maxY - 54,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: nil
+        )
+
+        XCTAssertFalse(
+            try XCTUnwrap(
+                resolver.resolve(roomRequest)
+            ).hidesHUD
+        )
+        XCTAssertFalse(
+            try XCTUnwrap(
+                resolver.resolve(jitterRequest)
+            ).hidesHUD
+        )
+    }
+
     func testAutomaticPlacementFlipsAboveWhenBelowDoesNotFit() {
         let nearBottom = CGRect(
             x: 300,
@@ -623,6 +719,169 @@ final class HUDLayoutTests: XCTestCase {
             7,
             accuracy: 0.001
         )
+    }
+
+    func testAutomaticFlipProtectionHidesHUDWhenBelowDoesNotFit() {
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 20,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 350,
+                y: 60,
+                width: 0,
+                height: 24
+            ),
+            hidesOnAutomaticFlip: true
+        )
+
+        XCTAssertTrue(placement.hidesHUD)
+    }
+
+    func testAutomaticFlipProtectionKeepsHUDWhenPreferredSideFits() {
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 300,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 350,
+                y: 360,
+                width: 0,
+                height: 24
+            ),
+            hidesOnAutomaticFlip: true
+        )
+
+        XCTAssertFalse(placement.hidesHUD)
+    }
+
+    func testAutomaticFlipProtectionKeepsHUDWhenCandidateBarAlreadyFlipped() {
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 500,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 350,
+                y: 450,
+                width: 0,
+                height: 24
+            ),
+            hidesOnAutomaticFlip: true
+        )
+
+        XCTAssertFalse(placement.hidesHUD)
+    }
+
+    func testAutomaticFlipProtectionDoesNotApplyToExplicitAbovePosition() {
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 20,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .above,
+            spacing: 7,
+            inputCaretRect: CGRect(
+                x: 350,
+                y: 60,
+                width: 0,
+                height: 24
+            ),
+            hidesOnAutomaticFlip: true
+        )
+
+        XCTAssertFalse(placement.hidesHUD)
+    }
+
+    func testAutomaticFlipProtectionKeepsHUDWhenCandidateHasRoomBelow() {
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 30,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            hidesOnAutomaticFlip: true
+        )
+
+        XCTAssertFalse(placement.hidesHUD)
+    }
+
+    func testAutomaticFlipProtectionHidesHUDWhenCandidateHasNoRoomBelow() {
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 20,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            hidesOnAutomaticFlip: true
+        )
+
+        XCTAssertTrue(placement.hidesHUD)
+    }
+
+    func testFallbackClearanceKeepsHUDAfterRoomBelowWasStable() {
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 22,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            hidesOnAutomaticFlip: true,
+            stableFallbackCandidateHasInputRoomBelow: true
+        )
+
+        XCTAssertFalse(placement.hidesHUD)
+    }
+
+    func testFallbackClearanceHidesHUDAfterNoRoomBelowWasStable() {
+        let placement = HUDLayout.placement(
+            near: CGRect(
+                x: 300,
+                y: 26,
+                width: 180,
+                height: 32
+            ),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            hidesOnAutomaticFlip: true,
+            stableFallbackCandidateHasInputRoomBelow: false
+        )
+
+        XCTAssertTrue(placement.hidesHUD)
     }
 
     func testAutomaticPlacementFallsBelowWhenAboveDoesNotFit() {
@@ -819,6 +1078,47 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertNil(
             resolver.resolveLayoutOnly(
                 narrowRemainingSpaceRequest,
+                panelSize: NSSize(width: 440, height: 36)
+            )
+        )
+    }
+
+    @MainActor
+    func testGeometryOnlyResolutionRequestsFullLayoutWhenProtected()
+        throws
+    {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let candidateX = screen.visibleFrame.minX + 300
+        let request = HUDPresentationRequest(
+            revision: 1,
+            items: [HUDItem(id: 0, number: 1, text: "Dinner")],
+            layoutStyle: .candidateRow,
+            appearance: .default,
+            screenRect: CGRect(
+                x: candidateX,
+                y: screen.frame.maxY - 52,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: CGRect(
+                x: candidateX + 50,
+                y: screen.frame.maxY - 84,
+                width: 0,
+                height: 24
+            ),
+            spacing: 7,
+            opacity: 0.8,
+            hidesOnAutomaticFlip: true
+        )
+        var resolver = HUDGeometryResolver()
+
+        XCTAssertNil(
+            resolver.resolveLayoutOnly(
+                request,
                 panelSize: NSSize(width: 440, height: 36)
             )
         )

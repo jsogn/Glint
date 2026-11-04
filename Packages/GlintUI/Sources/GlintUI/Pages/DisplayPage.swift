@@ -111,6 +111,32 @@ struct DisplayPage: View {
                         }
                     }
 
+                    if preferences.position == .automatic {
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 20) {
+                                Text("翻转时隐藏")
+                                Spacer()
+                                Toggle(
+                                    "翻转时隐藏",
+                                    isOn:
+                                        $preferences
+                                        .hidesHUDOnAutomaticFlip
+                                )
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .controlSize(.small)
+                            }
+                            Text(
+                                "因底部空间不足翻到候选栏上方时隐藏译文；候选栏已位于输入行上方时仍显示。"
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 10)
+                    }
+
                     Divider()
 
                     sliderSetting(

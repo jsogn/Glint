@@ -35,6 +35,8 @@ public final class DisplayPreferences {
 
     private enum Key {
         static let position = "display.position"
+        static let hidesHUDOnAutomaticFlip =
+            "display.hidesHUDOnAutomaticFlip"
         static let candidateDwellDuration = "display.candidateDwellDuration"
         static let candidateSpacing = "display.candidateSpacing"
         static let hudBackgroundStyle = "display.hudBackgroundStyle"
@@ -67,6 +69,15 @@ public final class DisplayPreferences {
     public var position: HUDPosition {
         didSet {
             defaults.set(position.rawValue, forKey: Key.position)
+        }
+    }
+
+    public var hidesHUDOnAutomaticFlip: Bool {
+        didSet {
+            defaults.set(
+                hidesHUDOnAutomaticFlip,
+                forKey: Key.hidesHUDOnAutomaticFlip
+            )
         }
     }
 
@@ -226,6 +237,8 @@ public final class DisplayPreferences {
         let storedPosition = defaults.string(forKey: Key.position)
         self.position =
             HUDPosition(rawValue: storedPosition ?? "") ?? .automatic
+        self.hidesHUDOnAutomaticFlip =
+            defaults.bool(forKey: Key.hidesHUDOnAutomaticFlip)
 
         let storedDwellDuration =
             defaults.object(

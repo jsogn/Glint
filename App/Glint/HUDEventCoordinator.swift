@@ -84,7 +84,9 @@ final class HUDEventCoordinator {
             spacing: model.displayPreferences.candidateSpacing,
             opacity: model.displayPreferences.hudOpacity,
             appearance: model.displayPreferences.hudAppearance,
-            revision: revision
+            revision: revision,
+            hidesOnAutomaticFlip:
+                model.displayPreferences.hidesHUDOnAutomaticFlip
         )
         let phase: String
         if scope == .row,

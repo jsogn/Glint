@@ -55,6 +55,7 @@ struct HUDPresentationRequest {
     let position: HUDPosition
     let spacing: Double
     let opacity: Double
+    let hidesOnAutomaticFlip: Bool
 
     init(
         revision: UInt64?,
@@ -65,7 +66,8 @@ struct HUDPresentationRequest {
         inputCaretRect: CGRect?,
         position: HUDPosition = .automatic,
         spacing: Double,
-        opacity: Double
+        opacity: Double,
+        hidesOnAutomaticFlip: Bool = false
     ) {
         self.revision = revision
         self.items = items
@@ -76,6 +78,7 @@ struct HUDPresentationRequest {
         self.position = position
         self.spacing = spacing
         self.opacity = opacity
+        self.hidesOnAutomaticFlip = hidesOnAutomaticFlip
     }
 
     func updatingLayout(
@@ -91,7 +94,8 @@ struct HUDPresentationRequest {
             inputCaretRect: inputCaretRect,
             position: position,
             spacing: spacing,
-            opacity: opacity
+            opacity: opacity,
+            hidesOnAutomaticFlip: hidesOnAutomaticFlip
         )
     }
 
@@ -105,7 +109,8 @@ struct HUDPresentationRequest {
             inputCaretRect: inputCaretRect,
             position: position,
             spacing: spacing,
-            opacity: opacity
+            opacity: opacity,
+            hidesOnAutomaticFlip: hidesOnAutomaticFlip
         )
     }
 }
@@ -116,6 +121,7 @@ struct HUDPresentationLayout {
     let panelSize: NSSize
     let targetFrame: NSRect
     let placesBelow: Bool
+    let hidesHUD: Bool
 }
 
 @MainActor
@@ -129,6 +135,7 @@ struct HUDGeometryResolver {
 
     private var horizontalAnchor: HUDHorizontalAnchor?
     private var previousPlacesBelow: Bool?
+    private var previousFallbackCandidateHasInputRoomBelow: Bool?
     private var resolvedScreenFrame: NSRect?
 
     mutating func resolve(
@@ -169,14 +176,16 @@ struct HUDGeometryResolver {
             panelSize: panelSize,
             position: resolvedRequest.position,
             spacing: resolvedRequest.spacing,
-            candidateOriginX: resolvedRequest.screenRect.minX
+            candidateOriginX: resolvedRequest.screenRect.minX,
+            hidesOnAutomaticFlip: resolvedRequest.hidesOnAutomaticFlip
         )
         return HUDPresentationLayout(
             request: resolvedRequest,
             showsOnlySelectedItem: showsOnlySelectedItem,
             panelSize: panelSize,
             targetFrame: layout.frame,
-            placesBelow: layout.placesBelow
+            placesBelow: layout.placesBelow,
+            hidesHUD: layout.hidesHUD
         )
     }
 
@@ -196,18 +205,21 @@ struct HUDGeometryResolver {
         guard panelSize.width <= maximumWidth + 0.5 else {
             return nil
         }
-        return placement(
+        let layout = placement(
             context: context,
             panelSize: panelSize,
             position: request.position,
             spacing: request.spacing,
-            candidateOriginX: request.screenRect.minX
-        ).frame
+            candidateOriginX: request.screenRect.minX,
+            hidesOnAutomaticFlip: request.hidesOnAutomaticFlip
+        )
+        return layout.hidesHUD ? nil : layout.frame
     }
 
     mutating func reset() {
         horizontalAnchor = nil
         previousPlacesBelow = nil
+        previousFallbackCandidateHasInputRoomBelow = nil
         resolvedScreenFrame = nil
     }
 
@@ -292,11 +304,16 @@ struct HUDGeometryResolver {
         panelSize: NSSize,
         position: HUDPosition,
         spacing: Double,
-        candidateOriginX: CGFloat
+        candidateOriginX: CGFloat,
+        hidesOnAutomaticFlip: Bool = false
     ) -> HUDLayoutResult {
         let stablePlacesBelow =
             resolvedScreenFrame == context.screen.frame
             ? previousPlacesBelow
+            : nil
+        let stableFallbackCandidateHasInputRoomBelow =
+            resolvedScreenFrame == context.screen.frame
+            ? previousFallbackCandidateHasInputRoomBelow
             : nil
         let layout = HUDLayout.placement(
             near: context.candidateRect,
@@ -306,7 +323,10 @@ struct HUDGeometryResolver {
             spacing: spacing,
             horizontalOrigin: context.fixedOriginX,
             inputCaretRect: context.inputCaretRect,
-            stablePlacesBelow: stablePlacesBelow
+            stablePlacesBelow: stablePlacesBelow,
+            hidesOnAutomaticFlip: hidesOnAutomaticFlip,
+            stableFallbackCandidateHasInputRoomBelow:
+                stableFallbackCandidateHasInputRoomBelow
         )
         let alignedFrame = Self.pixelAligned(
             layout.frame,
@@ -315,7 +335,10 @@ struct HUDGeometryResolver {
         let alignedLayout = HUDLayoutResult(
             frame: alignedFrame,
             placesBelow: layout.placesBelow,
-            placementMode: layout.placementMode
+            placementMode: layout.placementMode,
+            hidesHUD: layout.hidesHUD,
+            fallbackCandidateHasInputRoomBelow:
+                layout.fallbackCandidateHasInputRoomBelow
         )
         if position == .above {
             horizontalAnchor = nil
@@ -341,6 +364,8 @@ struct HUDGeometryResolver {
         }
         resolvedScreenFrame = context.screen.frame
         previousPlacesBelow = alignedLayout.placesBelow
+        previousFallbackCandidateHasInputRoomBelow =
+            alignedLayout.fallbackCandidateHasInputRoomBelow
         return alignedLayout
     }
 
