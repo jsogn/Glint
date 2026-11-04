@@ -150,10 +150,8 @@ enum HUDLayout {
                 automaticFlipProtectionEnabled
                 && desiredPlacesBelow
                 && !placesBelow
-                && (
-                    inputCaretRect != nil
-                    || fallbackCandidateHasInputRoomBelow == false
-                ),
+                && (inputCaretRect != nil
+                    || fallbackCandidateHasInputRoomBelow == false),
             fallbackCandidateHasInputRoomBelow:
                 fallbackCandidateHasInputRoomBelow
         )
