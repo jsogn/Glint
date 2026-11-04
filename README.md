@@ -11,9 +11,7 @@
   <img alt="本地离线" src="https://img.shields.io/badge/privacy-local_%26_offline-30363D?style=flat-square">
 </p>
 
-Glint 是一款为 macOS 打造的英语学习工具，也支持其他目标语言。输入
-中文拼音时，译文会出现在候选栏旁，不打断输入。它不替换输入法，也不会改变你的
-输入习惯。
+Glint 是一款为中文母语者打造的英语学习工具，也支持其他目标语言。输入中文拼音时，译文会出现在候选栏旁，不打断输入。它不替换输入法，也不会改变你的输入习惯。
 
 [![Glint 45 秒产品演示](docs/assets/glint-video-cover-clean.jpg)](https://www.bilibili.com/video/BV1spnb6kEtW/)
 
