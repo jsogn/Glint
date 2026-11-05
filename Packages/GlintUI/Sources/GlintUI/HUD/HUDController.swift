@@ -113,6 +113,7 @@ public final class HUDController {
         items: [HUDItem],
         near screenRect: CGRect,
         inputCaretRect: CGRect? = nil,
+        inputFieldRect: CGRect? = nil,
         candidateSurfaceRect: CGRect? = nil,
         layoutStyle: HUDLayoutStyle = .candidateRow,
         position: HUDPosition = .automatic,
@@ -129,6 +130,7 @@ public final class HUDController {
             appearance: appearance,
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
+            inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
             position: position,
             spacing: spacing,
@@ -146,18 +148,22 @@ public final class HUDController {
     public func updateLayout(
         screenRect: CGRect,
         inputCaretRect: CGRect?,
+        inputFieldRect: CGRect? = nil,
         candidateSurfaceRect: CGRect? = nil
     ) {
         guard let currentRequest else { return }
         let updated = currentRequest.updatingLayout(
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
+            inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect
         )
         guard
             updated.screenRect != currentRequest.screenRect
                 || updated.inputCaretRect
                     != currentRequest.inputCaretRect
+                || updated.inputFieldRect
+                    != currentRequest.inputFieldRect
                 || updated.candidateSurfaceRect
                     != currentRequest.candidateSurfaceRect
         else {

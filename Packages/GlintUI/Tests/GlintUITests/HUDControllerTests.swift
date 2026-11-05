@@ -103,6 +103,52 @@ final class HUDControllerTests: XCTestCase {
     }
 
     @MainActor
+    func testHUDUsesInputFieldFrameWhenChoosingSide()
+        async throws
+    {
+        let (hud, panel, screen) = try makeHUDFixture()
+        defer { hud.hide(animated: false) }
+        let candidateMinY = screen.visibleFrame.minY + 400
+        let expectedPanelMinY = candidateMinY + 32 + 7
+
+        hud.show(
+            items: [HUDItem(id: 0, number: 1, text: "Dinner")],
+            near: quartzRect(
+                screen: screen,
+                minY: candidateMinY,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: nil,
+            inputFieldRect: quartzRect(
+                screen: screen,
+                minY: screen.visibleFrame.minY + 150,
+                width: 900,
+                height: 160
+            ),
+            candidateSurfaceRect: quartzRect(
+                screen: screen,
+                minY: candidateMinY - 2,
+                width: 900,
+                height: 36
+            ),
+            position: .automatic,
+            spacing: 7,
+            revision: 1
+        )
+        await waitUntil {
+            panel.isVisible
+                && abs(panel.frame.minY - expectedPanelMinY) < 0.5
+        }
+
+        XCTAssertEqual(
+            panel.frame.minY,
+            expectedPanelMinY,
+            accuracy: 0.5
+        )
+    }
+
+    @MainActor
     func testHUDDoesNotEnterWhenInitialPlacementNeedsProtection()
         async throws
     {

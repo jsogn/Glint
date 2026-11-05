@@ -52,6 +52,7 @@ struct HUDPresentationRequest {
     let appearance: HUDAppearance
     let screenRect: CGRect
     let inputCaretRect: CGRect?
+    let inputFieldRect: CGRect?
     let candidateSurfaceRect: CGRect?
     let position: HUDPosition
     let spacing: Double
@@ -65,6 +66,7 @@ struct HUDPresentationRequest {
         appearance: HUDAppearance,
         screenRect: CGRect,
         inputCaretRect: CGRect?,
+        inputFieldRect: CGRect? = nil,
         candidateSurfaceRect: CGRect? = nil,
         position: HUDPosition = .automatic,
         spacing: Double,
@@ -77,6 +79,7 @@ struct HUDPresentationRequest {
         self.appearance = appearance
         self.screenRect = screenRect
         self.inputCaretRect = inputCaretRect
+        self.inputFieldRect = inputFieldRect
         self.candidateSurfaceRect = candidateSurfaceRect
         self.position = position
         self.spacing = spacing
@@ -91,6 +94,7 @@ struct HUDPresentationRequest {
         updatingLayout(
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
+            inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect
         )
     }
@@ -100,6 +104,20 @@ struct HUDPresentationRequest {
         inputCaretRect: CGRect?,
         candidateSurfaceRect: CGRect?
     ) -> Self {
+        updatingLayout(
+            screenRect: screenRect,
+            inputCaretRect: inputCaretRect,
+            inputFieldRect: inputFieldRect,
+            candidateSurfaceRect: candidateSurfaceRect
+        )
+    }
+
+    func updatingLayout(
+        screenRect: CGRect,
+        inputCaretRect: CGRect?,
+        inputFieldRect: CGRect?,
+        candidateSurfaceRect: CGRect?
+    ) -> Self {
         Self(
             revision: revision,
             items: items,
@@ -107,6 +125,7 @@ struct HUDPresentationRequest {
             appearance: appearance,
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
+            inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
             position: position,
             spacing: spacing,
@@ -123,6 +142,7 @@ struct HUDPresentationRequest {
             appearance: appearance,
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
+            inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
             position: position,
             spacing: spacing,
@@ -146,6 +166,7 @@ struct HUDGeometryResolver {
     private struct ResolvedScreenContext {
         let candidateRect: CGRect
         let inputCaretRect: CGRect?
+        let inputFieldRect: CGRect?
         let candidateSurfaceRect: CGRect?
         let screen: NSScreen
         let fixedOriginX: CGFloat?
@@ -282,6 +303,14 @@ struct HUDGeometryResolver {
                 height: $0.height
             )
         }
+        let inputFieldRect = request.inputFieldRect.map {
+            CGRect(
+                x: $0.minX,
+                y: mainScreen.frame.maxY - $0.maxY,
+                width: $0.width,
+                height: $0.height
+            )
+        }
         let candidateSurfaceRect = request.candidateSurfaceRect.map {
             CGRect(
                 x: $0.minX,
@@ -320,6 +349,7 @@ struct HUDGeometryResolver {
         return ResolvedScreenContext(
             candidateRect: candidateRect,
             inputCaretRect: inputCaretRect,
+            inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
             screen: targetScreen,
             fixedOriginX: fixedOriginX
@@ -350,6 +380,7 @@ struct HUDGeometryResolver {
             spacing: spacing,
             horizontalOrigin: context.fixedOriginX,
             inputCaretRect: context.inputCaretRect,
+            inputFieldRect: context.inputFieldRect,
             candidateSurfaceRect:
                 context.candidateSurfaceRect,
             stablePlacesBelow: stablePlacesBelow,

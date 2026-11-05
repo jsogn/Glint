@@ -336,6 +336,7 @@ final class RimeCandidateBridgeTests: XCTestCase {
             case .layoutChanged(
                 let highlight,
                 let inputCaretRect,
+                _,
                 _
             ) =
                 await iterator.next()

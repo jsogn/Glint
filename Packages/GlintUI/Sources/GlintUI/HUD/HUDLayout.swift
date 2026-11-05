@@ -20,6 +20,7 @@ enum HUDLayout {
     private static let fallbackClearanceHysteresis: CGFloat = 3
     private static let minimumFallbackInputRowClearance: CGFloat = 24
     private static let fallbackInputRowClearanceRatio: CGFloat = 0.75
+    private static let inputFieldOverlapTolerance: CGFloat = 2
 
     static func placement(
         near candidateRect: CGRect,
@@ -29,6 +30,7 @@ enum HUDLayout {
         spacing: Double,
         horizontalOrigin: CGFloat? = nil,
         inputCaretRect: CGRect? = nil,
+        inputFieldRect: CGRect? = nil,
         candidateSurfaceRect: CGRect? = nil,
         stablePlacesBelow: Bool? = nil,
         hidesOnAutomaticFlip: Bool = false,
@@ -65,6 +67,16 @@ enum HUDLayout {
                     stableFallbackCandidateHasInputRoomBelow
             )
             : nil
+        let inputFieldIsFlipped: Bool?
+        if inputCaretRect == nil, let inputFieldRect {
+            let candidateFrameForDirection =
+                candidateSurfaceRect ?? candidateRect
+            inputFieldIsFlipped =
+                candidateFrameForDirection.minY
+                >= inputFieldRect.maxY - Self.inputFieldOverlapTolerance
+        } else {
+            inputFieldIsFlipped = nil
+        }
 
         let desiredPlacesBelow: Bool
         if position == .above {
@@ -75,11 +87,9 @@ enum HUDLayout {
                 < Self.directionHysteresis
         {
             desiredPlacesBelow = stablePlacesBelow
-        } else if inputCaretRect == nil,
-            candidateSurfaceRect != nil
+        } else if let inputFieldIsFlipped
         {
-            desiredPlacesBelow =
-                fallbackCandidateHasInputRoomBelow == false
+            desiredPlacesBelow = !inputFieldIsFlipped
         } else {
             // Without reliable caret geometry, prefer below because macOS
             // commonly places the candidate bar under the edited line.
@@ -148,7 +158,7 @@ enum HUDLayout {
             && !placesBelow
         if automaticallyFlippedAbove,
             inputCaretRect == nil,
-            fallbackCandidateHasInputRoomBelow == false,
+            inputFieldIsFlipped != true,
             let candidateSurfaceRect
         {
             let trailingX = trailingCandidateOriginX(

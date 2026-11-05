@@ -313,6 +313,39 @@ final class HUDLayoutTests: XCTestCase {
         )
     }
 
+    func testForcedAboveWithoutInputFlipStillAvoidsInputLetters() {
+        let surfaceRect = CGRect(
+            x: 100,
+            y: 18,
+            width: 900,
+            height: 36
+        )
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 120, y: 30, width: 160, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputFieldRect: CGRect(
+                x: 80,
+                y: 0,
+                width: 960,
+                height: 120
+            ),
+            candidateSurfaceRect: surfaceRect
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.maxX,
+            surfaceRect.maxX - 7,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            placement.placementMode,
+            .candidateTrailing
+        )
+    }
+
     func testAutomaticFlipWithoutCaretClearsInputRowWhenSurfaceIsNarrow() {
         let surfaceRect = CGRect(
             x: 100,
@@ -349,6 +382,12 @@ final class HUDLayoutTests: XCTestCase {
             panelSize: panelSize,
             visibleFrame: visibleFrame,
             spacing: 7,
+            inputFieldRect: CGRect(
+                x: 80,
+                y: 0,
+                width: 960,
+                height: 20
+            ),
             candidateSurfaceRect: surfaceRect
         )
 
@@ -363,7 +402,7 @@ final class HUDLayoutTests: XCTestCase {
     func testAutomaticPlacementWithoutCaretMovesAboveCandidateWhenInputIsBelow() {
         let candidateRect = CGRect(
             x: 120,
-            y: 200,
+            y: 300,
             width: 160,
             height: 32
         )
@@ -372,9 +411,15 @@ final class HUDLayoutTests: XCTestCase {
             panelSize: panelSize,
             visibleFrame: visibleFrame,
             spacing: 7,
+            inputFieldRect: CGRect(
+                x: 100,
+                y: 100,
+                width: 900,
+                height: 120
+            ),
             candidateSurfaceRect: CGRect(
                 x: 100,
-                y: 180,
+                y: 298,
                 width: 900,
                 height: 36
             )
@@ -384,6 +429,82 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(
             placement.frame.minY,
             candidateRect.maxY + 7,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            placement.placementMode,
+            .candidate
+        )
+    }
+
+    func testAutomaticPlacementWithoutCaretMovesBelowWhenInputFieldOverlapsCandidate() {
+        let candidateRect = CGRect(
+            x: 120,
+            y: 200,
+            width: 160,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: candidateRect,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputFieldRect: CGRect(
+                x: 100,
+                y: 120,
+                width: 900,
+                height: 160
+            ),
+            candidateSurfaceRect: CGRect(
+                x: 100,
+                y: 198,
+                width: 900,
+                height: 36
+            )
+        )
+
+        XCTAssertTrue(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.minY,
+            candidateRect.minY - panelSize.height - 7,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            placement.placementMode,
+            .candidate
+        )
+    }
+
+    func testAutomaticPlacementWithoutCaretMovesBelowWhenInputFieldIsAbove() {
+        let candidateRect = CGRect(
+            x: 120,
+            y: 100,
+            width: 160,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: candidateRect,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            inputFieldRect: CGRect(
+                x: 100,
+                y: 200,
+                width: 900,
+                height: 120
+            ),
+            candidateSurfaceRect: CGRect(
+                x: 100,
+                y: 98,
+                width: 900,
+                height: 36
+            )
+        )
+
+        XCTAssertTrue(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.minY,
+            candidateRect.minY - panelSize.height - 7,
             accuracy: 0.001
         )
         XCTAssertEqual(
@@ -469,6 +590,104 @@ final class HUDLayoutTests: XCTestCase {
             surfaceRect.maxX - 7,
             accuracy: 0.5
         )
+    }
+
+    @MainActor
+    func testResolverKeepsHUDBelowWhenInputFieldOverlapsCandidate()
+        throws
+    {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let candidateMinY = screen.visibleFrame.minY + 250
+        let candidateRect = CGRect(
+            x: screen.visibleFrame.minX + 300,
+            y: screen.frame.maxY - candidateMinY - 32,
+            width: 180,
+            height: 32
+        )
+        let inputFieldMinY = screen.visibleFrame.minY + 150
+        let inputFieldRect = CGRect(
+            x: screen.visibleFrame.minX + 100,
+            y: screen.frame.maxY - inputFieldMinY - 160,
+            width: 900,
+            height: 160
+        )
+        let request = HUDPresentationRequest(
+            revision: 1,
+            items: [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "Dinner",
+                    isSelected: true
+                )
+            ],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: candidateRect,
+            inputCaretRect: nil,
+            inputFieldRect: inputFieldRect,
+            candidateSurfaceRect: candidateRect,
+            spacing: 7,
+            opacity: 0.8
+        )
+        var resolver = HUDGeometryResolver()
+
+        let layout = try XCTUnwrap(resolver.resolve(request))
+
+        XCTAssertTrue(layout.placesBelow)
+    }
+
+    @MainActor
+    func testResolverUsesInputFieldRectToPlaceHUDAbove()
+        throws
+    {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let candidateMinY = screen.visibleFrame.minY + 400
+        let candidateRect = CGRect(
+            x: screen.visibleFrame.minX + 300,
+            y: screen.frame.maxY - candidateMinY - 32,
+            width: 180,
+            height: 32
+        )
+        let inputFieldMinY = screen.visibleFrame.minY + 150
+        let inputFieldRect = CGRect(
+            x: screen.visibleFrame.minX + 100,
+            y: screen.frame.maxY - inputFieldMinY - 160,
+            width: 900,
+            height: 160
+        )
+        let request = HUDPresentationRequest(
+            revision: 1,
+            items: [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "Dinner",
+                    isSelected: true
+                )
+            ],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: candidateRect,
+            inputCaretRect: nil,
+            inputFieldRect: inputFieldRect,
+            candidateSurfaceRect: candidateRect,
+            spacing: 7,
+            opacity: 0.8
+        )
+        var resolver = HUDGeometryResolver()
+
+        let layout = try XCTUnwrap(resolver.resolve(request))
+
+        XCTAssertFalse(layout.placesBelow)
     }
 
     func testAutomaticPlacementKeepsCandidateAlignedRightOfCaret() {
@@ -644,6 +863,12 @@ final class HUDLayoutTests: XCTestCase {
             width: 900,
             height: 36
         )
+        let inputFieldRect = CGRect(
+            x: 80,
+            y: 10,
+            width: 960,
+            height: 120
+        )
         let original = HUDPresentationRequest(
             revision: 42,
             items: [HUDItem(id: 0, number: 1, text: "Dinner")],
@@ -651,6 +876,7 @@ final class HUDLayoutTests: XCTestCase {
             appearance: .default,
             screenRect: CGRect(x: 300, y: 20, width: 180, height: 32),
             inputCaretRect: nil,
+            inputFieldRect: inputFieldRect,
             candidateSurfaceRect: surfaceRect,
             spacing: 7,
             opacity: 0.8
@@ -664,6 +890,10 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(
             updated.candidateSurfaceRect,
             surfaceRect
+        )
+        XCTAssertEqual(
+            updated.inputFieldRect,
+            inputFieldRect
         )
     }
 
