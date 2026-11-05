@@ -87,8 +87,7 @@ enum HUDLayout {
                 < Self.directionHysteresis
         {
             desiredPlacesBelow = stablePlacesBelow
-        } else if let inputFieldIsFlipped
-        {
+        } else if let inputFieldIsFlipped {
             desiredPlacesBelow = !inputFieldIsFlipped
         } else {
             // Without reliable caret geometry, prefer below because macOS

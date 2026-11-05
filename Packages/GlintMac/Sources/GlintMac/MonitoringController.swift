@@ -589,8 +589,7 @@ public actor MonitoringController {
                 $0.width > 0 && $0.height > 0 ? $0 : nil
             }
             : nil
-        if let inputFieldRect
-        {
+        if let inputFieldRect {
             latestInputFieldRect = inputFieldRect
         }
 
