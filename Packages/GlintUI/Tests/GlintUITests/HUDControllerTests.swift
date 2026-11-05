@@ -65,6 +65,44 @@ final class HUDControllerTests: XCTestCase {
     }
 
     @MainActor
+    func testHUDUsesCandidateSurfaceWhenFlippedWithoutCaret()
+        async throws
+    {
+        let (hud, panel, screen) = try makeHUDFixture()
+        defer { hud.hide(animated: false) }
+        let surface = quartzRect(
+            screen: screen,
+            minY: screen.visibleFrame.minY + 16,
+            width: screen.visibleFrame.width - 200,
+            height: 36,
+            xOffset: 100
+        )
+
+        hud.show(
+            items: [HUDItem(id: 0, number: 1, text: "Dinner")],
+            near: quartzRect(
+                screen: screen,
+                minY: screen.visibleFrame.minY + 20,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: nil,
+            candidateSurfaceRect: surface,
+            position: .automatic,
+            spacing: 7,
+            revision: 1
+        )
+        await waitUntil { panel.isVisible }
+
+        XCTAssertTrue(panel.isVisible)
+        XCTAssertEqual(
+            panel.frame.maxX,
+            surface.maxX - 7,
+            accuracy: 0.5
+        )
+    }
+
+    @MainActor
     func testHUDDoesNotEnterWhenInitialPlacementNeedsProtection()
         async throws
     {

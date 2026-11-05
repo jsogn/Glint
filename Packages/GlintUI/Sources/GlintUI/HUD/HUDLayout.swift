@@ -2,6 +2,7 @@ import CoreGraphics
 
 enum HUDPlacementMode: Equatable {
     case candidate
+    case candidateTrailing
     case rightOfCaret
     case verticalClearance
 }
@@ -28,6 +29,7 @@ enum HUDLayout {
         spacing: Double,
         horizontalOrigin: CGFloat? = nil,
         inputCaretRect: CGRect? = nil,
+        candidateSurfaceRect: CGRect? = nil,
         stablePlacesBelow: Bool? = nil,
         hidesOnAutomaticFlip: Bool = false,
         stableFallbackCandidateHasInputRoomBelow: Bool? = nil
@@ -55,7 +57,7 @@ enum HUDLayout {
         let automaticFlipProtectionEnabled =
             hidesOnAutomaticFlip && position == .automatic
         let fallbackCandidateHasInputRoomBelow =
-            automaticFlipProtectionEnabled && inputCaretRect == nil
+            position == .automatic && inputCaretRect == nil
             ? Self.fallbackCandidateHasInputRoomBelow(
                 candidateRect: candidateRect,
                 visibleFrame: visibleFrame,
@@ -135,6 +137,38 @@ enum HUDLayout {
                 mode = .verticalClearance
             }
         }
+        let automaticallyFlippedAbove =
+            position == .automatic
+            && desiredPlacesBelow
+            && !placesBelow
+        if automaticallyFlippedAbove,
+            inputCaretRect == nil,
+            fallbackCandidateHasInputRoomBelow == false,
+            let candidateSurfaceRect
+        {
+            let trailingX = trailingCandidateOriginX(
+                candidateSurfaceRect,
+                panelWidth: panelSize.width,
+                gap: gap
+            )
+            if let trailingX, trailingX > x {
+                x = max(
+                    minimumX,
+                    min(trailingX, maximumX)
+                )
+                mode = .candidateTrailing
+            } else if trailingX == nil {
+                let clearedY =
+                    above
+                    + inputRowClearance(for: candidateSurfaceRect)
+                if clearedY + panelSize.height
+                    <= visibleFrame.maxY
+                {
+                    y = clearedY
+                    mode = .verticalClearance
+                }
+            }
+        }
         return HUDLayoutResult(
             frame: CGRect(
                 x: x,
@@ -165,6 +199,34 @@ enum HUDLayout {
             && frame.maxY > caret.minY
     }
 
+    private static func trailingCandidateOriginX(
+        _ candidateSurfaceRect: CGRect,
+        panelWidth: CGFloat,
+        gap: CGFloat
+    ) -> CGFloat? {
+        let availableWidth =
+            candidateSurfaceRect.width - gap
+        guard
+            candidateSurfaceRect.width > 0,
+            availableWidth >= panelWidth
+        else {
+            return nil
+        }
+        return candidateSurfaceRect.maxX
+            - gap
+            - panelWidth
+    }
+
+    private static func inputRowClearance(
+        for candidateRect: CGRect
+    ) -> CGFloat {
+        max(
+            minimumFallbackInputRowClearance,
+            candidateRect.height
+                * fallbackInputRowClearanceRatio
+        )
+    }
+
     /// Web and accessibility hosts often omit caret geometry. When the
     /// candidate bar has visible room below it, the bar likely already
     /// flipped above the input row; when it is against the screen bottom,
@@ -174,11 +236,7 @@ enum HUDLayout {
         visibleFrame: CGRect,
         stableValue: Bool?
     ) -> Bool {
-        let threshold = max(
-            minimumFallbackInputRowClearance,
-            candidateRect.height
-                * fallbackInputRowClearanceRatio
-        )
+        let threshold = inputRowClearance(for: candidateRect)
         let clearance = candidateRect.minY - visibleFrame.minY
         switch stableValue {
         case true:

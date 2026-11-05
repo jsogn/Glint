@@ -286,6 +286,159 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(placement.placementMode, .rightOfCaret)
     }
 
+    func testAutomaticFlipWithoutCaretUsesCandidateTrailingEdge() {
+        let surfaceRect = CGRect(
+            x: 100,
+            y: 18,
+            width: 900,
+            height: 36
+        )
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 120, y: 20, width: 160, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surfaceRect
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.maxX,
+            surfaceRect.maxX - 7,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            placement.placementMode,
+            .candidateTrailing
+        )
+    }
+
+    func testAutomaticFlipWithoutCaretClearsInputRowWhenSurfaceIsNarrow() {
+        let surfaceRect = CGRect(
+            x: 100,
+            y: 0,
+            width: 300,
+            height: 36
+        )
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 120, y: 20, width: 160, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surfaceRect
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(placement.frame.minX, 120, accuracy: 0.001)
+        XCTAssertEqual(placement.frame.minY, 86, accuracy: 0.001)
+        XCTAssertEqual(
+            placement.placementMode,
+            .verticalClearance
+        )
+    }
+
+    func testAutomaticFlipWithoutCaretKeepsCandidateAlignmentWhenInputIsBelow() {
+        let surfaceRect = CGRect(
+            x: 100,
+            y: 26,
+            width: 900,
+            height: 36
+        )
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 120, y: 30, width: 160, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surfaceRect
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(placement.frame.minX, 120, accuracy: 0.001)
+        XCTAssertEqual(
+            placement.placementMode,
+            .candidate
+        )
+    }
+
+    func testAutomaticFlipKeepsExistingAnchorInsideWideCandidateSurface() {
+        let surfaceRect = CGRect(
+            x: 100,
+            y: 18,
+            width: 900,
+            height: 36
+        )
+        let placement = HUDLayout.placement(
+            near: CGRect(x: 700, y: 20, width: 160, height: 32),
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surfaceRect
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(placement.frame.minX, 700, accuracy: 0.001)
+        XCTAssertEqual(placement.frame.minY, 59, accuracy: 0.001)
+        XCTAssertEqual(
+            placement.placementMode,
+            .candidate
+        )
+    }
+
+    @MainActor
+    func testResolverUsesCandidateSurfaceWhenFlippedWithoutCaret()
+        throws
+    {
+        let screen = try XCTUnwrap(
+            NSScreen.screens.first(where: {
+                $0.frame.origin == .zero
+            }) ?? NSScreen.main
+        )
+        let candidateX = screen.visibleFrame.minX + 300
+        let candidateY =
+            screen.frame.maxY
+            - screen.visibleFrame.minY
+            - 52
+        let surfaceRect = CGRect(
+            x: screen.visibleFrame.minX + 100,
+            y: candidateY - 4,
+            width: screen.visibleFrame.width - 200,
+            height: 36
+        )
+        let request = HUDPresentationRequest(
+            revision: 1,
+            items: [
+                HUDItem(
+                    id: 0,
+                    number: 1,
+                    text: "A translation with enough width",
+                    isSelected: true
+                )
+            ],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: CGRect(
+                x: candidateX,
+                y: candidateY,
+                width: 180,
+                height: 32
+            ),
+            inputCaretRect: nil,
+            candidateSurfaceRect: surfaceRect,
+            spacing: 7,
+            opacity: 0.8
+        )
+        var resolver = HUDGeometryResolver()
+
+        let layout = try XCTUnwrap(resolver.resolve(request))
+
+        XCTAssertFalse(layout.placesBelow)
+        XCTAssertEqual(
+            layout.targetFrame.maxX,
+            surfaceRect.maxX - 7,
+            accuracy: 0.5
+        )
+    }
+
     func testAutomaticPlacementKeepsCandidateAlignedRightOfCaret() {
         let placement = HUDLayout.placement(
             near: CGRect(x: 600, y: 20, width: 180, height: 32),
@@ -449,6 +602,36 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(
             updated.inputCaretRect,
             CGRect(x: 700, y: 60, width: 0, height: 24)
+        )
+    }
+
+    func testPresentationLayoutUpdatePreservesCandidateSurfaceRect() {
+        let surfaceRect = CGRect(
+            x: 100,
+            y: 20,
+            width: 900,
+            height: 36
+        )
+        let original = HUDPresentationRequest(
+            revision: 42,
+            items: [HUDItem(id: 0, number: 1, text: "Dinner")],
+            layoutStyle: .selectedTranslations,
+            appearance: .default,
+            screenRect: CGRect(x: 300, y: 20, width: 180, height: 32),
+            inputCaretRect: nil,
+            candidateSurfaceRect: surfaceRect,
+            spacing: 7,
+            opacity: 0.8
+        )
+
+        let updated = original.updatingLayout(
+            screenRect: CGRect(x: 500, y: 20, width: 200, height: 32),
+            inputCaretRect: nil
+        )
+
+        XCTAssertEqual(
+            updated.candidateSurfaceRect,
+            surfaceRect
         )
     }
 

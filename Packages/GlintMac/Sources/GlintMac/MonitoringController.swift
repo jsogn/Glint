@@ -95,13 +95,15 @@ public enum MonitoringEvent: Sendable {
     case selectionChanged(index: Int, revision: UInt64)
     case layoutChanged(
         CandidateRegion,
-        inputCaretRect: CGRect?
+        inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?
     )
     case candidateEnded(immediate: Bool)
     case results(
         [CandidateTranslationPresentation],
         CandidateRegion,
         inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?,
         revision: UInt64,
         isProgressive: Bool
     )
@@ -202,6 +204,7 @@ public actor MonitoringController {
         let selectedFrame: CGRect
         let displayFrame: CGRect
         let displayAnchor: CandidateRegion
+        let candidateSurfaceFrame: CGRect?
     }
 
     private enum CandidateReadOutcome {
@@ -233,11 +236,13 @@ public actor MonitoringController {
         let timestamp: UInt64
         let changed: Bool
         let inputCaretRect: CGRect?
+        let candidateSurfaceRect: CGRect?
     }
 
     private struct CandidateLayoutSnapshot: Equatable {
         let highlight: CandidateRegion
         let inputCaretRect: CGRect?
+        let candidateSurfaceRect: CGRect?
 
         func approximatelyEquals(
             _ other: Self,
@@ -254,6 +259,12 @@ public actor MonitoringController {
                 && Self.rect(
                     inputCaretRect,
                     approximatelyEquals: other.inputCaretRect,
+                    tolerance: tolerance
+                )
+                && Self.rect(
+                    candidateSurfaceRect,
+                    approximatelyEquals:
+                        other.candidateSurfaceRect,
                     tolerance: tolerance
                 )
         }
@@ -313,6 +324,7 @@ public actor MonitoringController {
     private var lastReportedInputMethod: InputMethodIdentity?
     private var candidateSessionActive = false
     private var latestInputCaretRect: CGRect?
+    private var latestCandidateSurfaceFrame: CGRect?
     private var lastPublishedLayout: CandidateLayoutSnapshot?
     private var selectedCandidateIndex: Int?
     private var selectedCandidateIndexIsExact = false
@@ -718,9 +730,16 @@ public actor MonitoringController {
             observation: observation
         )
         latestCandidateHighlight = selection.displayAnchor
+        if let candidateSurfaceFrame =
+            observation.candidateSurfaceFrame
+        {
+            latestCandidateSurfaceFrame = candidateSurfaceFrame
+        }
         let context = candidateActivityContext(
             selection: selection,
-            inputCaretRect: inputCaretRect
+            inputCaretRect: inputCaretRect,
+            candidateSurfaceRect:
+                latestCandidateSurfaceFrame
         )
         await startCandidatePrefetchIfNeeded(
             candidates: context.selection.candidates,
@@ -756,7 +775,9 @@ public actor MonitoringController {
         }
         publishLayoutIfNeeded(
             highlight: context.selection.displayAnchor,
-            inputCaretRect: latestInputCaretRect
+            inputCaretRect: latestInputCaretRect,
+            candidateSurfaceRect:
+                latestCandidateSurfaceFrame
         )
         return nextCandidatePollInterval(after: context.timestamp)
     }
@@ -805,7 +826,8 @@ public actor MonitoringController {
 
     private func candidateActivityContext(
         selection: CandidateSelectionContext,
-        inputCaretRect: CGRect?
+        inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?
     ) -> CandidateActivityContext {
         let observationTimestamp = DispatchTime.now().uptimeNanoseconds
         let activity = typingTracker.observe(
@@ -822,7 +844,8 @@ public actor MonitoringController {
                 if case .changed = activity { return true }
                 return false
             }(),
-            inputCaretRect: inputCaretRect
+            inputCaretRect: inputCaretRect,
+            candidateSurfaceRect: candidateSurfaceRect
         )
     }
 
@@ -871,6 +894,8 @@ public actor MonitoringController {
             highlight: context.selection.displayAnchor,
             revision: revision,
             inputCaretRect: context.inputCaretRect,
+            candidateSurfaceRect:
+                context.candidateSurfaceRect,
             dictionaryPrefetchTasks: dictionaryPrefetchTasks,
             cachedPrefetchResults: cachedPrefetchResults
         )
@@ -1015,7 +1040,10 @@ public actor MonitoringController {
                 snapshot: candidate,
                 selectedFrame: selectedFrame,
                 displayFrame: displayFrame,
-                displayAnchor: displayAnchor
+                displayAnchor: displayAnchor,
+                candidateSurfaceFrame:
+                    candidate.candidateWindowFrame
+                    ?? candidate.candidateListFrame
             )
         )
     }
@@ -1149,6 +1177,7 @@ public actor MonitoringController {
         highlight: CandidateRegion,
         revision: UInt64,
         inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?,
         dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>],
         cachedPrefetchResults: [Int: TranslationResult]
     ) {
@@ -1191,6 +1220,7 @@ public actor MonitoringController {
                 highlight,
                 revision,
                 inputCaretRect,
+                candidateSurfaceRect,
                 mode,
                 translationTarget,
                 shouldShowPartsOfSpeech,
@@ -1214,7 +1244,9 @@ public actor MonitoringController {
                         presentations,
                         highlight: highlight,
                         revision: revision,
-                        inputCaretRect: inputCaretRect
+                        inputCaretRect: inputCaretRect,
+                        candidateSurfaceRect:
+                            candidateSurfaceRect
                     )
                 }
             )
@@ -1223,7 +1255,9 @@ public actor MonitoringController {
                 presentations,
                 highlight: highlight,
                 revision: revision,
-                inputCaretRect: inputCaretRect
+                inputCaretRect: inputCaretRect,
+                candidateSurfaceRect:
+                    candidateSurfaceRect
             )
         }
     }
@@ -1232,7 +1266,8 @@ public actor MonitoringController {
         _ translations: [CandidateTranslationPresentation],
         highlight: CandidateRegion,
         revision: UInt64,
-        inputCaretRect: CGRect?
+        inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?
     ) {
         guard revision == typingTracker.revision,
             typingTracker.isDwelling,
@@ -1243,6 +1278,9 @@ public actor MonitoringController {
         let presentationHighlight = latestCandidateHighlight ?? highlight
         let presentationInputCaretRect =
             latestInputCaretRect ?? inputCaretRect
+        let presentationCandidateSurfaceRect =
+            latestCandidateSurfaceFrame
+            ?? candidateSurfaceRect
         if let translationStartedAt {
             let now = DispatchTime.now().uptimeNanoseconds
             let total =
@@ -1262,6 +1300,8 @@ public actor MonitoringController {
                 translations,
                 presentationHighlight,
                 inputCaretRect: presentationInputCaretRect,
+                candidateSurfaceRect:
+                    presentationCandidateSurfaceRect,
                 revision: revision,
                 isProgressive: true
             )
@@ -1276,7 +1316,8 @@ public actor MonitoringController {
         _ translations: [CandidateTranslationPresentation],
         highlight: CandidateRegion,
         revision: UInt64,
-        inputCaretRect: CGRect?
+        inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?
     ) {
         guard revision == typingTracker.revision,
             typingTracker.isDwelling
@@ -1286,6 +1327,9 @@ public actor MonitoringController {
         let presentationHighlight = latestCandidateHighlight ?? highlight
         let presentationInputCaretRect =
             latestInputCaretRect ?? inputCaretRect
+        let presentationCandidateSurfaceRect =
+            latestCandidateSurfaceFrame
+            ?? candidateSurfaceRect
         translationTask = nil
         let finishedAt = ContinuousClock.now
         if let translationStartedAt {
@@ -1343,6 +1387,8 @@ public actor MonitoringController {
                 presentations,
                 presentationHighlight,
                 inputCaretRect: presentationInputCaretRect,
+                candidateSurfaceRect:
+                    presentationCandidateSurfaceRect,
                 revision: revision,
                 isProgressive: false
             )
@@ -1361,6 +1407,7 @@ public actor MonitoringController {
         selectedCandidateIndexIsExact = false
         latestCandidateHighlight = nil
         latestInputCaretRect = nil
+        latestCandidateSurfaceFrame = nil
         lastPublishedLayout = nil
         insertionOffer = nil
         insertionHostProcessIdentifier = nil
@@ -1492,12 +1539,14 @@ public actor MonitoringController {
 
     private func publishLayoutIfNeeded(
         highlight: CandidateRegion,
-        inputCaretRect: CGRect?
+        inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?
     ) {
         guard candidateSessionActive else { return }
         let next = CandidateLayoutSnapshot(
             highlight: highlight,
-            inputCaretRect: inputCaretRect
+            inputCaretRect: inputCaretRect,
+            candidateSurfaceRect: candidateSurfaceRect
         )
         if let lastPublishedLayout,
             next.approximatelyEquals(
@@ -1511,7 +1560,8 @@ public actor MonitoringController {
         continuation.yield(
             .layoutChanged(
                 highlight,
-                inputCaretRect: inputCaretRect
+                inputCaretRect: inputCaretRect,
+                candidateSurfaceRect: candidateSurfaceRect
             )
         )
     }

@@ -80,6 +80,12 @@ private struct InsertionCandidates: AXCandidateReading {
             text: "并且",
             visibleTexts: ["并且", "并肩", "合并"],
             frame: CGRect(x: 120, y: 120, width: 48, height: 28),
+            candidateWindowFrame: CGRect(
+                x: 80,
+                y: 116,
+                width: 700,
+                height: 36
+            ),
             candidateListFrame: nil,
             selectedIndex: 1,
             selectionIsExact: true
@@ -106,12 +112,68 @@ private struct OffsetInsertionCandidates: AXCandidateReading {
     }
 }
 
+private final class MutableSurfaceCandidates:
+    AXCandidateReading, @unchecked Sendable
+{
+    private let candidateWindowFrame = OSAllocatedUnfairLock<CGRect?>(
+        initialState: CGRect(
+            x: 80,
+            y: 116,
+            width: 700,
+            height: 36
+        )
+    )
+
+    func snapshot(
+        processIdentifier: pid_t?,
+        includeVisibleCandidates: Bool,
+        includeVisibleTexts: Bool
+    ) -> AXCandidateSnapshot? {
+        AXCandidateSnapshot(
+            text: "并且",
+            visibleTexts: ["并且", "并肩", "合并"],
+            frame: CGRect(x: 120, y: 120, width: 48, height: 28),
+            candidateWindowFrame: candidateWindowFrame.withLock {
+                $0
+            },
+            candidateListFrame: nil,
+            selectedIndex: 1,
+            selectionIsExact: true
+        )
+    }
+
+    func clearCandidateWindowFrame() {
+        candidateWindowFrame.withLock {
+            $0 = nil
+        }
+    }
+}
+
 private struct InsertionCandidateRouter: CandidateReaderRouting {
     func reader(
         for source: ActiveInputSource,
         allowProfileDiscovery: Bool
     ) -> any AXCandidateReading {
         InsertionCandidates()
+    }
+
+    func allowsProcessFallback(
+        for source: ActiveInputSource
+    ) -> Bool {
+        false
+    }
+}
+
+private struct MutableSurfaceCandidateRouter:
+    CandidateReaderRouting
+{
+    let candidates: MutableSurfaceCandidates
+
+    func reader(
+        for source: ActiveInputSource,
+        allowProfileDiscovery: Bool
+    ) -> any AXCandidateReading {
+        candidates
     }
 
     func allowsProcessFallback(
@@ -218,6 +280,27 @@ private final class InputCaretRectRecorder: Sendable {
 
     var latest: CGRect? {
         inputCaretRect.withLock { $0 }
+    }
+}
+
+private final class CandidateSurfaceRectRecorder: Sendable {
+    private let candidateSurfaceRect =
+        OSAllocatedUnfairLock<CGRect?>(initialState: nil)
+    private let count = OSAllocatedUnfairLock(initialState: 0)
+
+    func record(_ value: CGRect?) {
+        candidateSurfaceRect.withLock {
+            $0 = value
+        }
+        count.withLock { $0 += 1 }
+    }
+
+    var latest: CGRect? {
+        candidateSurfaceRect.withLock { $0 }
+    }
+
+    var recordedCount: Int {
+        count.withLock { $0 }
     }
 }
 
@@ -552,7 +635,14 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         let events = await controller.events
         let collector = Task {
             for await event in events {
-                if case .results(let presentations, _, _, _, _) = event {
+                if case .results(
+                    let presentations,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _
+                ) = event {
                     recorder.record(presentations)
                 }
             }
@@ -591,7 +681,14 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         let events = await controller.events
         let collector = Task {
             for await event in events {
-                if case .results(_, _, let inputCaretRect, _, _) = event {
+                if case .results(
+                    _,
+                    _,
+                    let inputCaretRect,
+                    _,
+                    _,
+                    _
+                ) = event {
                     recorder.record(inputCaretRect)
                 }
             }
@@ -607,6 +704,119 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         XCTAssertEqual(
             recorder.latest,
             CGRect(x: 120, y: 160, width: 2, height: 20)
+        )
+    }
+
+    func testHUDGeometryEventsCarryCandidateSurfaceRect()
+        async throws
+    {
+        let writer = RecordingTranslationTextWriter()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyInsertionDictionary(),
+                translation: InsertionMultiOptionTranslation()
+            ),
+            inputSource: InsertionInputSource(),
+            focus: InsertionFocus(),
+            candidateReaders: InsertionCandidateRouter(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false },
+            translationTextInserter: writer
+        )
+        let layoutRecorder = CandidateSurfaceRectRecorder()
+        let resultsRecorder = CandidateSurfaceRectRecorder()
+        let events = await controller.events
+        let collector = Task {
+            for await event in events {
+                switch event {
+                case .layoutChanged(
+                    _,
+                    _,
+                    let candidateSurfaceRect
+                ):
+                    layoutRecorder.record(candidateSurfaceRect)
+                case .results(
+                    _,
+                    _,
+                    _,
+                    let candidateSurfaceRect,
+                    _,
+                    _
+                ):
+                    resultsRecorder.record(candidateSurfaceRect)
+                default:
+                    break
+                }
+            }
+        }
+        defer { collector.cancel() }
+
+        await controller.setCandidateDwellDuration(0.08)
+        _ = await controller.tick()
+        try await Task.sleep(for: .milliseconds(90))
+        _ = await controller.tick()
+        try await waitUntil {
+            layoutRecorder.latest != nil
+                && resultsRecorder.latest != nil
+        }
+
+        let expected = CGRect(
+            x: 80,
+            y: 116,
+            width: 700,
+            height: 36
+        )
+        XCTAssertEqual(layoutRecorder.latest, expected)
+        XCTAssertEqual(resultsRecorder.latest, expected)
+    }
+
+    func testLayoutKeepsLatestValidCandidateSurfaceRect()
+        async throws
+    {
+        let focus = MutableInsertionFocus()
+        let candidates = MutableSurfaceCandidates()
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyInsertionDictionary(),
+                translation: InsertionMultiOptionTranslation()
+            ),
+            inputSource: InsertionInputSource(),
+            focus: focus,
+            candidateReaders: MutableSurfaceCandidateRouter(
+                candidates: candidates
+            ),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+        let recorder = CandidateSurfaceRectRecorder()
+        let events = await controller.events
+        let collector = Task {
+            for await event in events {
+                if case .layoutChanged(
+                    _,
+                    _,
+                    let candidateSurfaceRect
+                ) = event {
+                    recorder.record(candidateSurfaceRect)
+                }
+            }
+        }
+        defer { collector.cancel() }
+
+        await controller.setCandidateDwellDuration(0.3)
+        _ = await controller.tick()
+        try await waitUntil { recorder.recordedCount == 1 }
+
+        candidates.clearCandidateWindowFrame()
+        focus.moveCaret(
+            to: CGRect(x: 300, y: 160, width: 2, height: 20)
+        )
+        _ = await controller.tick()
+        try await waitUntil { recorder.recordedCount == 2 }
+
+        XCTAssertEqual(
+            recorder.latest,
+            CGRect(x: 80, y: 116, width: 700, height: 36)
         )
     }
 
@@ -633,11 +843,12 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         let collector = Task {
             for await event in events {
                 switch event {
-                case .results(let value, _, _, _, _):
+                case .results(let value, _, _, _, _, _):
                     presentations.record(value)
                 case .layoutChanged(
                     let highlight,
-                    let inputCaretRect
+                    let inputCaretRect,
+                    _
                 ):
                     geometry.record(
                         highlight: highlight,
@@ -711,7 +922,14 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         let events = await controller.events
         let collector = Task {
             for await event in events {
-                if case .results(_, _, let inputCaretRect, _, _) = event {
+                if case .results(
+                    _,
+                    _,
+                    let inputCaretRect,
+                    _,
+                    _,
+                    _
+                ) = event {
                     recorder.record(inputCaretRect)
                 }
             }

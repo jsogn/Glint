@@ -36,12 +36,14 @@ final class HUDEventCoordinator {
 
     func layoutChanged(
         highlight: CandidateRegion,
-        inputCaretRect: CGRect?
+        inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?
     ) {
         guard displayedRevision != nil else { return }
         hud.updateLayout(
             screenRect: highlight.cgRect,
-            inputCaretRect: inputCaretRect
+            inputCaretRect: inputCaretRect,
+            candidateSurfaceRect: candidateSurfaceRect
         )
     }
 
@@ -54,6 +56,7 @@ final class HUDEventCoordinator {
         translations: [CandidateTranslationPresentation],
         highlight: CandidateRegion,
         inputCaretRect: CGRect?,
+        candidateSurfaceRect: CGRect?,
         revision: UInt64,
         isProgressive: Bool
     ) {
@@ -76,6 +79,7 @@ final class HUDEventCoordinator {
             items: items,
             near: highlight.cgRect,
             inputCaretRect: inputCaretRect,
+            candidateSurfaceRect: candidateSurfaceRect,
             layoutStyle:
                 scope == .row
                 ? .candidateRow

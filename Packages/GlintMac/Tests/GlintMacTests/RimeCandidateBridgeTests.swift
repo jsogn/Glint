@@ -333,7 +333,11 @@ final class RimeCandidateBridgeTests: XCTestCase {
             return XCTFail("Expected a candidate despite missing panel frame")
         }
         guard
-            case .layoutChanged(let highlight, let inputCaretRect) =
+            case .layoutChanged(
+                let highlight,
+                let inputCaretRect,
+                _
+            ) =
                 await iterator.next()
         else {
             return XCTFail("Expected layout event")
