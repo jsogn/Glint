@@ -75,6 +75,11 @@ enum HUDLayout {
                 < Self.directionHysteresis
         {
             desiredPlacesBelow = stablePlacesBelow
+        } else if inputCaretRect == nil,
+            candidateSurfaceRect != nil
+        {
+            desiredPlacesBelow =
+                fallbackCandidateHasInputRoomBelow == false
         } else {
             // Without reliable caret geometry, prefer below because macOS
             // commonly places the candidate bar under the edited line.

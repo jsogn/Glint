@@ -360,6 +360,38 @@ final class HUDLayoutTests: XCTestCase {
         )
     }
 
+    func testAutomaticPlacementWithoutCaretMovesAboveCandidateWhenInputIsBelow() {
+        let candidateRect = CGRect(
+            x: 120,
+            y: 200,
+            width: 160,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: candidateRect,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: CGRect(
+                x: 100,
+                y: 180,
+                width: 900,
+                height: 36
+            )
+        )
+
+        XCTAssertFalse(placement.placesBelow)
+        XCTAssertEqual(
+            placement.frame.minY,
+            candidateRect.maxY + 7,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            placement.placementMode,
+            .candidate
+        )
+    }
+
     func testAutomaticFlipKeepsExistingAnchorInsideWideCandidateSurface() {
         let surfaceRect = CGRect(
             x: 100,
