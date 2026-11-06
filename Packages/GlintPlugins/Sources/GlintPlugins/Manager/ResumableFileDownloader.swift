@@ -184,9 +184,10 @@ private final class ResumableDownloadDelegate:
         _ session: URLSession,
         dataTask: URLSessionDataTask,
         didReceive response: URLResponse,
-        completionHandler: @escaping @Sendable (
-            URLSession.ResponseDisposition
-        ) -> Void
+        completionHandler:
+            @escaping @Sendable (
+                URLSession.ResponseDisposition
+            ) -> Void
     ) {
         guard let http = response as? HTTPURLResponse else {
             finish(.failure(URLError(.badServerResponse)))

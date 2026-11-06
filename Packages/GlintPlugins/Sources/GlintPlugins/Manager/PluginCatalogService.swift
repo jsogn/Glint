@@ -232,8 +232,10 @@ public actor PluginCatalogService {
                         to: partURL,
                         expectedBytes: manifest.sizeBytes
                     ) {
-                        [reporter, totalBytes = manifest.sizeBytes,
-                         sourceHost = manifest.url.host]
+                        [
+                            reporter, totalBytes = manifest.sizeBytes,
+                            sourceHost = manifest.url.host
+                        ]
                         completed,
                         expected,
                         speed in
