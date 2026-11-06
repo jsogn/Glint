@@ -216,6 +216,13 @@ public actor PluginManager {
         pluginsDirectory.appendingPathComponent(id, isDirectory: true)
     }
 
+    func downloadStagingDirectory() -> URL {
+        pluginsDirectory.appendingPathComponent(
+            ".downloads",
+            isDirectory: true
+        )
+    }
+
     func createStagingDirectory() throws -> URL {
         let directory = stagingURL()
         try fileManager.createDirectory(

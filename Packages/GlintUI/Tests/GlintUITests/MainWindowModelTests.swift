@@ -2134,6 +2134,53 @@ final class MainWindowModelTests: XCTestCase {
     }
 
     @MainActor
+    func testCancelInstallationDiscardsDownloadArtifacts() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintCancelInstallation-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            catalogURL: nil
+        )
+        let manifest = PluginManifest(
+            id: "cancel-model",
+            type: .translation,
+            name: "Cancel Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: 1,
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/cancel"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "cancel-revision"
+        )
+        var discardedIDs: [String] = []
+        model.discardDownloadAction = { id in
+            discardedIDs.append(id)
+        }
+
+        model.installPlugin(manifest)
+        model.cancelInstallation()
+        for _ in 0..<200 where model.isInstalling != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        XCTAssertEqual(discardedIDs, [manifest.id])
+        XCTAssertNil(model.isInstalling)
+        XCTAssertFalse(model.isCancellingInstallation)
+    }
+
+    @MainActor
     func testModelMarketRejectsInsufficientInstallationSpace() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(

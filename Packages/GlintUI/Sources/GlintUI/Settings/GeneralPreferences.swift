@@ -81,6 +81,8 @@ public final class GeneralPreferences {
             "general.translationAutoSpeechEnabled"
         static let autoSpeechDelay =
             "general.translationAutoSpeechDelay"
+        static let menuBarIconHidden =
+            "general.menuBarIconHidden"
     }
 
     public private(set) var insertionShortcut: TranslationInsertionShortcut?
@@ -90,6 +92,7 @@ public final class GeneralPreferences {
     public private(set) var speechRate: TranslationSpeechRate
     public private(set) var autoSpeechEnabled: Bool
     public private(set) var autoSpeechDelay: Double
+    public private(set) var isMenuBarIconHidden: Bool
 
     public var insertionEnabled: Bool {
         insertionShortcut != nil
@@ -116,6 +119,8 @@ public final class GeneralPreferences {
     public var autoSpeechEnabledDidChange: (@MainActor (Bool) -> Void)?
     @ObservationIgnored
     public var autoSpeechDelayDidChange: (@MainActor (Double) -> Void)?
+    @ObservationIgnored
+    public var menuBarIconVisibilityDidChange: (@MainActor (Bool) -> Void)?
     @ObservationIgnored
     public var shortcutAvailabilityCheck: @MainActor (TranslationInsertionShortcut) -> Bool = { _ in true }
 
@@ -188,6 +193,8 @@ public final class GeneralPreferences {
             storedAutoSpeechDelay ?? Self.defaultAutoSpeechDelay
         )
         autoSpeechDelay = resolvedAutoSpeechDelay
+        isMenuBarIconHidden =
+            defaults.bool(forKey: Key.menuBarIconHidden)
         if let speechShortcut,
             storedSpeechShortcut != speechShortcut
         {
@@ -314,6 +321,13 @@ public final class GeneralPreferences {
         autoSpeechDelay = clamped
         defaults.set(clamped, forKey: Key.autoSpeechDelay)
         autoSpeechDelayDidChange?(clamped)
+    }
+
+    public func setMenuBarIconHidden(_ hidden: Bool) {
+        guard isMenuBarIconHidden != hidden else { return }
+        isMenuBarIconHidden = hidden
+        defaults.set(hidden, forKey: Key.menuBarIconHidden)
+        menuBarIconVisibilityDidChange?(hidden)
     }
 
     public func resetInsertionShortcut() {

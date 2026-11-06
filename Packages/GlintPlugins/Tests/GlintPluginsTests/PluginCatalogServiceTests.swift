@@ -674,6 +674,103 @@ final class PluginCatalogServiceTests: XCTestCase {
         XCTAssertEqual(restoredRevision, "revision-one")
     }
 
+    func testMLXInstallFailurePreservesDownloadedSnapshot() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMLXInstallFailure-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let modelData = Data([0x11, 0x22, 0x33, 0x44])
+        let payloads: [String: Data] = [
+            "config.json": Data(#"{"model_type":"qwen3"}"#.utf8),
+            "model.safetensors": modelData,
+            "tokenizer.json": Data("{\"tokenizer\":true}".utf8),
+        ]
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: [
+                "siblings": payloads.map { path, data in
+                    [
+                        "rfilename": path,
+                        "size": data.count,
+                        "lfs": path == "model.safetensors"
+                            ? ["sha256": sha256(data)]
+                            : nil,
+                    ].compactMapValues { $0 }
+                }
+            ]
+        )
+        StubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            if url.path.hasPrefix(
+                "/api/models/example/model/revision/"
+            ) {
+                return (response, snapshotData)
+            }
+            guard let data = payloads[url.lastPathComponent] else {
+                return nil
+            }
+            return (response, data)
+        }
+        defer { StubURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        let service = PluginCatalogService(
+            manager: PluginManager(baseDirectory: root),
+            session: URLSession(configuration: configuration)
+        )
+        let manifest = PluginManifest(
+            id: "../invalid-model",
+            type: .translation,
+            name: "Invalid Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(
+                payloads.values.map(\.count).reduce(0, +)
+            ),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "install-failure-revision"
+        )
+
+        do {
+            _ = try await service.install(manifest)
+            XCTFail("Invalid plugin identifier must fail installation")
+        } catch PluginManagerError.invalidPluginID {
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: nil,
+            options: []
+        )
+        var preservedModelData: Data?
+        while let url = enumerator?.nextObject() as? URL {
+            if url.lastPathComponent == "model.safetensors" {
+                preservedModelData = try Data(contentsOf: url)
+                break
+            }
+        }
+        XCTAssertEqual(preservedModelData, modelData)
+    }
+
     func testModelScopeFailureFallsBackToHuggingFaceMirror() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent(
@@ -1203,6 +1300,649 @@ final class PluginCatalogServiceTests: XCTestCase {
         }
     }
 
+    func testMLXDownloadResumesPartialFileAfterServiceRestart() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMLXResume-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let configData = Data(#"{"model_type":"qwen3"}"#.utf8)
+        let tokenizerData = Data("{\"tokenizer\":true}".utf8)
+        let modelData = Data(
+            (0..<512_000).map { UInt8(truncatingIfNeeded: $0) }
+        )
+        let payloads: [String: Data] = [
+            "config.json": configData,
+            "model.safetensors": modelData,
+            "tokenizer.json": tokenizerData,
+        ]
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: [
+                "siblings": payloads.map { path, data in
+                    [
+                        "rfilename": path,
+                        "size": data.count,
+                        "lfs": path == "model.safetensors"
+                            ? ["sha256": sha256(data)]
+                            : nil,
+                    ].compactMapValues { $0 }
+                }
+            ]
+        )
+        let requestLog = RangeRequestLog()
+
+        ResumableStubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestLog.record(
+                path: url.path,
+                range: request.value(forHTTPHeaderField: "Range")
+            )
+            if url.path.hasPrefix("/api/models/example/model/revision/") {
+                return .success(
+                    response: HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: nil
+                    )!,
+                    data: snapshotData
+                )
+            }
+            guard let payload = payloads[url.lastPathComponent] else {
+                return nil
+            }
+            if url.lastPathComponent == "model.safetensors" {
+                return .interrupted(
+                    response: self.rangedResponse(
+                        for: request,
+                        data: payload
+                    ),
+                    data: self.rangedData(for: request, data: payload),
+                    after: 64 * 1024
+                )
+            }
+            return .success(
+                response: HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                data: payload
+            )
+        }
+        defer { ResumableStubURLProtocol.handler = nil }
+
+        let manifest = PluginManifest(
+            id: "resume-model",
+            type: .translation,
+            name: "Resume Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(
+                payloads.values.map(\.count).reduce(0, +)
+            ),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "resume-revision"
+        )
+        let manager = PluginManager(baseDirectory: root)
+        let firstService = PluginCatalogService(
+            manager: manager,
+            session: resumableTestSession()
+        )
+
+        do {
+            _ = try await firstService.install(manifest)
+            XCTFail("The interrupted initial download must fail")
+        } catch {}
+
+        ResumableStubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestLog.record(
+                path: url.path,
+                range: request.value(forHTTPHeaderField: "Range")
+            )
+            if url.path.hasPrefix("/api/models/example/model/revision/") {
+                return .success(
+                    response: HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: nil
+                    )!,
+                    data: snapshotData
+                )
+            }
+            guard let payload = payloads[url.lastPathComponent] else {
+                return nil
+            }
+            return .success(
+                response: self.rangedResponse(for: request, data: payload),
+                data: self.rangedData(for: request, data: payload)
+            )
+        }
+
+        let secondService = PluginCatalogService(
+            manager: manager,
+            session: resumableTestSession()
+        )
+        _ = try await secondService.install(manifest)
+
+        let modelRequests = requestLog.values.filter {
+            $0.path.hasSuffix("/model.safetensors")
+        }
+        XCTAssertGreaterThanOrEqual(modelRequests.count, 3)
+        XCTAssertNil(modelRequests[0].range)
+        XCTAssertTrue(
+            modelRequests.dropFirst().contains {
+                $0.range?.hasPrefix("bytes=") == true
+                    && $0.range != "bytes=0-"
+            }
+        )
+        let configRequests = requestLog.values.filter {
+            $0.path.hasSuffix("/config.json")
+        }
+        XCTAssertEqual(configRequests.count, 1)
+        let installed = await manager.installedPlugin(id: manifest.id)
+        XCTAssertNotNil(installed)
+    }
+
+    func testMLXDownloadOverwritesPartialWhenServerIgnoresRange()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMLXIgnoredRange-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let configData = Data(#"{"model_type":"qwen3"}"#.utf8)
+        let tokenizerData = Data("{\"tokenizer\":true}".utf8)
+        let modelData = Data(
+            (0..<256_000).map { UInt8(truncatingIfNeeded: $0) }
+        )
+        let payloads: [String: Data] = [
+            "config.json": configData,
+            "model.safetensors": modelData,
+            "tokenizer.json": tokenizerData,
+        ]
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: [
+                "siblings": payloads.map { path, data in
+                    [
+                        "rfilename": path,
+                        "size": data.count,
+                        "lfs": path == "model.safetensors"
+                            ? ["sha256": sha256(data)]
+                            : nil,
+                    ].compactMapValues { $0 }
+                }
+            ]
+        )
+        let requestLog = RangeRequestLog()
+        let manifest = PluginManifest(
+            id: "ignored-range-model",
+            type: .translation,
+            name: "Ignored Range Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(
+                payloads.values.map(\.count).reduce(0, +)
+            ),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "ignored-range-revision"
+        )
+
+        ResumableStubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestLog.record(
+                path: url.path,
+                range: request.value(forHTTPHeaderField: "Range")
+            )
+            if url.path.hasPrefix("/api/models/example/model/revision/") {
+                return .success(
+                    response: HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: nil
+                    )!,
+                    data: snapshotData
+                )
+            }
+            guard let payload = payloads[url.lastPathComponent] else {
+                return nil
+            }
+            if url.lastPathComponent == "model.safetensors" {
+                return .interrupted(
+                    response: self.rangedResponse(
+                        for: request,
+                        data: payload
+                    ),
+                    data: self.rangedData(for: request, data: payload),
+                    after: 32 * 1024
+                )
+            }
+            return .success(
+                response: HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                data: payload
+            )
+        }
+        defer { ResumableStubURLProtocol.handler = nil }
+
+        let manager = PluginManager(baseDirectory: root)
+        let firstService = PluginCatalogService(
+            manager: manager,
+            session: resumableTestSession()
+        )
+        do {
+            _ = try await firstService.install(manifest)
+            XCTFail("The interrupted initial download must fail")
+        } catch {}
+
+        ResumableStubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestLog.record(
+                path: url.path,
+                range: request.value(forHTTPHeaderField: "Range")
+            )
+            if url.path.hasPrefix("/api/models/example/model/revision/") {
+                return .success(
+                    response: HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: nil
+                    )!,
+                    data: snapshotData
+                )
+            }
+            guard let payload = payloads[url.lastPathComponent] else {
+                return nil
+            }
+            return .success(
+                response: HTTPURLResponse(
+                    url: url,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                data: payload
+            )
+        }
+
+        let secondService = PluginCatalogService(
+            manager: manager,
+            session: resumableTestSession()
+        )
+        _ = try await secondService.install(manifest)
+
+        let modelRequests = requestLog.values.filter {
+            $0.path.hasSuffix("/model.safetensors")
+        }
+        XCTAssertTrue(
+            modelRequests.contains {
+                $0.range?.hasPrefix("bytes=") == true
+                    && $0.range != "bytes=0-"
+            }
+        )
+        let installed = await manager.installedPlugin(id: manifest.id)
+        XCTAssertNotNil(installed)
+    }
+
+    func testArchiveDownloadResumesAfterInterruption() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintArchiveResume-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: source,
+            withIntermediateDirectories: true
+        )
+        let dictionaryData = Data(
+            (0..<200_000).map { _ in
+                UInt8.random(in: UInt8.min...UInt8.max)
+            }
+        )
+        try dictionaryData.write(
+            to: source.appendingPathComponent("dictionary.sqlite3")
+        )
+        let archive = root.appendingPathComponent("plugin.zip")
+        try createArchive(from: source, at: archive)
+        let initialArchiveData = try Data(contentsOf: archive)
+
+        let remoteURL = URL(
+            string: "https://hf-mirror.com/example/plugin.zip"
+        )!
+        let draftManifest = PluginManifest(
+            id: "resumable-dictionary",
+            type: .dictionary,
+            name: "Resumable Dictionary",
+            version: "1.0",
+            runtime: "sqlite-v1",
+            sizeBytes: Int64(initialArchiveData.count),
+            sha256: sha256(initialArchiveData),
+            url: remoteURL,
+            license: "MIT",
+            minRAMBytes: 0
+        )
+        try JSONEncoder().encode(draftManifest).write(
+            to: source.appendingPathComponent("manifest.json")
+        )
+        try FileManager.default.removeItem(at: archive)
+        try createArchive(from: source, at: archive)
+        let archiveData = try Data(contentsOf: archive)
+        let finalManifest = PluginManifest(
+            id: draftManifest.id,
+            type: draftManifest.type,
+            name: draftManifest.name,
+            version: draftManifest.version,
+            runtime: draftManifest.runtime,
+            sizeBytes: Int64(archiveData.count),
+            sha256: sha256(archiveData),
+            url: remoteURL,
+            license: draftManifest.license,
+            minRAMBytes: draftManifest.minRAMBytes
+        )
+        let requestLog = RangeRequestLog()
+        ResumableStubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestLog.record(
+                path: url.path,
+                range: request.value(forHTTPHeaderField: "Range")
+            )
+            return .interrupted(
+                response: self.rangedResponse(
+                    for: request,
+                    data: archiveData
+                ),
+                data: self.rangedData(for: request, data: archiveData),
+                after: 32 * 1024
+            )
+        }
+        defer { ResumableStubURLProtocol.handler = nil }
+
+        let manager = PluginManager(baseDirectory: root)
+        let firstService = PluginCatalogService(
+            manager: manager,
+            session: resumableTestSession()
+        )
+        do {
+            _ = try await firstService.install(finalManifest)
+            XCTFail("The interrupted archive download must fail")
+        } catch {}
+        try await waitForPartialFile(
+            under: root,
+            suffix: "plugin.archive.glint-part"
+        )
+
+        ResumableStubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            requestLog.record(
+                path: url.path,
+                range: request.value(forHTTPHeaderField: "Range")
+            )
+            return .success(
+                response: self.rangedResponse(
+                    for: request,
+                    data: archiveData
+                ),
+                data: self.rangedData(for: request, data: archiveData)
+            )
+        }
+
+        let secondService = PluginCatalogService(
+            manager: manager,
+            session: resumableTestSession()
+        )
+        _ = try await secondService.install(finalManifest)
+
+        XCTAssertTrue(
+            requestLog.values.contains {
+                $0.range?.hasPrefix("bytes=") == true
+                    && $0.range != "bytes=0-"
+            },
+            "\(requestLog.values)"
+        )
+        let installed = await manager.installedPlugin(
+            id: finalManifest.id
+        )
+        XCTAssertNotNil(installed)
+    }
+
+    func testDiscardDownloadRemovesCancelledPartialDownload() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMLXCancellation-\(UUID().uuidString)"
+            )
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+
+        let configData = Data(#"{"model_type":"qwen3"}"#.utf8)
+        let tokenizerData = Data("{\"tokenizer\":true}".utf8)
+        let modelData = Data(
+            (0..<512_000).map { UInt8(truncatingIfNeeded: $0) }
+        )
+        let payloads: [String: Data] = [
+            "config.json": configData,
+            "model.safetensors": modelData,
+            "tokenizer.json": tokenizerData,
+        ]
+        let snapshotData = try JSONSerialization.data(
+            withJSONObject: [
+                "siblings": payloads.map { path, data in
+                    [
+                        "rfilename": path,
+                        "size": data.count,
+                        "lfs": path == "model.safetensors"
+                            ? ["sha256": sha256(data)]
+                            : nil,
+                    ].compactMapValues { $0 }
+                }
+            ]
+        )
+        ResumableStubURLProtocol.handler = { request in
+            guard let url = request.url else { return nil }
+            if url.path.hasPrefix("/api/models/example/model/revision/") {
+                return .success(
+                    response: HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: nil
+                    )!,
+                    data: snapshotData
+                )
+            }
+            guard let payload = payloads[url.lastPathComponent] else {
+                return nil
+            }
+            if url.lastPathComponent == "model.safetensors",
+                request.value(forHTTPHeaderField: "Range") == nil
+            {
+                return .streaming(
+                    response: HTTPURLResponse(
+                        url: url,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: nil
+                    )!,
+                    data: payload,
+                    firstChunk: 64 * 1024
+                )
+            }
+            return .success(
+                response: self.rangedResponse(for: request, data: payload),
+                data: self.rangedData(for: request, data: payload)
+            )
+        }
+        defer { ResumableStubURLProtocol.handler = nil }
+
+        let manifest = PluginManifest(
+            id: "cancelled-model",
+            type: .translation,
+            name: "Cancelled Model",
+            version: "1.0",
+            runtime: "mlx",
+            sizeBytes: Int64(
+                payloads.values.map(\.count).reduce(0, +)
+            ),
+            sha256: "HUGGINGFACE_SNAPSHOT",
+            url: URL(
+                string: "https://huggingface.co/example/model"
+            )!,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "cancellation-revision"
+        )
+        let manager = PluginManager(baseDirectory: root)
+        let service = PluginCatalogService(
+            manager: manager,
+            session: resumableTestSession()
+        )
+        let installTask = Task {
+            try await service.install(manifest)
+        }
+        try await waitForPartialFile(
+            under: root,
+            suffix: "model.safetensors.glint-part"
+        )
+        installTask.cancel()
+        do {
+            _ = try await installTask.value
+            XCTFail("Cancelled installation must fail")
+        } catch {}
+
+        XCTAssertTrue(
+            try containsPartialDownload(under: root)
+        )
+        await service.discardDownload(for: manifest.id)
+        XCTAssertFalse(
+            try containsPartialDownload(under: root)
+        )
+        let installed = await manager.installedPlugin(id: manifest.id)
+        XCTAssertNil(installed)
+    }
+
+    private func resumableTestSession() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [ResumableStubURLProtocol.self]
+        return URLSession(configuration: configuration)
+    }
+
+    private func rangedResponse(
+        for request: URLRequest,
+        data: Data
+    ) -> HTTPURLResponse {
+        let offset = rangeOffset(from: request) ?? 0
+        let status = offset > 0 ? 206 : 200
+        var headers = ["Content-Length": String(data.count - offset)]
+        if offset > 0 {
+            headers["Content-Range"] =
+                "bytes \(offset)-\(data.count - 1)/\(data.count)"
+        }
+        return HTTPURLResponse(
+            url: request.url!,
+            statusCode: status,
+            httpVersion: nil,
+            headerFields: headers
+        )!
+    }
+
+    private func rangedData(
+        for request: URLRequest,
+        data: Data
+    ) -> Data {
+        data.subdata(in: (rangeOffset(from: request) ?? 0)..<data.count)
+    }
+
+    private func rangeOffset(from request: URLRequest) -> Int? {
+        guard
+            let value = request.value(forHTTPHeaderField: "Range"),
+            value.hasPrefix("bytes="),
+            let end = value.firstIndex(of: "-")
+        else {
+            return nil
+        }
+        return Int(value[value.index(value.startIndex, offsetBy: 6)..<end])
+    }
+
+    private func waitForPartialFile(
+        under root: URL,
+        suffix: String
+    ) async throws {
+        let fileManager = FileManager.default
+        for _ in 0..<100 {
+            let enumerator = fileManager.enumerator(
+                at: root,
+                includingPropertiesForKeys: [.fileSizeKey],
+                options: []
+            )
+            while let url = enumerator?.nextObject() as? URL {
+                guard url.lastPathComponent.hasSuffix(suffix) else {
+                    continue
+                }
+                let size =
+                    try? url.resourceValues(
+                        forKeys: [.fileSizeKey]
+                    ).fileSize
+                if let size, size > 0 {
+                    return
+                }
+            }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTFail("Timed out waiting for partial download")
+    }
+
+    private func containsPartialDownload(under root: URL) throws -> Bool {
+        let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: nil,
+            options: []
+        )
+        while let url = enumerator?.nextObject() as? URL {
+            if url.lastPathComponent.hasSuffix(".glint-part") {
+                return true
+            }
+        }
+        return false
+    }
+
     private func createArchive(from source: URL, at archive: URL) throws {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
@@ -1216,6 +1956,177 @@ final class PluginCatalogServiceTests: XCTestCase {
         SHA256.hash(data: data)
             .map { String(format: "%02x", $0) }
             .joined()
+    }
+}
+
+private final class ResumableStubURLProtocol: URLProtocol {
+    enum StubResponse {
+        case success(response: HTTPURLResponse, data: Data)
+        case interrupted(
+            response: HTTPURLResponse,
+            data: Data,
+            after: Int
+        )
+        case streaming(
+            response: HTTPURLResponse,
+            data: Data,
+            firstChunk: Int
+        )
+    }
+
+    nonisolated(unsafe) static var handler: ((URLRequest) -> StubResponse?)?
+    private var sender: ResumableStubSender?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.handler,
+            let result = handler(request)
+        else {
+            client?.urlProtocol(
+                self,
+                didFailWithError: URLError(.cannotConnectToHost)
+            )
+            return
+        }
+        switch result {
+        case let .success(response, data):
+            client?.urlProtocol(
+                self,
+                didReceive: response,
+                cacheStoragePolicy: .notAllowed
+            )
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        case let .interrupted(response, data, after):
+            client?.urlProtocol(
+                self,
+                didReceive: response,
+                cacheStoragePolicy: .notAllowed
+            )
+            let sender = ResumableStubSender(
+                urlProtocol: self,
+                data: data,
+                mode: .interrupt(after: after)
+            )
+            self.sender = sender
+            DispatchQueue.global(qos: .userInitiated).async {
+                sender.send()
+            }
+        case let .streaming(response, data, firstChunk):
+            client?.urlProtocol(
+                self,
+                didReceive: response,
+                cacheStoragePolicy: .notAllowed
+            )
+            let sender = ResumableStubSender(
+                urlProtocol: self,
+                data: data,
+                mode: .stream(firstChunk: firstChunk)
+            )
+            self.sender = sender
+            DispatchQueue.global(qos: .userInitiated).async {
+                sender.send()
+            }
+        }
+    }
+
+    override func stopLoading() {
+        sender?.stop()
+    }
+}
+
+private final class ResumableStubSender: @unchecked Sendable {
+    enum Mode {
+        case interrupt(after: Int)
+        case stream(firstChunk: Int)
+    }
+
+    private let urlProtocol: URLProtocol
+    private let data: Data
+    private let mode: Mode
+    private let lock = NSLock()
+    private var stopped = false
+
+    init(
+        urlProtocol: URLProtocol,
+        data: Data,
+        mode: Mode
+    ) {
+        self.urlProtocol = urlProtocol
+        self.data = data
+        self.mode = mode
+    }
+
+    func send() {
+        switch mode {
+        case let .interrupt(after):
+            let received = min(after, data.count)
+            if received > 0 {
+                urlProtocol.client?.urlProtocol(
+                    urlProtocol,
+                    didLoad: data.prefix(received)
+                )
+            }
+            lock.lock()
+            let shouldStop = stopped
+            lock.unlock()
+            guard !shouldStop else { return }
+            Thread.sleep(forTimeInterval: 0.02)
+            urlProtocol.client?.urlProtocol(
+                urlProtocol,
+                didFailWithError: URLError(.networkConnectionLost)
+            )
+        case let .stream(firstChunk):
+            let received = min(firstChunk, data.count)
+            if received > 0 {
+                urlProtocol.client?.urlProtocol(
+                    urlProtocol,
+                    didLoad: data.prefix(received)
+                )
+            }
+            while true {
+                lock.lock()
+                let shouldStop = stopped
+                lock.unlock()
+                guard !shouldStop else { return }
+                Thread.sleep(forTimeInterval: 0.01)
+            }
+        }
+    }
+
+    func stop() {
+        lock.lock()
+        stopped = true
+        lock.unlock()
+    }
+}
+
+private struct RangeRequest {
+    let path: String
+    let range: String?
+}
+
+private final class RangeRequestLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [RangeRequest] = []
+
+    var values: [RangeRequest] {
+        lock.lock()
+        defer { lock.unlock() }
+        return storage
+    }
+
+    func record(path: String, range: String?) {
+        lock.lock()
+        storage.append(RangeRequest(path: path, range: range))
+        lock.unlock()
     }
 }
 

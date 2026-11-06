@@ -121,6 +121,7 @@ public final class MainWindowModel {
     private struct InstallationAttempt {
         let plugin: PluginManifest
         let previousModelID: String
+        let wasInstalled: Bool
         let wasActiveTranslation: Bool
         let shouldValidateTranslation: Bool
     }
@@ -195,6 +196,8 @@ public final class MainWindowModel {
     private var catalogLastModified: String?
     @ObservationIgnored
     private var installTask: Task<Void, Never>?
+    @ObservationIgnored
+    private var discardCancelledDownload = false
     @ObservationIgnored
     private var localImportTask: Task<Void, Never>?
     @ObservationIgnored
@@ -302,6 +305,8 @@ public final class MainWindowModel {
             forKeys: [.volumeAvailableCapacityForImportantUsageKey]
         ).volumeAvailableCapacityForImportantUsage
     }
+    @ObservationIgnored
+    var discardDownloadAction: @MainActor (String) async -> Void = { _ in }
 
     public init(
         generalPreferences: GeneralPreferences? = nil,
@@ -315,7 +320,11 @@ public final class MainWindowModel {
     ) {
         self.generalPreferences = generalPreferences ?? GeneralPreferences()
         self.displayPreferences = displayPreferences ?? DisplayPreferences()
-        self.pluginLifecycle = PluginLifecycleService(manager: pluginManager)
+        let pluginLifecycle = PluginLifecycleService(manager: pluginManager)
+        self.pluginLifecycle = pluginLifecycle
+        self.discardDownloadAction = { id in
+            await pluginLifecycle.discardDownload(id: id)
+        }
         self.builtInPlugins = builtInPlugins
         self.installedPlugins = builtInPlugins.sorted {
             $0.name < $1.name
@@ -1229,6 +1238,7 @@ public final class MainWindowModel {
         guard installTask == nil, localImportTask == nil else { return }
         isInstalling = plugin.id
         isCancellingInstallation = false
+        discardCancelledDownload = false
         installProgress[plugin.id] = PluginInstallProgress(
             fraction: 0,
             phase: .preparing
@@ -1243,6 +1253,7 @@ public final class MainWindowModel {
     public func cancelInstallation() {
         guard let installTask else { return }
         isCancellingInstallation = true
+        discardCancelledDownload = true
         installTask.cancel()
     }
 
@@ -1406,6 +1417,7 @@ public final class MainWindowModel {
 
         do {
             hadPendingUpgrade = try await installPackage(attempt.plugin)
+            try Task.checkCancellation()
             if attempt.shouldValidateTranslation {
                 let succeeded = try await validateTranslationInstallation(
                     attempt,
@@ -1426,6 +1438,14 @@ public final class MainWindowModel {
                 phase: .installing
             )
         } catch {
+            let shouldDiscardDownload = discardCancelledDownload
+            discardCancelledDownload = false
+            if shouldDiscardDownload {
+                await discardDownloadAction(attempt.plugin.id)
+                if !attempt.wasInstalled, !hadPendingUpgrade {
+                    try? await pluginLifecycle.uninstall(id: attempt.plugin.id)
+                }
+            }
             await recoverInstallationFailure(
                 attempt,
                 hadPendingUpgrade: hadPendingUpgrade,
@@ -1440,6 +1460,9 @@ public final class MainWindowModel {
         InstallationAttempt(
             plugin: plugin,
             previousModelID: activeModelID,
+            wasInstalled: installedPlugins.contains {
+                $0.id == plugin.id
+            },
             wasActiveTranslation:
                 plugin.type == .translation
                 && activeModelID == plugin.id,
@@ -1458,6 +1481,7 @@ public final class MainWindowModel {
         installTask = nil
         isInstalling = nil
         isCancellingInstallation = false
+        discardCancelledDownload = false
         installProgress.removeValue(forKey: pluginID)
         if modelMarketInstallPluginID == pluginID {
             modelMarketInstallRepository = nil
@@ -1491,6 +1515,7 @@ public final class MainWindowModel {
         translationModelStatusIsError = false
         translationModelStatusModelID = plugin.id
         let error = await activateTranslationModelAction(plugin.id)
+        try Task.checkCancellation()
         if let error {
             try await recoverTranslationValidationFailure(
                 attempt,
@@ -1501,6 +1526,7 @@ public final class MainWindowModel {
         }
         if !attempt.wasActiveTranslation {
             await releaseTranslationModelAction(plugin.id)
+            try Task.checkCancellation()
             if let restoreError =
                 await activateTranslationModelAction(
                     attempt.previousModelID
@@ -1509,7 +1535,9 @@ public final class MainWindowModel {
                 catalogError =
                     "模型已安装，但恢复原模型失败：\(restoreError)"
             }
+            try Task.checkCancellation()
         }
+        try Task.checkCancellation()
         try await pluginLifecycle.commitPendingUpgrade()
         translationModelStatusText = nil
         translationModelStatusIsError = false

@@ -177,9 +177,16 @@ public actor PluginCatalogService {
             at: workDirectory,
             withIntermediateDirectories: true
         )
-        defer { try? fileManager.removeItem(at: workDirectory) }
+        var stagingRoot: URL?
+        var didInstall = false
+        defer {
+            try? fileManager.removeItem(at: workDirectory)
+            if didInstall, let stagingRoot {
+                removeDownloadStagingDirectory(stagingRoot)
+            }
+        }
 
-        let archiveURL = workDirectory.appendingPathComponent("plugin.archive")
+        var archiveURL = workDirectory.appendingPathComponent("plugin.archive")
         if manifest.url.isFileURL {
             try fileManager.copyItem(at: manifest.url, to: archiveURL)
             reporter.emit(
@@ -190,50 +197,84 @@ public actor PluginCatalogService {
                 force: true
             )
         } else {
-            let downloadDirectory = workDirectory.appendingPathComponent(
-                "download",
-                isDirectory: true
+            let downloadDirectory = try await downloadStagingDirectory(
+                for: manifest
+            )
+            stagingRoot = downloadDirectory
+            let persistentArchive = downloadDirectory.appendingPathComponent(
+                "plugin.archive"
             )
             try fileManager.createDirectory(
                 at: downloadDirectory,
                 withIntermediateDirectories: true
             )
-            let totalBytes = max(0, manifest.sizeBytes)
-            let (temporaryURL, response) = try await downloadTemporaryFile(
-                from: manifest.url
-            ) {
-                [reporter, totalBytes, sourceHost = manifest.url.host]
-                completed,
-                expected,
-                speed in
-                let resolvedTotal = expected > 0 ? expected : totalBytes
-                let ratio =
-                    resolvedTotal > 0
-                    ? Double(min(completed, resolvedTotal))
-                        / Double(resolvedTotal)
-                    : 0
-                reporter.emit(
-                    PluginInstallProgress(
-                        fraction: PluginInstallProgressRange.mapped(
-                            ratio,
-                            from: PluginInstallProgressRange.downloadingStart,
-                            to: PluginInstallProgressRange.downloadingEnd
-                        ),
-                        phase: .downloading,
-                        completedBytes: completed,
-                        totalBytes: resolvedTotal,
-                        bytesPerSecond: speed,
-                        sourceHost: sourceHost
-                    )
+            if !(try isValidDownloadedArchive(
+                persistentArchive,
+                for: manifest
+            )) {
+                try? fileManager.removeItem(at: persistentArchive)
+            }
+            if fileManager.fileExists(atPath: persistentArchive.path) {
+                archiveURL = persistentArchive
+            } else {
+                let partURL = Self.partialDownloadURL(
+                    for: persistentArchive
                 )
+                let existingPartBytes = fileSize(at: partURL) ?? 0
+                if manifest.sizeBytes <= 0
+                    || existingPartBytes != manifest.sizeBytes
+                {
+                    let downloader = ResumableFileDownloader(
+                        session: session
+                    )
+                    _ = try await downloader.download(
+                        from: manifest.url,
+                        to: partURL,
+                        expectedBytes: manifest.sizeBytes
+                    ) {
+                        [reporter, totalBytes = manifest.sizeBytes,
+                         sourceHost = manifest.url.host]
+                        completed,
+                        expected,
+                        speed in
+                        let resolvedTotal =
+                            expected > 0 ? expected : totalBytes
+                        let ratio =
+                            resolvedTotal > 0
+                            ? Double(min(completed, resolvedTotal))
+                                / Double(resolvedTotal)
+                            : 0
+                        reporter.emit(
+                            PluginInstallProgress(
+                                fraction: PluginInstallProgressRange.mapped(
+                                    ratio,
+                                    from: PluginInstallProgressRange.downloadingStart,
+                                    to: PluginInstallProgressRange.downloadingEnd
+                                ),
+                                phase: .downloading,
+                                completedBytes: completed,
+                                totalBytes: resolvedTotal,
+                                bytesPerSecond: speed,
+                                sourceHost: sourceHost
+                            )
+                        )
+                    }
+                    let downloadedBytes = fileSize(at: partURL) ?? 0
+                    if manifest.sizeBytes > 0,
+                        downloadedBytes != manifest.sizeBytes
+                    {
+                        throw PluginCatalogError.invalidResponse
+                    }
+                }
+                if fileManager.fileExists(atPath: persistentArchive.path) {
+                    try fileManager.removeItem(at: persistentArchive)
+                }
+                try fileManager.moveItem(
+                    at: partURL,
+                    to: persistentArchive
+                )
+                archiveURL = persistentArchive
             }
-            try Task.checkCancellation()
-            guard let http = response as? HTTPURLResponse,
-                (200..<300).contains(http.statusCode)
-            else {
-                throw PluginCatalogError.invalidResponse
-            }
-            try fileManager.moveItem(at: temporaryURL, to: archiveURL)
         }
 
         reporter.emit(
@@ -330,11 +371,23 @@ public actor PluginCatalogService {
             PluginInstallProgress(fraction: 1, phase: .installing),
             force: true
         )
+        didInstall = true
         return installed
     }
 
     public func uninstall(id: String) async throws {
         try await manager.remove(id: id)
+        await discardDownload(for: id)
+    }
+
+    public func discardDownload(for id: String) async {
+        let downloads = await manager.downloadStagingDirectory()
+        removeDownloadStagingDirectory(
+            downloads.appendingPathComponent(
+                Self.downloadIdentifier(id),
+                isDirectory: true
+            )
+        )
     }
 
     private func findManifest(in directory: URL) -> URL? {
@@ -423,15 +476,10 @@ public actor PluginCatalogService {
         let sources = try modelDownloadSources(for: manifest)
         let reporter = InstallProgressReporter(progress)
 
-        let workDirectory = fileManager.temporaryDirectory
-            .appendingPathComponent("GlintMLX-\(UUID().uuidString)", isDirectory: true)
-        try fileManager.createDirectory(
-            at: workDirectory,
-            withIntermediateDirectories: true
+        let stagingRoot = try await downloadStagingDirectory(
+            for: manifest
         )
-        defer { try? fileManager.removeItem(at: workDirectory) }
-
-        let modelDirectory = workDirectory.appendingPathComponent(
+        let modelDirectory = stagingRoot.appendingPathComponent(
             "model",
             isDirectory: true
         )
@@ -445,15 +493,17 @@ public actor PluginCatalogService {
             reporter: reporter
         )
 
-        let pluginDirectory = try prepareDownloadedPlugin(
-            manifest,
-            modelDirectory: modelDirectory,
-            workDirectory: workDirectory
+        try JSONEncoder().encode(manifest).write(
+            to: stagingRoot.appendingPathComponent(
+                PluginManifest.fileName
+            )
         )
-        return try await installPreparedSnapshot(
-            pluginDirectory,
+        let installed = try await installPreparedSnapshot(
+            stagingRoot,
             reporter: reporter
         )
+        removeDownloadStagingDirectory(stagingRoot)
+        return installed
     }
 
     private func modelDownloadSources(
@@ -495,6 +545,113 @@ public actor PluginCatalogService {
             }
         )
         return sources
+    }
+
+    private func downloadStagingDirectory(
+        for manifest: PluginManifest
+    ) async throws -> URL {
+        let downloads = await manager.downloadStagingDirectory()
+        let pluginDirectory = downloads.appendingPathComponent(
+            Self.downloadIdentifier(manifest.id),
+            isDirectory: true
+        )
+        let identity = [
+            manifest.url.absoluteString,
+            manifest.revision ?? "",
+            manifest.version,
+            String(manifest.sizeBytes),
+        ].joined(separator: "\u{0}")
+        let directory = pluginDirectory.appendingPathComponent(
+            Self.downloadIdentifier(identity),
+            isDirectory: true
+        )
+        try fileManager.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        pruneDownloadStagingDirectories(
+            in: pluginDirectory,
+            keeping: directory
+        )
+        return directory
+    }
+
+    private func pruneDownloadStagingDirectories(
+        in directory: URL,
+        keeping current: URL
+    ) {
+        let cutoff = Date().addingTimeInterval(-7 * 24 * 60 * 60)
+        guard
+            let items = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [
+                    .contentModificationDateKey,
+                    .isDirectoryKey,
+                ],
+                options: [.skipsHiddenFiles]
+            )
+        else {
+            return
+        }
+        for item in items
+        where item.standardizedFileURL != current.standardizedFileURL {
+            guard
+                let values = try? item.resourceValues(
+                    forKeys: [
+                        .contentModificationDateKey,
+                        .isDirectoryKey,
+                    ]
+                ),
+                values.isDirectory == true,
+                let modified = values.contentModificationDate,
+                modified < cutoff
+            else {
+                continue
+            }
+            try? fileManager.removeItem(at: item)
+        }
+    }
+
+    private func removeDownloadStagingDirectory(_ directory: URL) {
+        try? fileManager.removeItem(at: directory)
+        let parent = directory.deletingLastPathComponent()
+        guard
+            let remaining = try? fileManager.contentsOfDirectory(
+                at: parent,
+                includingPropertiesForKeys: nil
+            ),
+            remaining.isEmpty
+        else {
+            return
+        }
+        try? fileManager.removeItem(at: parent)
+    }
+
+    private func isValidDownloadedArchive(
+        _ url: URL,
+        for manifest: PluginManifest
+    ) throws -> Bool {
+        guard fileManager.fileExists(atPath: url.path),
+            manifest.sha256 != "REPLACE_ME"
+        else {
+            return false
+        }
+        if manifest.sizeBytes > 0 {
+            guard fileSize(at: url) == manifest.sizeBytes else {
+                return false
+            }
+        }
+        return try Self.sha256(of: url) == manifest.sha256.lowercased()
+    }
+
+    private static func downloadIdentifier(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    private static func partialDownloadURL(for url: URL) -> URL {
+        url.appendingPathExtension("glint-part")
     }
 
     private func downloadModelSnapshot(
@@ -539,40 +696,22 @@ public actor PluginCatalogService {
                     throw CancellationError()
                 }
                 lastError = error
-                try? fileManager.removeItem(at: modelDirectory)
-                try fileManager.createDirectory(
-                    at: modelDirectory,
-                    withIntermediateDirectories: true
-                )
+                if case .modelScope = source {
+                    // Unpinned ModelScope `master` and Hugging Face `main`
+                    // are independent mutable sources. Never concatenate or
+                    // mix their partial snapshots.
+                    try? fileManager.removeItem(at: modelDirectory)
+                    try fileManager.createDirectory(
+                        at: modelDirectory,
+                        withIntermediateDirectories: true
+                    )
+                }
             }
         }
         if let lastError {
             throw lastError
         }
         try Task.checkCancellation()
-    }
-
-    private func prepareDownloadedPlugin(
-        _ manifest: PluginManifest,
-        modelDirectory: URL,
-        workDirectory: URL
-    ) throws -> URL {
-        let pluginDirectory = workDirectory.appendingPathComponent(
-            "plugin",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(
-            at: pluginDirectory,
-            withIntermediateDirectories: true
-        )
-        try fileManager.moveItem(
-            at: modelDirectory,
-            to: pluginDirectory.appendingPathComponent("model", isDirectory: true)
-        )
-        try JSONEncoder().encode(manifest).write(
-            to: pluginDirectory.appendingPathComponent("manifest.json")
-        )
-        return pluginDirectory
     }
 
     private func installPreparedSnapshot(
@@ -795,18 +934,59 @@ public actor PluginCatalogService {
             ).volumeAvailableCapacityForImportantUsage ?? 0
         if expectedBytes > 0, available > 0 {
             guard
-                let requiredBytes = RemoteByteCount.checkedProduct(
+                let totalRequirement = RemoteByteCount.checkedProduct(
                     expectedBytes,
                     2
                 )
             else {
                 throw PluginCatalogError.invalidModelSnapshot
             }
+            let stagedBytes = stagedSnapshotBytes(
+                files,
+                in: directory
+            )
+            let requiredBytes = max(0, totalRequirement - stagedBytes)
             if available < requiredBytes {
                 throw PluginCatalogError.insufficientDiskSpace
             }
         }
         return expectedBytes
+    }
+
+    private func stagedSnapshotBytes(
+        _ files: [SnapshotDownloadFile],
+        in directory: URL
+    ) -> Int64 {
+        var total: Int64 = 0
+        for file in files {
+            guard
+                let destination = Self.safeDestination(
+                    for: file.path,
+                    in: directory
+                )
+            else {
+                continue
+            }
+            let destinationBytes = fileSize(at: destination) ?? 0
+            let partBytes =
+                fileSize(
+                    at: Self.partialDownloadURL(for: destination)
+                ) ?? 0
+            let availableFileBytes = max(
+                destinationBytes,
+                partBytes
+            )
+            let countedBytes =
+                file.size > 0
+                ? min(file.size, availableFileBytes)
+                : availableFileBytes
+            let addition = total.addingReportingOverflow(countedBytes)
+            guard !addition.overflow else {
+                return total
+            }
+            total = addition.partialValue
+        }
+        return total
     }
 
     private func downloadSnapshotFile(
@@ -828,14 +1008,43 @@ public actor PluginCatalogService {
             at: destination.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
+        let existingBytes = fileSize(at: destination)
+        if let existingBytes,
+            file.size <= 0 || existingBytes == file.size
+        {
+            return DownloadedSnapshotFile(
+                destination: destination,
+                actualBytes: existingBytes,
+                expectedSHA256: file.sha256
+            )
+        }
+        if fileManager.fileExists(atPath: destination.path) {
+            try fileManager.removeItem(at: destination)
+        }
         guard
             let resolvedDownloadURL = progress.downloadURL(file)
         else {
             throw PluginCatalogError.invalidModelRepository
         }
 
-        let (temporaryURL, response) = try await downloadTemporaryFile(
-            from: resolvedDownloadURL
+        let partURL = Self.partialDownloadURL(for: destination)
+        let partialBytes = fileSize(at: partURL) ?? 0
+        if file.size > 0, partialBytes == file.size {
+            try fileManager.moveItem(at: partURL, to: destination)
+            return DownloadedSnapshotFile(
+                destination: destination,
+                actualBytes: partialBytes,
+                expectedSHA256: file.sha256
+            )
+        }
+
+        let downloader = ResumableFileDownloader(
+            session: session
+        )
+        _ = try await downloader.download(
+            from: resolvedDownloadURL,
+            to: partURL,
+            expectedBytes: file.size
         ) { received, _, speed in
             progress.reportDownload(
                 index: index,
@@ -844,23 +1053,16 @@ public actor PluginCatalogService {
             )
         }
         try Task.checkCancellation()
-        guard let http = response as? HTTPURLResponse,
-            (200..<300).contains(http.statusCode)
-        else {
-            throw PluginCatalogError.invalidResponse
-        }
-        try fileManager.moveItem(at: temporaryURL, to: destination)
+        try fileManager.moveItem(at: partURL, to: destination)
 
-        let actualBytes =
-            try destination.resourceValues(
-                forKeys: [.fileSizeKey]
-            ).fileSize ?? 0
+        let actualBytes = fileSize(at: destination) ?? 0
         if file.size > 0, actualBytes != file.size {
+            try? fileManager.removeItem(at: destination)
             throw PluginCatalogError.invalidModelSnapshot
         }
         return DownloadedSnapshotFile(
             destination: destination,
-            actualBytes: Int64(actualBytes),
+            actualBytes: actualBytes,
             expectedSHA256: file.sha256
         )
     }
@@ -917,6 +1119,7 @@ public actor PluginCatalogService {
                     )
                 }
                 guard digest == expectedSHA.lowercased() else {
+                    try? fileManager.removeItem(at: file.destination)
                     throw PluginCatalogError.invalidModelSnapshot
                 }
             }
@@ -1125,34 +1328,17 @@ public actor PluginCatalogService {
         }
     }
 
-    private func downloadTemporaryFile(
-        from url: URL,
-        progress: @escaping @Sendable (Int64, Int64, Int64?) -> Void
-    ) async throws -> (URL, URLResponse) {
-        let taskBox = DownloadTaskBox()
-        return try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
-                let delegate = ProgressDownloadDelegate(
-                    continuation: continuation,
-                    onProgress: progress
-                )
-                let task = session.downloadTask(with: url)
-                taskBox.install(task: task, delegate: delegate)
-                task.resume()
-            }
-        } onCancel: {
-            taskBox.cancel()
-        }
-    }
-
     private static func sha256(
         of url: URL,
         progress: (@Sendable (Double) -> Void)? = nil
     ) throws -> String {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
+        let attributes = try FileManager.default.attributesOfItem(
+            atPath: url.path
+        )
         let totalBytes =
-            try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            (attributes[.size] as? NSNumber)?.intValue ?? 0
         var hasher = SHA256()
         var processedBytes = 0
         while let data = try handle.read(upToCount: 4 * 1024 * 1024),
@@ -1169,6 +1355,18 @@ public actor PluginCatalogService {
         }
         progress?(1)
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func fileSize(at url: URL) -> Int64? {
+        guard
+            let attributes = try? fileManager.attributesOfItem(
+                atPath: url.path
+            ),
+            let size = attributes[.size] as? NSNumber
+        else {
+            return nil
+        }
+        return size.int64Value
     }
 
 }
@@ -1251,154 +1449,6 @@ private struct DownloadedSnapshotFile {
     let destination: URL
     let actualBytes: Int64
     let expectedSHA256: String?
-}
-
-private final class DownloadSpeedMeter: @unchecked Sendable {
-    private let lock = NSLock()
-    private var lastTimestamp = DispatchTime.now().uptimeNanoseconds
-    private var lastBytes: Int64 = 0
-    private var smoothedBytesPerSecond: Double = 0
-
-    func update(totalBytes: Int64) -> Int64? {
-        lock.lock()
-        defer { lock.unlock() }
-        let now = DispatchTime.now().uptimeNanoseconds
-        let elapsed =
-            now > lastTimestamp
-            ? Double(now - lastTimestamp) / 1_000_000_000
-            : 0
-        guard elapsed >= 0.2 else {
-            return smoothedBytesPerSecond > 0
-                ? Int64(smoothedBytesPerSecond)
-                : nil
-        }
-        let deltaBytes = max(0, totalBytes - lastBytes)
-        let instantaneous = Double(deltaBytes) / elapsed
-        smoothedBytesPerSecond =
-            smoothedBytesPerSecond == 0
-            ? instantaneous
-            : smoothedBytesPerSecond * 0.75 + instantaneous * 0.25
-        lastTimestamp = now
-        lastBytes = totalBytes
-        guard smoothedBytesPerSecond > 0 else { return nil }
-        return Int64(smoothedBytesPerSecond)
-    }
-}
-
-private final class DownloadTaskBox: @unchecked Sendable {
-    private let lock = NSLock()
-    private var task: URLSessionDownloadTask?
-    private var delegate: ProgressDownloadDelegate?
-    private var isCancelled = false
-
-    func install(
-        task: URLSessionDownloadTask,
-        delegate: ProgressDownloadDelegate
-    ) {
-        lock.lock()
-        self.task = task
-        self.delegate = delegate
-        let shouldCancel = isCancelled
-        lock.unlock()
-        task.delegate = delegate
-        if shouldCancel {
-            task.cancel()
-        }
-    }
-
-    func cancel() {
-        lock.lock()
-        isCancelled = true
-        let task = task
-        lock.unlock()
-        task?.cancel()
-    }
-}
-
-private final class ProgressDownloadDelegate:
-    NSObject,
-    URLSessionDownloadDelegate,
-    @unchecked Sendable
-{
-    private let continuation: CheckedContinuation<(URL, URLResponse), Error>
-    private let onProgress: @Sendable (Int64, Int64, Int64?) -> Void
-    private let speedMeter = DownloadSpeedMeter()
-    private let lock = NSLock()
-    private var completed = false
-
-    init(
-        continuation: CheckedContinuation<(URL, URLResponse), Error>,
-        onProgress: @escaping @Sendable (Int64, Int64, Int64?) -> Void
-    ) {
-        self.continuation = continuation
-        self.onProgress = onProgress
-    }
-
-    nonisolated func urlSession(
-        _ session: URLSession,
-        downloadTask: URLSessionDownloadTask,
-        didWriteData bytesWritten: Int64,
-        totalBytesWritten: Int64,
-        totalBytesExpectedToWrite: Int64
-    ) {
-        onProgress(
-            totalBytesWritten,
-            totalBytesExpectedToWrite,
-            speedMeter.update(totalBytes: totalBytesWritten)
-        )
-    }
-
-    nonisolated func urlSession(
-        _ session: URLSession,
-        downloadTask: URLSessionDownloadTask,
-        didFinishDownloadingTo location: URL
-    ) {
-        guard let response = downloadTask.response else {
-            finish(.failure(URLError(.badServerResponse)))
-            return
-        }
-        if let http = response as? HTTPURLResponse,
-            !(200..<300).contains(http.statusCode)
-        {
-            finish(.failure(PluginCatalogError.invalidResponse))
-            return
-        }
-        let retainedURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent(
-                "GlintDownload-\(UUID().uuidString).tmp"
-            )
-        do {
-            try FileManager.default.moveItem(
-                at: location,
-                to: retainedURL
-            )
-            finish(.success((retainedURL, response)))
-        } catch {
-            finish(.failure(error))
-        }
-    }
-
-    nonisolated func urlSession(
-        _ session: URLSession,
-        task: URLSessionTask,
-        didCompleteWithError error: Error?
-    ) {
-        guard let error else { return }
-        finish(.failure(error))
-    }
-
-    private func finish(
-        _ result: Result<(URL, URLResponse), Error>
-    ) {
-        lock.lock()
-        guard !completed else {
-            lock.unlock()
-            return
-        }
-        completed = true
-        lock.unlock()
-        continuation.resume(with: result)
-    }
 }
 
 private final class InstallProgressReporter: @unchecked Sendable {

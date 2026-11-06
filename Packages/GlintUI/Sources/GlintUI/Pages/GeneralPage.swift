@@ -221,6 +221,29 @@ struct GeneralPage: View {
                         .accessibilityHint("登录 Mac 时自动启动 Glint")
                     }
 
+                    Divider()
+
+                    HStack(spacing: 20) {
+                        Text("隐藏菜单栏图标")
+                        Spacer()
+                        Toggle(
+                            "隐藏菜单栏图标",
+                            isOn: Binding(
+                                get: {
+                                    model.generalPreferences
+                                        .isMenuBarIconHidden
+                                },
+                                set: {
+                                    model.generalPreferences
+                                        .setMenuBarIconHidden($0)
+                                }
+                            )
+                        )
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                    }
+
                     if let launchAtLoginMessage {
                         Divider()
 

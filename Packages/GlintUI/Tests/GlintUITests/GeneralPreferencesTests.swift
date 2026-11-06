@@ -63,6 +63,33 @@ final class GeneralPreferencesTests: XCTestCase {
     }
 
     @MainActor
+    func testMenuBarIconHiddenDefaultsFalseAndPersists() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = GeneralPreferences(defaults: defaults)
+        XCTAssertFalse(preferences.isMenuBarIconHidden)
+        var observed: [Bool] = []
+        preferences.menuBarIconVisibilityDidChange = {
+            observed.append($0)
+        }
+
+        preferences.setMenuBarIconHidden(true)
+
+        XCTAssertTrue(preferences.isMenuBarIconHidden)
+        XCTAssertEqual(observed, [true])
+        XCTAssertTrue(
+            GeneralPreferences(defaults: defaults).isMenuBarIconHidden
+        )
+
+        preferences.setMenuBarIconHidden(false)
+        XCTAssertFalse(
+            GeneralPreferences(defaults: defaults).isMenuBarIconHidden
+        )
+    }
+
+    @MainActor
     func testSpeechShortcutPersistsWhenSet() throws {
         let suiteName = "GlintUITests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

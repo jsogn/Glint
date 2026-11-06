@@ -36,6 +36,10 @@ final class PluginLifecycleService {
         try await catalog.install(plugin, progress: progress)
     }
 
+    func discardDownload(id: String) async {
+        await catalog.discardDownload(for: id)
+    }
+
     func importLocalModel(
         from directory: URL,
         progress: (@Sendable (Double) -> Void)? = nil

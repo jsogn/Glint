@@ -605,27 +605,28 @@ struct PluginsPage: View {
                     InstallProgressFormatting.description(
                         for: currentProgress
                     )
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 10) {
                         ProgressView(value: currentProgress.fraction)
                             .progressViewStyle(.linear)
                             .accessibilityLabel("安装进度")
                             .accessibilityValue(
                                 Text(progressDescription)
                             )
-                        Text(progressDescription)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .help(progressDescription)
+                            .frame(width: 220)
+                        Button(model.isCancellingInstallation ? "取消中…" : "取消") {
+                            model.cancelInstallation()
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .disabled(model.isCancellingInstallation)
                     }
-                    .frame(width: 220, alignment: .leading)
-                    Button(model.isCancellingInstallation ? "取消中…" : "取消") {
-                        model.cancelInstallation()
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .disabled(model.isCancellingInstallation)
+                    Text(progressDescription)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .help(progressDescription)
+                        .frame(width: 220, alignment: .leading)
                 }
             } else {
                 VStack(alignment: .trailing, spacing: 6) {
@@ -752,31 +753,32 @@ struct PluginsPage: View {
                     InstallProgressFormatting.description(
                         for: progress
                     )
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 10) {
                         ProgressView(value: progress.fraction)
                             .progressViewStyle(.linear)
                             .accessibilityLabel("安装进度")
                             .accessibilityValue(
                                 Text(progressDescription)
                             )
-                        Text(progressDescription)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .help(progressDescription)
+                            .frame(width: 220)
+                        Button(
+                            model.isCancellingInstallation
+                                ? "取消中…"
+                                : "取消"
+                        ) {
+                            model.cancelInstallation()
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .disabled(model.isCancellingInstallation)
                     }
-                    .frame(width: 220, alignment: .leading)
-                    Button(
-                        model.isCancellingInstallation
-                            ? "取消中…"
-                            : "取消"
-                    ) {
-                        model.cancelInstallation()
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .disabled(model.isCancellingInstallation)
+                    Text(progressDescription)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .help(progressDescription)
+                        .frame(width: 220, alignment: .leading)
                 }
             } else if installed != nil {
                 Text("已安装")

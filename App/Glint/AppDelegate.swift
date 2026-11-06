@@ -326,7 +326,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(item("退出", action: #selector(quit)))
         menu.delegate = self
         statusItem.menu = menu
+        statusItem.isVisible =
+            !windowModel.generalPreferences.isMenuBarIconHidden
         updateAppUpdateMenuItem()
+    }
+
+    private func updateStatusItemVisibility() {
+        guard statusItem != nil else { return }
+        statusItem.isVisible =
+            !windowModel.generalPreferences.isMenuBarIconHidden
     }
 
     private func setupMainMenu() {
@@ -687,6 +695,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         windowModel.generalPreferences.autoSpeechDelayDidChange = {
             [weak self] delay in
             self?.translationAutoSpeechScheduler.setDelay(delay)
+        }
+        windowModel.generalPreferences.menuBarIconVisibilityDidChange = {
+            [weak self] _ in
+            self?.updateStatusItemVisibility()
         }
         windowModel.translationConfigurationChangedAction = { [weak self] in
             self?.syncTranslationConfiguration()
