@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import GlintCore
 import Observation
@@ -83,6 +84,8 @@ public final class GeneralPreferences {
             "general.translationAutoSpeechDelay"
         static let menuBarIconHidden =
             "general.menuBarIconHidden"
+        static let dockIconHidden =
+            "general.dockIconHidden"
     }
 
     public private(set) var insertionShortcut: TranslationInsertionShortcut?
@@ -93,6 +96,7 @@ public final class GeneralPreferences {
     public private(set) var autoSpeechEnabled: Bool
     public private(set) var autoSpeechDelay: Double
     public private(set) var isMenuBarIconHidden: Bool
+    public private(set) var isDockIconHidden: Bool
 
     public var insertionEnabled: Bool {
         insertionShortcut != nil
@@ -100,6 +104,10 @@ public final class GeneralPreferences {
 
     public var manualSpeechEnabled: Bool {
         speechShortcut != nil
+    }
+
+    public var applicationActivationPolicy: NSApplication.ActivationPolicy {
+        isDockIconHidden ? .accessory : .regular
     }
 
     @ObservationIgnored
@@ -121,6 +129,8 @@ public final class GeneralPreferences {
     public var autoSpeechDelayDidChange: (@MainActor (Double) -> Void)?
     @ObservationIgnored
     public var menuBarIconVisibilityDidChange: (@MainActor (Bool) -> Void)?
+    @ObservationIgnored
+    public var dockIconVisibilityDidChange: (@MainActor (Bool) -> Void)?
     @ObservationIgnored
     public var shortcutAvailabilityCheck: @MainActor (TranslationInsertionShortcut) -> Bool = { _ in true }
 
@@ -195,6 +205,9 @@ public final class GeneralPreferences {
         autoSpeechDelay = resolvedAutoSpeechDelay
         isMenuBarIconHidden =
             defaults.bool(forKey: Key.menuBarIconHidden)
+        isDockIconHidden =
+            defaults.object(forKey: Key.dockIconHidden) as? Bool
+            ?? true
         if let speechShortcut,
             storedSpeechShortcut != speechShortcut
         {
@@ -328,6 +341,13 @@ public final class GeneralPreferences {
         isMenuBarIconHidden = hidden
         defaults.set(hidden, forKey: Key.menuBarIconHidden)
         menuBarIconVisibilityDidChange?(hidden)
+    }
+
+    public func setDockIconHidden(_ hidden: Bool) {
+        guard isDockIconHidden != hidden else { return }
+        isDockIconHidden = hidden
+        defaults.set(hidden, forKey: Key.dockIconHidden)
+        dockIconVisibilityDidChange?(hidden)
     }
 
     public func resetInsertionShortcut() {

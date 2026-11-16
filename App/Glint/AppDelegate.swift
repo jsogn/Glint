@@ -23,6 +23,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         "glint.permissions.accessibilityInitialRequestAttempted"
 
     private let readinessToken: String?
+    var initialActivationPolicy: NSApplication.ActivationPolicy {
+        windowModel.generalPreferences.applicationActivationPolicy
+    }
+
     private var statusItem: NSStatusItem!
     private var monitoringMenuItem: NSMenuItem!
     private var updateMenuItem: NSMenuItem!
@@ -335,6 +339,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard statusItem != nil else { return }
         statusItem.isVisible =
             !windowModel.generalPreferences.isMenuBarIconHidden
+    }
+
+    private func updateActivationPolicy() {
+        let policy =
+            windowModel.generalPreferences.applicationActivationPolicy
+        guard NSApp.activationPolicy() != policy else { return }
+        guard NSApp.setActivationPolicy(policy) else {
+            appLogger.error(
+                "failed to update activation policy=\(policy.rawValue, privacy: .public)"
+            )
+            return
+        }
     }
 
     private func setupMainMenu() {
@@ -699,6 +715,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         windowModel.generalPreferences.menuBarIconVisibilityDidChange = {
             [weak self] _ in
             self?.updateStatusItemVisibility()
+        }
+        windowModel.generalPreferences.dockIconVisibilityDidChange = {
+            [weak self] _ in
+            self?.updateActivationPolicy()
         }
         windowModel.translationConfigurationChangedAction = { [weak self] in
             self?.syncTranslationConfiguration()

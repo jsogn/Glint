@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import GlintCore
 import XCTest
@@ -86,6 +87,41 @@ final class GeneralPreferencesTests: XCTestCase {
         preferences.setMenuBarIconHidden(false)
         XCTAssertFalse(
             GeneralPreferences(defaults: defaults).isMenuBarIconHidden
+        )
+    }
+
+    @MainActor
+    func testDockIconHiddenDefaultsTrueAndPersists() throws {
+        let suiteName = "GlintUITests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let preferences = GeneralPreferences(defaults: defaults)
+        XCTAssertTrue(preferences.isDockIconHidden)
+        XCTAssertEqual(
+            preferences.applicationActivationPolicy,
+            .accessory
+        )
+        var observed: [Bool] = []
+        preferences.dockIconVisibilityDidChange = {
+            observed.append($0)
+        }
+
+        preferences.setDockIconHidden(false)
+
+        XCTAssertFalse(preferences.isDockIconHidden)
+        XCTAssertEqual(
+            preferences.applicationActivationPolicy,
+            .regular
+        )
+        XCTAssertEqual(observed, [false])
+        XCTAssertFalse(
+            GeneralPreferences(defaults: defaults).isDockIconHidden
+        )
+
+        preferences.setDockIconHidden(true)
+        XCTAssertTrue(
+            GeneralPreferences(defaults: defaults).isDockIconHidden
         )
     }
 

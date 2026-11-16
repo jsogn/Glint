@@ -217,11 +217,14 @@ GlintCore
 
 ## 6. 生命周期与 UI
 
-- App 使用 `NSApplicationActivationPolicy.accessory`，仅驻留菜单栏。
+- App 默认使用 `NSApplicationActivationPolicy.accessory`，仅驻留菜单栏；关闭
+  “隐藏 Dock 图标”后切换为 `.regular` 并在 Dock 中显示。
 - 菜单栏开启和关闭状态共用 `16×16` 模板图标画布；关闭状态使用降透明度的
   暂停变体，不通过独立标题或额外圆点改变状态栏项宽度。
-- “通用配置 > 基础”可隐藏菜单栏图标，默认关闭并持久化。隐藏后 App 仍以
-  accessory 激活策略后台运行，可通过重新打开 Glint 显示主窗口。
+- “通用配置 > 基础”可隐藏菜单栏图标，默认关闭并持久化；该开关不改变 App 的
+  激活策略。
+- “隐藏 Dock 图标”默认开启并持久化，与菜单栏图标开关相互独立。Dock 和菜单栏
+  图标都隐藏时，可通过重新打开 App 显示主窗口。
 - 首次启动显示主窗口；关闭窗口只隐藏，不停止监控。
 - 登录时启动由 `SMAppService.mainApp` 管理，默认关闭；登录启动只进入菜单栏，
   不主动显示主窗口。

@@ -244,6 +244,40 @@ struct GeneralPage: View {
                         .controlSize(.small)
                     }
 
+                    Divider()
+
+                    HStack(spacing: 20) {
+                        Text("隐藏 Dock 图标")
+                        Spacer()
+                        Toggle(
+                            "隐藏 Dock 图标",
+                            isOn: Binding(
+                                get: {
+                                    model.generalPreferences
+                                        .isDockIconHidden
+                                },
+                                set: {
+                                    model.generalPreferences
+                                        .setDockIconHidden($0)
+                                }
+                            )
+                        )
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .accessibilityHint(
+                            "关闭后可从 Dock 重新打开主界面"
+                        )
+                    }
+
+                    if model.generalPreferences.isDockIconHidden,
+                        model.generalPreferences.isMenuBarIconHidden
+                    {
+                        Text("Dock 和菜单栏图标均已隐藏。可从“应用程序”重新打开 Glint。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
                     if let launchAtLoginMessage {
                         Divider()
 
