@@ -50,8 +50,9 @@ TextEdit AXWindow / AXDialog
   边界开始计算。
 - 组合结束后候选列表消失。Escape、提交、失焦和切换输入源均会结束会话。
 
-TextEdit、Safari 和 Chrome 已完成代表性验证。Electron/Chromium 的自动化键盘
-事件可能绕过输入法，不能以自动化未出现候选推断真实输入失败。
+TextEdit、Safari 和 Chrome 已完成代表性验证。Safari/WebKit 与
+Electron/Chromium 的合成键盘事件可能直接写入正文而不建立输入法组合会话，
+不能以自动化未出现候选推断真实输入失败；这些宿主必须用人工键入完成候选验收。
 
 ### 独立输入法进程
 
@@ -109,10 +110,12 @@ AX 调用偶发出现数百毫秒长尾，极端样本曾超过 3 秒，因此�
 - 豆包输入法 1.0.2：TextEdit、Safari、Chrome、候选展开/收起和进程重启。
 - 豆包输入法 1.0.3-1：输入法升级后候选读取与翻译通过。
 - 微信输入法 `3.0.0`：用户完成宿主人工键入验收。
-- 讯飞输入法 `1.1.1010`：TextEdit 中的候选读取、初始选中项和右方向键切换
-  通过；读取到 6 个单行候选，选中索引与分组 frame 同步变化。正式监控链路中
-  HUD 随选中候选移动，Escape 后关闭；独立 Profile 探测返回
-  `isolatedSelectedChildGroups`。
+- 讯飞输入法 `1.1.1010`：TextEdit 中的候选读取、左右方向键切换、Escape、
+  提交、候选展开、输入源切换和输入法进程重启通过；读取到 6 个单行候选，选中
+  索引与分组 frame 同步变化。正式监控链路中 HUD 随选中候选移动，展开多行、
+  提交、切换输入源或进程退出后关闭，服务重启后恢复；独立 Profile 探测返回
+  `isolatedSelectedChildGroups`。启用 Secure Input 后，即使独立探针仍能读取
+  候选栏，Glint HUD 仍保持关闭。
 - 微信 App `4.1.15 (270115)`，Apple 拼音与微信输入法 `3.0.0`：聚焦聊天输入区
   后会暴露 `chat_input_field` / `AXTextArea` 及其控件 frame，统一的目标 PID
   插入路径已完成真实运行验证。候选栏显示时，输入区字符数和 `AXValue` 为空、没有
