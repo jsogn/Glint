@@ -11,6 +11,7 @@ struct HUDVerticalCandidatePlacement: Equatable {
 }
 
 enum HUDVerticalCandidateLayout {
+    private static let sideSwitchHysteresis: CGFloat = 8
     private static let rowContainmentTolerance: CGFloat = 1
 
     static func placement(
@@ -75,14 +76,15 @@ enum HUDVerticalCandidateLayout {
         let rightOriginX = surfaceRect.maxX + gap
         let leftOriginX =
             surfaceRect.minX - gap - panelSize.width
-        let rightFits =
-            rightOriginX + panelSize.width
-            <= visibleFrame.maxX
+        let rightSlack =
+            visibleFrame.maxX
+            - (rightOriginX + panelSize.width)
+        let rightFits = rightSlack >= 0
         let leftFits = leftOriginX >= visibleFrame.minX
-        if stableSide == .right, rightFits {
-            return .right
-        }
-        if stableSide == .left, leftFits {
+        if stableSide == .left,
+            leftFits,
+            rightSlack < Self.sideSwitchHysteresis
+        {
             return .left
         }
         if rightFits {

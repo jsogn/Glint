@@ -548,7 +548,7 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(placement.placementMode, .candidate)
     }
 
-    func testAutomaticPlacementKeepsStableVerticalCandidateSide() {
+    func testAutomaticPlacementReturnsRightWhenStableLeftHasRoom() {
         let surface = CGRect(
             x: 600,
             y: 200,
@@ -565,7 +565,34 @@ final class HUDLayoutTests: XCTestCase {
             stableCandidateSide: .left
         )
 
-        XCTAssertEqual(placement.frame.minX, 153, accuracy: 0.001)
+        XCTAssertEqual(placement.frame.minX, 727, accuracy: 0.001)
+        XCTAssertEqual(placement.placementMode, .rightOfCandidate)
+        XCTAssertEqual(placement.candidateSide, .right)
+    }
+
+    func testAutomaticPlacementKeepsStableLeftForTightRightFit() {
+        let surface = CGRect(
+            x: 500,
+            y: 200,
+            width: 120,
+            height: 320
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: CGRect(
+                x: 0,
+                y: 0,
+                width: 1_071,
+                height: 900
+            ),
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical,
+            stableCandidateSide: .left
+        )
+
+        XCTAssertEqual(placement.frame.minX, 53, accuracy: 0.001)
         XCTAssertEqual(placement.placementMode, .leftOfCandidate)
         XCTAssertEqual(placement.candidateSide, .left)
     }
