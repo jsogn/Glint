@@ -154,8 +154,19 @@ package_pkg() {
   chmod 0755 "$scripts_dir/preinstall" "$scripts_dir/postinstall"
 
   pkgbuild --analyze --root "$payload_root" "$component_plist" >/dev/null
+  if /usr/libexec/PlistBuddy \
+    -c "Print :0:BundleIsRelocatable" \
+    "$component_plist" >/dev/null 2>&1
+  then
+    /usr/libexec/PlistBuddy \
+      -c "Set :0:BundleIsRelocatable false" \
+      "$component_plist"
+  else
+    /usr/libexec/PlistBuddy \
+      -c "Add :0:BundleIsRelocatable bool false" \
+      "$component_plist"
+  fi
   /usr/libexec/PlistBuddy \
-    -c "Set :0:BundleIsRelocatable false" \
     -c "Set :0:BundleIsVersionChecked false" \
     "$component_plist"
 
