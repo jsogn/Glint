@@ -1,4 +1,5 @@
 import AppKit
+import GlintCore
 import SwiftUI
 
 @MainActor
@@ -115,6 +116,8 @@ public final class HUDController {
         inputCaretRect: CGRect? = nil,
         inputFieldRect: CGRect? = nil,
         candidateSurfaceRect: CGRect? = nil,
+        candidateLayoutOrientation:
+            CandidateLayoutOrientation = .unknown,
         layoutStyle: HUDLayoutStyle = .candidateRow,
         position: HUDPosition = .automatic,
         spacing: Double = 8,
@@ -132,6 +135,8 @@ public final class HUDController {
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation,
             position: position,
             spacing: spacing,
             opacity: opacity,
@@ -149,14 +154,18 @@ public final class HUDController {
         screenRect: CGRect,
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect? = nil,
-        candidateSurfaceRect: CGRect? = nil
+        candidateSurfaceRect: CGRect? = nil,
+        candidateLayoutOrientation:
+            CandidateLayoutOrientation = .unknown
     ) {
         guard let currentRequest else { return }
         let updated = currentRequest.updatingLayout(
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
-            candidateSurfaceRect: candidateSurfaceRect
+            candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation
         )
         guard
             updated.screenRect != currentRequest.screenRect
@@ -166,6 +175,8 @@ public final class HUDController {
                     != currentRequest.inputFieldRect
                 || updated.candidateSurfaceRect
                     != currentRequest.candidateSurfaceRect
+                || updated.candidateLayoutOrientation
+                    != currentRequest.candidateLayoutOrientation
         else {
             return
         }

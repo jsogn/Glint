@@ -82,7 +82,7 @@ final class DisplayPreferencesTests: XCTestCase {
         )
         XCTAssertEqual(
             HUDPosition.automatic.explanation,
-            "根据候选栏和输入位置选择上下位置，并避开输入文字。"
+            "根据候选栏方向和屏幕空间选择位置，并避开输入文字。"
         )
         XCTAssertEqual(
             HUDPosition.above.explanation,

@@ -4,6 +4,45 @@ import CoreGraphics
 import Foundation
 import GlintCore
 
+enum SquirrelCandidateGeometry {
+    private static let verticalAspectRatio: CGFloat = 1.2
+    private static let minimumStackedRowHeight: CGFloat = 24
+
+    static func rowFrames(
+        in panelFrame: CGRect,
+        candidateCount: Int
+    ) -> [CGRect]? {
+        let hasAspectRatioForStackedRows =
+            panelFrame.height
+            > panelFrame.width * verticalAspectRatio
+        let hasHeightForStackedRows =
+            candidateCount > 1
+            && panelFrame.height
+                >= CGFloat(candidateCount)
+                * minimumStackedRowHeight
+        guard
+            candidateCount > 0,
+            panelFrame.width > 0,
+            panelFrame.height > 0,
+            hasAspectRatioForStackedRows
+                || hasHeightForStackedRows
+        else {
+            return nil
+        }
+        let rowHeight =
+            panelFrame.height / CGFloat(candidateCount)
+        return (0..<candidateCount).map { index in
+            CGRect(
+                x: panelFrame.minX,
+                y: panelFrame.minY
+                    + CGFloat(index) * rowHeight,
+                width: panelFrame.width,
+                height: rowHeight
+            )
+        }
+    }
+}
+
 struct SquirrelPanelFrameReader {
     private let bundleIdentifier: String
     private let accessLimits: AXAccessLimits
@@ -126,7 +165,27 @@ final class SquirrelCandidateReader: AXCandidateReading, @unchecked Sendable {
             candidateTexts = [selectedText]
             selectedIndex = 0
         }
-        let frame = panelFrame()
+        let panelFrame = panelFrame()
+        let rowFrames = panelFrame.flatMap {
+            SquirrelCandidateGeometry.rowFrames(
+                in: $0,
+                candidateCount: candidateTexts.count
+            )
+        }
+        let selectedFrame =
+            rowFrames.flatMap {
+                $0.indices.contains(selectedIndex)
+                    ? $0[selectedIndex]
+                    : nil
+            } ?? panelFrame
+        let layoutOrientation: CandidateLayoutOrientation =
+            if rowFrames != nil {
+                .vertical
+            } else if panelFrame != nil {
+                .horizontal
+            } else {
+                .unknown
+            }
         let options =
             includeVisibleCandidates
             ? candidateTexts.enumerated().map { index, text in
@@ -135,12 +194,16 @@ final class SquirrelCandidateReader: AXCandidateReading, @unchecked Sendable {
                         includeVisibleTexts || index == selectedIndex
                         ? text
                         : "",
-                    frame: nil,
+                    frame: rowFrames.flatMap {
+                        $0.indices.contains(index)
+                            ? $0[index]
+                            : nil
+                    },
                     isSelected: index == selectedIndex
                 )
             }
             : []
-        let geometry = frame.map {
+        let geometry = selectedFrame.map {
             AXCandidateGeometry(
                 horizontalFrame: $0,
                 horizontalSource: .item,
@@ -155,13 +218,14 @@ final class SquirrelCandidateReader: AXCandidateReading, @unchecked Sendable {
                 ? candidateTexts
                 : [],
             options: options,
-            frame: frame,
-            candidateWindowFrame: frame,
-            candidateListFrame: frame,
+            frame: selectedFrame,
+            candidateWindowFrame: panelFrame,
+            candidateListFrame: panelFrame,
             geometry: geometry,
             selectedIndex: selectedIndex,
             selectionIsExact: true,
-            usesInputCaretFrameFallback: true
+            usesInputCaretFrameFallback: true,
+            layoutOrientation: layoutOrientation
         )
     }
 }

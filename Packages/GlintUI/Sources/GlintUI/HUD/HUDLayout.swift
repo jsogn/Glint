@@ -1,9 +1,12 @@
 import CoreGraphics
+import GlintCore
 
 enum HUDPlacementMode: Equatable {
     case candidate
     case candidateTrailing
     case rightOfCaret
+    case rightOfCandidate
+    case leftOfCandidate
     case verticalClearance
 }
 
@@ -11,6 +14,7 @@ struct HUDLayoutResult: Equatable {
     let frame: CGRect
     let placesBelow: Bool
     let placementMode: HUDPlacementMode
+    let candidateSide: HUDCandidateSide?
     let hidesHUD: Bool
     let fallbackCandidateHasInputRoomBelow: Bool?
 }
@@ -32,7 +36,9 @@ enum HUDLayout {
         inputCaretRect: CGRect? = nil,
         inputFieldRect: CGRect? = nil,
         candidateSurfaceRect: CGRect? = nil,
+        candidateLayoutOrientation: CandidateLayoutOrientation = .unknown,
         stablePlacesBelow: Bool? = nil,
+        stableCandidateSide: HUDCandidateSide? = nil,
         hidesOnAutomaticFlip: Bool = false,
         stableFallbackCandidateHasInputRoomBelow: Bool? = nil
     ) -> HUDLayoutResult {
@@ -183,6 +189,31 @@ enum HUDLayout {
                 }
             }
         }
+        let candidateSide: HUDCandidateSide?
+        if position == .automatic,
+            candidateLayoutOrientation == .vertical,
+            let candidateSurfaceRect,
+            let vertical = HUDVerticalCandidateLayout.placement(
+                candidateRect: candidateRect,
+                surfaceRect: candidateSurfaceRect,
+                panelSize: panelSize,
+                visibleFrame: visibleFrame,
+                gap: gap,
+                stableSide: stableCandidateSide
+            )
+        {
+            candidateSide = vertical.side
+            x = vertical.origin.x
+            y = vertical.origin.y
+            switch vertical.side {
+            case .right:
+                mode = .rightOfCandidate
+            case .left:
+                mode = .leftOfCandidate
+            }
+        } else {
+            candidateSide = nil
+        }
         return HUDLayoutResult(
             frame: CGRect(
                 x: x,
@@ -192,16 +223,20 @@ enum HUDLayout {
             ),
             placesBelow: placesBelow,
             placementMode: mode,
+            candidateSide: candidateSide,
             // Only protect a forced upward flip. When the candidate bar is
             // already above the input row, its upper side is the safe side.
             hidesHUD:
-                automaticFlipProtectionEnabled
+                candidateSide == nil
+                && automaticFlipProtectionEnabled
                 && desiredPlacesBelow
                 && !placesBelow
                 && (inputCaretRect != nil
                     || fallbackCandidateHasInputRoomBelow == false),
             fallbackCandidateHasInputRoomBelow:
-                fallbackCandidateHasInputRoomBelow
+                candidateSide == nil
+                ? fallbackCandidateHasInputRoomBelow
+                : nil
         )
     }
 

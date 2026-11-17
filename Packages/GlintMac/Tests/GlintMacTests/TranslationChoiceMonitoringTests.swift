@@ -93,7 +93,8 @@ private struct InsertionCandidates: AXCandidateReading {
             ),
             candidateListFrame: nil,
             selectedIndex: 1,
-            selectionIsExact: true
+            selectionIsExact: true,
+            layoutOrientation: .vertical
         )
     }
 }
@@ -304,17 +305,31 @@ private final class InputFieldRectRecorder: Sendable {
 private final class CandidateSurfaceRectRecorder: Sendable {
     private let candidateSurfaceRect =
         OSAllocatedUnfairLock<CGRect?>(initialState: nil)
+    private let layoutOrientation =
+        OSAllocatedUnfairLock<CandidateLayoutOrientation>(
+            initialState: .unknown
+        )
     private let count = OSAllocatedUnfairLock(initialState: 0)
 
-    func record(_ value: CGRect?) {
+    func record(
+        _ value: CGRect?,
+        orientation: CandidateLayoutOrientation = .unknown
+    ) {
         candidateSurfaceRect.withLock {
             $0 = value
+        }
+        layoutOrientation.withLock {
+            $0 = orientation
         }
         count.withLock { $0 += 1 }
     }
 
     var latest: CGRect? {
         candidateSurfaceRect.withLock { $0 }
+    }
+
+    var latestOrientation: CandidateLayoutOrientation {
+        layoutOrientation.withLock { $0 }
     }
 
     var recordedCount: Int {
@@ -660,6 +675,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
                     _,
                     _,
                     _,
+                    _,
                     _
                 ) = event {
                     recorder.record(presentations)
@@ -704,6 +720,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
                     _,
                     _,
                     let inputCaretRect,
+                    _,
                     _,
                     _,
                     _,
@@ -753,6 +770,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
                     _,
                     _,
                     let inputFieldRect,
+                    _,
                     _
                 ):
                     layoutRecorder.record(inputFieldRect)
@@ -761,6 +779,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
                     _,
                     _,
                     let inputFieldRect,
+                    _,
                     _,
                     _,
                     _
@@ -818,19 +837,27 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
                     _,
                     _,
                     _,
-                    let candidateSurfaceRect
+                    let candidateSurfaceRect,
+                    let layoutOrientation
                 ):
-                    layoutRecorder.record(candidateSurfaceRect)
+                    layoutRecorder.record(
+                        candidateSurfaceRect,
+                        orientation: layoutOrientation
+                    )
                 case .results(
                     _,
                     _,
                     _,
                     _,
                     let candidateSurfaceRect,
+                    let layoutOrientation,
                     _,
                     _
                 ):
-                    resultsRecorder.record(candidateSurfaceRect)
+                    resultsRecorder.record(
+                        candidateSurfaceRect,
+                        orientation: layoutOrientation
+                    )
                 default:
                     break
                 }
@@ -855,6 +882,8 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         )
         XCTAssertEqual(layoutRecorder.latest, expected)
         XCTAssertEqual(resultsRecorder.latest, expected)
+        XCTAssertEqual(layoutRecorder.latestOrientation, .vertical)
+        XCTAssertEqual(resultsRecorder.latestOrientation, .vertical)
     }
 
     func testLayoutKeepsLatestValidCandidateSurfaceRect()
@@ -883,7 +912,8 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
                     _,
                     _,
                     _,
-                    let candidateSurfaceRect
+                    let candidateSurfaceRect,
+                    _
                 ) = event {
                     recorder.record(candidateSurfaceRect)
                 }
@@ -931,11 +961,12 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         let collector = Task {
             for await event in events {
                 switch event {
-                case .results(let value, _, _, _, _, _, _):
+                case .results(let value, _, _, _, _, _, _, _):
                     presentations.record(value)
                 case .layoutChanged(
                     let highlight,
                     let inputCaretRect,
+                    _,
                     _,
                     _
                 ):
@@ -1015,6 +1046,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
                     _,
                     _,
                     let inputCaretRect,
+                    _,
                     _,
                     _,
                     _,

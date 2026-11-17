@@ -38,14 +38,18 @@ final class HUDEventCoordinator {
         highlight: CandidateRegion,
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
-        candidateSurfaceRect: CGRect?
+        candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation:
+            CandidateLayoutOrientation
     ) {
         guard displayedRevision != nil else { return }
         hud.updateLayout(
             screenRect: highlight.cgRect,
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
-            candidateSurfaceRect: candidateSurfaceRect
+            candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation
         )
     }
 
@@ -60,6 +64,8 @@ final class HUDEventCoordinator {
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
         candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation:
+            CandidateLayoutOrientation,
         revision: UInt64,
         isProgressive: Bool
     ) {
@@ -84,6 +90,8 @@ final class HUDEventCoordinator {
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation,
             layoutStyle:
                 scope == .row
                 ? .candidateRow

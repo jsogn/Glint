@@ -16,7 +16,7 @@ public enum HUDPosition: String, CaseIterable, Sendable {
     public var explanation: String {
         switch self {
         case .automatic:
-            return "根据候选栏和输入位置选择上下位置，并避开输入文字。"
+            return "根据候选栏方向和屏幕空间选择位置，并避开输入文字。"
         case .above:
             return "与候选栏左侧对齐，不避让输入文字；空间不足时自动调整。"
         }

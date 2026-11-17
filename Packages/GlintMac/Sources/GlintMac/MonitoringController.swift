@@ -97,7 +97,8 @@ public enum MonitoringEvent: Sendable {
         CandidateRegion,
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
-        candidateSurfaceRect: CGRect?
+        candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation: CandidateLayoutOrientation
     )
     case candidateEnded(immediate: Bool)
     case results(
@@ -106,6 +107,7 @@ public enum MonitoringEvent: Sendable {
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
         candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation: CandidateLayoutOrientation,
         revision: UInt64,
         isProgressive: Bool
     )
@@ -207,6 +209,7 @@ public actor MonitoringController {
         let displayFrame: CGRect
         let displayAnchor: CandidateRegion
         let candidateSurfaceFrame: CGRect?
+        let candidateLayoutOrientation: CandidateLayoutOrientation
     }
 
     private enum CandidateReadOutcome {
@@ -240,6 +243,7 @@ public actor MonitoringController {
         let inputCaretRect: CGRect?
         let inputFieldRect: CGRect?
         let candidateSurfaceRect: CGRect?
+        let candidateLayoutOrientation: CandidateLayoutOrientation
     }
 
     private struct CandidateLayoutSnapshot: Equatable {
@@ -247,6 +251,7 @@ public actor MonitoringController {
         let inputCaretRect: CGRect?
         let inputFieldRect: CGRect?
         let candidateSurfaceRect: CGRect?
+        let candidateLayoutOrientation: CandidateLayoutOrientation
 
         func approximatelyEquals(
             _ other: Self,
@@ -276,6 +281,8 @@ public actor MonitoringController {
                         other.candidateSurfaceRect,
                     tolerance: tolerance
                 )
+                && candidateLayoutOrientation
+                    == other.candidateLayoutOrientation
         }
 
         private static func rect(
@@ -335,6 +342,7 @@ public actor MonitoringController {
     private var latestInputCaretRect: CGRect?
     private var latestInputFieldRect: CGRect?
     private var latestCandidateSurfaceFrame: CGRect?
+    private var latestCandidateLayoutOrientation: CandidateLayoutOrientation = .unknown
     private var lastPublishedLayout: CandidateLayoutSnapshot?
     private var selectedCandidateIndex: Int?
     private var selectedCandidateIndexIsExact = false
@@ -756,12 +764,16 @@ public actor MonitoringController {
         {
             latestCandidateSurfaceFrame = candidateSurfaceFrame
         }
+        latestCandidateLayoutOrientation =
+            observation.candidateLayoutOrientation
         let context = candidateActivityContext(
             selection: selection,
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
             candidateSurfaceRect:
-                latestCandidateSurfaceFrame
+                latestCandidateSurfaceFrame,
+            candidateLayoutOrientation:
+                latestCandidateLayoutOrientation
         )
         await startCandidatePrefetchIfNeeded(
             candidates: context.selection.candidates,
@@ -800,7 +812,9 @@ public actor MonitoringController {
             inputCaretRect: latestInputCaretRect,
             inputFieldRect: latestInputFieldRect,
             candidateSurfaceRect:
-                latestCandidateSurfaceFrame
+                latestCandidateSurfaceFrame,
+            candidateLayoutOrientation:
+                latestCandidateLayoutOrientation
         )
         return nextCandidatePollInterval(after: context.timestamp)
     }
@@ -851,7 +865,8 @@ public actor MonitoringController {
         selection: CandidateSelectionContext,
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
-        candidateSurfaceRect: CGRect?
+        candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation: CandidateLayoutOrientation
     ) -> CandidateActivityContext {
         let observationTimestamp = DispatchTime.now().uptimeNanoseconds
         let activity = typingTracker.observe(
@@ -870,7 +885,9 @@ public actor MonitoringController {
             }(),
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
-            candidateSurfaceRect: candidateSurfaceRect
+            candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation
         )
     }
 
@@ -922,6 +939,8 @@ public actor MonitoringController {
             inputFieldRect: context.inputFieldRect,
             candidateSurfaceRect:
                 context.candidateSurfaceRect,
+            candidateLayoutOrientation:
+                context.candidateLayoutOrientation,
             dictionaryPrefetchTasks: dictionaryPrefetchTasks,
             cachedPrefetchResults: cachedPrefetchResults
         )
@@ -1069,7 +1088,9 @@ public actor MonitoringController {
                 displayAnchor: displayAnchor,
                 candidateSurfaceFrame:
                     candidate.candidateWindowFrame
-                    ?? candidate.candidateListFrame
+                    ?? candidate.candidateListFrame,
+                candidateLayoutOrientation:
+                    candidate.layoutOrientation
             )
         )
     }
@@ -1205,6 +1226,7 @@ public actor MonitoringController {
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
         candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation: CandidateLayoutOrientation,
         dictionaryPrefetchTasks: [Int: Task<TranslationResult?, Never>],
         cachedPrefetchResults: [Int: TranslationResult]
     ) {
@@ -1249,6 +1271,7 @@ public actor MonitoringController {
                 inputCaretRect,
                 inputFieldRect,
                 candidateSurfaceRect,
+                candidateLayoutOrientation,
                 mode,
                 translationTarget,
                 shouldShowPartsOfSpeech,
@@ -1275,7 +1298,9 @@ public actor MonitoringController {
                         inputCaretRect: inputCaretRect,
                         inputFieldRect: inputFieldRect,
                         candidateSurfaceRect:
-                            candidateSurfaceRect
+                            candidateSurfaceRect,
+                        candidateLayoutOrientation:
+                            candidateLayoutOrientation
                     )
                 }
             )
@@ -1287,7 +1312,9 @@ public actor MonitoringController {
                 inputCaretRect: inputCaretRect,
                 inputFieldRect: inputFieldRect,
                 candidateSurfaceRect:
-                    candidateSurfaceRect
+                    candidateSurfaceRect,
+                candidateLayoutOrientation:
+                    candidateLayoutOrientation
             )
         }
     }
@@ -1298,7 +1325,8 @@ public actor MonitoringController {
         revision: UInt64,
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
-        candidateSurfaceRect: CGRect?
+        candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation: CandidateLayoutOrientation
     ) {
         guard revision == typingTracker.revision,
             typingTracker.isDwelling,
@@ -1314,6 +1342,8 @@ public actor MonitoringController {
         let presentationCandidateSurfaceRect =
             latestCandidateSurfaceFrame
             ?? candidateSurfaceRect
+        let presentationCandidateLayoutOrientation =
+            latestCandidateLayoutOrientation
         if let translationStartedAt {
             let now = DispatchTime.now().uptimeNanoseconds
             let total =
@@ -1336,6 +1366,8 @@ public actor MonitoringController {
                 inputFieldRect: presentationInputFieldRect,
                 candidateSurfaceRect:
                     presentationCandidateSurfaceRect,
+                candidateLayoutOrientation:
+                    presentationCandidateLayoutOrientation,
                 revision: revision,
                 isProgressive: true
             )
@@ -1352,7 +1384,8 @@ public actor MonitoringController {
         revision: UInt64,
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
-        candidateSurfaceRect: CGRect?
+        candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation: CandidateLayoutOrientation
     ) {
         guard revision == typingTracker.revision,
             typingTracker.isDwelling
@@ -1367,6 +1400,8 @@ public actor MonitoringController {
         let presentationCandidateSurfaceRect =
             latestCandidateSurfaceFrame
             ?? candidateSurfaceRect
+        let presentationCandidateLayoutOrientation =
+            latestCandidateLayoutOrientation
         translationTask = nil
         let finishedAt = ContinuousClock.now
         if let translationStartedAt {
@@ -1427,6 +1462,8 @@ public actor MonitoringController {
                 inputFieldRect: presentationInputFieldRect,
                 candidateSurfaceRect:
                     presentationCandidateSurfaceRect,
+                candidateLayoutOrientation:
+                    presentationCandidateLayoutOrientation,
                 revision: revision,
                 isProgressive: false
             )
@@ -1447,6 +1484,7 @@ public actor MonitoringController {
         latestInputCaretRect = nil
         latestInputFieldRect = nil
         latestCandidateSurfaceFrame = nil
+        latestCandidateLayoutOrientation = .unknown
         lastPublishedLayout = nil
         insertionOffer = nil
         insertionHostProcessIdentifier = nil
@@ -1580,14 +1618,17 @@ public actor MonitoringController {
         highlight: CandidateRegion,
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
-        candidateSurfaceRect: CGRect?
+        candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation: CandidateLayoutOrientation
     ) {
         guard candidateSessionActive else { return }
         let next = CandidateLayoutSnapshot(
             highlight: highlight,
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
-            candidateSurfaceRect: candidateSurfaceRect
+            candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation
         )
         if let lastPublishedLayout,
             next.approximatelyEquals(
@@ -1603,7 +1644,9 @@ public actor MonitoringController {
                 highlight,
                 inputCaretRect: inputCaretRect,
                 inputFieldRect: inputFieldRect,
-                candidateSurfaceRect: candidateSurfaceRect
+                candidateSurfaceRect: candidateSurfaceRect,
+                candidateLayoutOrientation:
+                    candidateLayoutOrientation
             )
         )
     }

@@ -1153,13 +1153,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let highlight,
             let inputCaretRect,
             let inputFieldRect,
-            let candidateSurfaceRect
+            let candidateSurfaceRect,
+            let candidateLayoutOrientation
         ):
             hudEventCoordinator.layoutChanged(
                 highlight: highlight,
                 inputCaretRect: inputCaretRect,
                 inputFieldRect: inputFieldRect,
-                candidateSurfaceRect: candidateSurfaceRect
+                candidateSurfaceRect: candidateSurfaceRect,
+                candidateLayoutOrientation:
+                    candidateLayoutOrientation
             )
         case .candidateEnded(let immediate):
             translationChoiceShortcutCoordinator.update(nil)
@@ -1172,6 +1175,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let inputCaretRect,
             let inputFieldRect,
             let candidateSurfaceRect,
+            let candidateLayoutOrientation,
             let revision,
             let isProgressive
         ):
@@ -1181,6 +1185,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 inputCaretRect: inputCaretRect,
                 inputFieldRect: inputFieldRect,
                 candidateSurfaceRect: candidateSurfaceRect,
+                candidateLayoutOrientation:
+                    candidateLayoutOrientation,
                 revision: revision,
                 isProgressive: isProgressive
             )

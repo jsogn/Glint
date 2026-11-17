@@ -286,6 +286,290 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(placement.placementMode, .rightOfCaret)
     }
 
+    func testAutomaticPlacementUsesRightSideForVerticalCandidateSurface() {
+        let surface = CGRect(
+            x: 300,
+            y: 20,
+            width: 120,
+            height: 320
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical,
+            hidesOnAutomaticFlip: true
+        )
+
+        XCTAssertEqual(placement.frame.minX, 427, accuracy: 0.001)
+        XCTAssertEqual(
+            placement.frame.minY,
+            surface.maxY - panelSize.height,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(placement.placementMode, .rightOfCandidate)
+        XCTAssertEqual(placement.candidateSide, .right)
+        XCTAssertFalse(placement.hidesHUD)
+    }
+
+    func testVerticalCandidateSideCentersHUDOnSelectedRow() {
+        let surface = CGRect(
+            x: 300,
+            y: 20,
+            width: 120,
+            height: 320
+        )
+        let selectedRow = CGRect(
+            x: 300,
+            y: 212,
+            width: 120,
+            height: 64
+        )
+        let placement = HUDLayout.placement(
+            near: selectedRow,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical
+        )
+
+        XCTAssertEqual(placement.frame.minX, 427, accuracy: 0.001)
+        XCTAssertEqual(
+            placement.frame.midY,
+            selectedRow.midY,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(placement.placementMode, .rightOfCandidate)
+        XCTAssertEqual(placement.candidateSide, .right)
+    }
+
+    func testVerticalCandidateSideFollowsSelectedRowChanges() {
+        let surface = CGRect(
+            x: 300,
+            y: 20,
+            width: 120,
+            height: 320
+        )
+        let firstRow = CGRect(
+            x: 300,
+            y: 20,
+            width: 120,
+            height: 64
+        )
+        let thirdRow = CGRect(
+            x: 300,
+            y: 148,
+            width: 120,
+            height: 64
+        )
+        let first = HUDLayout.placement(
+            near: firstRow,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical
+        )
+        let third = HUDLayout.placement(
+            near: thirdRow,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical
+        )
+
+        XCTAssertEqual(first.frame.minX, third.frame.minX)
+        XCTAssertEqual(first.frame.midY, firstRow.midY)
+        XCTAssertEqual(third.frame.midY, thirdRow.midY)
+        XCTAssertGreaterThan(third.frame.minY, first.frame.minY)
+    }
+
+    func testVerticalCandidateLayoutUsesSideForHorizontallyPaddedSurface() {
+        let surface = CGRect(
+            x: 300,
+            y: 20,
+            width: 600,
+            height: 300
+        )
+        let selectedRow = CGRect(
+            x: 300,
+            y: 140,
+            width: 600,
+            height: 60
+        )
+        let placement = HUDLayout.placement(
+            near: selectedRow,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical
+        )
+
+        XCTAssertEqual(placement.frame.minX, 907, accuracy: 0.001)
+        XCTAssertEqual(placement.placementMode, .rightOfCandidate)
+        XCTAssertEqual(placement.candidateSide, .right)
+    }
+
+    func testHorizontalCandidateLayoutNeverUsesSidePlacement() {
+        let surface = CGRect(
+            x: 300,
+            y: 20,
+            width: 120,
+            height: 320
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .horizontal
+        )
+
+        XCTAssertNil(placement.candidateSide)
+        XCTAssertNotEqual(placement.placementMode, .rightOfCandidate)
+        XCTAssertNotEqual(placement.placementMode, .leftOfCandidate)
+    }
+
+    func testUnknownCandidateLayoutNeverUsesSidePlacement() {
+        let surface = CGRect(
+            x: 300,
+            y: 20,
+            width: 120,
+            height: 320
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .unknown
+        )
+
+        XCTAssertNil(placement.candidateSide)
+        XCTAssertNotEqual(placement.placementMode, .rightOfCandidate)
+        XCTAssertNotEqual(placement.placementMode, .leftOfCandidate)
+    }
+
+    func testAutomaticPlacementFallsLeftWhenVerticalCandidateRightDoesNotFit() {
+        let surface = CGRect(
+            x: 500,
+            y: 200,
+            width: 120,
+            height: 320
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: CGRect(
+                x: 0,
+                y: 0,
+                width: 1_000,
+                height: 900
+            ),
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical
+        )
+
+        XCTAssertEqual(placement.frame.minX, 53, accuracy: 0.001)
+        XCTAssertEqual(placement.placementMode, .leftOfCandidate)
+        XCTAssertEqual(placement.candidateSide, .left)
+    }
+
+    func testAutomaticPlacementFallsBackWhenVerticalCandidateHasNoSideRoom() {
+        let surface = CGRect(
+            x: 240,
+            y: 200,
+            width: 120,
+            height: 320
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: CGRect(
+                x: 0,
+                y: 0,
+                width: 600,
+                height: 900
+            ),
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical
+        )
+
+        XCTAssertNil(placement.candidateSide)
+        XCTAssertNotEqual(placement.placementMode, .leftOfCandidate)
+    }
+
+    func testAutomaticPlacementKeepsHorizontalCandidateLayout() {
+        let surface = CGRect(
+            x: 300,
+            y: 400,
+            width: 180,
+            height: 32
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface
+        )
+
+        XCTAssertNil(placement.candidateSide)
+        XCTAssertEqual(placement.placementMode, .candidate)
+    }
+
+    func testExplicitAboveIgnoresVerticalCandidateSidePlacement() {
+        let surface = CGRect(
+            x: 300,
+            y: 200,
+            width: 120,
+            height: 320
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            position: .above,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical
+        )
+
+        XCTAssertNil(placement.candidateSide)
+        XCTAssertEqual(placement.placementMode, .candidate)
+    }
+
+    func testAutomaticPlacementKeepsStableVerticalCandidateSide() {
+        let surface = CGRect(
+            x: 600,
+            y: 200,
+            width: 120,
+            height: 320
+        )
+        let placement = HUDLayout.placement(
+            near: surface,
+            panelSize: panelSize,
+            visibleFrame: visibleFrame,
+            spacing: 7,
+            candidateSurfaceRect: surface,
+            candidateLayoutOrientation: .vertical,
+            stableCandidateSide: .left
+        )
+
+        XCTAssertEqual(placement.frame.minX, 153, accuracy: 0.001)
+        XCTAssertEqual(placement.placementMode, .leftOfCandidate)
+        XCTAssertEqual(placement.candidateSide, .left)
+    }
+
     func testAutomaticFlipWithoutCaretUsesCandidateTrailingEdge() {
         let surfaceRect = CGRect(
             x: 100,
@@ -856,7 +1140,7 @@ final class HUDLayoutTests: XCTestCase {
         )
     }
 
-    func testPresentationLayoutUpdatePreservesCandidateSurfaceRect() {
+    func testPresentationLayoutUpdatePreservesCandidateLayout() {
         let surfaceRect = CGRect(
             x: 100,
             y: 20,
@@ -878,6 +1162,7 @@ final class HUDLayoutTests: XCTestCase {
             inputCaretRect: nil,
             inputFieldRect: inputFieldRect,
             candidateSurfaceRect: surfaceRect,
+            candidateLayoutOrientation: .vertical,
             spacing: 7,
             opacity: 0.8
         )
@@ -890,6 +1175,10 @@ final class HUDLayoutTests: XCTestCase {
         XCTAssertEqual(
             updated.candidateSurfaceRect,
             surfaceRect
+        )
+        XCTAssertEqual(
+            updated.candidateLayoutOrientation,
+            .vertical
         )
         XCTAssertEqual(
             updated.inputFieldRect,

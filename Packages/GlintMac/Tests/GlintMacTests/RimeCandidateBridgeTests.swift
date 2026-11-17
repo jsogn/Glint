@@ -171,7 +171,7 @@ final class RimeCandidateBridgeTests: XCTestCase {
         )
     }
 
-    func testSquirrelReaderReturnsSelectedCandidateAtPanelFrame() {
+    func testSquirrelReaderEstimatesSelectedRowInStackedPanel() {
         let store = RimeCandidateSnapshotStore(clock: { 100 })
         store.record(
             RimeCandidateEnvelope(
@@ -200,10 +200,153 @@ final class RimeCandidateBridgeTests: XCTestCase {
         XCTAssertEqual(snapshot?.text, "妳好")
         XCTAssertEqual(snapshot?.selectedIndex, 1)
         XCTAssertEqual(snapshot?.selectionIsExact, true)
-        XCTAssertEqual(
-            snapshot?.frame,
-            CGRect(x: 120, y: 40, width: 96, height: 140)
+        let panelFrame = CGRect(
+            x: 120,
+            y: 40,
+            width: 96,
+            height: 140
         )
+        let rowHeight = panelFrame.height / 3
+        let expectedRow = CGRect(
+            x: 120,
+            y: 40 + rowHeight,
+            width: 96,
+            height: rowHeight
+        )
+        XCTAssertEqual(snapshot?.frame, expectedRow)
+        XCTAssertEqual(snapshot?.layoutOrientation, .vertical)
+        XCTAssertEqual(snapshot?.candidateWindowFrame, panelFrame)
+        XCTAssertEqual(snapshot?.candidateListFrame, panelFrame)
+        XCTAssertEqual(
+            snapshot?.options.map(\.frame),
+            [
+                CGRect(x: 120, y: 40, width: 96, height: rowHeight),
+                expectedRow,
+                CGRect(
+                    x: 120,
+                    y: 40 + rowHeight * 2,
+                    width: 96,
+                    height: rowHeight
+                ),
+            ])
+        XCTAssertEqual(
+            snapshot?.geometry?.horizontalAnchor,
+            expectedRow
+        )
+    }
+
+    func testSquirrelReaderKeepsWholeFrameForHorizontalPanel() {
+        let store = RimeCandidateSnapshotStore(clock: { 100 })
+        store.record(
+            RimeCandidateEnvelope(
+                sessionID: "test-session",
+                sequence: 7,
+                heartbeat: false,
+                active: true,
+                schemaID: "luna_pinyin",
+                selectedText: "妳好",
+                selectedIndex: 1,
+                candidates: ["你好", "妳好", "逆号"]
+            )
+        )
+        let panelFrame = CGRect(
+            x: 100,
+            y: 40,
+            width: 300,
+            height: 44
+        )
+        let reader = SquirrelCandidateReader(
+            store: store,
+            panelFrame: { panelFrame }
+        )
+
+        let snapshot = reader.snapshot(
+            includeVisibleCandidates: true,
+            includeVisibleTexts: false
+        )
+
+        XCTAssertEqual(snapshot?.frame, panelFrame)
+        XCTAssertEqual(snapshot?.layoutOrientation, .horizontal)
+        XCTAssertEqual(snapshot?.candidateWindowFrame, panelFrame)
+        XCTAssertTrue(
+            snapshot?.options.allSatisfy { $0.frame == nil } == true
+        )
+    }
+
+    func testSquirrelReaderKeepsTwoCandidateBarHorizontal() {
+        let store = RimeCandidateSnapshotStore(clock: { 100 })
+        store.record(
+            RimeCandidateEnvelope(
+                sessionID: "test-session",
+                sequence: 9,
+                heartbeat: false,
+                active: true,
+                schemaID: "luna_pinyin",
+                selectedText: "你好",
+                selectedIndex: 0,
+                candidates: ["你好", "妳好"]
+            )
+        )
+        let panelFrame = CGRect(
+            x: 100,
+            y: 40,
+            width: 260,
+            height: 44
+        )
+        let reader = SquirrelCandidateReader(
+            store: store,
+            panelFrame: { panelFrame }
+        )
+
+        let snapshot = reader.snapshot(
+            includeVisibleCandidates: true,
+            includeVisibleTexts: false
+        )
+
+        XCTAssertEqual(snapshot?.frame, panelFrame)
+        XCTAssertEqual(snapshot?.layoutOrientation, .horizontal)
+        XCTAssertTrue(
+            snapshot?.options.allSatisfy { $0.frame == nil } == true
+        )
+    }
+
+    func testSquirrelReaderUsesHeightEvidenceForTransparentStackedPanel() {
+        let store = RimeCandidateSnapshotStore(clock: { 100 })
+        store.record(
+            RimeCandidateEnvelope(
+                sessionID: "test-session",
+                sequence: 8,
+                heartbeat: false,
+                active: true,
+                schemaID: "luna_pinyin",
+                selectedText: "第三个",
+                selectedIndex: 2,
+                candidates: [
+                    "第一个",
+                    "第二个",
+                    "第三个",
+                    "第四个",
+                    "第五个",
+                ]
+            )
+        )
+        let panelFrame = CGRect(
+            x: 100,
+            y: 40,
+            width: 600,
+            height: 300
+        )
+        let reader = SquirrelCandidateReader(
+            store: store,
+            panelFrame: { panelFrame }
+        )
+
+        let snapshot = reader.snapshot(
+            includeVisibleCandidates: true,
+            includeVisibleTexts: false
+        )
+
+        XCTAssertEqual(snapshot?.layoutOrientation, .vertical)
     }
 
     func testSquirrelReaderKeepsCandidateWhenPanelFrameIsUnavailable() {
@@ -232,6 +375,7 @@ final class RimeCandidateBridgeTests: XCTestCase {
 
         XCTAssertEqual(snapshot?.text, "你好")
         XCTAssertNil(snapshot?.frame)
+        XCTAssertEqual(snapshot?.layoutOrientation, .unknown)
         XCTAssertEqual(snapshot?.selectionIsExact, true)
     }
 
@@ -336,6 +480,7 @@ final class RimeCandidateBridgeTests: XCTestCase {
             case .layoutChanged(
                 let highlight,
                 let inputCaretRect,
+                _,
                 _,
                 _
             ) =

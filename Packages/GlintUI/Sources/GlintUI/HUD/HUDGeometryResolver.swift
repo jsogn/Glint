@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import GlintCore
 
 struct HUDHorizontalAnchor: Equatable {
     static let followThreshold: CGFloat = 8
@@ -54,6 +55,7 @@ struct HUDPresentationRequest {
     let inputCaretRect: CGRect?
     let inputFieldRect: CGRect?
     let candidateSurfaceRect: CGRect?
+    let candidateLayoutOrientation: CandidateLayoutOrientation
     let position: HUDPosition
     let spacing: Double
     let opacity: Double
@@ -68,6 +70,8 @@ struct HUDPresentationRequest {
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect? = nil,
         candidateSurfaceRect: CGRect? = nil,
+        candidateLayoutOrientation:
+            CandidateLayoutOrientation = .unknown,
         position: HUDPosition = .automatic,
         spacing: Double,
         opacity: Double,
@@ -81,6 +85,8 @@ struct HUDPresentationRequest {
         self.inputCaretRect = inputCaretRect
         self.inputFieldRect = inputFieldRect
         self.candidateSurfaceRect = candidateSurfaceRect
+        self.candidateLayoutOrientation =
+            candidateLayoutOrientation
         self.position = position
         self.spacing = spacing
         self.opacity = opacity
@@ -95,7 +101,9 @@ struct HUDPresentationRequest {
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
-            candidateSurfaceRect: candidateSurfaceRect
+            candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation
         )
     }
 
@@ -108,7 +116,9 @@ struct HUDPresentationRequest {
             screenRect: screenRect,
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
-            candidateSurfaceRect: candidateSurfaceRect
+            candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation
         )
     }
 
@@ -116,7 +126,9 @@ struct HUDPresentationRequest {
         screenRect: CGRect,
         inputCaretRect: CGRect?,
         inputFieldRect: CGRect?,
-        candidateSurfaceRect: CGRect?
+        candidateSurfaceRect: CGRect?,
+        candidateLayoutOrientation:
+            CandidateLayoutOrientation? = nil
     ) -> Self {
         Self(
             revision: revision,
@@ -127,6 +139,9 @@ struct HUDPresentationRequest {
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation
+                ?? self.candidateLayoutOrientation,
             position: position,
             spacing: spacing,
             opacity: opacity,
@@ -144,6 +159,8 @@ struct HUDPresentationRequest {
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                candidateLayoutOrientation,
             position: position,
             spacing: spacing,
             opacity: opacity,
@@ -168,12 +185,14 @@ struct HUDGeometryResolver {
         let inputCaretRect: CGRect?
         let inputFieldRect: CGRect?
         let candidateSurfaceRect: CGRect?
+        let candidateLayoutOrientation: CandidateLayoutOrientation
         let screen: NSScreen
         let fixedOriginX: CGFloat?
     }
 
     private var horizontalAnchor: HUDHorizontalAnchor?
     private var previousPlacesBelow: Bool?
+    private var previousCandidateSide: HUDCandidateSide?
     private var previousFallbackCandidateHasInputRoomBelow: Bool?
     private var resolvedScreenFrame: NSRect?
 
@@ -258,6 +277,7 @@ struct HUDGeometryResolver {
     mutating func reset() {
         horizontalAnchor = nil
         previousPlacesBelow = nil
+        previousCandidateSide = nil
         previousFallbackCandidateHasInputRoomBelow = nil
         resolvedScreenFrame = nil
     }
@@ -351,6 +371,8 @@ struct HUDGeometryResolver {
             inputCaretRect: inputCaretRect,
             inputFieldRect: inputFieldRect,
             candidateSurfaceRect: candidateSurfaceRect,
+            candidateLayoutOrientation:
+                request.candidateLayoutOrientation,
             screen: targetScreen,
             fixedOriginX: fixedOriginX
         )
@@ -372,6 +394,10 @@ struct HUDGeometryResolver {
             resolvedScreenFrame == context.screen.frame
             ? previousFallbackCandidateHasInputRoomBelow
             : nil
+        let stableCandidateSide =
+            resolvedScreenFrame == context.screen.frame
+            ? previousCandidateSide
+            : nil
         let layout = HUDLayout.placement(
             near: context.candidateRect,
             panelSize: panelSize,
@@ -383,7 +409,10 @@ struct HUDGeometryResolver {
             inputFieldRect: context.inputFieldRect,
             candidateSurfaceRect:
                 context.candidateSurfaceRect,
+            candidateLayoutOrientation:
+                context.candidateLayoutOrientation,
             stablePlacesBelow: stablePlacesBelow,
+            stableCandidateSide: stableCandidateSide,
             hidesOnAutomaticFlip: hidesOnAutomaticFlip,
             stableFallbackCandidateHasInputRoomBelow:
                 stableFallbackCandidateHasInputRoomBelow
@@ -396,6 +425,7 @@ struct HUDGeometryResolver {
             frame: alignedFrame,
             placesBelow: layout.placesBelow,
             placementMode: layout.placementMode,
+            candidateSide: layout.candidateSide,
             hidesHUD: layout.hidesHUD,
             fallbackCandidateHasInputRoomBelow:
                 layout.fallbackCandidateHasInputRoomBelow
@@ -424,6 +454,7 @@ struct HUDGeometryResolver {
         }
         resolvedScreenFrame = context.screen.frame
         previousPlacesBelow = alignedLayout.placesBelow
+        previousCandidateSide = alignedLayout.candidateSide
         previousFallbackCandidateHasInputRoomBelow =
             alignedLayout.fallbackCandidateHasInputRoomBelow
         return alignedLayout

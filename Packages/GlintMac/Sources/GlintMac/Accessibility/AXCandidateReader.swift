@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import Dispatch
 import Foundation
+import GlintCore
 
 public struct AXCandidateOption: Sendable, Equatable {
     public let text: String
@@ -26,6 +27,7 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
     public let selectedIndex: Int?
     public let selectionIsExact: Bool
     public let usesInputCaretFrameFallback: Bool
+    public let layoutOrientation: CandidateLayoutOrientation
 
     public init(
         text: String,
@@ -37,7 +39,8 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
         geometry: AXCandidateGeometry? = nil,
         selectedIndex: Int? = nil,
         selectionIsExact: Bool = true,
-        usesInputCaretFrameFallback: Bool = false
+        usesInputCaretFrameFallback: Bool = false,
+        layoutOrientation: CandidateLayoutOrientation = .unknown
     ) {
         self.text = text
         self.visibleTexts = visibleTexts
@@ -50,6 +53,7 @@ public struct AXCandidateSnapshot: Sendable, Equatable {
         self.selectionIsExact = selectionIsExact
         self.usesInputCaretFrameFallback =
             usesInputCaretFrameFallback
+        self.layoutOrientation = layoutOrientation
     }
 }
 
