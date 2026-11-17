@@ -126,3 +126,19 @@ swift run --package-path Tools/GlintEval SelectedTextItemCacheProbe \
 
 `--visible-texts true` 会读取整行候选文字。以上探针只输出结构、数量、耗时和缓存
 统计，不输出候选原文。
+
+## 父级选中分组候选探针
+
+`SelectedChildGroupCandidateProbe` 使用通用的“独立进程父级选中分组”reader
+读取 `AXCollectionList` 选中项，不输出候选原文：
+
+```bash
+swift build --package-path Tools/GlintEval \
+  --product SelectedChildGroupCandidateProbe
+Tools/GlintEval/.build/debug/SelectedChildGroupCandidateProbe \
+  --bundle com.iflytek.inputmethod.iFlytekIME \
+  --seconds 20
+```
+
+运行前切换到目标输入法并保持候选栏显示。`--bundle` 可替换为任何暴露相同结构
+的输入法。输出包含候选数量、选中索引、选中文字长度、读取耗时和候选 frame。

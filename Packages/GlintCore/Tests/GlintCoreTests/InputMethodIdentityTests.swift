@@ -89,4 +89,28 @@ final class InputMethodIdentityTests: XCTestCase {
             "com.bytedance.inputmethod.doubaoime.pinyin"
         )
     }
+
+    func testIFlytekIdentifiersUseStableInstalledValues() {
+        XCTAssertEqual(
+            InputMethodIdentifier.iFlytekBundle,
+            "com.iflytek.inputmethod.iFlytekIME"
+        )
+        XCTAssertEqual(
+            InputMethodIdentifier.iFlytekPinyinMode,
+            "com.iflytek.inputmethod.iFlytekIME.pinyin"
+        )
+    }
+
+    func testIFlytekUsesStableDisplayFallback() {
+        let identity = InputMethodIdentity(
+            bundleIdentifier:
+                InputMethodIdentifier.iFlytekBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.iFlytekPinyinMode,
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: " "
+        )
+
+        XCTAssertEqual(identity.displayName, "讯飞输入法")
+    }
 }

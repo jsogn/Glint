@@ -307,7 +307,8 @@ InputSourceMonitor (TIS)
   → FocusMonitor
   → CandidateReaderRouter
       ├─ AXCandidateReader
-      ├─ 微信 / 搜狗显式 reader
+      ├─ 微信 / 搜狗 / 豆包显式 reader
+      ├─ 父级选中分组通用 Profile
       ├─ 鼠须管 Lua 候选桥
       └─ AdaptiveUnknownCandidateReader
   → MonitoringController

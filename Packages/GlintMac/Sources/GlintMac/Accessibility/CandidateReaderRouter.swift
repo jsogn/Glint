@@ -245,6 +245,19 @@ enum CandidateReaderConfiguration {
                 ),
                 usesAdaptiveProfileFallback: true
             ),
+            CandidateReaderRegistration(
+                bundleIdentifiers: [
+                    InputMethodIdentifier.iFlytekBundle
+                ],
+                inputSourceIdentifiers: [
+                    InputMethodIdentifier.iFlytekPinyinMode
+                ],
+                reader: SelectedChildGroupCandidateReader(
+                    bundleIdentifier:
+                        InputMethodIdentifier.iFlytekBundle
+                ),
+                usesAdaptiveProfileFallback: true
+            ),
         ]
         if let rimeCandidateStore {
             registrations.append(

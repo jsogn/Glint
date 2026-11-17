@@ -82,6 +82,12 @@ let package = Package(
             ]
         ),
         .executableTarget(
+            name: "SelectedChildGroupCandidateProbe",
+            dependencies: [
+                .product(name: "GlintMac", package: "GlintMac")
+            ]
+        ),
+        .executableTarget(
             name: "AppleTranslationCompare",
             dependencies: [
                 "GlintEvalSupport",

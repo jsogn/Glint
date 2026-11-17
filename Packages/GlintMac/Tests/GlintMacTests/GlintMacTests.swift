@@ -2503,6 +2503,115 @@ final class SogouCandidateParserTests: XCTestCase {
     }
 }
 
+final class SelectedChildGroupCandidateParserTests: XCTestCase {
+    func testParserSupportsSingleCandidate() throws {
+        let row = try XCTUnwrap(
+            SelectedChildGroupCandidateParser.row(
+                from: [observation("only", x: 20, selected: true)]
+            )
+        )
+
+        XCTAssertEqual(row.items.map(\.text), ["only"])
+        XCTAssertEqual(row.selectedIndex, 0)
+    }
+
+    func testParserSortsOneVisibleCandidateRowAndFindsSelectedGroup() throws {
+        let row = try XCTUnwrap(
+            SelectedChildGroupCandidateParser.row(
+                from: [
+                    observation("two", x: 80),
+                    observation("one", x: 20),
+                    observation("three", x: 140, selected: true),
+                ]
+            )
+        )
+
+        XCTAssertEqual(
+            row.items.map(\.text),
+            ["one", "two", "three"]
+        )
+        XCTAssertEqual(row.selectedIndex, 2)
+        XCTAssertEqual(row.selected.text, "three")
+    }
+
+    func testParserRequiresExactlyOneSelectedGroup() {
+        XCTAssertNil(
+            SelectedChildGroupCandidateParser.row(
+                from: [
+                    observation("one", x: 20),
+                    observation("two", x: 80),
+                ]
+            )
+        )
+        XCTAssertNil(
+            SelectedChildGroupCandidateParser.row(
+                from: [
+                    observation("one", x: 20, selected: true),
+                    observation("two", x: 80, selected: true),
+                ]
+            )
+        )
+    }
+
+    func testParserRejectsExpandedRowsAndTooManyCandidates() {
+        XCTAssertNil(
+            SelectedChildGroupCandidateParser.row(
+                from: [
+                    observation("one", x: 20, selected: true),
+                    observation("two", x: 80),
+                    observation("three", x: 20, y: 50),
+                ]
+            )
+        )
+        XCTAssertNil(
+            SelectedChildGroupCandidateParser.row(
+                from: (0..<10).map {
+                    observation(
+                        "candidate-\($0)",
+                        x: CGFloat($0 * 60),
+                        selected: $0 == 0
+                    )
+                }
+            )
+        )
+    }
+
+    func testUnsupportedLayoutIsClassified() {
+        XCTAssertTrue(
+            SelectedChildGroupCandidateParser
+                .hasUnsupportedLayout([
+                    observation("one", x: 20),
+                    observation("two", x: 80),
+                    observation("three", x: 20, y: 50),
+                ])
+        )
+        XCTAssertFalse(
+            SelectedChildGroupCandidateParser
+                .hasUnsupportedLayout([
+                    observation("only", x: 20)
+                ])
+        )
+    }
+
+    private func observation(
+        _ text: String,
+        x: CGFloat,
+        y: CGFloat = 10,
+        selected: Bool = false
+    ) -> SelectedChildGroupCandidateObservation {
+        SelectedChildGroupCandidateObservation(
+            text: text,
+            frame: CGRect(
+                x: x,
+                y: y,
+                width: 55,
+                height: 34
+            ),
+            isSelected: selected
+        )
+    }
+}
+
 final class SelectedTextItemCandidateParserTests: XCTestCase {
     func testReaderPoolReusesReaderForSameInputSource() {
         let pool = SelectedTextItemReaderPool()
@@ -3062,6 +3171,29 @@ final class CandidateReaderRouterTests: XCTestCase {
         XCTAssertTrue(reader is PreferredCandidateReader)
     }
 
+    func testStandardConfigurationRoutesIFlytekThroughGenericProfile()
+        throws
+    {
+        let router = CandidateReaderConfiguration.standard()
+        let routerSource = source(
+            bundleIdentifier:
+                InputMethodIdentifier.iFlytekBundle,
+            inputSourceIdentifier:
+                InputMethodIdentifier.iFlytekPinyinMode
+        )
+        let reader = router.reader(for: routerSource)
+        let preferred = try XCTUnwrap(
+            reader as? PreferredCandidateReader
+        )
+
+        XCTAssertTrue(
+            preferred.preferred is SelectedChildGroupCandidateReader
+        )
+        XCTAssertTrue(
+            router.allowsProcessFallback(for: routerSource)
+        )
+    }
+
     private func source(
         bundleIdentifier: String,
         inputSourceIdentifier: String
@@ -3427,6 +3559,93 @@ final class CandidateProfileDiscoveryTests: XCTestCase {
                     selectionIsExact: false
                 )
             )
+        )
+    }
+
+    func testProfileClassifierRecognizesSelectedChildGroups() {
+        XCTAssertEqual(
+            CandidateProfileDetector.classify(
+                listSnapshot: nil,
+                textSnapshot: nil,
+                selectedChildGroupSnapshot: snapshot(
+                    candidateCount: 4,
+                    selectionIsExact: true
+                )
+            ),
+            .isolatedSelectedChildGroups
+        )
+        XCTAssertNil(
+            CandidateProfileDetector.classify(
+                listSnapshot: nil,
+                textSnapshot: nil,
+                selectedChildGroupSnapshot: snapshot(
+                    candidateCount: 4,
+                    selectionIsExact: false
+                )
+            )
+        )
+    }
+
+    func testProfileClassifierPrefersExactSelectedChildGroups() {
+        XCTAssertEqual(
+            CandidateProfileDetector.classify(
+                listSnapshot: snapshot(
+                    candidateCount: 5,
+                    selectionIsExact: false
+                ),
+                textSnapshot: snapshot(
+                    candidateCount: 5,
+                    selectionIsExact: true
+                ),
+                selectedChildGroupSnapshot: snapshot(
+                    candidateCount: 4,
+                    selectionIsExact: true
+                )
+            ),
+            .isolatedSelectedChildGroups
+        )
+        XCTAssertEqual(
+            CandidateProfileDetector.classify(
+                listSnapshot: nil,
+                textSnapshot: nil,
+                selectedTextItemSnapshot: snapshot(
+                    candidateCount: 4,
+                    selectionIsExact: true
+                ),
+                selectedChildGroupSnapshot: snapshot(
+                    candidateCount: 4,
+                    selectionIsExact: true
+                )
+            ),
+            .isolatedSelectedTextItems
+        )
+    }
+
+    func testSelectedChildGroupProfileUsesGenericReader() {
+        let identity = InputMethodIdentity(
+            bundleIdentifier: "com.example.inputmethod.groups",
+            inputSourceIdentifier:
+                "com.example.inputmethod.groups.pinyin",
+            sourceType: "TISTypeKeyboardInputMode",
+            localizedName: nil
+        )
+        let reader = AdaptiveUnknownCandidateReader(
+            source: ActiveInputSource(
+                identity: identity,
+                kind: .otherInputMethod
+            ),
+            fallback: RecordingCandidates(),
+            profiles: CandidateProfileCache(
+                discover: { _ in nil }
+            ),
+            allowsProfileDiscovery: true,
+            selectedTextItemReaders: .init()
+        ).candidateReader(
+            for: .isolatedSelectedChildGroups
+        )
+
+        XCTAssertTrue(
+            reader is SelectedChildGroupCandidateReader
         )
     }
 

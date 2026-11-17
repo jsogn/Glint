@@ -17,6 +17,10 @@ public enum InputMethodIdentifier {
         "com.bytedance.inputmethod.doubaoime"
     public static let doubaoPinyinMode =
         "com.bytedance.inputmethod.doubaoime.pinyin"
+    public static let iFlytekBundle =
+        "com.iflytek.inputmethod.iFlytekIME"
+    public static let iFlytekPinyinMode =
+        "com.iflytek.inputmethod.iFlytekIME.pinyin"
     public static let squirrelBundle =
         "im.rime.inputmethod.Squirrel"
     public static let squirrelHansMode =
@@ -65,6 +69,9 @@ public struct InputMethodIdentity: Sendable, Equatable {
         }
         if bundleIdentifier == InputMethodIdentifier.weTypeBundle {
             return "微信输入法"
+        }
+        if bundleIdentifier == InputMethodIdentifier.iFlytekBundle {
+            return "讯飞输入法"
         }
         return "输入法"
     }

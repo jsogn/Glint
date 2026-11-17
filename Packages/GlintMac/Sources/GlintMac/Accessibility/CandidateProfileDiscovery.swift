@@ -9,6 +9,7 @@ private let candidateProfileLogger = Logger(
 
 enum CandidateReadProfile: String, Sendable, Equatable {
     case isolatedCandidateList
+    case isolatedSelectedChildGroups
     case isolatedStyledText
     case isolatedSelectedTextItems
 }
@@ -629,7 +630,7 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
             || reason == .unavailable
     }
 
-    private func candidateReader(
+    func candidateReader(
         for profile: CandidateReadProfile
     ) -> any AXCandidateReading {
         guard let bundleIdentifier = source.identity.bundleIdentifier
@@ -639,6 +640,10 @@ struct AdaptiveUnknownCandidateReader: AXCandidateReading {
         switch profile {
         case .isolatedCandidateList:
             return SogouCandidateReader(
+                bundleIdentifier: bundleIdentifier
+            )
+        case .isolatedSelectedChildGroups:
+            return SelectedChildGroupCandidateReader(
                 bundleIdentifier: bundleIdentifier
             )
         case .isolatedStyledText:
@@ -704,17 +709,31 @@ enum CandidateProfileDetector {
                 includeVisibleCandidates: true,
                 includeVisibleTexts: false
             )
+        let selectedChildGroupReader =
+            SelectedChildGroupCandidateReader(
+                bundleIdentifier: key.bundleIdentifier,
+                accessLimits: .discovery,
+                maximumWindowCount: maximumWindowCount,
+                maximumNodeCount: maximumNodeCount
+            )
+        let selectedChildGroupSnapshot =
+            selectedChildGroupReader.snapshot(
+                includeVisibleCandidates: true,
+                includeVisibleTexts: false
+            )
         return classify(
             listSnapshot: listSnapshot,
             textSnapshot: textSnapshot,
-            selectedTextItemSnapshot: selectedTextItemSnapshot
+            selectedTextItemSnapshot: selectedTextItemSnapshot,
+            selectedChildGroupSnapshot: selectedChildGroupSnapshot
         )
     }
 
     static func classify(
         listSnapshot: AXCandidateSnapshot?,
         textSnapshot: AXCandidateSnapshot?,
-        selectedTextItemSnapshot: AXCandidateSnapshot? = nil
+        selectedTextItemSnapshot: AXCandidateSnapshot? = nil,
+        selectedChildGroupSnapshot: AXCandidateSnapshot? = nil
     ) -> CandidateReadProfile? {
         if let selectedTextItemSnapshot,
             selectedTextItemSnapshot.options.count
@@ -722,6 +741,13 @@ enum CandidateProfileDetector {
             selectedTextItemSnapshot.selectionIsExact
         {
             return .isolatedSelectedTextItems
+        }
+        if let selectedChildGroupSnapshot,
+            selectedChildGroupSnapshot.options.count
+                >= CandidateCountPolicy.profileDiscoveryMinimum,
+            selectedChildGroupSnapshot.selectionIsExact
+        {
+            return .isolatedSelectedChildGroups
         }
         if let textSnapshot,
             textSnapshot.options.count

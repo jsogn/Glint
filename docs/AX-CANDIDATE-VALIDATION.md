@@ -1,8 +1,8 @@
 # Glint AX Candidate Validation
 
 - 状态：现行
-- 最近校准：2026-10-30
-- 验证环境：Apple M4 Pro、48GB、macOS 26.6.2（25G83）
+- 最近校准：2026-11-17
+- 验证环境：Apple M4 Pro、48GB、macOS 27.2.1（26B131）
 
 本文记录 Glint 使用的公开 Accessibility 候选结构、兼容边界和验证证据。候选
 运行规则、Profile、缓存和资源上限统一由
@@ -18,6 +18,7 @@ Glint 通过 Accessibility 读取当前输入法候选，不使用截图、OCR �
 | --- | --- | --- |
 | 宿主 `InputMethodCandidateList` | 父列表 `AXSelectedChildren` | Apple 拼音 |
 | 独立分组文本项 | 候选项容器 `AXSelected` | 通用 Profile |
+| 独立分组集合 | 父 `AXCollectionList` 的 `AXSelectedChildren` | 通用 `isolatedSelectedChildGroups` |
 | 独立文字样式 | 唯一高亮数字组的前景亮度 | 微信显式 reader |
 | 独立匿名 `AXList` | 无高亮语义，首候选降级 | 搜狗显式 reader |
 
@@ -54,6 +55,12 @@ TextEdit、Safari 和 Chrome 已完成代表性验证。Electron/Chromium 的自
 
 ### 独立输入法进程
 
+- 讯飞候选位于独立 `AXWindow/AXSystemDialog`，其结构由通用
+  `isolatedSelectedChildGroups` Profile 读取。候选集合是 `AXList/AXCollectionList`，
+  父列表 `AXSelectedChildren` 直接指向当前候选组；每个候选组由覆盖按钮和
+  `AXStaticText.value` 组成。方向键切换后选中组与 frame 同步变化，Profile 只使用
+  该原生高亮语义，不退回首候选。讯飞路由保留已知输入源提示，因此首次组合输入
+  无需等待后台 Profile 探测。
 - 微信候选由独立 `AXWindow` 暴露，没有原生 `AXSelected`。数字和文字的前景亮度
   随高亮变化，唯一更亮的数字组用于定位当前候选；无法判断时退回首候选。
 - 搜狗候选位于匿名 `AXList`，文字和 frame 可读取，但没有可用的当前高亮语义。
@@ -102,6 +109,10 @@ AX 调用偶发出现数百毫秒长尾，极端样本曾超过 3 秒，因此�
 - 豆包输入法 1.0.2：TextEdit、Safari、Chrome、候选展开/收起和进程重启。
 - 豆包输入法 1.0.3-1：输入法升级后候选读取与翻译通过。
 - 微信输入法 `3.0.0`：用户完成宿主人工键入验收。
+- 讯飞输入法 `1.1.1010`：TextEdit 中的候选读取、初始选中项和右方向键切换
+  通过；读取到 6 个单行候选，选中索引与分组 frame 同步变化。正式监控链路中
+  HUD 随选中候选移动，Escape 后关闭；独立 Profile 探测返回
+  `isolatedSelectedChildGroups`。
 - 微信 App `4.1.15 (270115)`，Apple 拼音与微信输入法 `3.0.0`：聚焦聊天输入区
   后会暴露 `chat_input_field` / `AXTextArea` 及其控件 frame，统一的目标 PID
   插入路径已完成真实运行验证。候选栏显示时，输入区字符数和 `AXValue` 为空、没有
@@ -117,6 +128,8 @@ AX 调用偶发出现数百毫秒长尾，极端样本曾超过 3 秒，因此�
   Debug/Release arm64 构建和单实例 readiness 启动均通过。
 - 2026-10-30 0.6.0 候选读取回归：GlintMac 288 项、其余产品包 310 项、
   Python 31 项和 Rime Lua 测试通过；Debug arm64 构建和单实例 readiness 启动通过。
+- 2026-11-17 讯飞支持回归：GlintMac 348 项、GlintCore 122 项及完整
+  `./scripts/test.sh` 通过；Debug arm64 构建和单实例 readiness 启动通过。
 
 ## 已知边界
 

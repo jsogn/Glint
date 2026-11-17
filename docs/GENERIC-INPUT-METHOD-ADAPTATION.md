@@ -9,13 +9,19 @@ Glint 不为每个输入法厂商复制一条读取链路。输入法只有匹�
 | --- | --- | --- |
 | 标准候选 | 宿主 `InputMethodCandidateList` | 父列表 `AXSelectedChildren` |
 | `isolatedCandidateList` | 独立进程单行匿名 `AXList` | 无高亮，首候选降级 |
+| `isolatedSelectedChildGroups` | 独立集合列表中的候选分组 | 父列表 `AXSelectedChildren` |
 | `isolatedStyledText` | 独立窗口中的直接文本项 | 原生选中或唯一样式高亮 |
 | `isolatedSelectedTextItems` | 容器、数字序号和文字 | 容器 `AXSelected` |
 
-Apple 拼音、微信、搜狗和豆包保留显式 reader。它们的高亮或几何语义无法由当前
-通用 Profile 完整表达，但这些差异限定在 reader 内，`MonitoringController` 和
-HUD 不包含厂商分支。微信、搜狗和豆包在显式 reader 失效后统一回退到通用
-reader 和 Profile 重验证。新输入法只要暴露上述通用结构，就无需新增专用代码。
+`isolatedSelectedChildGroups` 当前匹配“列表父级提供唯一选中分组、分组首个子节点
+包含候选文字、第二个子节点为交互覆盖层”的结构。它要求精确高亮、单行
+`1...9` 项；任何符合该结构的输入法都复用同一 reader。
+
+Apple 拼音、微信、搜狗和豆包保留显式 reader。讯飞作为已知输入源优先选择
+`isolatedSelectedChildGroups`，读取实现位于通用 Profile reader；任何暴露相同
+结构的未知输入法也可通过探测复用。厂商差异限定在 reader 或 Profile 能力内，
+`MonitoringController` 和 HUD 不包含厂商分支。微信、讯飞、搜狗和豆包在首选
+reader 失效后统一回退到通用 reader 和 Profile 重验证。
 显式 reader 明确报告候选已结束时不再执行通用二次扫描；只有结构失配、不可用等
 可恢复状态才进入 fallback，避免无候选轮询重复消耗 AX 调用。
 
@@ -67,6 +73,7 @@ reader 和 Profile 重验证。新输入法只要暴露上述通用结构，就�
 | --- | --- |
 | 常规独立进程 reader | 3 个窗口 |
 | 搜狗形态 | 24 个直接节点 |
+| 父级选中分组形态 | 24 个候选分组 |
 | 微信形态 | 36 个直接节点 |
 | 分组文本项 | 24 个容器或候选项节点 |
 | 后台探测 | 2 个窗口、16 个节点、单次消息 `50ms` |
