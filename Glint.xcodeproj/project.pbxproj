@@ -17,9 +17,12 @@
 		3E613C7F36DD9E6B1469CD0C /* GlintPlugins in Frameworks */ = {isa = PBXBuildFile; productRef = 5C0E36DA882F7C4F10076208 /* GlintPlugins */; };
 		4062AB589E4FFA4D5BB17A0E /* AppSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC10226B5D12DA207BEC19B /* AppSmokeTests.swift */; };
 		473060D0D4EC656B47635E04 /* GlintDictionary in Frameworks */ = {isa = PBXBuildFile; productRef = 70E3DFC37BD799055CA30349 /* GlintDictionary */; };
+		4B358863BC1E333DC840A1C8 /* AppDelegate+Permissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8FB4B3465E127B9F168710 /* AppDelegate+Permissions.swift */; };
 		4D3F18EF382E77CCB4F70956 /* dict-cedict in Resources */ = {isa = PBXBuildFile; fileRef = F082FC2C41A35AF169B0DE24 /* dict-cedict */; };
+		4EFEA7BF4B5F445F2141795D /* AppDelegate+Updates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B73708398807A7649F4210 /* AppDelegate+Updates.swift */; };
 		4F1E7AEF9756395C39FDB33F /* CTranslate2Runtime in Resources */ = {isa = PBXBuildFile; fileRef = 66498778FE3B99735C52AF5A /* CTranslate2Runtime */; };
 		509EF10E6771101ED85B0DAC /* HUDEventCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */; };
+		50A8281F7DE9E356A9E5E0BE /* AppWindowActionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99871D219388110BA07F3C25 /* AppWindowActionContext.swift */; };
 		51F80755FC384093575E05BC /* RimeCandidateBridge in Embed Dependencies */ = {isa = PBXBuildFile; fileRef = CA325A737255A243BF330A82 /* RimeCandidateBridge */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		56858DDBBD011680EEE7F0BA /* dict-ecdict in Resources */ = {isa = PBXBuildFile; fileRef = 7A59F9A29CA693ACF1A2526C /* dict-ecdict */; };
 		5DC357A49028867449604E46 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 53183767502EEFE5D0989DD0 /* Assets.xcassets */; };
@@ -32,10 +35,13 @@
 		B0A45886E65DAC6F93369A3B /* SelfCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58FD5BBDE8C935A6E27A3CDF /* SelfCheck.swift */; };
 		B63A5AEECF778A78BD185434 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */; };
 		B70CAFEBB2416E25B0FFED97 /* GlintCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2E26ACCA8E4915ED8C4AAE15 /* GlintCore */; };
+		BFF8C06EFD0C1916A7216676 /* AppDelegate+StatusItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB4BF766D01A41A5B94F075 /* AppDelegate+StatusItem.swift */; };
 		C64B566FF643DC7F6F1257C8 /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B25DB3A29CF7D59E6192BE4D /* LaunchAtLoginController.swift */; };
 		C848E897C79EDE1BC7204972 /* BundledPluginResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */; };
+		C97CA17A99A83F21760A5090 /* AppDelegate+Monitoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = C435DB30F6246E5329DF989A /* AppDelegate+Monitoring.swift */; };
 		D418B3179EEE536BCCF50C9D /* GlintUI in Frameworks */ = {isa = PBXBuildFile; productRef = FBD93326229A8A62F071CD36 /* GlintUI */; };
 		D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */; };
+		E9F42AD253359A34EC8AD836 /* AppWindowPreferencesContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308475C55E9EDBBFB2ABADD4 /* AppWindowPreferencesContext.swift */; };
 		F2B51655232A3968EF790E71 /* candidate_bridge.lua in CopyFiles */ = {isa = PBXBuildFile; fileRef = 98A1399AD8AAD221DB8BE251 /* candidate_bridge.lua */; };
 		F66206E2AF6A12351EC83B1C /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */; };
 		FA3C47D17A7C09E8852FB155 /* GlintDictionary in Frameworks */ = {isa = PBXBuildFile; productRef = 0B46DF0B3D2714D2CEC06F6E /* GlintDictionary */; };
@@ -81,7 +87,10 @@
 		0A02C5BFBCCD53299807D039 /* json.lua */ = {isa = PBXFileReference; path = json.lua; sourceTree = "<group>"; };
 		0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXCandidateProbe.swift; sourceTree = "<group>"; };
 		1593095FA119035BCB1CDA9F /* GlintDictionary */ = {isa = PBXFileReference; lastKnownFileType = folder; name = GlintDictionary; path = Packages/GlintDictionary; sourceTree = SOURCE_ROOT; };
+		19B73708398807A7649F4210 /* AppDelegate+Updates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Updates.swift"; sourceTree = "<group>"; };
+		1CB4BF766D01A41A5B94F075 /* AppDelegate+StatusItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+StatusItem.swift"; sourceTree = "<group>"; };
 		26B466B1CEBC066BC165F4F8 /* HUDEventCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDEventCoordinator.swift; sourceTree = "<group>"; };
+		308475C55E9EDBBFB2ABADD4 /* AppWindowPreferencesContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWindowPreferencesContext.swift; sourceTree = "<group>"; };
 		32E9F8EB23E80E0A931F444E /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
 		3E2E78BBA22734DD486C760B /* Glint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glint.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C3633A26F82427921466A94 /* TranslationLanguageCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationLanguageCoordinator.swift; sourceTree = "<group>"; };
@@ -96,8 +105,11 @@
 		7A59F9A29CA693ACF1A2526C /* dict-ecdict */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "dict-ecdict"; path = "Resources/Plugins/dict-ecdict"; sourceTree = SOURCE_ROOT; };
 		88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		98A1399AD8AAD221DB8BE251 /* candidate_bridge.lua */ = {isa = PBXFileReference; path = candidate_bridge.lua; sourceTree = "<group>"; };
+		99871D219388110BA07F3C25 /* AppWindowActionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWindowActionContext.swift; sourceTree = "<group>"; };
+		9F8FB4B3465E127B9F168710 /* AppDelegate+Permissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Permissions.swift"; sourceTree = "<group>"; };
 		A6CE2C298747A802E1589A8C /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		B25DB3A29CF7D59E6192BE4D /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
+		C435DB30F6246E5329DF989A /* AppDelegate+Monitoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Monitoring.swift"; sourceTree = "<group>"; };
 		CA325A737255A243BF330A82 /* RimeCandidateBridge */ = {isa = PBXFileReference; includeInIndex = 0; path = RimeCandidateBridge; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2371BA6631C88941E3BD31F /* DictionaryPluginLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryPluginLoader.swift; sourceTree = "<group>"; };
 		D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledPluginResources.swift; sourceTree = "<group>"; };
@@ -222,8 +234,14 @@
 			isa = PBXGroup;
 			children = (
 				88A2620BB180BABCDB1ECE62 /* AppDelegate.swift */,
+				C435DB30F6246E5329DF989A /* AppDelegate+Monitoring.swift */,
+				9F8FB4B3465E127B9F168710 /* AppDelegate+Permissions.swift */,
+				1CB4BF766D01A41A5B94F075 /* AppDelegate+StatusItem.swift */,
+				19B73708398807A7649F4210 /* AppDelegate+Updates.swift */,
 				65ECD12186BFF1F02FFB9CFA /* AppEnvironment.swift */,
 				D83DA3C7DCBC063B5A9B22B2 /* AppIcon.icon */,
+				99871D219388110BA07F3C25 /* AppWindowActionContext.swift */,
+				308475C55E9EDBBFB2ABADD4 /* AppWindowPreferencesContext.swift */,
 				53183767502EEFE5D0989DD0 /* Assets.xcassets */,
 				0BD402CF805A2A4DDE9BC47D /* AXCandidateProbe.swift */,
 				D4A35737F937BDAA839CDA8F /* BundledPluginResources.swift */,
@@ -453,8 +471,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				7762DC1E435AC1E010FEFDAF /* AXCandidateProbe.swift in Sources */,
+				C97CA17A99A83F21760A5090 /* AppDelegate+Monitoring.swift in Sources */,
+				4B358863BC1E333DC840A1C8 /* AppDelegate+Permissions.swift in Sources */,
+				BFF8C06EFD0C1916A7216676 /* AppDelegate+StatusItem.swift in Sources */,
+				4EFEA7BF4B5F445F2141795D /* AppDelegate+Updates.swift in Sources */,
 				B63A5AEECF778A78BD185434 /* AppDelegate.swift in Sources */,
 				21CE7D933E53429C8931974E /* AppEnvironment.swift in Sources */,
+				50A8281F7DE9E356A9E5E0BE /* AppWindowActionContext.swift in Sources */,
+				E9F42AD253359A34EC8AD836 /* AppWindowPreferencesContext.swift in Sources */,
 				C848E897C79EDE1BC7204972 /* BundledPluginResources.swift in Sources */,
 				7BF97DC43287CFA143A70ED2 /* Diagnostics.swift in Sources */,
 				D50B327013E49A9EBA5F3EC7 /* DictionaryPluginLoader.swift in Sources */,

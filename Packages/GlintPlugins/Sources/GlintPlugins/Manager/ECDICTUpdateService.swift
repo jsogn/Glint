@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import GlintDictionary
 import zlib
@@ -274,7 +273,7 @@ public actor ECDICTUpdateService {
             from: archiveURL,
             to: csvURL
         )
-        let sourceChecksum = try Self.sha256(fileURL: csvURL)
+        let sourceChecksum = try DigestHex.sha256(fileURL: csvURL)
         let builtDatabase = workDirectory.appendingPathComponent(
             "ecdict_rank.sqlite3"
         )
@@ -543,16 +542,6 @@ public actor ECDICTUpdateService {
 
     private static func version(from sourceDate: String) -> String {
         sourceDate.prefix(10).replacingOccurrences(of: "-", with: ".")
-    }
-
-    private static func sha256(fileURL: URL) throws -> String {
-        let data = try Data(
-            contentsOf: fileURL,
-            options: [.mappedIfSafe]
-        )
-        return SHA256.hash(data: data)
-            .map { String(format: "%02x", $0) }
-            .joined()
     }
 
     private static func isRetryable(_ error: Error) -> Bool {

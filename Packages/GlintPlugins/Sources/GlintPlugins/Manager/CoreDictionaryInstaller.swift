@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 public struct CoreDictionaryManifestFields: Sendable {
@@ -195,7 +194,7 @@ public actor CoreDictionaryInstaller {
             version: fields.version,
             runtime: fields.runtime,
             sizeBytes: Int64(fileSize(at: stagedArtifact)),
-            sha256: try sha256(fileURL: stagedArtifact),
+            sha256: try DigestHex.sha256(fileURL: stagedArtifact),
             url: fields.url,
             license: fields.license,
             minRAMBytes: fields.minRAMBytes,
@@ -249,13 +248,4 @@ public actor CoreDictionaryInstaller {
         ).fileSize) ?? 0
     }
 
-    private func sha256(fileURL: URL) throws -> String {
-        let data = try Data(
-            contentsOf: fileURL,
-            options: [.mappedIfSafe]
-        )
-        return SHA256.hash(data: data)
-            .map { String(format: "%02x", $0) }
-            .joined()
-    }
 }

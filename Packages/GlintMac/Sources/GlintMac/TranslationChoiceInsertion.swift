@@ -10,6 +10,18 @@ private let translationChoiceLogger = Logger(
     category: "TranslationChoice"
 )
 
+private let translationChoiceKeyCodes: [UInt32] = [
+    UInt32(kVK_ANSI_1),
+    UInt32(kVK_ANSI_2),
+    UInt32(kVK_ANSI_3),
+    UInt32(kVK_ANSI_4),
+    UInt32(kVK_ANSI_5),
+    UInt32(kVK_ANSI_6),
+    UInt32(kVK_ANSI_7),
+    UInt32(kVK_ANSI_8),
+    UInt32(kVK_ANSI_9),
+]
+
 public struct TranslationChoiceOffer: Sendable, Equatable {
     public let revision: UInt64
     public let choices: [String]
@@ -38,20 +50,13 @@ public enum TranslationChoiceHotKeyProbe {
         modifiers: TranslationInsertionModifiers,
         count: Int = 9
     ) -> Bool {
-        let keyCodes = [
-            UInt32(kVK_ANSI_1),
-            UInt32(kVK_ANSI_2),
-            UInt32(kVK_ANSI_3),
-            UInt32(kVK_ANSI_4),
-            UInt32(kVK_ANSI_5),
-            UInt32(kVK_ANSI_6),
-            UInt32(kVK_ANSI_7),
-            UInt32(kVK_ANSI_8),
-            UInt32(kVK_ANSI_9),
-        ]
-        let probeCount = min(max(count, 1), keyCodes.count)
+        let probeCount = min(max(count, 1), translationChoiceKeyCodes.count)
         var refs: [EventHotKeyRef?] = []
-        for (index, keyCode) in keyCodes.prefix(probeCount).enumerated() {
+        for (index, keyCode)
+            in translationChoiceKeyCodes
+            .prefix(probeCount)
+            .enumerated()
+        {
             var ref: EventHotKeyRef?
             var hotKeyID = EventHotKeyID()
             hotKeyID.signature = 0x474C_5052  // GLPR
@@ -493,19 +498,13 @@ private final class CarbonTranslationChoiceHotKeys:
 
         var hotKeyRefs = Array<EventHotKeyRef?>(
             repeating: nil,
-            count: max(0, min(count, 9))
+            count: max(0, min(count, translationChoiceKeyCodes.count))
         )
-        for (index, keyCode) in [
-            UInt32(kVK_ANSI_1),
-            UInt32(kVK_ANSI_2),
-            UInt32(kVK_ANSI_3),
-            UInt32(kVK_ANSI_4),
-            UInt32(kVK_ANSI_5),
-            UInt32(kVK_ANSI_6),
-            UInt32(kVK_ANSI_7),
-            UInt32(kVK_ANSI_8),
-            UInt32(kVK_ANSI_9),
-        ].prefix(hotKeyRefs.count).enumerated() {
+        for (index, keyCode)
+            in translationChoiceKeyCodes
+            .prefix(hotKeyRefs.count)
+            .enumerated()
+        {
             var hotKeyRef: EventHotKeyRef?
             let status = RegisterEventHotKey(
                 keyCode,

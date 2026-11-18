@@ -35,13 +35,17 @@ public final class HUDController {
     private var entryAnimationGeneration = 0
     private var transitionGeneration = 0
 
+    private static var animationsAreSuppressed: Bool {
+        !NSApplication.shared.isRunning
+            || NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
+
     public init() {
         let contentModel = HUDPresentationModel(
             text: "",
             appearance: .default,
             backgroundOpacity: 0.8,
-            animatesTransitions: !NSWorkspace.shared
-                .accessibilityDisplayShouldReduceMotion
+            animatesTransitions: !Self.animationsAreSuppressed
         )
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: panelSize),
@@ -73,8 +77,7 @@ public final class HUDController {
         scheduler.cancelQueuedPresentations()
         guard panel.isVisible else { return }
         transitionGeneration &+= 1
-        let reduceMotion =
-            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let reduceMotion = Self.animationsAreSuppressed
         contentModel.animatesTransitions = !reduceMotion
         if reduceMotion {
             panel.alphaValue = 1
@@ -195,8 +198,7 @@ public final class HUDController {
 
     private func present(_ request: HUDPresentationRequest) {
         scheduler.cancelStaleDimming()
-        let reduceMotion =
-            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let reduceMotion = Self.animationsAreSuppressed
         contentModel.animatesTransitions = !reduceMotion
         transitionGeneration &+= 1
 
@@ -258,8 +260,7 @@ public final class HUDController {
             textOpacity: 1,
             animatesText: false
         )
-        let reduceMotion =
-            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let reduceMotion = Self.animationsAreSuppressed
         guard panel.isVisible, !reduceMotion else {
             panel.orderOut(nil)
             panel.alphaValue = 0
@@ -436,8 +437,7 @@ public final class HUDController {
             geometryResolver.reset()
             return
         }
-        let reduceMotion =
-            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let reduceMotion = Self.animationsAreSuppressed
         guard animated, !reduceMotion else {
             finishHiding(generation: generation)
             return

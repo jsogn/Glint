@@ -271,7 +271,7 @@ public actor MLXTranslationEngine: TranslationEngine {
             let loaded = try await task.value
             container = loaded
             loadTask = nil
-            lastLoadSeconds = started.duration(to: .now).seconds
+            lastLoadSeconds = started.duration(to: .now).inSeconds
             return loaded
         } catch {
             loadTask = nil
@@ -447,7 +447,7 @@ public actor MLXTranslationEngine: TranslationEngine {
                 adapterMode: adapterMode
             )
         )
-        lastWarmUpSeconds = started.duration(to: .now).seconds
+        lastWarmUpSeconds = started.duration(to: .now).inSeconds
         if let lastWarmUpSeconds {
             inferenceLogger.notice(
                 "perf latency phase=warmup model=mlx ms=\(lastWarmUpSeconds * 1_000, privacy: .public)"
@@ -1043,12 +1043,5 @@ public actor MLXTranslationEngine: TranslationEngine {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty else { return nil }
         return (index, content)
-    }
-}
-
-private extension Duration {
-    var seconds: Double {
-        Double(components.seconds)
-            + Double(components.attoseconds) / 1_000_000_000_000_000_000
     }
 }

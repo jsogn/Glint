@@ -30,6 +30,7 @@ public final class DisplayPreferences {
     public static let candidateDwellDurationRange = 0.05...0.3
     public static let defaultCandidateDwellDuration = 0.10
     public static let defaultCandidateSpacing = 6.0
+    public static let candidateSpacingRange = 0.0...24.0
     public static let hudOpacityRange = 0.4...1.0
     public static let defaultHUDOpacity = 0.8
 
@@ -379,7 +380,10 @@ public final class DisplayPreferences {
 
     private static func clampedSpacing(_ value: Double) -> Double {
         guard value.isFinite else { return defaultCandidateSpacing }
-        return min(max(value, 0), 24)
+        return min(
+            max(value, candidateSpacingRange.lowerBound),
+            candidateSpacingRange.upperBound
+        )
     }
 
     private static func clampedSelectedTranslationSpacing(

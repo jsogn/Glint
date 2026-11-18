@@ -63,9 +63,7 @@ struct GlintMLXProbe {
                 )
             )
             let elapsed = started.duration(to: .now)
-            let seconds =
-                Double(elapsed.components.seconds)
-                + Double(elapsed.components.attoseconds) / 1e18
+            let seconds = elapsed.inSeconds
             let load = await engine.loadSeconds
             print("model=\(directory.path)")
             print("load=\(load.map { String(format: "%.2fs", $0) } ?? "unknown")")
@@ -107,9 +105,8 @@ struct GlintMLXProbe {
             candidates,
             target: direction.target
         )
-        let batchMilliseconds = milliseconds(
-            batchStarted.duration(to: .now)
-        )
+        let batchMilliseconds =
+            batchStarted.duration(to: .now).inMilliseconds
 
         let sequentialStarted = ContinuousClock.now
         var sequential: [String] = []
@@ -122,9 +119,8 @@ struct GlintMLXProbe {
             )
             sequential.append(result?.text ?? "<not found>")
         }
-        let sequentialMilliseconds = milliseconds(
-            sequentialStarted.duration(to: .now)
-        )
+        let sequentialMilliseconds =
+            sequentialStarted.duration(to: .now).inMilliseconds
         let speedup =
             batchMilliseconds > 0
             ? sequentialMilliseconds / batchMilliseconds
@@ -151,10 +147,5 @@ struct GlintMLXProbe {
             print("\(index + 1). \(input) -> \(batched)")
             print("   sequential: \(sequential[index])")
         }
-    }
-
-    private static func milliseconds(_ duration: Duration) -> Double {
-        Double(duration.components.seconds) * 1_000
-            + Double(duration.components.attoseconds) / 1_000_000_000_000_000
     }
 }

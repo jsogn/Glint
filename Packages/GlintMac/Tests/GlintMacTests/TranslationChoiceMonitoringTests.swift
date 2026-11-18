@@ -394,6 +394,15 @@ private enum TranslationGateError: Error {
     case timedOut
 }
 
+private func settleCandidateDwell(
+    _ controller: MonitoringController,
+    duration: Double = 0.08
+) async throws {
+    await controller.setCandidateDwellDuration(duration)
+    _ = await controller.tick()
+    try await Task.sleep(for: .milliseconds(90))
+}
+
 private final class MutableSecureInput: Sendable {
     private let enabled = OSAllocatedUnfairLock(initialState: false)
 
@@ -432,9 +441,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil { recorder.current != nil }
         let offer = try XCTUnwrap(recorder.current)
@@ -476,9 +483,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil { recorder.current != nil }
         let offer = try XCTUnwrap(recorder.current)
@@ -531,9 +536,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil { recorder.current != nil }
         let offer = try XCTUnwrap(recorder.current)
@@ -582,9 +585,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil { recorder.current != nil }
         let offer = try XCTUnwrap(recorder.current)
@@ -628,9 +629,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
 
         await controller.setMaximumTranslationCount(2)
         await controller.setTranslationScope(.row)
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil { recorder.current != nil }
         let offer = try XCTUnwrap(recorder.current)
@@ -686,9 +685,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
 
         await controller.setMaximumTranslationCount(2)
         await controller.setTranslationScope(.row)
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil { recorder.latest != nil }
 
@@ -696,6 +693,49 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
             recorder.latest?.map(\.translation),
             ["one", "two"]
         )
+    }
+
+    func testTranslationWithoutDisplayableResultPublishesEmptyState()
+        async throws
+    {
+        let controller = MonitoringController(
+            router: SmartRouter(
+                dictionary: EmptyInsertionDictionary(),
+                translation: MissingInsertionTranslation()
+            ),
+            inputSource: InsertionInputSource(),
+            focus: InsertionFocus(),
+            candidateReaders: InsertionCandidateRouter(),
+            accessibilityIsTrusted: { true },
+            secureInputIsEnabled: { false }
+        )
+        let recorder = PresentationRecorder()
+        let events = await controller.events
+        let collector = Task {
+            for await event in events {
+                if case .results(
+                    let presentations,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _
+                ) = event {
+                    recorder.record(presentations)
+                }
+            }
+        }
+        defer { collector.cancel() }
+
+        try await settleCandidateDwell(controller)
+        _ = await controller.tick()
+        try await waitUntil { recorder.latest != nil }
+
+        XCTAssertEqual(recorder.latest?.count, 1)
+        XCTAssertEqual(recorder.latest?.first?.candidateText, "并且")
+        XCTAssertNil(recorder.latest?.first?.translation)
     }
 
     func testResultsCarryFocusedInputCaretRect() async throws {
@@ -732,9 +772,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil { recorder.latest != nil }
 
@@ -792,9 +830,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil {
             layoutRecorder.latest != nil
@@ -865,9 +901,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil {
             layoutRecorder.latest != nil
@@ -981,9 +1015,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await waitUntil { presentations.latest != nil }
         let translationResultCount = presentations.recordedCount
@@ -1058,9 +1090,7 @@ final class TranslationChoiceMonitoringTests: XCTestCase {
         }
         defer { collector.cancel() }
 
-        await controller.setCandidateDwellDuration(0.08)
-        _ = await controller.tick()
-        try await Task.sleep(for: .milliseconds(90))
+        try await settleCandidateDwell(controller)
         _ = await controller.tick()
         try await gate.waitUntilStarted()
 
@@ -1098,6 +1128,20 @@ private enum TestWaitError: Error {
 
 private struct EmptyInsertionDictionary: DictionaryEngine {
     func lookup(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        nil
+    }
+}
+
+private struct MissingInsertionTranslation: TranslationEngine {
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        true
+    }
+
+    func translate(
         _ request: TranslationRequest
     ) async throws -> TranslationResult? {
         nil

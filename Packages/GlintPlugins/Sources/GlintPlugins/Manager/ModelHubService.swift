@@ -661,9 +661,7 @@ public actor ModelHubService {
 
     private static func generatedIdentifier(for repository: String) -> String {
         let digest = SHA256.hash(data: Data(repository.utf8))
-        let suffix = digest.prefix(8)
-            .map { String(format: "%02x", $0) }
-            .joined()
+        let suffix = DigestHex.string(for: digest.prefix(8))
         return "upstream-mlx-\(suffix)"
     }
 

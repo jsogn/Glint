@@ -273,9 +273,7 @@ public actor LocalModelImportService {
 
     private static func importedIdentifier(for directory: URL) -> String {
         let digest = SHA256.hash(data: Data(directory.path.utf8))
-        let suffix = digest.prefix(8)
-            .map { String(format: "%02x", $0) }
-            .joined()
+        let suffix = DigestHex.string(for: digest.prefix(8))
         return "user-mlx-\(suffix)"
     }
 

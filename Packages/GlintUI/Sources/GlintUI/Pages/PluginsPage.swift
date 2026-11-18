@@ -832,10 +832,7 @@ struct PluginsPage: View {
     }
 
     private func modelMetadata(for plugin: PluginManifest) -> String {
-        let size = ByteCountFormatter.string(
-            fromByteCount: plugin.sizeBytes,
-            countStyle: .file
-        )
+        let size = ByteCountFormatting.file(plugin.sizeBytes)
         if plugin.source == .local {
             return "本地导入 · \(size)"
         }
@@ -925,11 +922,15 @@ private struct ModelInstallConfirmationSheet: View {
                 )
                 detailRow(
                     "下载大小",
-                    byteCount(preparation.snapshot.sizeBytes)
+                    ByteCountFormatting.file(
+                        preparation.snapshot.sizeBytes
+                    )
                 )
                 detailRow(
                     "预计运行内存",
-                    byteCount(preparation.manifest.minRAMBytes)
+                    ByteCountFormatting.file(
+                        preparation.manifest.minRAMBytes
+                    )
                 )
                 detailRow(
                     "许可证",
@@ -1006,12 +1007,5 @@ private struct ModelInstallConfirmationSheet: View {
                 .gridColumnAlignment(.leading)
                 .textSelection(.enabled)
         }
-    }
-
-    private func byteCount(_ value: Int64) -> String {
-        ByteCountFormatter.string(
-            fromByteCount: value,
-            countStyle: .file
-        )
     }
 }

@@ -1,7 +1,7 @@
 # Glint Architecture
 
 - 状态：现行
-- 最近校准：2026-11-03
+- 最近校准：2026-11-18
 - 平台：macOS 15+，Apple Silicon
 - 语言：Swift 6
 
@@ -99,7 +99,14 @@ Glint/
 - Rime 候选 Socket、快照存储和鼠须管 Reader；在所有构建中注册。
 - `RimeSupportPaths`：统一提供正式支持目录和 Socket 路径。
 - `SquirrelIntegrationService`：启用 schema 解析、YAML 预检、事务安装、
-  备份、哈希校验、重新部署和回滚；在 App 组合根中构造。
+  备份、哈希校验、重新部署和回滚；安装计划与事务执行分离，安装/卸载共用同一
+  回滚路径，并在 App 组合根中构造。安装、卸载、事务、manifest、路径和 schema
+  解析分别位于 `SquirrelIntegrationService+Install/Uninstall/Transactions/
+  Manifest/Paths/Schemas`，主 actor 只保留状态查询和恢复入口。
+- `MonitoringController` 只负责候选轮询、会话状态和翻译调度；候选事件、展示模型
+  与轮询策略位于 `Monitoring/`。生命周期、候选观察和宿主 AX 增强分别位于
+  `MonitoringController+Lifecycle/Observation/HostAccessibility`，会话失效、
+  候选读取和翻译发布各有独立扩展。
 - Apple Translation 系统会话协调器、系统翻译 Engine 和持久
   `translationTask` 宿主。系统翻译以保留模型 ID
   `system-apple-translation` 参与现有 `TranslationEngine` 路由。
@@ -153,6 +160,8 @@ Glint/
 
 - 解析 manifest，校验版本、文件类型和 SHA256。
 - 下载、镜像回退、持久化断点续传、解压和原子安装。
+- `PluginCatalogService` 只保留 catalog 获取和公开入口；安装、快照下载与内容
+  校验分别位于 `PluginCatalogService+Install/Download/Validation`。
 - 管理可选词典与翻译模型；内置核心能力不参与安装或卸载。
 - App 启动时检查已安装核心词典；旧 schema 或不兼容缓存使用 bundled 数据原子
   修复，失败时保留旧目录并继续回退 bundled 基线。
@@ -164,6 +173,17 @@ Glint/
 - “输入法支持”页展示 Rime 正式支持状态、应用内手动设置向导和高级排错入口。
 - 单一 HUD panel，不创建键盘监听、Toast 或运行时错误卡片。
 - `MainWindowModel` 作为 `@MainActor` 展示状态和动作边界。
+- `PluginInstallCoordinator` 承接插件安装任务、取消、模型市场预检、进度合并和
+  失败回滚；`MainWindowModel` 保留公开入口与可观察展示状态。
+- `PluginUpdateCoordinator` 承接核心词典/翻译模型更新检查、冷却、缓存恢复和
+  catalog 拉取；模型只保留展示状态与动作转发。
+- `LocalModelImportCoordinator` 承接本地模型导入任务、进度、取消和失败恢复；
+  `MainWindowModel` 只保留导入入口与展示状态。
+- `TranslationCoordinator` 承接目标语言/模型切换、请求代次和系统翻译准备；
+  `MainWindowModel` 只保留翻译配置的展示状态与公开入口。
+- `MainWindowModel+Presentation` 承载插件、翻译与输入法页面的派生展示属性，
+  `MainWindowModel+InputMethods/Permissions/Plugins` 承接输入法支持、权限/登录项
+  和插件/模型动作，`MainWindowModel` 主文件只保留状态、生命周期和翻译动作转发。
 - “语言与翻译”页拥有目标语言、当前模型、语言包和语音；“插件与模型”只负责资源管理。
 - 不直接实现 Accessibility 读取或模型推理。
 
@@ -174,6 +194,11 @@ Glint/
 - 仅在当前方向翻译运行时准备完成后启动监控。
 - App 组合 `TranslationLanguageCoordinator`，在语言切换时停止旧输出、准备新方向并按原运行状态恢复。
 - App 启动和准备失败后的重试共用协调器配置路径，避免在生命周期层重复语言分支。
+- `AppWindowActionContext` 与 `AppWindowPreferencesContext` 分离窗口动作和偏好/HUD
+  回调接线，`AppDelegate` 只保留组合根与生命周期职责。
+- `AppDelegate+Monitoring/StatusItem/Updates/Permissions` 分离监控事件处理、
+  菜单栏、更新面板以及权限/输入法/系统设置回调；主文件只保留对象组装和 App
+  生命周期入口。
 - 所有构建都启动 Rime Socket 接收器并注入事务安装器。已安装候选读取支持使用
   独立的资源版本；App 更新后仅在资源或协议版本变化时自动迁移，未安装用户不会
   自动写入 Rime 配置。组合根让安装器和 Socket 使用同一正式目录。Release
@@ -249,6 +274,8 @@ GlintCore
   英文译文，不改变候选读取、插入或朗读。非英语状态隐藏该开关和释义数量。
 - 选中模式中，4 字以内的候选如果已有至少两条简洁释义，会隐藏超过 8 个
   英文词或 48 个字符的解释性候选；显示项与数字快捷键使用同一过滤后数组。
+- 48 个字符只约束词典 gloss 和短词候选的简洁释义，不限制模型返回的自然短句。
+  无可靠结果时仍发布当前候选 revision，由 HUD 原位显示省略占位，不能保留淡化旧译文。
 - 候选读取层在生成快照时显式给出 `vertical`、`horizontal` 或 `unknown`
   布局方向，HUD 不得再根据原始窗口宽高自行推断。只有明确标记为 `vertical`
   的候选可以进入独立的竖排布局器：右侧优先，右侧不足时使用左侧，纵向中心对齐

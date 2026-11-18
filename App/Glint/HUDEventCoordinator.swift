@@ -115,7 +115,7 @@ final class HUDEventCoordinator {
         }
         let eventToVisible =
             candidateChangedAt.map {
-                Self.elapsedMilliseconds($0.duration(to: .now))
+                $0.duration(to: .now).inMilliseconds
             } ?? 0
         hudLatencyLogger.debug(
             "perf latency phase=\(phase, privacy: .public) revision=\(revision, privacy: .public) visible_items=\(items.count, privacy: .public) event_to_visible_ms=\(eventToVisible, privacy: .public)"
@@ -130,11 +130,6 @@ final class HUDEventCoordinator {
     func hide(animated: Bool) {
         clear()
         hud.hide(animated: animated)
-    }
-
-    private static func elapsedMilliseconds(_ duration: Duration) -> Double {
-        Double(duration.components.seconds) * 1_000
-            + Double(duration.components.attoseconds) / 1_000_000_000_000_000
     }
 
     private static func hudItems(

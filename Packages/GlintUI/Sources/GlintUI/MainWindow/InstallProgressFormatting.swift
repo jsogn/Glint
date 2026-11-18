@@ -15,12 +15,12 @@ enum InstallProgressFormatting {
             var parts = ["正在下载"]
             if progress.totalBytes > 0 {
                 parts.append(
-                    "\(formatBytes(progress.completedBytes)) / "
-                        + formatBytes(progress.totalBytes)
+                    "\(ByteCountFormatting.file(progress.completedBytes)) / "
+                        + ByteCountFormatting.file(progress.totalBytes)
                 )
             }
             if let speed = progress.bytesPerSecond, speed > 0 {
-                parts.append("\(formatBytes(speed))/s")
+                parts.append("\(ByteCountFormatting.file(speed))/s")
             }
             return parts.joined(separator: " · ")
         case .verifying:
@@ -28,12 +28,5 @@ enum InstallProgressFormatting {
         case .installing:
             return "正在安装模型…"
         }
-    }
-
-    private static func formatBytes(_ count: Int64) -> String {
-        ByteCountFormatter.string(
-            fromByteCount: count,
-            countStyle: .file
-        )
     }
 }

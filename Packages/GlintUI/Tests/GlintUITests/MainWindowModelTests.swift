@@ -1386,41 +1386,76 @@ final class MainWindowModelTests: XCTestCase {
         )
     }
 
-    func testCatalogUpdatePolicyHonorsSuccessAndFailureCooldowns() {
+    @MainActor
+    func testActionGroupsAreAppliedAtInitialization() async {
+        var actions = MainWindowActions.stub
+        var invoked: [String] = []
+        actions.monitoring.startMonitoring = {
+            invoked.append("monitoring")
+        }
+        actions.permissions.refreshInputMethodSupport = {
+            invoked.append("permissions")
+            return [.applePinyin]
+        }
+        actions.translation.changeTarget = { target in
+            invoked.append("translation")
+            return .ready(target)
+        }
+        actions.plugins.availableInstallationSpace = { 42 }
+
+        let model = MainWindowModel(actions: actions)
+
+        model.startMonitoringAction()
+        _ = await model.refreshInputMethodSupportAction()
+        _ = await model.changeTranslationTargetAction(.english)
+
+        XCTAssertEqual(
+            invoked,
+            ["monitoring", "permissions", "translation"]
+        )
+        XCTAssertEqual(model.availableInstallationSpaceAction(), 42)
+    }
+
+    func testRemoteUpdatePoliciesHonorSuccessAndFailureCooldowns() {
         let now = Date(timeIntervalSince1970: 1_000_000)
 
-        XCTAssertFalse(
-            CatalogUpdatePolicy.shouldCheck(
-                force: false,
-                now: now,
-                lastSuccess: now.addingTimeInterval(6 * 60 * 60 - 1),
-                lastFailure: nil
+        for policy in [
+            MainWindowUpdatePolicies.catalog,
+            MainWindowUpdatePolicies.translationModel,
+        ] {
+            XCTAssertFalse(
+                policy.shouldCheck(
+                    force: false,
+                    now: now,
+                    lastSuccess: now.addingTimeInterval(6 * 60 * 60 - 1),
+                    lastFailure: nil
+                )
             )
-        )
-        XCTAssertTrue(
-            CatalogUpdatePolicy.shouldCheck(
-                force: false,
-                now: now,
-                lastSuccess: now.addingTimeInterval(-6 * 60 * 60),
-                lastFailure: nil
+            XCTAssertTrue(
+                policy.shouldCheck(
+                    force: false,
+                    now: now,
+                    lastSuccess: now.addingTimeInterval(-6 * 60 * 60),
+                    lastFailure: nil
+                )
             )
-        )
-        XCTAssertFalse(
-            CatalogUpdatePolicy.shouldCheck(
-                force: false,
-                now: now,
-                lastSuccess: now.addingTimeInterval(-24 * 60 * 60),
-                lastFailure: now.addingTimeInterval(-15 * 60 + 1)
+            XCTAssertFalse(
+                policy.shouldCheck(
+                    force: false,
+                    now: now,
+                    lastSuccess: now.addingTimeInterval(-24 * 60 * 60),
+                    lastFailure: now.addingTimeInterval(-15 * 60 + 1)
+                )
             )
-        )
-        XCTAssertTrue(
-            CatalogUpdatePolicy.shouldCheck(
-                force: true,
-                now: now,
-                lastSuccess: now,
-                lastFailure: now
+            XCTAssertTrue(
+                policy.shouldCheck(
+                    force: true,
+                    now: now,
+                    lastSuccess: now,
+                    lastFailure: now
+                )
             )
-        )
+        }
     }
 
     @MainActor

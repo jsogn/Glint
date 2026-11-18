@@ -234,7 +234,7 @@ struct DisplayPage: View {
                             preferences.candidateSpacing
                         ),
                         binding: $preferences.candidateSpacing,
-                        range: 0...24,
+                        range: DisplayPreferences.candidateSpacingRange,
                         step: 1
                     )
                     HStack {

@@ -3,312 +3,140 @@ import GlintCore
 import GlintPlugins
 import Observation
 
-public struct PluginUpdateInfo: Sendable, Equatable {
-    public let currentVersion: String
-    public let availableVersion: String
-}
-
-struct CatalogUpdatePolicy {
-    static let successInterval: TimeInterval = 6 * 60 * 60
-    static let failureInterval: TimeInterval = 15 * 60
-
-    static func shouldCheck(
-        force: Bool,
-        now: Date,
-        lastSuccess: Date?,
-        lastFailure: Date?
-    ) -> Bool {
-        if force { return true }
-        if let lastFailure,
-            now.timeIntervalSince(lastFailure) < failureInterval
-        {
-            return false
-        }
-        guard let lastSuccess else { return true }
-        return now.timeIntervalSince(lastSuccess) >= successInterval
-    }
-}
-
-struct TranslationModelUpdatePolicy {
-    static let successInterval: TimeInterval = 6 * 60 * 60
-    static let failureInterval: TimeInterval = 15 * 60
-
-    static func shouldCheck(
-        force: Bool,
-        now: Date,
-        lastSuccess: Date?,
-        lastFailure: Date?
-    ) -> Bool {
-        if force { return true }
-        if let lastFailure,
-            now.timeIntervalSince(lastFailure) < failureInterval
-        {
-            return false
-        }
-        guard let lastSuccess else { return true }
-        return now.timeIntervalSince(lastSuccess) >= successInterval
-    }
-}
-
-private struct CachedTranslationModelUpdate: Codable {
-    let currentRevision: String
-    let latestRevision: String
-    let lastModified: String?
-    let manifest: PluginManifest
-
-    init(_ update: UpstreamModelUpdate) {
-        currentRevision = update.currentRevision
-        latestRevision = update.latestRevision
-        lastModified = update.lastModified
-        manifest = update.manifest
-    }
-
-    var upstreamUpdate: UpstreamModelUpdate {
-        UpstreamModelUpdate(
-            currentRevision: currentRevision,
-            latestRevision: latestRevision,
-            lastModified: lastModified,
-            manifest: manifest
-        )
-    }
-}
-
-private enum TranslationModelUpdateKey {
-    static func lastSuccess(_ modelID: String) -> String {
-        "translationModelUpdate.lastSuccess.\(modelID)"
-    }
-
-    static func lastFailure(_ modelID: String) -> String {
-        "translationModelUpdate.lastFailure.\(modelID)"
-    }
-
-    static func cachedUpdate(_ modelID: String) -> String {
-        "translationModelUpdate.update.\(modelID)"
-    }
-}
-
-public enum LaunchAtLoginStatus: Equatable, Sendable {
-    case disabled
-    case enabled
-    case requiresApproval
-    case unavailable
-}
-
-public struct CoreDictionaryUpdateState: Equatable, Sendable {
-    public let isChecking: Bool
-    public let statusText: String?
-    public let isError: Bool
-}
-
-public struct TranslationModelUpdateState: Equatable, Sendable {
-    public let isChecking: Bool
-    public let statusText: String?
-    public let isError: Bool
-    public let update: UpstreamModelUpdate?
-}
-
-enum SystemTranslationSetupState: Equatable, Sendable {
-    case installationRequired
-    case installationIncomplete
-    case installing
-    case failed(String)
-    case unsupported
-}
-
 @MainActor
 @Observable
 public final class MainWindowModel {
-    private struct InstallationAttempt {
-        let plugin: PluginManifest
-        let previousModelID: String
-        let wasInstalled: Bool
-        let wasActiveTranslation: Bool
-        let shouldValidateTranslation: Bool
-    }
-
     public var isMonitoring = false
     public var isPreparingMonitoring = false
     public var accessibilityGranted = false
     public var hasRequestedAccessibilityPermission = false
-    public private(set) var launchAtLoginStatus: LaunchAtLoginStatus = .disabled
-    public private(set) var launchAtLoginError: String?
+    public internal(set) var launchAtLoginStatus: LaunchAtLoginStatus = .disabled
+    public internal(set) var launchAtLoginError: String?
     public var statusText = ""
-    public private(set) var activeInputMethodName = "检测中"
-    public private(set) var inputMethodSupportStatuses: [InputMethodSupportStatus] = [.applePinyin]
-    public private(set) var isLoadingInputMethodSupport = false
-    public private(set) var isUpdatingInputMethodSupport = false
-    public private(set) var inputMethodSupportError: String?
-    public private(set) var installedPlugins: [PluginManifest] = []
-    public private(set) var isLoadingPlugins = false
-    public private(set) var availablePlugins: [PluginManifest] = []
-    public private(set) var isLoadingCatalog = false
-    public private(set) var isInstalling: String?
-    public private(set) var isCancellingInstallation = false
-    public private(set) var installProgress: [String: PluginInstallProgress] = [:]
-    public private(set) var catalogError: String?
-    public private(set) var translationTarget: TranslationTarget
-    public private(set) var translationReadiness: TranslationReadiness = .idle
-    public private(set) var isChangingTranslationTarget = false
-    public private(set) var activeModelID: String
+    public internal(set) var activeInputMethodName = "检测中"
+    public internal(set) var inputMethodSupportStatuses: [InputMethodSupportStatus] = [.applePinyin]
+    public internal(set) var isLoadingInputMethodSupport = false
+    public internal(set) var isUpdatingInputMethodSupport = false
+    public internal(set) var inputMethodSupportError: String?
+    public internal(set) var installedPlugins: [PluginManifest] = []
+    public internal(set) var isLoadingPlugins = false
+    public internal(set) var availablePlugins: [PluginManifest] = []
+    public internal(set) var isLoadingCatalog = false
+    public internal(set) var isInstalling: String?
+    public internal(set) var isCancellingInstallation = false
+    public internal(set) var installProgress: [String: PluginInstallProgress] =
+        [:]
+    public internal(set) var catalogError: String?
+    public internal(set) var translationTarget: TranslationTarget
+    public internal(set) var translationReadiness: TranslationReadiness = .idle
+    public internal(set) var isChangingTranslationTarget = false
+    public internal(set) var activeModelID: String
     public private(set) var translationMode: TranslationMode
-    public private(set) var isImportingLocalModel = false
-    public private(set) var localImportProgress = 0.0
-    public private(set) var localImportError: String?
-    public private(set) var translationModelStatusText: String?
-    public private(set) var translationModelStatusIsError = false
-    public private(set) var translationModelStatusModelID: String?
-    public private(set) var systemTranslationAvailability: SystemTranslationAvailability?
-    public private(set) var isRefreshingSystemTranslation = false
-    public private(set) var isPreparingSystemTranslation = false
-    public private(set) var systemTranslationError: String?
-    public private(set) var systemTranslationPreparationIsIncomplete = false
-    public private(set) var systemTranslationPresentationEvent = 0
-    public private(set) var coreDictionaryUpdateStates: [String: CoreDictionaryUpdateState] = [:]
-    public private(set) var translationModelUpdateStates: [String: TranslationModelUpdateState] = [:]
-    public private(set) var modelMarketResults: [UpstreamModelSummary] = []
-    public private(set) var isLoadingModelMarket = false
-    public private(set) var modelMarketError: String?
-    public private(set) var isPreparingModelMarketInstallID: String?
-    public private(set) var modelMarketInstallPreview: ModelInstallPreparation?
-    public private(set) var modelMarketInstallRepository: String?
-    public private(set) var modelMarketInstallPluginID: String?
+    public internal(set) var isImportingLocalModel = false
+    public internal(set) var localImportProgress = 0.0
+    public internal(set) var localImportError: String?
+    public internal(set) var translationModelStatusText: String?
+    public internal(set) var translationModelStatusIsError = false
+    public internal(set) var translationModelStatusModelID: String?
+    public internal(set) var systemTranslationAvailability: SystemTranslationAvailability?
+    public internal(set) var isRefreshingSystemTranslation = false
+    public internal(set) var isPreparingSystemTranslation = false
+    public internal(set) var systemTranslationError: String?
+    public internal(set) var systemTranslationPreparationIsIncomplete = false
+    public internal(set) var systemTranslationPresentationEvent = 0
+    public internal(set) var coreDictionaryUpdateStates: [String: CoreDictionaryUpdateState] = [:]
+    public internal(set) var translationModelUpdateStates: [String: TranslationModelUpdateState] = [:]
+    public internal(set) var modelMarketResults: [UpstreamModelSummary] = []
+    public internal(set) var isLoadingModelMarket = false
+    public internal(set) var modelMarketError: String?
+    public internal(set) var isPreparingModelMarketInstallID: String?
+    public internal(set) var modelMarketInstallPreview: ModelInstallPreparation?
+    public internal(set) var modelMarketInstallRepository: String?
+    public internal(set) var modelMarketInstallPluginID: String?
     public let generalPreferences: GeneralPreferences
     public let displayPreferences: DisplayPreferences
-    private let catalogURL: URL?
 
     @ObservationIgnored
-    private let pluginLifecycle: PluginLifecycleService
+    let pluginLifecycle: PluginLifecycleService
     @ObservationIgnored
-    private let builtInPlugins: [PluginManifest]
+    let pluginUpdateCoordinator: PluginUpdateCoordinator
     @ObservationIgnored
-    private let defaults: UserDefaults
+    let pluginInstallCoordinator: PluginInstallCoordinator
     @ObservationIgnored
-    private let translationSelectionStore: TranslationSelectionStore
+    let localModelImportCoordinator: LocalModelImportCoordinator
+    @ObservationIgnored
+    private let translationCoordinator: TranslationCoordinator
+    @ObservationIgnored
+    let builtInPlugins: [PluginManifest]
+    @ObservationIgnored
+    let defaults: UserDefaults
     @ObservationIgnored
     private let now: @MainActor () -> Date
     @ObservationIgnored
-    private var lastCatalogSuccessAt: Date?
+    public var startMonitoringAction: @MainActor () -> Void
     @ObservationIgnored
-    private var lastCatalogFailureAt: Date?
+    public var stopMonitoringAction: @MainActor () -> Void
     @ObservationIgnored
-    private var catalogETag: String?
+    public var refreshPermissionsAction: @MainActor () -> Void
     @ObservationIgnored
-    private var catalogLastModified: String?
+    public var requestPermissionsAction: @MainActor () -> Void
     @ObservationIgnored
-    private var installTask: Task<Void, Never>?
+    public var openAccessibilitySettingsAction: @MainActor () -> Void
     @ObservationIgnored
-    private var discardCancelledDownload = false
+    public var refreshLaunchAtLoginAction: @MainActor () -> Void
     @ObservationIgnored
-    private var localImportTask: Task<Void, Never>?
+    public var setLaunchAtLoginAction: @MainActor (Bool) -> Void
     @ObservationIgnored
-    private var coreDictionaryUpdateTasks: [String: Task<Void, Never>] = [:]
+    public var openLoginItemsSettingsAction: @MainActor () -> Void
     @ObservationIgnored
-    private var translationModelUpdateTasks: [String: Task<Void, Never>] = [:]
+    public var refreshInputMethodSupportAction: @MainActor () async -> [InputMethodSupportStatus]
     @ObservationIgnored
-    private var modelMarketInstallTask: Task<Void, Never>?
+    public var installSquirrelSupportAction: @MainActor () async throws -> [InputMethodSupportStatus]
     @ObservationIgnored
-    private var translationChangeCount = 0
+    public var uninstallSquirrelSupportAction: @MainActor () async throws -> [InputMethodSupportStatus]
     @ObservationIgnored
-    private var translationRequestGeneration: UInt64 = 0
+    public var activateTranslationModelAction: @MainActor (String) async -> String?
     @ObservationIgnored
-    private var systemTranslationRequestGeneration: UInt64 = 0
+    public var refreshSystemTranslationAction: @MainActor () async -> SystemTranslationAvailability
     @ObservationIgnored
-    public var startMonitoringAction: @MainActor () -> Void = {}
+    public var prepareSystemTranslationAction: @MainActor () async throws -> SystemTranslationAvailability
     @ObservationIgnored
-    public var stopMonitoringAction: @MainActor () -> Void = {}
+    public var systemTranslationPresentationAction: @MainActor () -> Void
     @ObservationIgnored
-    public var refreshPermissionsAction: @MainActor () -> Void = {}
+    public var openSystemTranslationSettingsAction: @MainActor () -> Void
     @ObservationIgnored
-    public var requestPermissionsAction: @MainActor () -> Void = {}
+    public var releaseTranslationModelAction: @MainActor (String) async -> Void
     @ObservationIgnored
-    public var openAccessibilitySettingsAction: @MainActor () -> Void = {}
+    public var previewTranslationSpeechAction: @MainActor (TranslationTarget) -> Void
     @ObservationIgnored
-    public var refreshLaunchAtLoginAction: @MainActor () -> Void = {}
+    public var changeTranslationTargetAction: @MainActor (TranslationTarget) async -> TranslationReadiness
     @ObservationIgnored
-    public var setLaunchAtLoginAction: @MainActor (Bool) -> Void = { _ in }
+    public var selectTranslationModelAction: @MainActor (String, TranslationTarget) async -> TranslationReadiness
     @ObservationIgnored
-    public var openLoginItemsSettingsAction: @MainActor () -> Void = {}
+    public var translationModeAction: @MainActor (TranslationMode) -> Void
     @ObservationIgnored
-    public var refreshInputMethodSupportAction: @MainActor () async -> [InputMethodSupportStatus] = {
-        [.applePinyin]
-    }
+    public var translationConfigurationChangedAction: @MainActor () -> Void
     @ObservationIgnored
-    public var installSquirrelSupportAction: @MainActor () async throws -> [InputMethodSupportStatus] = {
-        [.applePinyin]
-    }
+    public var dictionaryConfigurationChangedAction: @MainActor () async -> Void
     @ObservationIgnored
-    public var uninstallSquirrelSupportAction: @MainActor () async throws -> [InputMethodSupportStatus] = {
-        [.applePinyin]
-    }
+    public var checkCoreDictionaryUpdateAction: @MainActor (CoreDictionaryUpdateKind) async throws -> String
     @ObservationIgnored
-    public var activateTranslationModelAction: @MainActor (String) async -> String? = { _ in nil }
+    public var checkTranslationModelUpdateAction: @MainActor (PluginManifest) async throws -> UpstreamModelUpdate?
     @ObservationIgnored
-    public var refreshSystemTranslationAction: @MainActor () async -> SystemTranslationAvailability = {
-        .available
-    }
-    @ObservationIgnored
-    public var prepareSystemTranslationAction:
-        @MainActor () async throws ->
-            SystemTranslationAvailability = {
-                .installed
-            }
-    @ObservationIgnored
-    public var systemTranslationPresentationAction: @MainActor () -> Void = {}
-    @ObservationIgnored
-    public var openSystemTranslationSettingsAction: @MainActor () -> Void = {}
-    @ObservationIgnored
-    public var releaseTranslationModelAction: @MainActor (String) async -> Void = { _ in }
-    @ObservationIgnored
-    public var previewTranslationSpeechAction: @MainActor (TranslationTarget) -> Void = { _ in }
-    @ObservationIgnored
-    public var changeTranslationTargetAction: @MainActor (TranslationTarget) async -> TranslationReadiness = {
-        target in .failed(target, "翻译语言切换不可用")
-    }
-    @ObservationIgnored
-    public var selectTranslationModelAction: @MainActor (String, TranslationTarget) async -> TranslationReadiness = {
-        _, target in .failed(target, "翻译模型切换不可用")
-    }
-    @ObservationIgnored
-    public var translationModeAction: @MainActor (TranslationMode) -> Void = { _ in }
-    @ObservationIgnored
-    public var translationConfigurationChangedAction: @MainActor () -> Void = {}
-    @ObservationIgnored
-    public var dictionaryConfigurationChangedAction: @MainActor () async -> Void = {}
-    @ObservationIgnored
-    public var checkCoreDictionaryUpdateAction: @MainActor (CoreDictionaryUpdateKind) async throws -> String = {
-        _ in "词典更新服务不可用"
-    }
-    @ObservationIgnored
-    public var checkTranslationModelUpdateAction: @MainActor (PluginManifest) async throws -> UpstreamModelUpdate? = {
-        _ in nil
-    }
-    @ObservationIgnored
-    public var searchModelMarketAction: @MainActor (String) async throws -> [UpstreamModelSummary] = {
-        _ in []
-    }
+    public var searchModelMarketAction: @MainActor (String) async throws -> [UpstreamModelSummary]
     @ObservationIgnored
     public var prepareModelMarketInstallAction:
         @MainActor (
             UpstreamModelSummary,
             PluginManifest?
-        ) async throws -> ModelInstallPreparation = { _, _ in
-            throw ModelHubError.unavailable
-        }
+        ) async throws -> ModelInstallPreparation
     @ObservationIgnored
-    public var availableInstallationSpaceAction: @MainActor () -> Int64? = {
-        let directory =
-            FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).first
-        return try? directory?.resourceValues(
-            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
-        ).volumeAvailableCapacityForImportantUsage
-    }
+    public var availableInstallationSpaceAction: @MainActor () -> Int64?
     @ObservationIgnored
     var discardDownloadAction: @MainActor (String) async -> Void = { _ in }
 
     public init(
+        actions: MainWindowActions,
         generalPreferences: GeneralPreferences? = nil,
         displayPreferences: DisplayPreferences? = nil,
         pluginManager: PluginManager = PluginManager(),
@@ -318,10 +146,77 @@ public final class MainWindowModel {
         translationSelectionStore: TranslationSelectionStore? = nil,
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
+        self.startMonitoringAction = actions.monitoring.startMonitoring
+        self.stopMonitoringAction = actions.monitoring.stopMonitoring
+        self.refreshPermissionsAction = actions.permissions.refreshPermissions
+        self.requestPermissionsAction = actions.permissions.requestPermissions
+        self.openAccessibilitySettingsAction =
+            actions.permissions.openAccessibilitySettings
+        self.refreshLaunchAtLoginAction =
+            actions.permissions.refreshLaunchAtLogin
+        self.setLaunchAtLoginAction = actions.permissions.setLaunchAtLogin
+        self.openLoginItemsSettingsAction =
+            actions.permissions.openLoginItemsSettings
+        self.refreshInputMethodSupportAction =
+            actions.permissions.refreshInputMethodSupport
+        self.installSquirrelSupportAction =
+            actions.permissions.installSquirrelSupport
+        self.uninstallSquirrelSupportAction =
+            actions.permissions.uninstallSquirrelSupport
+        self.activateTranslationModelAction =
+            actions.translation.activateModel
+        self.refreshSystemTranslationAction =
+            actions.translation.refreshSystemTranslation
+        self.prepareSystemTranslationAction =
+            actions.translation.prepareSystemTranslation
+        self.systemTranslationPresentationAction =
+            actions.translation.presentSystemTranslation
+        self.openSystemTranslationSettingsAction =
+            actions.translation.openSystemTranslationSettings
+        self.releaseTranslationModelAction =
+            actions.translation.releaseModel
+        self.previewTranslationSpeechAction =
+            actions.translation.previewSpeech
+        self.changeTranslationTargetAction =
+            actions.translation.changeTarget
+        self.selectTranslationModelAction =
+            actions.translation.selectModel
+        self.translationModeAction = actions.translation.setMode
+        self.translationConfigurationChangedAction =
+            actions.translation.configurationChanged
+        self.dictionaryConfigurationChangedAction =
+            actions.plugins.dictionaryConfigurationChanged
+        self.checkCoreDictionaryUpdateAction =
+            actions.plugins.checkCoreDictionaryUpdate
+        self.checkTranslationModelUpdateAction =
+            actions.plugins.checkTranslationModelUpdate
+        self.searchModelMarketAction =
+            actions.plugins.searchModelMarket
+        self.prepareModelMarketInstallAction =
+            actions.plugins.prepareModelMarketInstall
+        self.availableInstallationSpaceAction =
+            actions.plugins.availableInstallationSpace
         self.generalPreferences = generalPreferences ?? GeneralPreferences()
         self.displayPreferences = displayPreferences ?? DisplayPreferences()
         let pluginLifecycle = PluginLifecycleService(manager: pluginManager)
         self.pluginLifecycle = pluginLifecycle
+        let resolvedCatalogURL =
+            catalogURL
+            ?? Self.defaultCatalogURL(
+                defaults: defaults
+            )
+        self.pluginUpdateCoordinator = PluginUpdateCoordinator(
+            pluginLifecycle: pluginLifecycle,
+            catalogURL: resolvedCatalogURL,
+            defaults: defaults,
+            now: now
+        )
+        self.pluginInstallCoordinator = PluginInstallCoordinator(
+            pluginLifecycle: pluginLifecycle
+        )
+        self.localModelImportCoordinator = LocalModelImportCoordinator(
+            pluginLifecycle: pluginLifecycle
+        )
         self.discardDownloadAction = { id in
             await pluginLifecycle.discardDownload(id: id)
         }
@@ -329,11 +224,6 @@ public final class MainWindowModel {
         self.installedPlugins = builtInPlugins.sorted {
             $0.name < $1.name
         }
-        self.catalogURL =
-            catalogURL
-            ?? Self.defaultCatalogURL(
-                defaults: defaults
-            )
         self.defaults = defaults
         let selectionStore =
             translationSelectionStore
@@ -341,7 +231,6 @@ public final class MainWindowModel {
         if translationSelectionStore == nil {
             selectionStore.migrateIfNeeded()
         }
-        self.translationSelectionStore = selectionStore
         let selectedTarget = selectionStore.selectedTarget
         self.translationTarget = selectedTarget
         self.now = now
@@ -349,6 +238,32 @@ public final class MainWindowModel {
             for: selectedTarget
         )
         self.translationMode = TranslationModeSelection.selected(in: defaults)
+        self.translationCoordinator = TranslationCoordinator(
+            selectionStore: selectionStore
+        )
+    }
+
+    convenience init(
+        generalPreferences: GeneralPreferences? = nil,
+        displayPreferences: DisplayPreferences? = nil,
+        pluginManager: PluginManager = PluginManager(),
+        builtInPlugins: [PluginManifest] = [],
+        catalogURL: URL? = nil,
+        defaults: UserDefaults = .standard,
+        translationSelectionStore: TranslationSelectionStore? = nil,
+        now: @escaping @MainActor () -> Date = { Date() }
+    ) {
+        self.init(
+            actions: .stub,
+            generalPreferences: generalPreferences,
+            displayPreferences: displayPreferences,
+            pluginManager: pluginManager,
+            builtInPlugins: builtInPlugins,
+            catalogURL: catalogURL,
+            defaults: defaults,
+            translationSelectionStore: translationSelectionStore,
+            now: now
+        )
     }
 
     public static func supports(
@@ -359,54 +274,27 @@ public final class MainWindowModel {
             && plugin.availableTranslationTargets.contains(target)
     }
 
-    public var compatibleTranslationPlugins: [PluginManifest] {
-        translationPlugins.filter {
-            Self.supports($0, target: translationTarget)
-        }
-    }
-
     public func setTranslationTarget(
         _ target: TranslationTarget
     ) async {
-        guard target != translationTarget else {
-            return
-        }
-        let requestGeneration = beginTranslationRequest()
-        invalidateSystemTranslationOperations()
-        beginTranslationChange()
-        defer { endTranslationChange() }
-        translationReadiness = .preparing(target)
-        translationTarget = target
-        translationModelStatusText = nil
-        translationModelStatusIsError = false
-        translationModelStatusModelID = nil
-        activeModelID = resolvedModelID(for: target)
-
-        let readiness = await changeTranslationTargetAction(target)
-        guard requestGeneration == translationRequestGeneration else {
-            return
-        }
-        guard target == translationTarget else { return }
-        translationReadiness = readiness
-        switch readiness {
-        case .preparing, .ready, .needsSetup, .failed, .unsupported:
-            activeModelID = resolvedModelID(for: target)
-            translationConfigurationChangedAction()
-        case .idle, .superseded:
-            break
-        }
+        await translationCoordinator.setTranslationTarget(
+            target,
+            on: self
+        )
     }
 
     public func updateTranslationReadiness(
         _ readiness: TranslationReadiness
     ) {
-        translationReadiness = readiness
+        translationCoordinator.updateTranslationReadiness(
+            readiness,
+            on: self
+        )
     }
 
     public func retryTranslationConfiguration() async {
-        await setTranslationModel(
-            activeModelID,
-            for: translationTarget
+        await translationCoordinator.retryTranslationConfiguration(
+            on: self
         )
     }
 
@@ -414,1273 +302,47 @@ public final class MainWindowModel {
         _ modelID: String,
         for target: TranslationTarget
     ) async {
-        guard target == translationTarget else {
-            return
-        }
-        let requestGeneration = beginTranslationRequest()
-        beginTranslationChange()
-        defer { endTranslationChange() }
-        translationReadiness = .preparing(target)
-        translationModelStatusText = nil
-        translationModelStatusIsError = false
-        translationModelStatusModelID = nil
-        systemTranslationError = nil
-
-        let readiness = await selectTranslationModelAction(
+        await translationCoordinator.setTranslationModel(
             modelID,
-            target
+            for: target,
+            on: self
         )
-        guard requestGeneration == translationRequestGeneration else {
-            return
-        }
-        guard target == translationTarget else { return }
-        translationReadiness = readiness
-        guard readiness != .superseded else { return }
-        activeModelID = modelID
-        translationSelectionStore.selectModel(modelID, for: target)
-        translationConfigurationChangedAction()
     }
 
     public func previewTranslationSpeech() {
-        previewTranslationSpeechAction(translationTarget)
+        translationCoordinator.previewTranslationSpeech(on: self)
     }
 
-    private func beginTranslationRequest() -> UInt64 {
-        translationRequestGeneration &+= 1
-        return translationRequestGeneration
-    }
-
-    private func resolvedModelID(
-        for target: TranslationTarget
-    ) -> String {
-        let stored = translationSelectionStore.selectedModelID(
-            for: target
-        )
-        guard stored != TranslationSelectionStore.defaultModelID else {
-            return stored
-        }
-        guard
-            let plugin = translationPlugins.first(where: {
-                $0.id == stored
-            }),
-            Self.supports(plugin, target: target)
-        else {
-            translationSelectionStore.selectModel(
-                TranslationSelectionStore.defaultModelID,
-                for: target
-            )
-            return TranslationSelectionStore.defaultModelID
-        }
-        return stored
-    }
-
-    private func invalidateSystemTranslationOperations() {
-        systemTranslationRequestGeneration &+= 1
-        isPreparingSystemTranslation = false
-        isRefreshingSystemTranslation = false
-        systemTranslationAvailability = nil
-        systemTranslationError = nil
-        systemTranslationPreparationIsIncomplete = false
-    }
-
-    private func beginTranslationChange() {
-        translationChangeCount += 1
-        isChangingTranslationTarget = true
-    }
-
-    private func endTranslationChange() {
-        translationChangeCount = max(0, translationChangeCount - 1)
-        isChangingTranslationTarget = translationChangeCount > 0
-    }
-
-    public var dictionaryPlugins: [PluginManifest] {
-        installedPlugins.filter { $0.type == .dictionary }
-    }
-
-    public var translationPlugins: [PluginManifest] {
-        installedPlugins.filter { $0.type == .translation }
-    }
-
-    public var localTranslationPlugins: [PluginManifest] {
-        translationPlugins.filter { $0.source == .local }
-    }
-
-    public var recommendedTranslationPlugins: [PluginManifest] {
-        translationPlugins.filter { $0.source != .local }
-    }
-
-    public var translationSummary: String {
-        if isActiveSystemTranslationModel {
-            return "Apple 翻译"
-        }
-        return activeTranslationPlugin?.name ?? "未安装"
-    }
-
-    public var translationCharacterSummary: String {
-        if isActiveSystemTranslationModel {
-            return "系统本地翻译，适合短语和短句。"
-        }
-        guard let plugin = activeTranslationPlugin else {
-            return "未安装"
-        }
-        let summary =
-            plugin.summary?.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            ) ?? ""
-        return summary.isEmpty ? "本地翻译模型" : summary
-    }
-
-    public var translationAttentionMessage: String? {
-        guard translationModelStatusIsError else { return nil }
-        return "翻译模型需要检查，请在插件与模型中查看。"
-    }
-
-    public var translationAttentionDetail: String? {
-        guard translationModelStatusIsError else { return nil }
-        return translationModelStatusText
-    }
-
-    private var activeTranslationPlugin: PluginManifest? {
-        translationPlugins.first { $0.id == activeModelID }
-    }
-
-    private func persistActiveModelID() {
-        translationSelectionStore.selectModel(
+    func persistActiveModelID() {
+        translationCoordinator.persistActiveModelID(
             activeModelID,
-            for: translationTarget
+            target: translationTarget
         )
-    }
-
-    public var candidateSummary: String {
-        "输入候选词"
-    }
-
-    public var isLaunchAtLoginEnabled: Bool {
-        launchAtLoginStatus == .enabled
-    }
-
-    public var isActiveSystemTranslationModel: Bool {
-        activeModelID
-            == SystemTranslationModel.appleTranslationID
-    }
-
-    var isActiveSystemTranslationReady: Bool {
-        isActiveSystemTranslationModel
-            && systemTranslationAvailability == .installed
-    }
-
-    var systemTranslationSetupState: SystemTranslationSetupState? {
-        guard isActiveSystemTranslationModel,
-            systemTranslationAvailability != .installed
-        else {
-            return nil
-        }
-        if isPreparingSystemTranslation {
-            return .installing
-        }
-        switch systemTranslationAvailability {
-        case .available:
-            return systemTranslationPreparationIsIncomplete
-                ? .installationIncomplete
-                : .installationRequired
-        case .installing:
-            return .installing
-        case .failed(let message):
-            return .failed(message)
-        case .unsupported:
-            return .unsupported
-        case .installed, nil:
-            return nil
-        }
     }
 
     public func updateSystemTranslationAvailability(
         _ availability: SystemTranslationAvailability
     ) {
-        let previousAvailability = systemTranslationAvailability
-        systemTranslationAvailability = availability
-        if previousAvailability == .installing,
-            availability == .available
-        {
-            systemTranslationPreparationIsIncomplete = true
-        }
-        if availability.canSelect {
-            systemTranslationPreparationIsIncomplete = false
-        }
+        translationCoordinator.updateSystemTranslationAvailability(
+            availability,
+            on: self
+        )
     }
 
     public func refreshSystemTranslationSupport() async {
-        guard !isRefreshingSystemTranslation else { return }
-        let requestGeneration = systemTranslationRequestGeneration
-        isRefreshingSystemTranslation = true
-        systemTranslationError = nil
-        defer {
-            if requestGeneration == systemTranslationRequestGeneration {
-                isRefreshingSystemTranslation = false
-            }
-        }
-        let availability = await refreshSystemTranslationAction()
-        guard requestGeneration == systemTranslationRequestGeneration else {
-            return
-        }
-        updateSystemTranslationAvailability(availability)
+        await translationCoordinator.refreshSystemTranslationSupport(
+            on: self
+        )
     }
 
     public func prepareSystemTranslationSupport() async {
-        guard systemTranslationAvailability != .installing else {
-            return
-        }
-        guard !isPreparingSystemTranslation else { return }
-        let requestGeneration = systemTranslationRequestGeneration
-        let wasInstalled =
-            systemTranslationAvailability?.canSelect == true
-        isPreparingSystemTranslation = true
-        systemTranslationError = nil
-        systemTranslationPreparationIsIncomplete = false
-        defer {
-            if requestGeneration == systemTranslationRequestGeneration {
-                isPreparingSystemTranslation = false
-            }
-        }
-        do {
-            let availability =
-                try await prepareSystemTranslationAction()
-            guard
-                requestGeneration == systemTranslationRequestGeneration
-            else {
-                return
-            }
-            updateSystemTranslationAvailability(availability)
-            if availability == .available {
-                systemTranslationPreparationIsIncomplete = true
-            }
-            if availability.canSelect, !wasInstalled {
-                systemTranslationPresentationEvent &+= 1
-                systemTranslationPresentationAction()
-            }
-            await retryTranslationConfiguration()
-        } catch {
-            if Self.isCancellation(error) {
-                guard
-                    requestGeneration == systemTranslationRequestGeneration
-                else {
-                    return
-                }
-                systemTranslationPreparationIsIncomplete = true
-                return
-            }
-            guard requestGeneration == systemTranslationRequestGeneration
-            else {
-                return
-            }
-            let message = error.localizedDescription
-            updateSystemTranslationAvailability(.failed(message))
-            systemTranslationError = message
-        }
+        await translationCoordinator.prepareSystemTranslationSupport(
+            on: self
+        )
     }
 
     public func openSystemTranslationSettings() {
-        openSystemTranslationSettingsAction()
-    }
-
-    public var launchAtLoginRequiresApproval: Bool {
-        launchAtLoginStatus == .requiresApproval
-    }
-
-    public func updateActiveInputMethod(
-        _ identity: InputMethodIdentity?
-    ) {
-        let name = identity?.displayName ?? "输入法"
-        guard activeInputMethodName != name else { return }
-        activeInputMethodName = name
-    }
-
-    public var squirrelSupportStatus: InputMethodSupportStatus? {
-        inputMethodSupportStatuses.first { $0.id == "squirrel" }
-    }
-
-    public var inputMethodSupportPageStatuses: [InputMethodSupportStatus] {
-        inputMethodSupportStatuses.filter { $0.id == "squirrel" }
-    }
-
-    public func refreshInputMethodSupport() async {
-        guard !isLoadingInputMethodSupport else { return }
-        isLoadingInputMethodSupport = true
-        inputMethodSupportError = nil
-        inputMethodSupportStatuses =
-            await refreshInputMethodSupportAction()
-        isLoadingInputMethodSupport = false
-    }
-
-    public func installSquirrelSupport() async {
-        guard !isUpdatingInputMethodSupport else { return }
-        isUpdatingInputMethodSupport = true
-        inputMethodSupportError = nil
-        defer { isUpdatingInputMethodSupport = false }
-        do {
-            inputMethodSupportStatuses =
-                try await installSquirrelSupportAction()
-        } catch {
-            let message = error.localizedDescription
-            inputMethodSupportStatuses =
-                await refreshInputMethodSupportAction()
-            inputMethodSupportError = message
-        }
-    }
-
-    public func uninstallSquirrelSupport() async {
-        guard !isUpdatingInputMethodSupport else { return }
-        isUpdatingInputMethodSupport = true
-        inputMethodSupportError = nil
-        defer { isUpdatingInputMethodSupport = false }
-        do {
-            inputMethodSupportStatuses =
-                try await uninstallSquirrelSupportAction()
-        } catch {
-            let message = error.localizedDescription
-            inputMethodSupportStatuses =
-                await refreshInputMethodSupportAction()
-            inputMethodSupportError = message
-        }
-    }
-
-    public func startMonitoring() {
-        startMonitoringAction()
-    }
-
-    public func stopMonitoring() {
-        stopMonitoringAction()
-    }
-
-    public func refreshPermissions() {
-        refreshPermissionsAction()
-    }
-
-    public func requestPermissions() {
-        requestPermissionsAction()
-    }
-
-    public func openAccessibilitySettings() {
-        openAccessibilitySettingsAction()
-    }
-
-    public func refreshLaunchAtLogin() {
-        refreshLaunchAtLoginAction()
-    }
-
-    public func setLaunchAtLoginEnabled(_ enabled: Bool) {
-        launchAtLoginError = nil
-        setLaunchAtLoginAction(enabled)
-    }
-
-    public func openLoginItemsSettings() {
-        openLoginItemsSettingsAction()
-    }
-
-    public func updateLaunchAtLogin(
-        status: LaunchAtLoginStatus,
-        error: String? = nil
-    ) {
-        launchAtLoginStatus = status
-        launchAtLoginError = error
-    }
-
-    public func refreshInstalledPlugins() async {
-        isLoadingPlugins = true
-        let managedPlugins = await pluginLifecycle.installedPlugins()
-        let builtInIDs = Set(builtInPlugins.map(\.id))
-        var managedByID: [String: PluginManifest] = [:]
-        for plugin in managedPlugins {
-            managedByID[plugin.id] = plugin
-        }
-        let effectiveBuiltIns = builtInPlugins.map { plugin in
-            guard
-                let managed = managedByID[plugin.id],
-                managed.source == .bundled
-            else {
-                return plugin
-            }
-            return managed
-        }
-        installedPlugins =
-            (effectiveBuiltIns
-            + managedPlugins.filter { !builtInIDs.contains($0.id) })
-            .sorted { $0.name < $1.name }
-        hydrateCachedTranslationModelUpdateStates()
-        isLoadingPlugins = false
-        translationConfigurationChangedAction()
-    }
-
-    public func coreDictionaryUpdateState(
-        for dictionaryID: String
-    ) -> CoreDictionaryUpdateState? {
-        coreDictionaryUpdateStates[dictionaryID]
-    }
-
-    public var hasActiveCoreDictionaryUpdate: Bool {
-        coreDictionaryUpdateStates.values.contains {
-            $0.isChecking
-        }
-    }
-
-    public func checkCoreDictionaryUpdate(
-        _ dictionaryID: String,
-        kind: CoreDictionaryUpdateKind
-    ) {
-        guard !hasActiveCoreDictionaryUpdate else {
-            return
-        }
-        coreDictionaryUpdateStates[dictionaryID] =
-            CoreDictionaryUpdateState(
-                isChecking: true,
-                statusText: nil,
-                isError: false
-            )
-        coreDictionaryUpdateTasks[dictionaryID] = Task { [weak self] in
-            guard let self else { return }
-            defer {
-                coreDictionaryUpdateTasks[dictionaryID] = nil
-            }
-            do {
-                let message = try await checkCoreDictionaryUpdateAction(
-                    kind
-                )
-                try Task.checkCancellation()
-                await refreshInstalledPlugins()
-                await dictionaryConfigurationChangedAction()
-                coreDictionaryUpdateStates[dictionaryID] =
-                    CoreDictionaryUpdateState(
-                        isChecking: false,
-                        statusText: message,
-                        isError: false
-                    )
-            } catch {
-                if Task.isCancelled {
-                    coreDictionaryUpdateStates[dictionaryID] = nil
-                    return
-                }
-                coreDictionaryUpdateStates[dictionaryID] =
-                    CoreDictionaryUpdateState(
-                        isChecking: false,
-                        statusText:
-                            "更新失败：\(error.localizedDescription)",
-                        isError: true
-                    )
-            }
-        }
-    }
-
-    public func cancelCoreDictionaryUpdate(
-        _ dictionaryID: String
-    ) {
-        coreDictionaryUpdateTasks[dictionaryID]?.cancel()
-    }
-
-    public func translationModelUpdateState(
-        for modelID: String
-    ) -> TranslationModelUpdateState? {
-        translationModelUpdateStates[modelID]
-    }
-
-    public func checkTranslationModelUpdate(
-        _ plugin: PluginManifest,
-        force: Bool = false
-    ) {
-        guard plugin.type == .translation,
-            plugin.source == .catalog,
-            plugin.revision != nil,
-            translationModelUpdateTasks[plugin.id] == nil
-        else {
-            return
-        }
-        let lastSuccess = cachedTranslationModelUpdateDate(
-            key: TranslationModelUpdateKey.lastSuccess(plugin.id)
-        )
-        let lastFailure = cachedTranslationModelUpdateDate(
-            key: TranslationModelUpdateKey.lastFailure(plugin.id)
-        )
-        guard
-            TranslationModelUpdatePolicy.shouldCheck(
-                force: force,
-                now: now(),
-                lastSuccess: lastSuccess,
-                lastFailure: lastFailure
-            )
-        else {
-            return
-        }
-        translationModelUpdateStates[plugin.id] =
-            TranslationModelUpdateState(
-                isChecking: true,
-                statusText: nil,
-                isError: false,
-                update: nil
-            )
-        translationModelUpdateTasks[plugin.id] = Task { [weak self] in
-            guard let self else { return }
-            defer {
-                translationModelUpdateTasks[plugin.id] = nil
-            }
-            do {
-                let update = try await checkTranslationModelUpdateAction(
-                    plugin
-                )
-                try Task.checkCancellation()
-                recordSuccessfulTranslationModelUpdateCheck(
-                    pluginID: plugin.id,
-                    update: update
-                )
-            } catch {
-                if Task.isCancelled {
-                    translationModelUpdateStates[plugin.id] = nil
-                    return
-                }
-                translationModelUpdateStates[plugin.id] =
-                    TranslationModelUpdateState(
-                        isChecking: false,
-                        statusText:
-                            "更新检查失败：\(error.localizedDescription)",
-                        isError: true,
-                        update: nil
-                    )
-                defaults.set(
-                    now(),
-                    forKey: TranslationModelUpdateKey.lastFailure(
-                        plugin.id
-                    )
-                )
-            }
-        }
-    }
-
-    public func checkActiveTranslationModelUpdateAfterLaunch() {
-        guard let plugin = activeTranslationPlugin else { return }
-        checkTranslationModelUpdate(plugin)
-    }
-
-    private func cachedTranslationModelUpdateDate(
-        key: String
-    ) -> Date? {
-        defaults.object(forKey: key) as? Date
-    }
-
-    private func recordSuccessfulTranslationModelUpdateCheck(
-        pluginID: String,
-        update: UpstreamModelUpdate?
-    ) {
-        let checkedAt = now()
-        defaults.set(
-            checkedAt,
-            forKey: TranslationModelUpdateKey.lastSuccess(pluginID)
-        )
-        defaults.removeObject(
-            forKey: TranslationModelUpdateKey.lastFailure(pluginID)
-        )
-        if let update,
-            let data = try? JSONEncoder().encode(
-                CachedTranslationModelUpdate(update)
-            )
-        {
-            defaults.set(
-                data,
-                forKey: TranslationModelUpdateKey.cachedUpdate(pluginID)
-            )
-        } else {
-            defaults.removeObject(
-                forKey: TranslationModelUpdateKey.cachedUpdate(pluginID)
-            )
-        }
-        translationModelUpdateStates[pluginID] =
-            TranslationModelUpdateState(
-                isChecking: false,
-                statusText:
-                    update == nil ? "已是最新" : "上游有新版本",
-                isError: false,
-                update: update
-            )
-    }
-
-    private func hydrateCachedTranslationModelUpdateStates() {
-        for plugin in translationPlugins
-        where plugin.source == .catalog
-            && translationModelUpdateStates[plugin.id] == nil
-        {
-            let lastSuccess = cachedTranslationModelUpdateDate(
-                key: TranslationModelUpdateKey.lastSuccess(plugin.id)
-            )
-            let lastFailure = cachedTranslationModelUpdateDate(
-                key: TranslationModelUpdateKey.lastFailure(plugin.id)
-            )
-            if let lastFailure,
-                lastSuccess.map({ lastFailure > $0 }) ?? true
-            {
-                translationModelUpdateStates[plugin.id] =
-                    TranslationModelUpdateState(
-                        isChecking: false,
-                        statusText: "上次更新检查失败",
-                        isError: true,
-                        update: nil
-                    )
-                continue
-            }
-            let update =
-                defaults
-                .data(
-                    forKey: TranslationModelUpdateKey.cachedUpdate(
-                        plugin.id
-                    )
-                )
-                .flatMap {
-                    try? JSONDecoder().decode(
-                        CachedTranslationModelUpdate.self,
-                        from: $0
-                    )
-                }
-                .map(\.upstreamUpdate)
-            if update != nil {
-                translationModelUpdateStates[plugin.id] =
-                    TranslationModelUpdateState(
-                        isChecking: false,
-                        statusText: "上游有新版本",
-                        isError: false,
-                        update: update
-                    )
-            } else if lastSuccess != nil {
-                translationModelUpdateStates[plugin.id] =
-                    TranslationModelUpdateState(
-                        isChecking: false,
-                        statusText: "已是最新",
-                        isError: false,
-                        update: nil
-                    )
-            }
-        }
-    }
-
-    public func installTranslationModelUpdate(_ modelID: String) {
-        guard
-            let update = translationModelUpdateStates[modelID]?.update
-        else {
-            return
-        }
-        installPlugin(update.manifest)
-    }
-
-    public func searchModelMarket(query: String) async {
-        guard !isLoadingModelMarket else { return }
-        isLoadingModelMarket = true
-        modelMarketError = nil
-        defer { isLoadingModelMarket = false }
-        do {
-            modelMarketResults = try await searchModelMarketAction(query)
-        } catch {
-            if Task.isCancelled {
-                return
-            }
-            modelMarketError = error.localizedDescription
-        }
-    }
-
-    public func installModelFromMarket(_ model: UpstreamModelSummary) {
-        guard isPreparingModelMarketInstallID == nil,
-            modelMarketInstallPreview == nil,
-            installTask == nil,
-            localImportTask == nil
-        else {
-            return
-        }
-        let knownManifest = knownPlugin(forRepository: model.repository)
-        isPreparingModelMarketInstallID = model.id
-        modelMarketError = nil
-        modelMarketInstallTask = Task { [weak self] in
-            guard let self else { return }
-            defer {
-                isPreparingModelMarketInstallID = nil
-                modelMarketInstallTask = nil
-            }
-            do {
-                let preparation = try await prepareModelMarketInstallAction(
-                    model,
-                    knownManifest
-                )
-                try Task.checkCancellation()
-                guard isCompatible(preparation.manifest) else {
-                    modelMarketError =
-                        "预计至少需要 \(minimumMemoryText(for: preparation.manifest)) 内存，当前设备可能无法运行"
-                    return
-                }
-                let requiredSpace = preparation.snapshot.sizeBytes
-                    .multipliedReportingOverflow(by: 2)
-                if !requiredSpace.overflow,
-                    let available = availableInstallationSpaceAction(),
-                    available < requiredSpace.partialValue
-                {
-                    modelMarketError =
-                        "模型需要约 \(Self.byteCountText(preparation.snapshot.sizeBytes)) 可用磁盘空间，当前可用 \(Self.byteCountText(available))"
-                    return
-                }
-                modelMarketInstallPreview = preparation
-            } catch {
-                if !Task.isCancelled {
-                    modelMarketError = error.localizedDescription
-                }
-            }
-        }
-    }
-
-    public func cancelModelMarketInstall() {
-        modelMarketInstallTask?.cancel()
-    }
-
-    public func confirmModelMarketInstall() {
-        guard let preview = modelMarketInstallPreview else { return }
-        modelMarketInstallPreview = nil
-        modelMarketInstallRepository = preview.snapshot.repository
-        modelMarketInstallPluginID = preview.manifest.id
-        installPlugin(preview.manifest)
-    }
-
-    public func cancelModelMarketInstallPreview() {
-        modelMarketInstallPreview = nil
-    }
-
-    public func knownPlugin(
-        forRepository repository: String
-    ) -> PluginManifest? {
-        return
-            installedPlugin(forRepository: repository)
-            ?? (availablePlugins + builtInPlugins).first {
-                matchesRepository($0, repository: repository)
-            }
-    }
-
-    public func installedPlugin(
-        forRepository repository: String
-    ) -> PluginManifest? {
-        installedPlugins.first {
-            matchesRepository($0, repository: repository)
-        }
-    }
-
-    private func matchesRepository(
-        _ plugin: PluginManifest,
-        repository: String
-    ) -> Bool {
-        let path = plugin.url.path.trimmingCharacters(
-            in: CharacterSet(charactersIn: "/")
-        )
-        let repository = repository.trimmingCharacters(
-            in: CharacterSet(charactersIn: "/")
-        )
-        return path == repository || path.hasSuffix("/\(repository)")
-    }
-
-    private static func byteCountText(_ value: Int64) -> String {
-        ByteCountFormatter.string(
-            fromByteCount: value,
-            countStyle: .file
-        )
-    }
-
-    public func checkForCatalogUpdates(force: Bool = false) async {
-        guard let catalogURL else {
-            availablePlugins = []
-            return
-        }
-        guard !isLoadingCatalog else { return }
-        let currentDate = now()
-        guard
-            CatalogUpdatePolicy.shouldCheck(
-                force: force,
-                now: currentDate,
-                lastSuccess: lastCatalogSuccessAt,
-                lastFailure: lastCatalogFailureAt
-            )
-        else {
-            return
-        }
-
-        isLoadingCatalog = true
-        defer { isLoadingCatalog = false }
-        do {
-            let result = try await pluginLifecycle.catalogUpdates(
-                from: catalogURL,
-                etag: catalogETag,
-                lastModified: catalogLastModified
-            )
-            if !result.isNotModified {
-                let builtInIDs = Set(builtInPlugins.map(\.id))
-                availablePlugins = result.plugins
-                    .filter { !builtInIDs.contains($0.id) }
-                    .sorted {
-                        $0.name < $1.name
-                    }
-            }
-            catalogETag = result.etag
-            catalogLastModified = result.lastModified
-            lastCatalogSuccessAt = now()
-            lastCatalogFailureAt = nil
-        } catch {
-            lastCatalogFailureAt = now()
-        }
-    }
-
-    public func checkForCatalogUpdatesAfterLaunch() async {
-        guard lastCatalogSuccessAt == nil,
-            lastCatalogFailureAt == nil
-        else {
-            return
-        }
-        await checkForCatalogUpdates(force: true)
-    }
-
-    public func installPlugin(_ plugin: PluginManifest) {
-        guard installTask == nil, localImportTask == nil else { return }
-        isInstalling = plugin.id
-        isCancellingInstallation = false
-        discardCancelledDownload = false
-        installProgress[plugin.id] = PluginInstallProgress(
-            fraction: 0,
-            phase: .preparing
-        )
-        catalogError = nil
-        installTask = Task { [weak self] in
-            guard let self else { return }
-            await self.performInstallation(plugin)
-        }
-    }
-
-    public func cancelInstallation() {
-        guard let installTask else { return }
-        isCancellingInstallation = true
-        discardCancelledDownload = true
-        installTask.cancel()
-    }
-
-    public func importLocalTranslationModel(from directory: URL) {
-        guard localImportTask == nil, installTask == nil else { return }
-        localImportError = nil
-        localImportProgress = 0
-        isImportingLocalModel = true
-        localImportTask = Task { [weak self] in
-            guard let self else { return }
-            defer {
-                isImportingLocalModel = false
-                localImportTask = nil
-            }
-            do {
-                let previousModelID = activeModelID
-                let manifest = try await pluginLifecycle.importLocalModel(
-                    from: directory
-                ) { [weak self] value in
-                    Task { @MainActor [weak self] in
-                        self?.localImportProgress = value
-                    }
-                }
-                let hadPendingUpgrade =
-                    await pluginLifecycle.hasPendingUpgrade()
-                await refreshInstalledPlugins()
-                if Task.isCancelled {
-                    _ = await recoverFromLocalModelFailure(
-                        manifest: manifest,
-                        previousModelID: previousModelID,
-                        hadPendingUpgrade: hadPendingUpgrade,
-                        error: "导入已取消"
-                    )
-                    return
-                }
-                if Self.supports(
-                    manifest,
-                    target: translationTarget
-                ) {
-                    translationModelStatusText = "正在验证本地模型…"
-                    translationModelStatusIsError = false
-                    translationModelStatusModelID = manifest.id
-
-                    let activationError =
-                        await activateTranslationModelAction(manifest.id)
-                    if Task.isCancelled {
-                        _ = await recoverFromLocalModelFailure(
-                            manifest: manifest,
-                            previousModelID: previousModelID,
-                            hadPendingUpgrade: hadPendingUpgrade,
-                            error: "导入已取消"
-                        )
-                        return
-                    }
-                    if let activationError {
-                        let message = await recoverFromLocalModelFailure(
-                            manifest: manifest,
-                            previousModelID: previousModelID,
-                            hadPendingUpgrade: hadPendingUpgrade,
-                            error: activationError
-                        )
-                        localImportError = message
-                        translationModelStatusText = message
-                        translationModelStatusIsError = true
-                        translationModelStatusModelID = previousModelID
-                        return
-                    }
-                    await releaseTranslationModelAction(manifest.id)
-                    if let restoreError =
-                        await activateTranslationModelAction(
-                            previousModelID
-                        )
-                    {
-                        catalogError =
-                            "模型已安装，但恢复原模型失败：\(restoreError)"
-                    }
-                }
-
-                do {
-                    try await pluginLifecycle.commitPendingUpgrade()
-                    localImportProgress = 1
-                    translationModelStatusText = nil
-                    translationModelStatusIsError = false
-                    translationModelStatusModelID = nil
-                    translationConfigurationChangedAction()
-                } catch {
-                    let message = await recoverFromLocalModelFailure(
-                        manifest: manifest,
-                        previousModelID: previousModelID,
-                        hadPendingUpgrade: hadPendingUpgrade,
-                        error: error.localizedDescription
-                    )
-                    localImportError = message
-                    translationModelStatusText = message
-                    translationModelStatusIsError = true
-                    translationModelStatusModelID = previousModelID
-                }
-            } catch {
-                if !Self.isCancellation(error) {
-                    localImportError = error.localizedDescription
-                }
-            }
-        }
-    }
-
-    private func recoverFromLocalModelFailure(
-        manifest: PluginManifest,
-        previousModelID: String,
-        hadPendingUpgrade: Bool,
-        error: String
-    ) async -> String {
-        await releaseTranslationModelAction(manifest.id)
-        var recoveryErrors: [String] = []
-
-        if hadPendingUpgrade {
-            do {
-                try await pluginLifecycle.rollbackPendingUpgrade()
-            } catch {
-                recoveryErrors.append(
-                    "恢复旧版本失败：\(error.localizedDescription)"
-                )
-            }
-        } else {
-            do {
-                try await pluginLifecycle.uninstall(id: manifest.id)
-            } catch {
-                recoveryErrors.append(
-                    "移除失败模型失败：\(error.localizedDescription)"
-                )
-            }
-        }
-
-        activeModelID = previousModelID
-        persistActiveModelID()
-        await refreshInstalledPlugins()
-        if let recoveryError = await activateTranslationModelAction(
-            previousModelID
-        ) {
-            recoveryErrors.append(
-                "恢复原模型失败：\(recoveryError)"
-            )
-        }
-        translationConfigurationChangedAction()
-
-        if recoveryErrors.isEmpty {
-            return "导入失败，已恢复原模型：\(error)"
-        }
-        return
-            ("导入失败：\(error)"
-            + "（\(recoveryErrors.joined(separator: "；"))）")
-    }
-
-    public func cancelLocalModelImport() {
-        localImportTask?.cancel()
-    }
-
-    private func performInstallation(_ plugin: PluginManifest) async {
-        let attempt = installationAttempt(for: plugin)
-        var hadPendingUpgrade = false
-        defer { finishInstallationAttempt(for: plugin.id) }
-
-        do {
-            hadPendingUpgrade = try await installPackage(attempt.plugin)
-            try Task.checkCancellation()
-            if attempt.shouldValidateTranslation {
-                let succeeded = try await validateTranslationInstallation(
-                    attempt,
-                    hadPendingUpgrade: hadPendingUpgrade
-                )
-                guard succeeded else { return }
-            } else {
-                try await pluginLifecycle.commitPendingUpgrade()
-                if plugin.type == .translation {
-                    recordSuccessfulTranslationModelUpdateCheck(
-                        pluginID: plugin.id,
-                        update: nil
-                    )
-                }
-            }
-            installProgress[plugin.id] = PluginInstallProgress(
-                fraction: 1,
-                phase: .installing
-            )
-        } catch {
-            let shouldDiscardDownload = discardCancelledDownload
-            discardCancelledDownload = false
-            if shouldDiscardDownload {
-                await discardDownloadAction(attempt.plugin.id)
-                if !attempt.wasInstalled, !hadPendingUpgrade {
-                    try? await pluginLifecycle.uninstall(id: attempt.plugin.id)
-                }
-            }
-            await recoverInstallationFailure(
-                attempt,
-                hadPendingUpgrade: hadPendingUpgrade,
-                error: error
-            )
-        }
-    }
-
-    private func installationAttempt(
-        for plugin: PluginManifest
-    ) -> InstallationAttempt {
-        InstallationAttempt(
-            plugin: plugin,
-            previousModelID: activeModelID,
-            wasInstalled: installedPlugins.contains {
-                $0.id == plugin.id
-            },
-            wasActiveTranslation:
-                plugin.type == .translation
-                && activeModelID == plugin.id,
-            shouldValidateTranslation:
-                plugin.type == .translation
-                && Self.supports(
-                    plugin,
-                    target: translationTarget
-                )
-                && (activeModelID == plugin.id
-                    || modelMarketInstallPluginID == plugin.id)
-        )
-    }
-
-    private func finishInstallationAttempt(for pluginID: String) {
-        installTask = nil
-        isInstalling = nil
-        isCancellingInstallation = false
-        discardCancelledDownload = false
-        installProgress.removeValue(forKey: pluginID)
-        if modelMarketInstallPluginID == pluginID {
-            modelMarketInstallRepository = nil
-            modelMarketInstallPluginID = nil
-        }
-    }
-
-    private func installPackage(
-        _ plugin: PluginManifest
-    ) async throws -> Bool {
-        _ = try await pluginLifecycle.install(plugin) { [weak self] value in
-            Task { @MainActor [weak self] in
-                self?.applyInstallProgress(value, for: plugin.id)
-            }
-        }
-        let hadPendingUpgrade = await pluginLifecycle.hasPendingUpgrade()
-        await refreshInstalledPlugins()
-        if plugin.type == .dictionary {
-            await dictionaryConfigurationChangedAction()
-        }
-        return hadPendingUpgrade
-    }
-
-    private func validateTranslationInstallation(
-        _ attempt: InstallationAttempt,
-        hadPendingUpgrade: Bool
-    ) async throws -> Bool {
-        let plugin = attempt.plugin
-        translationModelStatusText =
-            attempt.wasActiveTranslation ? "正在加载新版本…" : "正在验证模型…"
-        translationModelStatusIsError = false
-        translationModelStatusModelID = plugin.id
-        let error = await activateTranslationModelAction(plugin.id)
-        try Task.checkCancellation()
-        if let error {
-            try await recoverTranslationValidationFailure(
-                attempt,
-                hadPendingUpgrade: hadPendingUpgrade,
-                error: error
-            )
-            return false
-        }
-        if !attempt.wasActiveTranslation {
-            await releaseTranslationModelAction(plugin.id)
-            try Task.checkCancellation()
-            if let restoreError =
-                await activateTranslationModelAction(
-                    attempt.previousModelID
-                )
-            {
-                catalogError =
-                    "模型已安装，但恢复原模型失败：\(restoreError)"
-            }
-            try Task.checkCancellation()
-        }
-        try Task.checkCancellation()
-        try await pluginLifecycle.commitPendingUpgrade()
-        translationModelStatusText = nil
-        translationModelStatusIsError = false
-        translationModelStatusModelID = nil
-        recordSuccessfulTranslationModelUpdateCheck(
-            pluginID: plugin.id,
-            update: nil
-        )
-        translationConfigurationChangedAction()
-        return true
-    }
-
-    private func recoverTranslationValidationFailure(
-        _ attempt: InstallationAttempt,
-        hadPendingUpgrade: Bool,
-        error: String
-    ) async throws {
-        let plugin = attempt.plugin
-        let wasCancelled = Task.isCancelled
-        if hadPendingUpgrade {
-            try await pluginLifecycle.rollbackPendingUpgrade()
-            await refreshInstalledPlugins()
-            if !wasCancelled {
-                translationModelStatusText =
-                    "更新失败，已恢复旧版本：\(error)"
-            }
-        } else {
-            await releaseTranslationModelAction(plugin.id)
-            try await pluginLifecycle.uninstall(id: plugin.id)
-            await refreshInstalledPlugins()
-            if !wasCancelled {
-                translationModelStatusText =
-                    "模型加载失败：\(error)"
-            }
-        }
-        let recoveryModelID =
-            hadPendingUpgrade ? plugin.id : attempt.previousModelID
-        if recoveryModelID != plugin.id || hadPendingUpgrade {
-            let restoreError =
-                await activateTranslationModelAction(recoveryModelID)
-            if let restoreError, !wasCancelled {
-                translationModelStatusText =
-                    "模型验证失败，且原模型恢复失败：\(restoreError)"
-            }
-        }
-        if wasCancelled {
-            translationModelStatusText = nil
-            translationModelStatusIsError = false
-            translationModelStatusModelID = nil
-        } else {
-            translationModelStatusIsError = true
-            translationModelStatusModelID = plugin.id
-            catalogError = error
-        }
-        translationConfigurationChangedAction()
-    }
-
-    private func recoverInstallationFailure(
-        _ attempt: InstallationAttempt,
-        hadPendingUpgrade: Bool,
-        error: Error
-    ) async {
-        let plugin = attempt.plugin
-        try? await pluginLifecycle.rollbackPendingUpgrade()
-        if attempt.wasActiveTranslation, hadPendingUpgrade {
-            await releaseTranslationModelAction(plugin.id)
-        }
-        await refreshInstalledPlugins()
-        if plugin.type == .dictionary {
-            await dictionaryConfigurationChangedAction()
-        }
-        if attempt.wasActiveTranslation, hadPendingUpgrade {
-            let recoveryError =
-                await activateTranslationModelAction(plugin.id)
-            if Self.isCancellation(error) {
-                translationModelStatusText = nil
-                translationModelStatusIsError = false
-                translationModelStatusModelID = nil
-            } else if let recoveryError {
-                translationModelStatusText =
-                    "更新失败，模型恢复失败：\(recoveryError)"
-                translationModelStatusIsError = true
-                translationModelStatusModelID = plugin.id
-            } else {
-                translationModelStatusText =
-                    "更新失败，已恢复当前版本：\(error)"
-                translationModelStatusIsError = true
-                translationModelStatusModelID = plugin.id
-            }
-            translationConfigurationChangedAction()
-        }
-        if !Self.isCancellation(error) {
-            catalogError = error.localizedDescription
-        }
-    }
-
-    private func applyInstallProgress(
-        _ progress: PluginInstallProgress,
-        for pluginID: String
-    ) {
-        guard isInstalling == pluginID else { return }
-        if let current = installProgress[pluginID],
-            current.phase == progress.phase,
-            current.sourceHost == progress.sourceHost,
-            progress.fraction < current.fraction
-        {
-            return
-        }
-        installProgress[pluginID] = progress
-    }
-
-    public func uninstallPlugin(_ plugin: PluginManifest) async {
-        guard plugin.source != .bundled else { return }
-        guard !isActiveTranslationModel(plugin) else {
-            catalogError = "当前翻译模型不可卸载，请先更换。"
-            return
-        }
-        catalogError = nil
-        do {
-            await releaseTranslationModelAction(plugin.id)
-            try await pluginLifecycle.uninstall(id: plugin.id)
-            translationModelUpdateStates.removeValue(forKey: plugin.id)
-            defaults.removeObject(
-                forKey: TranslationModelUpdateKey.lastSuccess(plugin.id)
-            )
-            defaults.removeObject(
-                forKey: TranslationModelUpdateKey.lastFailure(plugin.id)
-            )
-            defaults.removeObject(
-                forKey: TranslationModelUpdateKey.cachedUpdate(plugin.id)
-            )
-            if translationModelStatusModelID == plugin.id {
-                translationModelStatusText = nil
-                translationModelStatusIsError = false
-                translationModelStatusModelID = nil
-            }
-            await refreshInstalledPlugins()
-            if plugin.type == .dictionary {
-                await dictionaryConfigurationChangedAction()
-            }
-        } catch {
-            catalogError = error.localizedDescription
-        }
+        translationCoordinator.openSystemTranslationSettings(on: self)
     }
 
     public func activateTranslationModel(_ plugin: PluginManifest) {
@@ -1700,46 +362,6 @@ public final class MainWindowModel {
 
     public func isActiveTranslationModel(_ plugin: PluginManifest) -> Bool {
         plugin.type == .translation && plugin.id == activeModelID
-    }
-
-    public func update(for plugin: PluginManifest) -> PluginUpdateInfo? {
-        guard let installedVersion = installedVersion(for: plugin.id),
-            PluginVersion.isNewer(
-                plugin.version,
-                than: installedVersion
-            )
-        else {
-            return nil
-        }
-        return PluginUpdateInfo(
-            currentVersion: installedVersion,
-            availableVersion: plugin.version
-        )
-    }
-
-    public func installedVersion(for id: String) -> String? {
-        installedPlugins.first { $0.id == id }?.version
-    }
-
-    public func isCompatible(_ plugin: PluginManifest) -> Bool {
-        ProcessInfo.processInfo.physicalMemory >= UInt64(max(0, plugin.minRAMBytes))
-    }
-
-    public func minimumMemoryText(for plugin: PluginManifest) -> String {
-        ByteCountFormatter.string(
-            fromByteCount: plugin.minRAMBytes,
-            countStyle: .memory
-        )
-    }
-
-    private static func isCancellation(_ error: Error) -> Bool {
-        if error is CancellationError {
-            return true
-        }
-        if let urlError = error as? URLError, urlError.code == .cancelled {
-            return true
-        }
-        return Task.isCancelled
     }
 
     private func prepareActiveTranslationModel(rollbackTo previousModelID: String? = nil) {
