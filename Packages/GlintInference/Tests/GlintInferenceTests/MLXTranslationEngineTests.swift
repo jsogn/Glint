@@ -100,6 +100,19 @@ final class MLXTranslationEngineTests: XCTestCase {
         )
     }
 
+    func testCleanAcceptsLongSentenceTranslation() {
+        let sentence =
+            "The weather is nice today. What are you going to eat?"
+
+        XCTAssertEqual(
+            MLXTranslationEngine.clean(
+                sentence,
+                target: .english
+            ),
+            sentence
+        )
+    }
+
     func testCleanKeepsTextAfterThinkingBlock() {
         XCTAssertEqual(
             MLXTranslationEngine.clean(

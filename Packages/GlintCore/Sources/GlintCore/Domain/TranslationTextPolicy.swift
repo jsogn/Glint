@@ -8,8 +8,10 @@ public enum TranslationTextPolicy {
         let value = text.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
+        // Model sentence translations naturally exceed the 48-character
+        // dictionary gloss limit. Dictionary and concise-option filtering
+        // enforce their own limits before reaching this shared policy.
         guard !value.isEmpty,
-            value.count <= 48,
             !value.contains(where: \.isNewline)
         else {
             return false

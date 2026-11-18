@@ -30,7 +30,7 @@ final class TranslationTextPolicyTests: XCTestCase {
         )
     }
 
-    func testAllTargetsRejectNewlinesAndOverlongText() {
+    func testAllTargetsRejectNewlines() {
         for target in TranslationTarget.allCases {
             XCTAssertFalse(
                 TranslationTextPolicy.isDisplayable(
@@ -38,13 +38,20 @@ final class TranslationTextPolicyTests: XCTestCase {
                     target: target
                 )
             )
-            XCTAssertFalse(
-                TranslationTextPolicy.isDisplayable(
-                    String(repeating: "a", count: 49),
-                    target: target
-                )
-            )
         }
+    }
+
+    func testLongSentenceTranslationIsDisplayable() {
+        let sentence =
+            "The weather is nice today. What are you going to eat?"
+
+        XCTAssertGreaterThan(sentence.count, 48)
+        XCTAssertTrue(
+            TranslationTextPolicy.isDisplayable(
+                sentence,
+                target: .english
+            )
+        )
     }
 
     func testSpanishFrenchGermanAndRussianOutputIsDisplayable() {

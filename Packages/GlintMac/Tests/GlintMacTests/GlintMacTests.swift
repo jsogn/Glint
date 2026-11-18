@@ -303,6 +303,22 @@ private struct JapaneseTranslation: TranslationEngine {
     }
 }
 
+private struct FixedEnglishTranslation: TranslationEngine {
+    let text: String
+
+    func supports(
+        _ direction: TranslationDirection
+    ) async -> Bool {
+        direction.target == .english
+    }
+
+    func translate(
+        _ request: TranslationRequest
+    ) async throws -> TranslationResult? {
+        TranslationResult(text: text)
+    }
+}
+
 private struct MultiOptionTranslation: TranslationEngine {
     func supports(
         _ direction: TranslationDirection
@@ -433,6 +449,30 @@ final class GlintMacTests: XCTestCase {
         )
 
         XCTAssertEqual(presentations.first?.translation, "学生")
+    }
+
+    func testLongSentenceTranslationIsDisplayable() async {
+        let sentence =
+            "The weather is nice today. What are you going to eat?"
+        let presentations = await CandidateTranslationPipeline.translate(
+            [
+                Candidate(
+                    text: "今天天气不错你准备吃什么呢",
+                    kind: .sentence
+                )
+            ],
+            selectedIndex: 0,
+            mode: .modelFirst,
+            target: .english,
+            configurationToken: "long-sentence",
+            router: SmartRouter(
+                dictionary: EmptyDictionary(),
+                translation: FixedEnglishTranslation(text: sentence)
+            ),
+            memo: TranslationMemo()
+        )
+
+        XCTAssertEqual(presentations.first?.translation, sentence)
     }
 
     func testJapaneseNeverPrefetchesDictionary() {
