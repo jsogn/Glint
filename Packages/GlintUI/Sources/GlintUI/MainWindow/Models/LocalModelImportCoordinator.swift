@@ -4,6 +4,11 @@ import GlintPlugins
 
 @MainActor
 final class LocalModelImportCoordinator {
+    private struct RecoveryOutcome {
+        let message: String
+        let previousModelRestored: Bool
+    }
+
     private let pluginLifecycle: PluginLifecycleService
     private var importTask: Task<Void, Never>?
 
@@ -57,12 +62,17 @@ final class LocalModelImportCoordinator {
                 await pluginLifecycle.hasPendingUpgrade()
             await model.refreshInstalledPlugins()
             if Task.isCancelled {
-                _ = await recoverFromFailure(
+                let outcome = await recoverFromFailure(
                     manifest: manifest,
                     previousModelID: previousModelID,
                     hadPendingUpgrade: hadPendingUpgrade,
                     error: "导入已取消",
                     on: model
+                )
+                applyRecovery(
+                    outcome,
+                    to: model,
+                    showsImportError: false
                 )
                 return
             }
@@ -75,34 +85,42 @@ final class LocalModelImportCoordinator {
                 model.translationModelStatusModelID = manifest.id
 
                 let activationError =
-                    await model.activateTranslationModelAction(manifest.id)
+                    await model.actions.translation.activateModel(
+                        manifest.id
+                    )
                 if Task.isCancelled {
-                    _ = await recoverFromFailure(
+                    let outcome = await recoverFromFailure(
                         manifest: manifest,
                         previousModelID: previousModelID,
                         hadPendingUpgrade: hadPendingUpgrade,
                         error: "导入已取消",
                         on: model
                     )
+                    applyRecovery(
+                        outcome,
+                        to: model,
+                        showsImportError: false
+                    )
                     return
                 }
                 if let activationError {
-                    let message = await recoverFromFailure(
+                    let outcome = await recoverFromFailure(
                         manifest: manifest,
                         previousModelID: previousModelID,
                         hadPendingUpgrade: hadPendingUpgrade,
                         error: activationError,
                         on: model
                     )
-                    model.localImportError = message
-                    model.translationModelStatusText = message
-                    model.translationModelStatusIsError = true
-                    model.translationModelStatusModelID = previousModelID
+                    applyRecovery(
+                        outcome,
+                        to: model,
+                        showsImportError: true
+                    )
                     return
                 }
-                await model.releaseTranslationModelAction(manifest.id)
+                await model.actions.translation.releaseModel(manifest.id)
                 if let restoreError =
-                    await model.activateTranslationModelAction(
+                    await model.actions.translation.activateModel(
                         previousModelID
                     )
                 {
@@ -117,19 +135,20 @@ final class LocalModelImportCoordinator {
                 model.translationModelStatusText = nil
                 model.translationModelStatusIsError = false
                 model.translationModelStatusModelID = nil
-                model.translationConfigurationChangedAction()
+                model.actions.translation.configurationChanged()
             } catch {
-                let message = await recoverFromFailure(
+                let outcome = await recoverFromFailure(
                     manifest: manifest,
                     previousModelID: previousModelID,
                     hadPendingUpgrade: hadPendingUpgrade,
                     error: error.localizedDescription,
                     on: model
                 )
-                model.localImportError = message
-                model.translationModelStatusText = message
-                model.translationModelStatusIsError = true
-                model.translationModelStatusModelID = previousModelID
+                applyRecovery(
+                    outcome,
+                    to: model,
+                    showsImportError: true
+                )
             }
         } catch {
             if !TaskCancellation.isCancellation(error) {
@@ -144,8 +163,8 @@ final class LocalModelImportCoordinator {
         hadPendingUpgrade: Bool,
         error: String,
         on model: MainWindowModel
-    ) async -> String {
-        await model.releaseTranslationModelAction(manifest.id)
+    ) async -> RecoveryOutcome {
+        await model.actions.translation.releaseModel(manifest.id)
         var recoveryErrors: [String] = []
 
         if hadPendingUpgrade {
@@ -169,20 +188,47 @@ final class LocalModelImportCoordinator {
         model.activeModelID = previousModelID
         model.persistActiveModelID()
         await model.refreshInstalledPlugins()
-        if let recoveryError = await model.activateTranslationModelAction(
-            previousModelID
-        ) {
+        var previousModelRestored = false
+        if let recoveryError =
+            await model.actions.translation.activateModel(previousModelID)
+        {
             recoveryErrors.append(
                 "恢复原模型失败：\(recoveryError)"
             )
+        } else {
+            previousModelRestored = true
         }
-        model.translationConfigurationChangedAction()
+        model.actions.translation.configurationChanged()
 
         if recoveryErrors.isEmpty {
-            return "导入失败，已恢复原模型：\(error)"
+            return RecoveryOutcome(
+                message: "导入失败，已恢复原模型：\(error)",
+                previousModelRestored: previousModelRestored
+            )
         }
-        return
-            ("导入失败：\(error)"
-            + "（\(recoveryErrors.joined(separator: "；"))）")
+        return RecoveryOutcome(
+            message: ("导入失败：\(error)"
+                + "（\(recoveryErrors.joined(separator: "；"))）"),
+            previousModelRestored: previousModelRestored
+        )
+    }
+
+    private func applyRecovery(
+        _ outcome: RecoveryOutcome,
+        to model: MainWindowModel,
+        showsImportError: Bool
+    ) {
+        if showsImportError {
+            model.localImportError = outcome.message
+        }
+        if outcome.previousModelRestored {
+            model.translationModelStatusText = nil
+            model.translationModelStatusIsError = false
+            model.translationModelStatusModelID = nil
+        } else {
+            model.translationModelStatusText = outcome.message
+            model.translationModelStatusIsError = true
+            model.translationModelStatusModelID = model.activeModelID
+        }
     }
 }

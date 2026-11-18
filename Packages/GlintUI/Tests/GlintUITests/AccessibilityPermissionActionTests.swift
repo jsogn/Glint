@@ -11,8 +11,10 @@ final class AccessibilityPermissionActionTests: XCTestCase {
 
         var requested = false
         var openedSettings = false
-        model.requestPermissionsAction = { requested = true }
-        model.openAccessibilitySettingsAction = { openedSettings = true }
+        model.actions.permissions.requestPermissions = { requested = true }
+        model.actions.permissions.openAccessibilitySettings = {
+            openedSettings = true
+        }
 
         let action = AccessibilityPermissionAction(model: model)
         XCTAssertEqual(action.title, "授权辅助功能")
@@ -36,8 +38,10 @@ final class AccessibilityPermissionActionTests: XCTestCase {
         model.hasRequestedAccessibilityPermission = true
         var requested = false
         var openedSettings = false
-        model.requestPermissionsAction = { requested = true }
-        model.openAccessibilitySettingsAction = { openedSettings = true }
+        model.actions.permissions.requestPermissions = { requested = true }
+        model.actions.permissions.openAccessibilitySettings = {
+            openedSettings = true
+        }
 
         let action = AccessibilityPermissionAction(model: model)
         XCTAssertEqual(action.title, "打开辅助功能设置")

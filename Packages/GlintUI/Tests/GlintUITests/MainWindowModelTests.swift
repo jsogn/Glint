@@ -11,7 +11,7 @@ final class MainWindowModelTests: XCTestCase {
         let context = try makeContext()
         defer { context.cleanup() }
         var previewedTargets: [TranslationTarget] = []
-        context.model.previewTranslationSpeechAction = {
+        context.model.actions.translation.previewSpeech = {
             previewedTargets.append($0)
         }
 
@@ -24,7 +24,7 @@ final class MainWindowModelTests: XCTestCase {
     func testLanguageSwitchUpdatesPerLanguageModelSelection() async throws {
         let context = try makeMultilingualContext()
         defer { context.cleanup() }
-        context.model.changeTranslationTargetAction = { target in
+        context.model.actions.translation.changeTarget = { target in
             .ready(target)
         }
 
@@ -53,7 +53,7 @@ final class MainWindowModelTests: XCTestCase {
             for: .spanish
         )
         var selectedModels: [String] = []
-        context.model.changeTranslationTargetAction = { target in
+        context.model.actions.translation.changeTarget = { target in
             selectedModels.append(
                 context.store.selectedModelID(for: target)
             )
@@ -80,7 +80,7 @@ final class MainWindowModelTests: XCTestCase {
     func testRapidLanguageSwitchIgnoresStaleReadiness() async throws {
         let context = try makeMultilingualContext()
         defer { context.cleanup() }
-        context.model.changeTranslationTargetAction = { target in
+        context.model.actions.translation.changeTarget = { target in
             if target == .japanese {
                 try? await Task.sleep(for: .milliseconds(30))
             }
@@ -109,7 +109,7 @@ final class MainWindowModelTests: XCTestCase {
         let context = try makeMultilingualContext()
         defer { context.cleanup() }
         let probe = TranslationTargetSwitchProbe()
-        context.model.changeTranslationTargetAction = { target in
+        context.model.actions.translation.changeTarget = { target in
             await probe.respond(to: target)
         }
 
@@ -146,7 +146,7 @@ final class MainWindowModelTests: XCTestCase {
         let context = try makeMultilingualContext()
         defer { context.cleanup() }
         let probe = TranslationModelSelectionProbe()
-        context.model.selectTranslationModelAction = { modelID, target in
+        context.model.actions.translation.selectModel = { modelID, target in
             await probe.respond(modelID: modelID, target: target)
         }
 
@@ -193,7 +193,7 @@ final class MainWindowModelTests: XCTestCase {
             .failed(.english, "系统翻译会话不可用")
         )
         var attempts: [(String, TranslationTarget)] = []
-        context.model.selectTranslationModelAction = { modelID, target in
+        context.model.actions.translation.selectModel = { modelID, target in
             attempts.append((modelID, target))
             return .ready(target)
         }
@@ -257,10 +257,10 @@ final class MainWindowModelTests: XCTestCase {
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.refreshSystemTranslationAction = {
+        context.model.actions.translation.refreshSystemTranslation = {
             .available
         }
-        context.model.prepareSystemTranslationAction = {
+        context.model.actions.translation.prepareSystemTranslation = {
             .installed
         }
 
@@ -292,7 +292,7 @@ final class MainWindowModelTests: XCTestCase {
     {
         let context = try makeMultilingualContext()
         defer { context.cleanup() }
-        context.model.changeTranslationTargetAction = { target in
+        context.model.actions.translation.changeTarget = { target in
             .needsSetup(target, "需要安装 Apple 翻译语言包")
         }
         context.model.updateSystemTranslationAvailability(.installed)
@@ -310,10 +310,10 @@ final class MainWindowModelTests: XCTestCase {
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.refreshSystemTranslationAction = {
+        context.model.actions.translation.refreshSystemTranslation = {
             .available
         }
-        context.model.prepareSystemTranslationAction = {
+        context.model.actions.translation.prepareSystemTranslation = {
             throw CancellationError()
         }
         await context.model.refreshSystemTranslationSupport()
@@ -364,11 +364,11 @@ final class MainWindowModelTests: XCTestCase {
         )
         defer { context.cleanup() }
         context.model.updateSystemTranslationAvailability(.available)
-        context.model.prepareSystemTranslationAction = {
+        context.model.actions.translation.prepareSystemTranslation = {
             .installed
         }
         var presentationCount = 0
-        context.model.systemTranslationPresentationAction = {
+        context.model.actions.translation.presentSystemTranslation = {
             presentationCount += 1
         }
 
@@ -395,11 +395,11 @@ final class MainWindowModelTests: XCTestCase {
         )
         defer { context.cleanup() }
         context.model.updateSystemTranslationAvailability(.available)
-        context.model.prepareSystemTranslationAction = {
+        context.model.actions.translation.prepareSystemTranslation = {
             throw CancellationError()
         }
         var presentationCount = 0
-        context.model.systemTranslationPresentationAction = {
+        context.model.actions.translation.presentSystemTranslation = {
             presentationCount += 1
         }
 
@@ -422,7 +422,7 @@ final class MainWindowModelTests: XCTestCase {
         )
         defer { context.cleanup() }
         context.model.updateSystemTranslationAvailability(.available)
-        context.model.prepareSystemTranslationAction = {
+        context.model.actions.translation.prepareSystemTranslation = {
             .available
         }
 
@@ -446,7 +446,7 @@ final class MainWindowModelTests: XCTestCase {
         defer { context.cleanup() }
         context.model.updateSystemTranslationAvailability(.installing)
         var preparationCount = 0
-        context.model.prepareSystemTranslationAction = {
+        context.model.actions.translation.prepareSystemTranslation = {
             preparationCount += 1
             return .installing
         }
@@ -466,7 +466,7 @@ final class MainWindowModelTests: XCTestCase {
         let context = try makeContext()
         defer { context.cleanup() }
         var openCount = 0
-        context.model.openSystemTranslationSettingsAction = {
+        context.model.actions.translation.openSystemTranslationSettings = {
             openCount += 1
         }
 
@@ -498,19 +498,19 @@ final class MainWindowModelTests: XCTestCase {
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.changeTranslationTargetAction = { target in
+        context.model.actions.translation.changeTarget = { target in
             .ready(target)
         }
         let probe = SystemTranslationPreparationProbe()
-        context.model.prepareSystemTranslationAction = {
+        context.model.actions.translation.prepareSystemTranslation = {
             await probe.prepare()
         }
         var presentationCount = 0
-        context.model.systemTranslationPresentationAction = {
+        context.model.actions.translation.presentSystemTranslation = {
             presentationCount += 1
         }
         var retryCount = 0
-        context.model.selectTranslationModelAction = { _, _ in
+        context.model.actions.translation.selectModel = { _, _ in
             retryCount += 1
             return .ready(.english)
         }
@@ -542,11 +542,11 @@ final class MainWindowModelTests: XCTestCase {
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.prepareSystemTranslationAction = {
+        context.model.actions.translation.prepareSystemTranslation = {
             .installed
         }
         var retried: [(String, TranslationTarget)] = []
-        context.model.selectTranslationModelAction = { modelID, target in
+        context.model.actions.translation.selectModel = { modelID, target in
             retried.append((modelID, target))
             return .ready(target)
         }
@@ -576,11 +576,11 @@ final class MainWindowModelTests: XCTestCase {
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.changeTranslationTargetAction = { target in
+        context.model.actions.translation.changeTarget = { target in
             .ready(target)
         }
         let probe = SystemTranslationPreparationProbe()
-        context.model.refreshSystemTranslationAction = {
+        context.model.actions.translation.refreshSystemTranslation = {
             await probe.prepare()
         }
         context.model.updateSystemTranslationAvailability(.available)
@@ -608,10 +608,10 @@ final class MainWindowModelTests: XCTestCase {
     {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.changeTranslationTargetAction = { target in
+        context.model.actions.translation.changeTarget = { target in
             .ready(target)
         }
-        context.model.selectTranslationModelAction = { _, target in
+        context.model.actions.translation.selectModel = { _, target in
             .ready(target)
         }
         await context.model.setTranslationTarget(.japanese)
@@ -619,7 +619,7 @@ final class MainWindowModelTests: XCTestCase {
             SystemTranslationModel.appleTranslationID,
             for: .japanese
         )
-        context.model.refreshSystemTranslationAction = {
+        context.model.actions.translation.refreshSystemTranslation = {
             .installed
         }
 
@@ -675,7 +675,7 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(model.dictionaryPlugins.map(\.id), [manifest.id])
 
         var dictionaryRefreshCount = 0
-        model.dictionaryConfigurationChangedAction = {
+        model.actions.plugins.dictionaryConfigurationChanged = {
             dictionaryRefreshCount += 1
         }
         await model.uninstallPlugin(manifest)
@@ -747,7 +747,7 @@ final class MainWindowModelTests: XCTestCase {
         )
         XCTAssertNil(model.update(for: manifest))
 
-        model.selectTranslationModelAction = { _, target in
+        model.actions.translation.selectModel = { _, target in
             .ready(target)
         }
         await model.setTranslationModel(
@@ -912,11 +912,11 @@ final class MainWindowModelTests: XCTestCase {
             catalogURL: nil
         )
         var refreshCount = 0
-        model.dictionaryConfigurationChangedAction = {
+        model.actions.plugins.dictionaryConfigurationChanged = {
             refreshCount += 1
         }
         var checkedUpdateKind: CoreDictionaryUpdateKind?
-        model.checkCoreDictionaryUpdateAction = { updateKind in
+        model.actions.plugins.checkCoreDictionaryUpdate = { updateKind in
             checkedUpdateKind = updateKind
             return "CC-CEDICT 已是最新"
         }
@@ -967,7 +967,7 @@ final class MainWindowModelTests: XCTestCase {
             ],
             catalogURL: nil
         )
-        model.checkCoreDictionaryUpdateAction = { _ in
+        model.actions.plugins.checkCoreDictionaryUpdate = { _ in
             try await Task.sleep(for: .seconds(10))
             return "unexpected"
         }
@@ -1012,7 +1012,7 @@ final class MainWindowModelTests: XCTestCase {
             ],
             catalogURL: nil
         )
-        model.checkCoreDictionaryUpdateAction = { updateKind in
+        model.actions.plugins.checkCoreDictionaryUpdate = { updateKind in
             if updateKind == .ecdict {
                 return "ECDICT 已是最新"
             }
@@ -1075,7 +1075,7 @@ final class MainWindowModelTests: XCTestCase {
             catalogURL: nil
         )
         var checkedKinds: [CoreDictionaryUpdateKind] = []
-        model.checkCoreDictionaryUpdateAction = { updateKind in
+        model.actions.plugins.checkCoreDictionaryUpdate = { updateKind in
             checkedKinds.append(updateKind)
             try await Task.sleep(for: .seconds(10))
             return "unexpected"
@@ -1139,7 +1139,7 @@ final class MainWindowModelTests: XCTestCase {
         await model.refreshInstalledPlugins()
 
         var activationCalls: [String] = []
-        model.activateTranslationModelAction = { modelID in
+        model.actions.translation.activateModel = { modelID in
             activationCalls.append(modelID)
             return modelID == bundled.id ? nil : "新模型加载失败"
         }
@@ -1155,8 +1155,67 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertTrue(
             model.localImportError?.contains("已恢复原模型") == true
         )
+        XCTAssertNil(model.translationModelStatusText)
+        XCTAssertFalse(model.translationModelStatusIsError)
+        XCTAssertNil(model.translationModelStatusModelID)
         let managedPlugins = await manager.installedPlugins()
         XCTAssertTrue(managedPlugins.isEmpty)
+    }
+
+    @MainActor
+    func testFailedLocalImportMarksPreviousModelUnavailableWhenRestoreFails()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintLocalImportRestoreFailure-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent(
+            "ImportedModel",
+            isDirectory: true
+        )
+        try makeLocalModelDirectory(source)
+
+        let suiteName =
+            "GlintLocalImportRestoreFailure.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let bundled = translationManifest(
+            id: TranslationSelectionStore.defaultModelID,
+            source: .bundled
+        )
+        selectTranslationModelForTests(bundled.id, in: defaults)
+        let model = MainWindowModel(
+            pluginManager: PluginManager(baseDirectory: root),
+            builtInPlugins: [bundled],
+            catalogURL: nil,
+            defaults: defaults
+        )
+        await model.refreshInstalledPlugins()
+
+        model.actions.translation.activateModel = { _ in "模型加载失败" }
+
+        model.importLocalTranslationModel(from: source)
+        for _ in 0..<200 where model.isImportingLocalModel {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        XCTAssertEqual(model.activeModelID, bundled.id)
+        XCTAssertTrue(
+            model.localImportError?.contains("恢复原模型失败") == true
+        )
+        XCTAssertTrue(model.translationModelStatusIsError)
+        XCTAssertEqual(model.translationModelStatusModelID, bundled.id)
+        XCTAssertEqual(
+            model.translationModelStatusText,
+            model.localImportError
+        )
     }
 
     @MainActor
@@ -1184,7 +1243,7 @@ final class MainWindowModelTests: XCTestCase {
             defaults: defaults
         )
         var activationCalls: [String] = []
-        model.activateTranslationModelAction = { modelID in
+        model.actions.translation.activateModel = { modelID in
             activationCalls.append(modelID)
             return nil
         }
@@ -1242,7 +1301,7 @@ final class MainWindowModelTests: XCTestCase {
         await model.refreshInstalledPlugins()
 
         var dictionaryRefreshCount = 0
-        model.dictionaryConfigurationChangedAction = {
+        model.actions.plugins.dictionaryConfigurationChanged = {
             dictionaryRefreshCount += 1
         }
         await model.uninstallPlugin(manifest)
@@ -1275,7 +1334,7 @@ final class MainWindowModelTests: XCTestCase {
         )
         XCTAssertEqual(model.candidateSummary, "输入候选词")
         var requestCount = 0
-        model.requestPermissionsAction = {
+        model.actions.permissions.requestPermissions = {
             requestCount += 1
         }
 
@@ -1295,7 +1354,7 @@ final class MainWindowModelTests: XCTestCase {
             defaults: defaults
         )
         var openSettingsCount = 0
-        model.openAccessibilitySettingsAction = {
+        model.actions.permissions.openAccessibilitySettings = {
             openSettingsCount += 1
         }
 
@@ -1317,13 +1376,13 @@ final class MainWindowModelTests: XCTestCase {
         var requestedValues: [Bool] = []
         var refreshCount = 0
         var openSettingsCount = 0
-        model.setLaunchAtLoginAction = {
+        model.actions.permissions.setLaunchAtLogin = {
             requestedValues.append($0)
         }
-        model.refreshLaunchAtLoginAction = {
+        model.actions.permissions.refreshLaunchAtLogin = {
             refreshCount += 1
         }
-        model.openLoginItemsSettingsAction = {
+        model.actions.permissions.openLoginItemsSettings = {
             openSettingsCount += 1
         }
 
@@ -1405,15 +1464,15 @@ final class MainWindowModelTests: XCTestCase {
 
         let model = MainWindowModel(actions: actions)
 
-        model.startMonitoringAction()
-        _ = await model.refreshInputMethodSupportAction()
-        _ = await model.changeTranslationTargetAction(.english)
+        model.startMonitoring()
+        await model.refreshInputMethodSupport()
+        await model.setTranslationTarget(.japanese)
 
         XCTAssertEqual(
             invoked,
             ["monitoring", "permissions", "translation"]
         )
-        XCTAssertEqual(model.availableInstallationSpaceAction(), 42)
+        XCTAssertEqual(model.actions.plugins.availableInstallationSpace(), 42)
     }
 
     func testRemoteUpdatePoliciesHonorSuccessAndFailureCooldowns() {
@@ -1491,11 +1550,11 @@ final class MainWindowModelTests: XCTestCase {
 
         var activationCalls: [String] = []
         var releasedModels: [String] = []
-        model.activateTranslationModelAction = { modelID in
+        model.actions.translation.activateModel = { modelID in
             activationCalls.append(modelID)
             return modelID == broken.id ? "模型加载失败" : nil
         }
-        model.releaseTranslationModelAction = { modelID in
+        model.actions.translation.releaseModel = { modelID in
             releasedModels.append(modelID)
         }
         model.activateTranslationModel(broken)
@@ -1648,7 +1707,7 @@ final class MainWindowModelTests: XCTestCase {
         await model.refreshInstalledPlugins()
         await model.checkForCatalogUpdates(force: true)
         var activationCount = 0
-        model.activateTranslationModelAction = { _ in
+        model.actions.translation.activateModel = { _ in
             activationCount += 1
             return activationCount == 1 ? "新版本加载失败" : nil
         }
@@ -1705,7 +1764,7 @@ final class MainWindowModelTests: XCTestCase {
         )
         await model.refreshInstalledPlugins()
         var checkCount = 0
-        model.checkTranslationModelUpdateAction = { _ in
+        model.actions.plugins.checkTranslationModelUpdate = { _ in
             checkCount += 1
             return nil
         }
@@ -1735,7 +1794,7 @@ final class MainWindowModelTests: XCTestCase {
             try? FileManager.default.removeItem(at: fixture.root)
         }
         var checkCount = 0
-        fixture.model.checkTranslationModelUpdateAction = { _ in
+        fixture.model.actions.plugins.checkTranslationModelUpdate = { _ in
             checkCount += 1
             return nil
         }
@@ -1768,7 +1827,7 @@ final class MainWindowModelTests: XCTestCase {
             )
             try? FileManager.default.removeItem(at: fixture.root)
         }
-        fixture.model.checkTranslationModelUpdateAction = { _ in nil }
+        fixture.model.actions.plugins.checkTranslationModelUpdate = { _ in nil }
 
         fixture.model.checkTranslationModelUpdate(fixture.manifest)
         try await waitForTranslationModelUpdate(
@@ -1836,7 +1895,7 @@ final class MainWindowModelTests: XCTestCase {
         )
         await model.refreshInstalledPlugins()
         var checkedModelIDs: [String] = []
-        model.checkTranslationModelUpdateAction = { plugin in
+        model.actions.plugins.checkTranslationModelUpdate = { plugin in
             checkedModelIDs.append(plugin.id)
             return nil
         }
@@ -1898,7 +1957,7 @@ final class MainWindowModelTests: XCTestCase {
             minRAMBytes: installed.minRAMBytes,
             revision: "new-revision"
         )
-        model.checkTranslationModelUpdateAction = { plugin in
+        model.actions.plugins.checkTranslationModelUpdate = { plugin in
             XCTAssertEqual(plugin.id, installed.id)
             return UpstreamModelUpdate(
                 currentRevision: "old-revision",
@@ -1959,7 +2018,7 @@ final class MainWindowModelTests: XCTestCase {
             catalogURL: nil
         )
         await model.refreshInstalledPlugins()
-        model.checkTranslationModelUpdateAction = { _ in nil }
+        model.actions.plugins.checkTranslationModelUpdate = { _ in nil }
 
         model.checkTranslationModelUpdate(installed)
         for _ in 0..<200
@@ -2003,7 +2062,7 @@ final class MainWindowModelTests: XCTestCase {
             license: "apache-2.0"
         )
         var receivedQuery: String?
-        model.searchModelMarketAction = { query in
+        model.actions.plugins.searchModelMarket = { query in
             receivedQuery = query
             return [result]
         }
@@ -2032,7 +2091,7 @@ final class MainWindowModelTests: XCTestCase {
             pluginManager: PluginManager(baseDirectory: root),
             catalogURL: nil
         )
-        model.searchModelMarketAction = { _ in
+        model.actions.plugins.searchModelMarket = { _ in
             throw URLError(.notConnectedToInternet)
         }
 
@@ -2060,7 +2119,7 @@ final class MainWindowModelTests: XCTestCase {
             pluginManager: PluginManager(baseDirectory: root),
             catalogURL: nil
         )
-        model.prepareModelMarketInstallAction = { _, _ in
+        model.actions.plugins.prepareModelMarketInstall = { _, _ in
             try await Task.sleep(for: .seconds(10))
             throw ModelHubError.unavailable
         }
@@ -2106,8 +2165,8 @@ final class MainWindowModelTests: XCTestCase {
             for: result,
             sizeBytes: 2_000
         )
-        model.availableInstallationSpaceAction = { 100_000 }
-        model.prepareModelMarketInstallAction = { _, _ in preparation }
+        model.actions.plugins.availableInstallationSpace = { 100_000 }
+        model.actions.plugins.prepareModelMarketInstall = { _, _ in preparation }
 
         model.installModelFromMarket(result)
         for _ in 0..<200
@@ -2146,8 +2205,8 @@ final class MainWindowModelTests: XCTestCase {
             for: result,
             sizeBytes: 2_000
         )
-        model.availableInstallationSpaceAction = { 100_000 }
-        model.prepareModelMarketInstallAction = { _, _ in preparation }
+        model.actions.plugins.availableInstallationSpace = { 100_000 }
+        model.actions.plugins.prepareModelMarketInstall = { _, _ in preparation }
 
         model.installModelFromMarket(result)
         for _ in 0..<200
@@ -2232,9 +2291,9 @@ final class MainWindowModelTests: XCTestCase {
             catalogURL: nil
         )
         let result = marketResult(repository: "example/disk")
-        model.availableInstallationSpaceAction = { 1_000 }
-        XCTAssertEqual(model.availableInstallationSpaceAction(), 1_000)
-        model.prepareModelMarketInstallAction = { _, _ in
+        model.actions.plugins.availableInstallationSpace = { 1_000 }
+        XCTAssertEqual(model.actions.plugins.availableInstallationSpace(), 1_000)
+        model.actions.plugins.prepareModelMarketInstall = { _, _ in
             self.marketPreparation(for: result, sizeBytes: 2_000)
         }
 
@@ -2277,7 +2336,7 @@ final class MainWindowModelTests: XCTestCase {
             tags: ["mlx"],
             license: nil
         )
-        model.prepareModelMarketInstallAction = { _, _ in
+        model.actions.plugins.prepareModelMarketInstall = { _, _ in
             throw ModelHubError.unsupportedModel
         }
 
@@ -2334,8 +2393,8 @@ final class MainWindowModelTests: XCTestCase {
             minRAMBytes: .max,
             revision: "revision"
         )
-        model.availableInstallationSpaceAction = { 100_000 }
-        model.prepareModelMarketInstallAction = { _, _ in
+        model.actions.plugins.availableInstallationSpace = { 100_000 }
+        model.actions.plugins.prepareModelMarketInstall = { _, _ in
             ModelInstallPreparation(
                 manifest: manifest,
                 snapshot: self.marketSnapshot(

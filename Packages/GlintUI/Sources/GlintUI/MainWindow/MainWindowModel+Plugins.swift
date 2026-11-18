@@ -28,7 +28,7 @@ extension MainWindowModel {
             on: self
         )
         isLoadingPlugins = false
-        translationConfigurationChangedAction()
+        actions.translation.configurationChanged()
     }
 
     public func coreDictionaryUpdateState(
@@ -104,7 +104,8 @@ extension MainWindowModel {
         modelMarketError = nil
         defer { isLoadingModelMarket = false }
         do {
-            modelMarketResults = try await searchModelMarketAction(query)
+            modelMarketResults =
+                try await actions.plugins.searchModelMarket(query)
         } catch {
             if Task.isCancelled {
                 return
@@ -199,7 +200,7 @@ extension MainWindowModel {
         }
         catalogError = nil
         do {
-            await releaseTranslationModelAction(plugin.id)
+            await actions.translation.releaseModel(plugin.id)
             try await pluginLifecycle.uninstall(id: plugin.id)
             translationModelUpdateStates.removeValue(forKey: plugin.id)
             defaults.removeObject(
@@ -218,7 +219,7 @@ extension MainWindowModel {
             }
             await refreshInstalledPlugins()
             if plugin.type == .dictionary {
-                await dictionaryConfigurationChangedAction()
+                await actions.plugins.dictionaryConfigurationChanged()
             }
         } catch {
             catalogError = error.localizedDescription

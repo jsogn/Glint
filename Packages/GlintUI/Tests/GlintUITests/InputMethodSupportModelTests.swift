@@ -32,7 +32,7 @@ final class InputMethodSupportModelTests: XCTestCase {
             schemaIDs: ["luna_pinyin"],
             protocolVersion: 3
         )
-        context.model.refreshInputMethodSupportAction = {
+        context.model.actions.permissions.refreshInputMethodSupport = {
             [.applePinyin, squirrel]
         }
 
@@ -58,7 +58,7 @@ final class InputMethodSupportModelTests: XCTestCase {
             schemaIDs: ["luna_pinyin"],
             protocolVersion: 3
         )
-        context.model.refreshInputMethodSupportAction = {
+        context.model.actions.permissions.refreshInputMethodSupport = {
             [.applePinyin, rime]
         }
 
@@ -103,7 +103,7 @@ final class InputMethodSupportModelTests: XCTestCase {
             schemaIDs: ["luna_pinyin"],
             protocolVersion: 3
         )
-        context.model.installSquirrelSupportAction = {
+        context.model.actions.permissions.installSquirrelSupport = {
             [.applePinyin, installed]
         }
 
@@ -120,7 +120,7 @@ final class InputMethodSupportModelTests: XCTestCase {
     func testInstallFailureSurfacesActionableMessage() async throws {
         let context = try makeContext()
         defer { context.cleanup() }
-        context.model.installSquirrelSupportAction = {
+        context.model.actions.permissions.installSquirrelSupport = {
             throw InputMethodSupportTestError.unsupportedYAML
         }
         let repairRequired = InputMethodSupportStatus(
@@ -131,7 +131,7 @@ final class InputMethodSupportModelTests: XCTestCase {
             schemaIDs: [],
             protocolVersion: 3
         )
-        context.model.refreshInputMethodSupportAction = {
+        context.model.actions.permissions.refreshInputMethodSupport = {
             [.applePinyin, repairRequired]
         }
 
@@ -160,7 +160,7 @@ final class InputMethodSupportModelTests: XCTestCase {
             schemaIDs: ["luna_pinyin"],
             protocolVersion: 3
         )
-        context.model.uninstallSquirrelSupportAction = {
+        context.model.actions.permissions.uninstallSquirrelSupport = {
             [.applePinyin, available]
         }
 

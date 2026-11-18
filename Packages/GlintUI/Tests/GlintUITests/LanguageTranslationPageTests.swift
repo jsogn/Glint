@@ -138,7 +138,7 @@ final class LanguageTranslationPageTests: XCTestCase {
             defaults: defaults
         )
         model.updateSystemTranslationAvailability(.available)
-        model.prepareSystemTranslationAction = {
+        model.actions.translation.prepareSystemTranslation = {
             .available
         }
         await model.prepareSystemTranslationSupport()
@@ -182,7 +182,7 @@ final class LanguageTranslationPageTests: XCTestCase {
             defaults: defaults
         )
         model.updateSystemTranslationAvailability(.available)
-        model.prepareSystemTranslationAction = {
+        model.actions.translation.prepareSystemTranslation = {
             .available
         }
         await model.prepareSystemTranslationSupport()
@@ -226,7 +226,7 @@ final class LanguageTranslationPageTests: XCTestCase {
             defaults: defaults
         )
         model.updateSystemTranslationAvailability(.available)
-        model.prepareSystemTranslationAction = {
+        model.actions.translation.prepareSystemTranslation = {
             .available
         }
         await model.prepareSystemTranslationSupport()
@@ -477,7 +477,7 @@ final class LanguageTranslationPageTests: XCTestCase {
             catalogURL: nil,
             defaults: defaults
         )
-        model.changeTranslationTargetAction = { target in
+        model.actions.translation.changeTarget = { target in
             .ready(target)
         }
 

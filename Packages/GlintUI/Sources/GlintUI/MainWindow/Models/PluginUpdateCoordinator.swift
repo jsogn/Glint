@@ -51,12 +51,13 @@ final class PluginUpdateCoordinator {
                 self.coreDictionaryUpdateTasks[dictionaryID] = nil
             }
             do {
-                let message = try await model.checkCoreDictionaryUpdateAction(
-                    kind
-                )
+                let message =
+                    try await model.actions.plugins
+                    .checkCoreDictionaryUpdate(kind)
                 try Task.checkCancellation()
                 await model.refreshInstalledPlugins()
-                await model.dictionaryConfigurationChangedAction()
+                await model.actions.plugins
+                    .dictionaryConfigurationChanged()
                 model.coreDictionaryUpdateStates[dictionaryID] =
                     CoreDictionaryUpdateState(
                         isChecking: false,
@@ -130,7 +131,8 @@ final class PluginUpdateCoordinator {
             }
             do {
                 let update =
-                    try await model.checkTranslationModelUpdateAction(
+                    try await model.actions.plugins
+                    .checkTranslationModelUpdate(
                         plugin
                     )
                 try Task.checkCancellation()

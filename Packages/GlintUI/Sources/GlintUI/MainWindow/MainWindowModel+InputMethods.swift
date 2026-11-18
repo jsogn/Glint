@@ -15,7 +15,7 @@ extension MainWindowModel {
         isLoadingInputMethodSupport = true
         inputMethodSupportError = nil
         inputMethodSupportStatuses =
-            await refreshInputMethodSupportAction()
+            await actions.permissions.refreshInputMethodSupport()
         isLoadingInputMethodSupport = false
     }
 
@@ -26,11 +26,11 @@ extension MainWindowModel {
         defer { isUpdatingInputMethodSupport = false }
         do {
             inputMethodSupportStatuses =
-                try await installSquirrelSupportAction()
+                try await actions.permissions.installSquirrelSupport()
         } catch {
             let message = error.localizedDescription
             inputMethodSupportStatuses =
-                await refreshInputMethodSupportAction()
+                await actions.permissions.refreshInputMethodSupport()
             inputMethodSupportError = message
         }
     }
@@ -42,11 +42,11 @@ extension MainWindowModel {
         defer { isUpdatingInputMethodSupport = false }
         do {
             inputMethodSupportStatuses =
-                try await uninstallSquirrelSupportAction()
+                try await actions.permissions.uninstallSquirrelSupport()
         } catch {
             let message = error.localizedDescription
             inputMethodSupportStatuses =
-                await refreshInputMethodSupportAction()
+                await actions.permissions.refreshInputMethodSupport()
             inputMethodSupportError = message
         }
     }

@@ -33,7 +33,8 @@ final class TranslationCoordinator {
             on: model
         )
 
-        let readiness = await model.changeTranslationTargetAction(target)
+        let readiness =
+            await model.actions.translation.changeTarget(target)
         guard generation == requestGeneration else {
             return
         }
@@ -45,7 +46,7 @@ final class TranslationCoordinator {
                 for: target,
                 on: model
             )
-            model.translationConfigurationChangedAction()
+            model.actions.translation.configurationChanged()
         case .idle, .superseded:
             break
         }
@@ -85,7 +86,7 @@ final class TranslationCoordinator {
         model.translationModelStatusModelID = nil
         model.systemTranslationError = nil
 
-        let readiness = await model.selectTranslationModelAction(
+        let readiness = await model.actions.translation.selectModel(
             modelID,
             target
         )
@@ -97,11 +98,11 @@ final class TranslationCoordinator {
         guard readiness != .superseded else { return }
         model.activeModelID = modelID
         selectionStore.selectModel(modelID, for: target)
-        model.translationConfigurationChangedAction()
+        model.actions.translation.configurationChanged()
     }
 
     func previewTranslationSpeech(on model: MainWindowModel) {
-        model.previewTranslationSpeechAction(model.translationTarget)
+        model.actions.translation.previewSpeech(model.translationTarget)
     }
 
     func persistActiveModelID(
@@ -140,7 +141,7 @@ final class TranslationCoordinator {
             }
         }
         let availability =
-            await model.refreshSystemTranslationAction()
+            await model.actions.translation.refreshSystemTranslation()
         guard generation == systemRequestGeneration else {
             return
         }
@@ -170,7 +171,8 @@ final class TranslationCoordinator {
         }
         do {
             let availability =
-                try await model.prepareSystemTranslationAction()
+                try await model.actions.translation
+                .prepareSystemTranslation()
             guard generation == systemRequestGeneration else {
                 return
             }
@@ -183,7 +185,7 @@ final class TranslationCoordinator {
             }
             if availability.canSelect, !wasInstalled {
                 model.systemTranslationPresentationEvent &+= 1
-                model.systemTranslationPresentationAction()
+                model.actions.translation.presentSystemTranslation()
             }
             await retryTranslationConfiguration(on: model)
         } catch {
@@ -207,7 +209,7 @@ final class TranslationCoordinator {
     }
 
     func openSystemTranslationSettings(on model: MainWindowModel) {
-        model.openSystemTranslationSettingsAction()
+        model.actions.translation.openSystemTranslationSettings()
     }
 
     private func beginRequest() -> UInt64 {

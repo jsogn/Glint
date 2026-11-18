@@ -1,35 +1,35 @@
 extension MainWindowModel {
     public func startMonitoring() {
-        startMonitoringAction()
+        actions.monitoring.startMonitoring()
     }
 
     public func stopMonitoring() {
-        stopMonitoringAction()
+        actions.monitoring.stopMonitoring()
     }
 
     public func refreshPermissions() {
-        refreshPermissionsAction()
+        actions.permissions.refreshPermissions()
     }
 
     public func requestPermissions() {
-        requestPermissionsAction()
+        actions.permissions.requestPermissions()
     }
 
     public func openAccessibilitySettings() {
-        openAccessibilitySettingsAction()
+        actions.permissions.openAccessibilitySettings()
     }
 
     public func refreshLaunchAtLogin() {
-        refreshLaunchAtLoginAction()
+        actions.permissions.refreshLaunchAtLogin()
     }
 
     public func setLaunchAtLoginEnabled(_ enabled: Bool) {
         launchAtLoginError = nil
-        setLaunchAtLoginAction(enabled)
+        actions.permissions.setLaunchAtLogin(enabled)
     }
 
     public func openLoginItemsSettings() {
-        openLoginItemsSettingsAction()
+        actions.permissions.openLoginItemsSettings()
     }
 
     public func updateLaunchAtLogin(

@@ -73,65 +73,7 @@ public final class MainWindowModel {
     @ObservationIgnored
     private let now: @MainActor () -> Date
     @ObservationIgnored
-    public var startMonitoringAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var stopMonitoringAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var refreshPermissionsAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var requestPermissionsAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var openAccessibilitySettingsAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var refreshLaunchAtLoginAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var setLaunchAtLoginAction: @MainActor (Bool) -> Void
-    @ObservationIgnored
-    public var openLoginItemsSettingsAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var refreshInputMethodSupportAction: @MainActor () async -> [InputMethodSupportStatus]
-    @ObservationIgnored
-    public var installSquirrelSupportAction: @MainActor () async throws -> [InputMethodSupportStatus]
-    @ObservationIgnored
-    public var uninstallSquirrelSupportAction: @MainActor () async throws -> [InputMethodSupportStatus]
-    @ObservationIgnored
-    public var activateTranslationModelAction: @MainActor (String) async -> String?
-    @ObservationIgnored
-    public var refreshSystemTranslationAction: @MainActor () async -> SystemTranslationAvailability
-    @ObservationIgnored
-    public var prepareSystemTranslationAction: @MainActor () async throws -> SystemTranslationAvailability
-    @ObservationIgnored
-    public var systemTranslationPresentationAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var openSystemTranslationSettingsAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var releaseTranslationModelAction: @MainActor (String) async -> Void
-    @ObservationIgnored
-    public var previewTranslationSpeechAction: @MainActor (TranslationTarget) -> Void
-    @ObservationIgnored
-    public var changeTranslationTargetAction: @MainActor (TranslationTarget) async -> TranslationReadiness
-    @ObservationIgnored
-    public var selectTranslationModelAction: @MainActor (String, TranslationTarget) async -> TranslationReadiness
-    @ObservationIgnored
-    public var translationModeAction: @MainActor (TranslationMode) -> Void
-    @ObservationIgnored
-    public var translationConfigurationChangedAction: @MainActor () -> Void
-    @ObservationIgnored
-    public var dictionaryConfigurationChangedAction: @MainActor () async -> Void
-    @ObservationIgnored
-    public var checkCoreDictionaryUpdateAction: @MainActor (CoreDictionaryUpdateKind) async throws -> String
-    @ObservationIgnored
-    public var checkTranslationModelUpdateAction: @MainActor (PluginManifest) async throws -> UpstreamModelUpdate?
-    @ObservationIgnored
-    public var searchModelMarketAction: @MainActor (String) async throws -> [UpstreamModelSummary]
-    @ObservationIgnored
-    public var prepareModelMarketInstallAction:
-        @MainActor (
-            UpstreamModelSummary,
-            PluginManifest?
-        ) async throws -> ModelInstallPreparation
-    @ObservationIgnored
-    public var availableInstallationSpaceAction: @MainActor () -> Int64?
+    var actions: MainWindowActions
     @ObservationIgnored
     var discardDownloadAction: @MainActor (String) async -> Void = { _ in }
 
@@ -146,56 +88,7 @@ public final class MainWindowModel {
         translationSelectionStore: TranslationSelectionStore? = nil,
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
-        self.startMonitoringAction = actions.monitoring.startMonitoring
-        self.stopMonitoringAction = actions.monitoring.stopMonitoring
-        self.refreshPermissionsAction = actions.permissions.refreshPermissions
-        self.requestPermissionsAction = actions.permissions.requestPermissions
-        self.openAccessibilitySettingsAction =
-            actions.permissions.openAccessibilitySettings
-        self.refreshLaunchAtLoginAction =
-            actions.permissions.refreshLaunchAtLogin
-        self.setLaunchAtLoginAction = actions.permissions.setLaunchAtLogin
-        self.openLoginItemsSettingsAction =
-            actions.permissions.openLoginItemsSettings
-        self.refreshInputMethodSupportAction =
-            actions.permissions.refreshInputMethodSupport
-        self.installSquirrelSupportAction =
-            actions.permissions.installSquirrelSupport
-        self.uninstallSquirrelSupportAction =
-            actions.permissions.uninstallSquirrelSupport
-        self.activateTranslationModelAction =
-            actions.translation.activateModel
-        self.refreshSystemTranslationAction =
-            actions.translation.refreshSystemTranslation
-        self.prepareSystemTranslationAction =
-            actions.translation.prepareSystemTranslation
-        self.systemTranslationPresentationAction =
-            actions.translation.presentSystemTranslation
-        self.openSystemTranslationSettingsAction =
-            actions.translation.openSystemTranslationSettings
-        self.releaseTranslationModelAction =
-            actions.translation.releaseModel
-        self.previewTranslationSpeechAction =
-            actions.translation.previewSpeech
-        self.changeTranslationTargetAction =
-            actions.translation.changeTarget
-        self.selectTranslationModelAction =
-            actions.translation.selectModel
-        self.translationModeAction = actions.translation.setMode
-        self.translationConfigurationChangedAction =
-            actions.translation.configurationChanged
-        self.dictionaryConfigurationChangedAction =
-            actions.plugins.dictionaryConfigurationChanged
-        self.checkCoreDictionaryUpdateAction =
-            actions.plugins.checkCoreDictionaryUpdate
-        self.checkTranslationModelUpdateAction =
-            actions.plugins.checkTranslationModelUpdate
-        self.searchModelMarketAction =
-            actions.plugins.searchModelMarket
-        self.prepareModelMarketInstallAction =
-            actions.plugins.prepareModelMarketInstall
-        self.availableInstallationSpaceAction =
-            actions.plugins.availableInstallationSpace
+        self.actions = actions
         self.generalPreferences = generalPreferences ?? GeneralPreferences()
         self.displayPreferences = displayPreferences ?? DisplayPreferences()
         let pluginLifecycle = PluginLifecycleService(manager: pluginManager)
@@ -357,7 +250,7 @@ public final class MainWindowModel {
         guard translationMode != mode else { return }
         translationMode = mode
         TranslationModeSelection.select(mode, in: defaults)
-        translationModeAction(mode)
+        actions.translation.setMode(mode)
     }
 
     public func isActiveTranslationModel(_ plugin: PluginManifest) -> Bool {
@@ -371,7 +264,7 @@ public final class MainWindowModel {
         translationModelStatusModelID = modelID
         Task { [weak self] in
             guard let self else { return }
-            let error = await activateTranslationModelAction(modelID)
+            let error = await actions.translation.activateModel(modelID)
             guard activeModelID == modelID else { return }
             if let error {
                 translationModelStatusText = error
@@ -382,14 +275,16 @@ public final class MainWindowModel {
                 {
                     activeModelID = previousModelID
                     persistActiveModelID()
-                    _ = await activateTranslationModelAction(previousModelID)
+                    _ = await actions.translation.activateModel(
+                        previousModelID
+                    )
                 }
             } else {
                 translationModelStatusText = nil
                 translationModelStatusIsError = false
                 translationModelStatusModelID = nil
             }
-            translationConfigurationChangedAction()
+            actions.translation.configurationChanged()
         }
     }
 

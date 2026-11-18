@@ -76,7 +76,7 @@ final class PluginInstallCoordinator {
             }
             do {
                 let preparation =
-                    try await host.prepareModelMarketInstallAction(
+                    try await host.actions.plugins.prepareModelMarketInstall(
                         model,
                         knownManifest
                     )
@@ -89,7 +89,8 @@ final class PluginInstallCoordinator {
                 let requiredSpace = preparation.snapshot.sizeBytes
                     .multipliedReportingOverflow(by: 2)
                 if !requiredSpace.overflow,
-                    let available = host.availableInstallationSpaceAction(),
+                    let available =
+                        host.actions.plugins.availableInstallationSpace(),
                     available < requiredSpace.partialValue
                 {
                     host.modelMarketError =
@@ -232,7 +233,7 @@ final class PluginInstallCoordinator {
         let hadPendingUpgrade = await pluginLifecycle.hasPendingUpgrade()
         await model.refreshInstalledPlugins()
         if plugin.type == .dictionary {
-            await model.dictionaryConfigurationChangedAction()
+            await model.actions.plugins.dictionaryConfigurationChanged()
         }
         return hadPendingUpgrade
     }
@@ -247,7 +248,7 @@ final class PluginInstallCoordinator {
             attempt.wasActiveTranslation ? "正在加载新版本…" : "正在验证模型…"
         model.translationModelStatusIsError = false
         model.translationModelStatusModelID = plugin.id
-        let error = await model.activateTranslationModelAction(plugin.id)
+        let error = await model.actions.translation.activateModel(plugin.id)
         try Task.checkCancellation()
         if let error {
             try await recoverTranslationValidationFailure(
@@ -259,10 +260,10 @@ final class PluginInstallCoordinator {
             return false
         }
         if !attempt.wasActiveTranslation {
-            await model.releaseTranslationModelAction(plugin.id)
+            await model.actions.translation.releaseModel(plugin.id)
             try Task.checkCancellation()
             if let restoreError =
-                await model.activateTranslationModelAction(
+                await model.actions.translation.activateModel(
                     attempt.previousModelID
                 )
             {
@@ -280,7 +281,7 @@ final class PluginInstallCoordinator {
             pluginID: plugin.id,
             update: nil
         )
-        model.translationConfigurationChangedAction()
+        model.actions.translation.configurationChanged()
         return true
     }
 
@@ -300,7 +301,7 @@ final class PluginInstallCoordinator {
                     "更新失败，已恢复旧版本：\(error)"
             }
         } else {
-            await model.releaseTranslationModelAction(plugin.id)
+            await model.actions.translation.releaseModel(plugin.id)
             try await pluginLifecycle.uninstall(id: plugin.id)
             await model.refreshInstalledPlugins()
             if !wasCancelled {
@@ -312,7 +313,9 @@ final class PluginInstallCoordinator {
             hadPendingUpgrade ? plugin.id : attempt.previousModelID
         if recoveryModelID != plugin.id || hadPendingUpgrade {
             let restoreError =
-                await model.activateTranslationModelAction(recoveryModelID)
+                await model.actions.translation.activateModel(
+                    recoveryModelID
+                )
             if let restoreError, !wasCancelled {
                 model.translationModelStatusText =
                     "模型验证失败，且原模型恢复失败：\(restoreError)"
@@ -327,7 +330,7 @@ final class PluginInstallCoordinator {
             model.translationModelStatusModelID = plugin.id
             model.catalogError = error
         }
-        model.translationConfigurationChangedAction()
+        model.actions.translation.configurationChanged()
     }
 
     private func recoverInstallationFailure(
@@ -339,15 +342,15 @@ final class PluginInstallCoordinator {
         let plugin = attempt.plugin
         try? await pluginLifecycle.rollbackPendingUpgrade()
         if attempt.wasActiveTranslation, hadPendingUpgrade {
-            await model.releaseTranslationModelAction(plugin.id)
+            await model.actions.translation.releaseModel(plugin.id)
         }
         await model.refreshInstalledPlugins()
         if plugin.type == .dictionary {
-            await model.dictionaryConfigurationChangedAction()
+            await model.actions.plugins.dictionaryConfigurationChanged()
         }
         if attempt.wasActiveTranslation, hadPendingUpgrade {
             let recoveryError =
-                await model.activateTranslationModelAction(plugin.id)
+                await model.actions.translation.activateModel(plugin.id)
             if TaskCancellation.isCancellation(error) {
                 model.translationModelStatusText = nil
                 model.translationModelStatusIsError = false
@@ -363,7 +366,7 @@ final class PluginInstallCoordinator {
                 model.translationModelStatusIsError = true
                 model.translationModelStatusModelID = plugin.id
             }
-            model.translationConfigurationChangedAction()
+            model.actions.translation.configurationChanged()
         }
         if !TaskCancellation.isCancellation(error) {
             model.catalogError = error.localizedDescription
