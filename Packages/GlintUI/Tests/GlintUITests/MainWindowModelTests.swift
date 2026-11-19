@@ -1138,10 +1138,15 @@ final class MainWindowModelTests: XCTestCase {
         )
         await model.refreshInstalledPlugins()
 
+        var validationCalls: [String] = []
         var activationCalls: [String] = []
+        model.actions.translation.validateModel = { modelID in
+            validationCalls.append(modelID)
+            return "新模型加载失败"
+        }
         model.actions.translation.activateModel = { modelID in
             activationCalls.append(modelID)
-            return modelID == bundled.id ? nil : "新模型加载失败"
+            return nil
         }
 
         model.importLocalTranslationModel(from: source)
@@ -1150,8 +1155,8 @@ final class MainWindowModelTests: XCTestCase {
         }
 
         XCTAssertEqual(model.activeModelID, bundled.id)
-        XCTAssertEqual(activationCalls.count, 2)
-        XCTAssertEqual(activationCalls.last, bundled.id)
+        XCTAssertEqual(validationCalls.count, 1)
+        XCTAssertEqual(activationCalls, [bundled.id])
         XCTAssertTrue(
             model.localImportError?.contains("已恢复原模型") == true
         )
@@ -1199,6 +1204,7 @@ final class MainWindowModelTests: XCTestCase {
         )
         await model.refreshInstalledPlugins()
 
+        model.actions.translation.validateModel = { _ in "模型加载失败" }
         model.actions.translation.activateModel = { _ in "模型加载失败" }
 
         model.importLocalTranslationModel(from: source)
@@ -1243,6 +1249,11 @@ final class MainWindowModelTests: XCTestCase {
             defaults: defaults
         )
         var activationCalls: [String] = []
+        var validationCalls: [String] = []
+        model.actions.translation.validateModel = { modelID in
+            validationCalls.append(modelID)
+            return nil
+        }
         model.actions.translation.activateModel = { modelID in
             activationCalls.append(modelID)
             return nil
@@ -1259,10 +1270,11 @@ final class MainWindowModelTests: XCTestCase {
             model.activeModelID,
             SystemTranslationModel.appleTranslationID
         )
-        XCTAssertEqual(activationCalls.count, 2)
+        XCTAssertTrue(activationCalls.isEmpty)
+        XCTAssertEqual(validationCalls.count, 1)
         XCTAssertEqual(model.localTranslationPlugins.count, 1)
-        XCTAssertNotEqual(
-            activationCalls.last,
+        XCTAssertEqual(
+            validationCalls.first,
             model.localTranslationPlugins.first?.id
         )
     }
@@ -1723,6 +1735,324 @@ final class MainWindowModelTests: XCTestCase {
         XCTAssertEqual(installedVersion, first.version)
         XCTAssertEqual(model.catalogError, "插件使用了不支持的运行环境")
         XCTAssertEqual(activationCount, 0)
+    }
+
+    @MainActor
+    func testTranslationModelUpdateValidationFailureRollsBack()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelValidationFailure-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let suiteName =
+            "GlintModelValidationFailure.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let manager = PluginManager(baseDirectory: root)
+        let previous = translationManifest(
+            id: ManagedTranslationModelIDs.opusMT,
+            version: "1.0",
+            runtime: "ctranslate2-data",
+            source: .catalog
+        )
+        try await install(previous, using: manager, root: root)
+        selectTranslationModelForTests(previous.id, in: defaults)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil,
+            defaults: defaults
+        )
+        await model.refreshInstalledPlugins()
+
+        let update = try makeCTranslatePluginArchive(
+            version: "2.0",
+            root: root
+        )
+        var validationCalls: [String] = []
+        var activationCalls: [String] = []
+        model.actions.translation.validateModel = { modelID in
+            validationCalls.append(modelID)
+            return "新版本权重无法加载"
+        }
+        model.actions.translation.activateModel = { modelID in
+            activationCalls.append(modelID)
+            return nil
+        }
+
+        model.installPlugin(update)
+        for _ in 0..<200 where model.isInstalling != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        let installedVersion = await manager.installedPlugin(
+            id: update.id
+        )?.version
+        XCTAssertEqual(installedVersion, previous.version)
+        XCTAssertEqual(validationCalls, [update.id])
+        XCTAssertEqual(activationCalls, [update.id])
+        XCTAssertEqual(
+            model.translationModelStatusText,
+            "更新失败，已恢复旧版本：新版本权重无法加载"
+        )
+        XCTAssertTrue(model.translationModelStatusIsError)
+        XCTAssertEqual(model.catalogError, "新版本权重无法加载")
+    }
+
+    @MainActor
+    func testTranslationModelUpdateValidationSuccessReloadsActiveModel()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintModelValidationSuccess-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let suiteName =
+            "GlintModelValidationSuccess.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let manager = PluginManager(baseDirectory: root)
+        let previous = translationManifest(
+            id: ManagedTranslationModelIDs.opusMT,
+            version: "1.0",
+            runtime: "ctranslate2-data",
+            source: .catalog
+        )
+        try await install(previous, using: manager, root: root)
+        selectTranslationModelForTests(previous.id, in: defaults)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil,
+            defaults: defaults
+        )
+        await model.refreshInstalledPlugins()
+
+        let update = try makeCTranslatePluginArchive(
+            version: "2.0",
+            root: root
+        )
+        var validationCalls: [String] = []
+        var activationCalls: [String] = []
+        model.actions.translation.validateModel = { modelID in
+            validationCalls.append(modelID)
+            return nil
+        }
+        model.actions.translation.activateModel = { modelID in
+            activationCalls.append(modelID)
+            return nil
+        }
+
+        model.installPlugin(update)
+        for _ in 0..<200 where model.isInstalling != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        let installedVersion = await manager.installedPlugin(
+            id: update.id
+        )?.version
+        XCTAssertEqual(
+            installedVersion,
+            update.version,
+            "error=\(String(describing: model.catalogError)) status=\(String(describing: model.translationModelStatusText)) validation=\(validationCalls) activation=\(activationCalls) installing=\(String(describing: model.isInstalling))"
+        )
+        XCTAssertEqual(validationCalls, [update.id])
+        XCTAssertEqual(activationCalls, [update.id])
+        XCTAssertEqual(model.activeModelID, update.id)
+        XCTAssertNil(model.translationModelStatusText)
+        XCTAssertFalse(model.translationModelStatusIsError)
+    }
+
+    @MainActor
+    func testMarketTranslationInstallValidatesWithoutReplacingActiveModel()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMarketValidation-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let manager = PluginManager(baseDirectory: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil
+        )
+        let install = try makeCTranslatePluginArchive(
+            version: "1.0",
+            root: root
+        )
+        model.modelMarketInstallRepository = "example/market-model"
+        model.modelMarketInstallPluginID = install.id
+        var validationCalls: [String] = []
+        var activationCalls: [String] = []
+        model.actions.translation.validateModel = { modelID in
+            validationCalls.append(modelID)
+            return nil
+        }
+        model.actions.translation.activateModel = { modelID in
+            activationCalls.append(modelID)
+            return nil
+        }
+
+        model.installPlugin(install)
+        for _ in 0..<200 where model.isInstalling != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        let installedVersion = await manager.installedPlugin(
+            id: install.id
+        )?.version
+        XCTAssertEqual(installedVersion, install.version)
+        XCTAssertEqual(validationCalls, [install.id])
+        XCTAssertTrue(activationCalls.isEmpty)
+        XCTAssertEqual(
+            model.activeModelID,
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertNil(model.translationModelStatusText)
+        XCTAssertNil(model.modelMarketInstallPluginID)
+    }
+
+    @MainActor
+    func testMarketTranslationInstallValidationFailureRemovesPlugin()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintMarketValidationFailure-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let manager = PluginManager(baseDirectory: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil
+        )
+        let install = try makeCTranslatePluginArchive(
+            version: "1.0",
+            root: root
+        )
+        model.modelMarketInstallRepository = "example/market-model"
+        model.modelMarketInstallPluginID = install.id
+        var validationCalls: [String] = []
+        var activationCalls: [String] = []
+        model.actions.translation.validateModel = { modelID in
+            validationCalls.append(modelID)
+            return "模型权重损坏"
+        }
+        model.actions.translation.activateModel = { modelID in
+            activationCalls.append(modelID)
+            return nil
+        }
+
+        model.installPlugin(install)
+        for _ in 0..<200 where model.isInstalling != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        let installed = await manager.installedPlugin(id: install.id)
+        XCTAssertNil(installed)
+        XCTAssertEqual(validationCalls, [install.id])
+        XCTAssertTrue(activationCalls.isEmpty)
+        XCTAssertEqual(
+            model.activeModelID,
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertNil(model.translationModelStatusText)
+        XCTAssertFalse(model.translationModelStatusIsError)
+        XCTAssertNil(model.translationModelStatusModelID)
+        XCTAssertEqual(model.catalogError, "模型权重损坏")
+        XCTAssertNil(model.translationAttentionMessage)
+        XCTAssertNil(model.modelMarketInstallPluginID)
+    }
+
+    @MainActor
+    func testInactiveMarketTranslationUpdateValidationFailureKeepsAttentionClear()
+        async throws
+    {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "GlintInactiveModelValidationFailure-\(UUID().uuidString)"
+            )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let manager = PluginManager(baseDirectory: root)
+        let previous = translationManifest(
+            id: ManagedTranslationModelIDs.opusMT,
+            version: "1.0",
+            runtime: "ctranslate2-data",
+            source: .catalog
+        )
+        try await install(previous, using: manager, root: root)
+        let model = MainWindowModel(
+            pluginManager: manager,
+            catalogURL: nil
+        )
+        await model.refreshInstalledPlugins()
+
+        let update = try makeCTranslatePluginArchive(
+            version: "2.0",
+            root: root
+        )
+        model.modelMarketInstallRepository = "example/market-model"
+        model.modelMarketInstallPluginID = update.id
+        var validationCalls: [String] = []
+        var activationCalls: [String] = []
+        model.actions.translation.validateModel = { modelID in
+            validationCalls.append(modelID)
+            return "新版本权重无法加载"
+        }
+        model.actions.translation.activateModel = { modelID in
+            activationCalls.append(modelID)
+            return nil
+        }
+
+        model.installPlugin(update)
+        for _ in 0..<200 where model.isInstalling != nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        let installedVersion = await manager.installedPlugin(
+            id: update.id
+        )?.version
+        XCTAssertEqual(installedVersion, previous.version)
+        XCTAssertEqual(validationCalls, [update.id])
+        XCTAssertTrue(activationCalls.isEmpty)
+        XCTAssertEqual(
+            model.activeModelID,
+            SystemTranslationModel.appleTranslationID
+        )
+        XCTAssertNil(model.translationModelStatusText)
+        XCTAssertFalse(model.translationModelStatusIsError)
+        XCTAssertNil(model.translationModelStatusModelID)
+        XCTAssertEqual(model.catalogError, "新版本权重无法加载")
+        XCTAssertNil(model.translationAttentionMessage)
     }
 
     @MainActor
@@ -2648,6 +2978,76 @@ final class MainWindowModelTests: XCTestCase {
         try process.run()
         process.waitUntilExit()
         XCTAssertEqual(process.terminationStatus, 0)
+    }
+
+    @MainActor
+    private func makeCTranslatePluginArchive(
+        version: String,
+        root: URL
+    ) throws -> PluginManifest {
+        let source = root.appendingPathComponent(
+            "ctranslate-source-\(version)",
+            isDirectory: true
+        )
+        let modelDirectory = source.appendingPathComponent(
+            "model",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: modelDirectory,
+            withIntermediateDirectories: true
+        )
+        for file in [
+            "model.bin",
+            "config.json",
+            "shared_vocabulary.json",
+            "source.spm",
+            "target.spm",
+        ] {
+            try Data().write(
+                to: modelDirectory.appendingPathComponent(file)
+            )
+        }
+
+        let archive = root.appendingPathComponent(
+            "ctranslate-\(version).zip"
+        )
+        let placeholder = PluginManifest(
+            id: ManagedTranslationModelIDs.opusMT,
+            type: .translation,
+            name: "OPUS-MT Test",
+            version: version,
+            runtime: "ctranslate2-data",
+            sizeBytes: 0,
+            sha256: "PLACEHOLDER",
+            url: archive,
+            license: "MIT",
+            minRAMBytes: 0,
+            revision: "test",
+            source: .catalog
+        )
+        try JSONEncoder().encode(placeholder).write(
+            to: source.appendingPathComponent(PluginManifest.fileName)
+        )
+        try createArchive(from: source, at: archive)
+        let data = try Data(contentsOf: archive)
+        let digest = SHA256.hash(data: data)
+            .map { String(format: "%02x", $0) }
+            .joined()
+        return PluginManifest(
+            id: placeholder.id,
+            type: placeholder.type,
+            name: placeholder.name,
+            version: placeholder.version,
+            runtime: placeholder.runtime,
+            sizeBytes: Int64(data.count),
+            sha256: digest,
+            url: archive,
+            license: placeholder.license,
+            minRAMBytes: placeholder.minRAMBytes,
+            revision: placeholder.revision,
+            source: placeholder.source
+        )
     }
 }
 

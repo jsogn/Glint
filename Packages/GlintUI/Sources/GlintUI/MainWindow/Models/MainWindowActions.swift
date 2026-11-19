@@ -78,6 +78,7 @@ public struct MainWindowActions {
     @MainActor
     public struct Translation {
         public var activateModel: @MainActor (String) async -> String?
+        public var validateModel: @MainActor (String) async -> String?
         public var refreshSystemTranslation: @MainActor () async -> SystemTranslationAvailability
         public var prepareSystemTranslation: @MainActor () async throws -> SystemTranslationAvailability
         public var presentSystemTranslation: @MainActor () -> Void
@@ -93,6 +94,8 @@ public struct MainWindowActions {
 
         public init(
             activateModel:
+                @escaping @MainActor (String) async -> String?,
+            validateModel:
                 @escaping @MainActor (String) async -> String?,
             refreshSystemTranslation:
                 @escaping @MainActor () async ->
@@ -118,6 +121,7 @@ public struct MainWindowActions {
             configurationChanged: @escaping @MainActor () -> Void
         ) {
             self.activateModel = activateModel
+            self.validateModel = validateModel
             self.refreshSystemTranslation = refreshSystemTranslation
             self.prepareSystemTranslation = prepareSystemTranslation
             self.presentSystemTranslation = presentSystemTranslation
@@ -194,6 +198,7 @@ extension MainWindowActions {
             ),
             translation: Translation(
                 activateModel: { _ in nil },
+                validateModel: { _ in nil },
                 refreshSystemTranslation: { .available },
                 prepareSystemTranslation: { .installed },
                 presentSystemTranslation: {},

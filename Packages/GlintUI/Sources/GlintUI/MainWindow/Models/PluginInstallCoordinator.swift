@@ -6,7 +6,6 @@ import GlintPlugins
 final class PluginInstallCoordinator {
     private struct InstallationAttempt {
         let plugin: PluginManifest
-        let previousModelID: String
         let wasInstalled: Bool
         let wasActiveTranslation: Bool
         let shouldValidateTranslation: Bool
@@ -181,7 +180,6 @@ final class PluginInstallCoordinator {
     ) -> InstallationAttempt {
         InstallationAttempt(
             plugin: plugin,
-            previousModelID: model.activeModelID,
             wasInstalled: model.installedPlugins.contains {
                 $0.id == plugin.id
             },
@@ -244,39 +242,48 @@ final class PluginInstallCoordinator {
         on model: MainWindowModel
     ) async throws -> Bool {
         let plugin = attempt.plugin
-        model.translationModelStatusText =
-            attempt.wasActiveTranslation ? "正在加载新版本…" : "正在验证模型…"
-        model.translationModelStatusIsError = false
-        model.translationModelStatusModelID = plugin.id
-        let error = await model.actions.translation.activateModel(plugin.id)
+        if attempt.wasActiveTranslation {
+            model.translationModelStatusText = "正在加载新版本…"
+            model.translationModelStatusIsError = false
+            model.translationModelStatusModelID = plugin.id
+        }
+        let validationError =
+            await model.actions.translation.validateModel(plugin.id)
         try Task.checkCancellation()
-        if let error {
+        if let validationError {
             try await recoverTranslationValidationFailure(
                 attempt,
                 hadPendingUpgrade: hadPendingUpgrade,
-                error: error,
+                error: validationError,
                 on: model
             )
             return false
         }
-        if !attempt.wasActiveTranslation {
-            await model.actions.translation.releaseModel(plugin.id)
+        if attempt.wasActiveTranslation,
+            model.activeModelID == plugin.id
+        {
+            let activationError =
+                await model.actions.translation.activateModel(plugin.id)
             try Task.checkCancellation()
-            if let restoreError =
-                await model.actions.translation.activateModel(
-                    attempt.previousModelID
+            if let activationError {
+                try await recoverTranslationValidationFailure(
+                    attempt,
+                    hadPendingUpgrade: hadPendingUpgrade,
+                    error: activationError,
+                    on: model
                 )
-            {
-                model.catalogError =
-                    "模型已安装，但恢复原模型失败：\(restoreError)"
+                return false
             }
-            try Task.checkCancellation()
         }
         try Task.checkCancellation()
         try await pluginLifecycle.commitPendingUpgrade()
-        model.translationModelStatusText = nil
-        model.translationModelStatusIsError = false
-        model.translationModelStatusModelID = nil
+        if attempt.wasActiveTranslation,
+            model.translationModelStatusModelID == plugin.id
+        {
+            model.translationModelStatusText = nil
+            model.translationModelStatusIsError = false
+            model.translationModelStatusModelID = nil
+        }
         model.recordSuccessfulTranslationModelUpdateCheck(
             pluginID: plugin.id,
             update: nil
@@ -296,7 +303,7 @@ final class PluginInstallCoordinator {
         if hadPendingUpgrade {
             try await pluginLifecycle.rollbackPendingUpgrade()
             await model.refreshInstalledPlugins()
-            if !wasCancelled {
+            if !wasCancelled, attempt.wasActiveTranslation {
                 model.translationModelStatusText =
                     "更新失败，已恢复旧版本：\(error)"
             }
@@ -304,17 +311,18 @@ final class PluginInstallCoordinator {
             await model.actions.translation.releaseModel(plugin.id)
             try await pluginLifecycle.uninstall(id: plugin.id)
             await model.refreshInstalledPlugins()
-            if !wasCancelled {
+            if !wasCancelled, attempt.wasActiveTranslation {
                 model.translationModelStatusText =
                     "模型加载失败：\(error)"
             }
         }
-        let recoveryModelID =
-            hadPendingUpgrade ? plugin.id : attempt.previousModelID
-        if recoveryModelID != plugin.id || hadPendingUpgrade {
+        if hadPendingUpgrade,
+            attempt.wasActiveTranslation,
+            model.activeModelID == plugin.id
+        {
             let restoreError =
                 await model.actions.translation.activateModel(
-                    recoveryModelID
+                    plugin.id
                 )
             if let restoreError, !wasCancelled {
                 model.translationModelStatusText =
@@ -322,12 +330,18 @@ final class PluginInstallCoordinator {
             }
         }
         if wasCancelled {
-            model.translationModelStatusText = nil
-            model.translationModelStatusIsError = false
-            model.translationModelStatusModelID = nil
+            if attempt.wasActiveTranslation,
+                model.translationModelStatusModelID == plugin.id
+            {
+                model.translationModelStatusText = nil
+                model.translationModelStatusIsError = false
+                model.translationModelStatusModelID = nil
+            }
         } else {
-            model.translationModelStatusIsError = true
-            model.translationModelStatusModelID = plugin.id
+            if attempt.wasActiveTranslation {
+                model.translationModelStatusIsError = true
+                model.translationModelStatusModelID = plugin.id
+            }
             model.catalogError = error
         }
         model.actions.translation.configurationChanged()

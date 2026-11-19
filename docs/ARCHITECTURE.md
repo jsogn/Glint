@@ -162,6 +162,8 @@ Glint/
 - 下载、镜像回退、持久化断点续传、解压和原子安装。
 - `PluginCatalogService` 只保留 catalog 获取和公开入口；安装、快照下载与内容
   校验分别位于 `PluginCatalogService+Install/Download/Validation`。
+- 升级备份标记只在没有进行中事务时作为崩溃残留恢复；正常更新在校验完成前必须
+  保持新版本可见，不得因刷新插件列表提前回滚。
 - 管理可选词典与翻译模型；内置核心能力不参与安装或卸载。
 - App 启动时检查已安装核心词典；旧 schema 或不兼容缓存使用 bundled 数据原子
   修复，失败时保留旧目录并继续回退 bundled 基线。
@@ -174,11 +176,12 @@ Glint/
 - 单一 HUD panel，不创建键盘监听、Toast 或运行时错误卡片。
 - `MainWindowModel` 作为 `@MainActor` 展示状态和动作边界。
 - `PluginInstallCoordinator` 承接插件安装任务、取消、模型市场预检、进度合并和
-  失败回滚；`MainWindowModel` 保留公开入口与可观察展示状态。
+  失败回滚；翻译模型在提交前执行运行时预热校验，活动模型更新通过校验后再重载，
+  非活动市场安装不替换当前模型；`MainWindowModel` 保留公开入口与可观察展示状态。
 - `PluginUpdateCoordinator` 承接核心词典/翻译模型更新检查、冷却、缓存恢复和
   catalog 拉取；模型只保留展示状态与动作转发。
-- `LocalModelImportCoordinator` 承接本地模型导入任务、进度、取消和失败恢复；
-  `MainWindowModel` 只保留导入入口与展示状态。
+- `LocalModelImportCoordinator` 承接本地模型导入任务、进度、取消、运行时预热校验
+  和失败恢复；`MainWindowModel` 只保留导入入口与展示状态。
 - `TranslationCoordinator` 承接目标语言/模型切换、请求代次和系统翻译准备；
   `MainWindowModel` 只保留翻译配置的展示状态与公开入口。
 - `MainWindowModel+Presentation` 承载插件、翻译与输入法页面的派生展示属性，

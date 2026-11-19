@@ -105,6 +105,58 @@ final class TranslationRuntimeTests: XCTestCase {
         }
     }
 
+    func testValidationFailureDoesNotReplaceActiveRuntime()
+        async throws
+    {
+        let directory = try makeInvalidMLXDirectory()
+        let runtime = TranslationRuntime(
+            systemEngine: StubTranslationEngine(
+                output: "System translation"
+            ),
+            modelResolver: { modelID in
+                ResolvedTranslationModel(
+                    modelID: modelID,
+                    storage: .mlx(
+                        directory: directory,
+                        promptProfile: .generic
+                    ),
+                    supportedDirections: [
+                        .simplifiedChineseToEnglish
+                    ]
+                )
+            }
+        )
+        let preparationError = await runtime.prepare(
+            modelID: SystemTranslationModel.appleTranslationID,
+            direction: .simplifiedChineseToEnglish
+        )
+        XCTAssertNil(preparationError)
+
+        let validationError = await runtime.validate(
+            modelID: "broken-import",
+            direction: .simplifiedChineseToEnglish
+        )
+
+        XCTAssertNotNil(validationError)
+        let activeDirection = await runtime.activeDirection
+        XCTAssertEqual(
+            activeDirection,
+            .simplifiedChineseToEnglish
+        )
+        let lastError = await runtime.lastError
+        XCTAssertNil(lastError)
+        let result = try await runtime.translate(
+            TranslationRequest(
+                candidate: Candidate(
+                    text: "你好",
+                    kind: .word
+                ),
+                direction: .simplifiedChineseToEnglish
+            )
+        )
+        XCTAssertEqual(result?.text, "System translation")
+    }
+
     func testSystemTranslationFailureDoesNotResolveFallbackModel()
         async
     {
@@ -247,6 +299,34 @@ final class TranslationRuntimeTests: XCTestCase {
             root.deleteLastPathComponent()
         }
         return root
+    }
+
+    private func makeInvalidMLXDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "invalid-mlx-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: directory)
+        }
+        try Data(
+            #"{"model_type":"qwen3","architectures":["Qwen3"]}"#.utf8
+        ).write(to: directory.appendingPathComponent("config.json"))
+        try Data("{}".utf8).write(
+            to: directory.appendingPathComponent("tokenizer.json")
+        )
+        try Data("{{ messages }}".utf8).write(
+            to: directory.appendingPathComponent("chat_template.jinja")
+        )
+        try Data(repeating: 1, count: 64).write(
+            to: directory.appendingPathComponent("model.safetensors")
+        )
+        return directory
     }
 }
 

@@ -107,6 +107,20 @@ final class AppWindowActionContext {
                         )
                     )
                 },
+                validateModel: { [weak self] modelID in
+                    guard
+                        let self,
+                        let windowModel = self.windowModel
+                    else {
+                        return "翻译运行时不可用"
+                    }
+                    return await self.environment.translationRuntime.validate(
+                        modelID: modelID,
+                        direction: TranslationDirection(
+                            target: windowModel.translationTarget
+                        )
+                    )
+                },
                 refreshSystemTranslation: { [weak self] in
                     guard
                         let self,

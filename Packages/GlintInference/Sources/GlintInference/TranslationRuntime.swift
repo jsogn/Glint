@@ -147,6 +147,54 @@ public actor TranslationRuntime: TranslationEngine {
         lastError = nil
     }
 
+    /// Verifies that a model can actually load and run without replacing or
+    /// disturbing the currently active runtime.
+    @discardableResult
+    public func validate(
+        modelID: String,
+        direction: TranslationDirection
+    ) async -> String? {
+        if modelID == SystemTranslationModel.appleTranslationID {
+            guard let systemEngine else {
+                return "系统翻译不支持当前方向"
+            }
+            return await systemEngine.supports(direction)
+                ? nil
+                : "系统翻译不支持当前方向"
+        }
+
+        guard let descriptor = await modelResolver(modelID) else {
+            return "未找到所选翻译模型"
+        }
+        guard descriptor.supportedDirections.contains(direction) else {
+            return "当前模型不支持目标语言"
+        }
+
+        do {
+            try Task.checkCancellation()
+            let engine = try makeEngine(
+                for: descriptor,
+                direction: direction
+            )
+            if let mlxEngine = engine as? MLXTranslationEngine {
+                try await mlxEngine.warmUp(target: direction.target)
+            }
+            try Task.checkCancellation()
+            runtimeLogger.notice(
+                "validate model=\(modelID, privacy: .public) target=\(direction.target.rawValue, privacy: .public)"
+            )
+            return nil
+        } catch {
+            if Task.isCancelled {
+                return nil
+            }
+            runtimeLogger.error(
+                "validate failed model=\(modelID, privacy: .public) target=\(direction.target.rawValue, privacy: .public) error=\(error.localizedDescription, privacy: .public)"
+            )
+            return error.localizedDescription
+        }
+    }
+
     public func translate(
         _ request: TranslationRequest
     ) async throws -> TranslationResult? {

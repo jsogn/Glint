@@ -84,8 +84,8 @@ final class LocalModelImportCoordinator {
                 model.translationModelStatusIsError = false
                 model.translationModelStatusModelID = manifest.id
 
-                let activationError =
-                    await model.actions.translation.activateModel(
+                let validationError =
+                    await model.actions.translation.validateModel(
                         manifest.id
                     )
                 if Task.isCancelled {
@@ -103,12 +103,12 @@ final class LocalModelImportCoordinator {
                     )
                     return
                 }
-                if let activationError {
+                if let validationError {
                     let outcome = await recoverFromFailure(
                         manifest: manifest,
                         previousModelID: previousModelID,
                         hadPendingUpgrade: hadPendingUpgrade,
-                        error: activationError,
+                        error: validationError,
                         on: model
                     )
                     applyRecovery(
@@ -117,15 +117,6 @@ final class LocalModelImportCoordinator {
                         showsImportError: true
                     )
                     return
-                }
-                await model.actions.translation.releaseModel(manifest.id)
-                if let restoreError =
-                    await model.actions.translation.activateModel(
-                        previousModelID
-                    )
-                {
-                    model.catalogError =
-                        "模型已安装，但恢复原模型失败：\(restoreError)"
                 }
             }
 
