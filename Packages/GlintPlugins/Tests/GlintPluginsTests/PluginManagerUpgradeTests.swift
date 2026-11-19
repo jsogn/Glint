@@ -62,6 +62,33 @@ final class PluginManagerUpgradeTests: XCTestCase {
             })
     }
 
+    func testRefreshingInstalledPluginsKeepsPendingUpgradeVisible()
+        async throws
+    {
+        let root = temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = PluginManager(baseDirectory: root)
+        let first = manifest(version: "1.0.0")
+        let second = manifest(version: "2.0.0")
+
+        _ = try await manager.installPreparedPlugin(
+            at: try sourceDirectory(first, root: root)
+        )
+        _ = try await manager.installPreparedPlugin(
+            at: try sourceDirectory(second, root: root),
+            keepBackup: true
+        )
+
+        let visible = await manager.installedPlugins()
+        XCTAssertEqual(visible.first?.version, second.version)
+        let hasPendingUpgrade = await manager.hasPendingUpgrade()
+        XCTAssertTrue(hasPendingUpgrade)
+
+        try await manager.commitPendingUpgrade()
+        let committed = await manager.installedPlugin(id: first.id)
+        XCTAssertEqual(committed?.version, second.version)
+    }
+
     func testRestartRollsBackUncommittedUpgrade() async throws {
         let root = temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }

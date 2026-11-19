@@ -240,7 +240,9 @@ public actor PluginManager {
     }
 
     private func recoverInterruptedInstalls() {
-        recoverPersistedUpgrade()
+        if pendingUpgrade == nil {
+            recoverPersistedUpgrade()
+        }
         // Hidden entries are normally skipped. This pass is intentionally
         // explicit so stale staging and backup folders can be recovered.
         guard
